@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\Data\DashboardShortcut;
+use Prime\Admin\Data\DashboardStat;
 use Prime\Admin\Demo\DemoDashboardData;
 use Prime\Auth\Auth;
 use Prime\Hooks\Hooks;
@@ -13,6 +15,7 @@ use Prime\Http\Exception\NotFoundException;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Kernel\Application;
+use Prime\Log\Logger;
 use Prime\View\Icon;
 use Prime\View\View;
 
@@ -49,6 +52,7 @@ final class DashboardController
         private readonly DemoDashboardData $demo,
         private readonly Auth $auth,
         private readonly ?Hooks $hooks = null,
+        private readonly ?Logger $logger = null,
     ) {
     }
 
@@ -102,14 +106,63 @@ final class DashboardController
         ));
 
         if ($this->hooks !== null) {
-            $filteredShortcuts = $this->hooks->apply('admin.dashboard.shortcuts', $shortcuts, $user);
-            if (is_array($filteredShortcuts)) {
-                $shortcuts = array_values($filteredShortcuts);
-            }
-            $filteredStats = $this->hooks->apply('admin.dashboard.stats', $stats, $user);
-            if (is_array($filteredStats)) {
-                $stats = array_values($filteredStats);
-            }
+            /** @var list<array{title: string, description: string, icon: string, accent: string, url: string}> $normalizedShortcuts */
+            $normalizedShortcuts = $this->hooks->applyValidated(
+                'admin.dashboard.shortcuts',
+                $shortcuts,
+                function (mixed $candidate, mixed $previous, ?string $owner, string $hookName): array {
+                    /** @var list<array{title: string, description: string, icon: string, accent: string, url: string}> $fallback */
+                    $fallback = is_array($previous) ? array_values($previous) : [];
+                    if (!is_array($candidate)) {
+                        $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de raccourcis.');
+
+                        return $fallback;
+                    }
+
+                    $valid = [];
+                    foreach ($candidate as $index => $entry) {
+                        $normalized = DashboardShortcut::fromArray($entry);
+                        if ($normalized === null) {
+                            $this->logInvalidFilterData($hookName, $owner, sprintf('Raccourci invalide ignoré à l\'index %s.', (string) $index));
+                            continue;
+                        }
+                        $valid[] = $normalized->toArray();
+                    }
+
+                    return $valid;
+                },
+                $user,
+            );
+            $shortcuts = $normalizedShortcuts;
+
+            /** @var list<array{label: string, value: string, icon: string, accent: string, trend: string, trendDirection: 'up'|'down'|'flat', hint: string, url: string}> $normalizedStats */
+            $normalizedStats = $this->hooks->applyValidated(
+                'admin.dashboard.stats',
+                $stats,
+                function (mixed $candidate, mixed $previous, ?string $owner, string $hookName): array {
+                    /** @var list<array{label: string, value: string, icon: string, accent: string, trend: string, trendDirection: 'up'|'down'|'flat', hint: string, url: string}> $fallback */
+                    $fallback = is_array($previous) ? array_values($previous) : [];
+                    if (!is_array($candidate)) {
+                        $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de statistiques.');
+
+                        return $fallback;
+                    }
+
+                    $valid = [];
+                    foreach ($candidate as $index => $entry) {
+                        $normalized = DashboardStat::fromArray($entry);
+                        if ($normalized === null) {
+                            $this->logInvalidFilterData($hookName, $owner, sprintf('Statistique invalide ignorée à l\'index %s.', (string) $index));
+                            continue;
+                        }
+                        $valid[] = $normalized->toArray();
+                    }
+
+                    return $valid;
+                },
+                $user,
+            );
+            $stats = $normalizedStats;
         }
 
         $data = $this->context->build($request, 'Tableau de bord', [
@@ -176,5 +229,13 @@ final class DashboardController
         ]);
 
         return Response::html($this->view->render('admin::placeholders/module', $data));
+    }
+
+    private function logInvalidFilterData(string $hookName, ?string $owner, string $reason): void
+    {
+        $this->logger?->warning(sprintf('Filtre [%s] : %s', $hookName, $reason), [
+            'hook' => $hookName,
+            'plugin' => $owner ?? 'core',
+        ]);
     }
 }

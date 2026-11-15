@@ -36,8 +36,9 @@ final class PluginServiceProvider extends ServiceProvider
         $c->singleton(Notices::class, static function () use ($c): Notices {
             /** @var Settings $settings */
             $settings = $c->make(Settings::class);
+            $logger = $c->has(Logger::class) ? $c->get(Logger::class) : null;
 
-            return new Notices($settings);
+            return new Notices($settings, $logger instanceof Logger ? $logger : null);
         });
 
         $c->singleton(PluginRepository::class, static function () use ($c): PluginRepository {
@@ -64,8 +65,14 @@ final class PluginServiceProvider extends ServiceProvider
             $pluginsRelPath = (string) $app->config()->get('plugins.path', 'content/plugins');
             $safeMode = (bool) $app->config()->get('plugins.safe_mode', false);
 
-            /** @var Autoloader $autoloader */
-            $autoloader = $c->has(Autoloader::class) ? $c->make(Autoloader::class) : new Autoloader();
+            if ($c->has(Autoloader::class)) {
+                /** @var Autoloader $autoloader */
+                $autoloader = $c->make(Autoloader::class);
+            } else {
+                $autoloader = new Autoloader();
+                $autoloader->register();
+                $c->instance(Autoloader::class, $autoloader);
+            }
             /** @var PluginRepository $repository */
             $repository = $c->make(PluginRepository::class);
             /** @var ManifestValidator $validator */

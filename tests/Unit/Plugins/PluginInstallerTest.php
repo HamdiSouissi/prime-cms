@@ -63,7 +63,7 @@ final class PluginInstallerTest extends TestCase
 
         $validator = new ManifestValidator();
         $manager = new PluginManager(
-            app: new Application(dirname(__DIR__, 3), registerErrorHandler: false),
+            app: new Application(dirname(__DIR__, 3), loadEnv: false, registerErrorHandler: false),
             pluginsPath: $this->tmpRoot . '/plugins',
             autoloader: new Autoloader(),
             repository: $this->repository,

@@ -22,7 +22,7 @@ content/plugins/mon-plugin/
 Générez rapidement un squelette prêt à être activé :
 
 ```bash
-php bin/prime make:plugin mon-plugin --name="Mon Plugin" --author="Mon Équipe"
+php bin/prime make:plugin mon-plugin --name="Mon Plugin" --author="Mon Équipe" [--license="proprietary"]
 ```
 
 ---
@@ -39,7 +39,7 @@ php bin/prime make:plugin mon-plugin --name="Mon Plugin" --author="Mon Équipe"
     "name": "Prime CMS",
     "url": "https://github.com/HamdiSouissi/prime-cms"
   },
-  "license": "MIT",
+  "license": "proprietary",
   "namespace": "HelloPrime\\",
   "main": "HelloPrime\\Plugin",
   "requires": {
@@ -124,7 +124,7 @@ La classe `Prime\Support\Version` gère le parsing, la comparaison et les contra
 
 - Chaque phase (`register`, `boot`, `activate`, écouteurs/filtres de hooks) est encapsulée dans un garde `try/catch (Throwable)` couvrant y compris `ParseError` et `TypeError`.
 - Un fichier témoin `storage/plugins/loading.json` (`FatalLoadGuard`) détecte les erreurs fatales PHP (`E_ERROR`, `E_COMPILE_ERROR`, OOM) au shutdown ou au démarrage suivant.
-- Tout plugin défaillant passe en statut `errored` dans `pc_plugins`, cesse d'être chargé aux requêtes suivantes, journalise son erreur dans `plugin.{slug}`, déclenche `plugin.failed` et affiche une notification persistante munie d'un bouton **« Réessayer l'activation »**.
+- Tout plugin défaillant passe en statut `errored` dans `pc_plugins`, cesse d'être chargé aux requêtes suivantes, journalise le détail complet (chemin absolu et trace) uniquement dans `plugin.{slug}`, enregistre dans `last_error` un résumé sûr sans chemin serveur (classe courte d'exception, message tronqué à 300 caractères, chemin relatif au plugin uniquement), déclenche `plugin.failed` et alimente une unique notification de synthèse pointant vers `/admin/plugins?status=errored`. Le détail et le bouton **« Réessayer l'activation »** figurent sur la carte du plugin.
 - En cas d'urgence, définir `PRIME_SAFE_MODE=true` dans `.env` désactive le chargement de **tous** les plugins et affiche un bandeau d'avertissement dans l'administration.
 
 ---
@@ -155,7 +155,7 @@ php bin/prime plugin:deactivate <slug>
 php bin/prime plugin:uninstall <slug> [--keep-files]
 php bin/prime plugin:install <archive.zip> [--replace] [--force]
 php bin/prime plugin:publish-assets [slug]
-php bin/prime make:plugin <slug> [--name="..."] [--author="..."] [--namespace="..."]
+php bin/prime make:plugin <slug> [--name="..."] [--author="..."] [--namespace="..."] [--license="proprietary"]
 ```
 
 ---

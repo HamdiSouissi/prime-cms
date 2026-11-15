@@ -37,7 +37,7 @@ final class MakePluginCommand implements CommandInterface
         $slug = strtolower(trim((string) ($parsed['positionals'][0] ?? '')));
 
         if ($slug === '' || strlen($slug) < 3 || strlen($slug) > 64 || preg_match(ManifestValidator::SLUG_PATTERN, $slug) !== 1) {
-            $output->error('Usage : php bin/prime make:plugin <slug> [--name="Mon Plugin"] [--author="Équipe"] [--namespace="MonPlugin\\"]');
+            $output->error('Usage : php bin/prime make:plugin <slug> [--name="Mon Plugin"] [--author="Équipe"] [--namespace="MonPlugin\\"] [--license="proprietary"]');
             $output->error('Le slug doit contenir 3 à 64 caractères minuscules, chiffres et tirets (ex. "mon-plugin").');
 
             return self::FAILURE;
@@ -60,6 +60,10 @@ final class MakePluginCommand implements CommandInterface
         $author = isset($parsed['options']['author']) && is_string($parsed['options']['author']) && trim($parsed['options']['author']) !== ''
             ? trim($parsed['options']['author'])
             : 'Prime CMS Developer';
+
+        $license = isset($parsed['options']['license']) && is_string($parsed['options']['license']) && trim($parsed['options']['license']) !== ''
+            ? trim($parsed['options']['license'])
+            : 'proprietary';
 
         $defaultNamespace = implode('', array_map('ucfirst', explode('-', $slug))) . '\\';
         $namespace = isset($parsed['options']['namespace']) && is_string($parsed['options']['namespace']) && trim($parsed['options']['namespace']) !== ''
@@ -96,7 +100,7 @@ final class MakePluginCommand implements CommandInterface
             'author' => [
                 'name' => $author,
             ],
-            'license' => 'MIT',
+            'license' => $license,
             'namespace' => $namespace,
             'main' => $namespace . 'Plugin',
             'requires' => [

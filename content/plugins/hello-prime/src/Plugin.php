@@ -82,7 +82,7 @@ final class Plugin extends AbstractPlugin
             }
 
             $shortcuts[] = [
-                'label' => 'Hello Prime',
+                'title' => 'Hello Prime',
                 'description' => 'Configurer le message d’accueil et le livre d’or.',
                 'icon' => 'sparkles',
                 'accent' => 'violet',

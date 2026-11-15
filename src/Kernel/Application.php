@@ -20,6 +20,8 @@ final class Application
 
     private readonly string $basePath;
 
+    private readonly ?string $customStoragePath;
+
     private readonly Container $container;
 
     private readonly Config $config;
@@ -40,8 +42,22 @@ final class Application
         $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR . '/');
         $this->container = $container ?? new Container();
 
-        if ($loadEnv) {
+        if ($loadEnv && !((bool) Env::get('PRIME_DISABLE_DOTENV', false))) {
             Env::load($this->basePath('.env'));
+        }
+
+        $envStorage = Env::get('PRIME_STORAGE_PATH');
+        $projectRoot = realpath(dirname(__DIR__, 2));
+        $resolvedBase = realpath($this->basePath);
+        if (
+            is_string($envStorage)
+            && trim($envStorage) !== ''
+            && $projectRoot !== false
+            && $resolvedBase === $projectRoot
+        ) {
+            $this->customStoragePath = rtrim(trim($envStorage), DIRECTORY_SEPARATOR . '/');
+        } else {
+            $this->customStoragePath = null;
         }
 
         $this->config = Config::loadFromDirectory($this->configPath());
@@ -211,7 +227,7 @@ final class Application
 
     public function storagePath(string $path = ''): string
     {
-        return $this->joinPath($this->basePath('storage'), $path);
+        return $this->joinPath($this->customStoragePath ?? $this->basePath('storage'), $path);
     }
 
     public function contentPath(string $path = ''): string

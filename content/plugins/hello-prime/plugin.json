@@ -7,7 +7,7 @@
     "name": "Prime CMS",
     "url": "https://github.com/HamdiSouissi/prime-cms"
   },
-  "license": "MIT",
+  "license": "proprietary",
   "namespace": "HelloPrime\\",
   "main": "HelloPrime\\Plugin",
   "requires": {

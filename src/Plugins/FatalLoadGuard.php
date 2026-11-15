@@ -28,7 +28,7 @@ final class FatalLoadGuard
 
     private bool $shutdownRegistered = false;
 
-    /** @var ?callable(string, string, string): void */
+    /** @var ?callable(string, string, string, string, int): void */
     private $onFatalCallback = null;
 
     public function __construct(private readonly string $witnessFile)
@@ -43,7 +43,7 @@ final class FatalLoadGuard
     /**
      * Register a PHP shutdown listener to immediately isolate a plugin on uncatchable fatals.
      *
-     * @param callable(string, string, string): void $onFatal Receives `($slug, $phase, $errorMessage)`
+     * @param callable(string, string, string, string, int): void $onFatal Receives `($slug, $phase, $rawMessage, $file, $line)`
      */
     public function registerShutdownHandler(callable $onFatal): void
     {
@@ -69,14 +69,14 @@ final class FatalLoadGuard
             $this->clear();
 
             if ($this->onFatalCallback !== null) {
-                $message = sprintf(
-                    'Erreur fatale PHP (%s) dans %s:%d',
-                    $error['message'],
-                    $error['file'],
-                    $error['line'],
-                );
                 try {
-                    ($this->onFatalCallback)($pending['slug'], $pending['phase'], $message);
+                    ($this->onFatalCallback)(
+                        $pending['slug'],
+                        $pending['phase'],
+                        $error['message'],
+                        $error['file'],
+                        $error['line'],
+                    );
                 } catch (Throwable) {
                     // Never crash inside shutdown recovery.
                 }

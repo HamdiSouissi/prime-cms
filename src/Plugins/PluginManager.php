@@ -29,6 +29,9 @@ use Throwable;
  */
 final class PluginManager
 {
+    public const ERRORED_SUMMARY_NOTICE_ID = 'plugins.errored.summary';
+
+    private const MAX_PUBLIC_ERROR_LENGTH = 300;
     /** @var ?array<string, PluginInfo> Request-cached discovery result */
     private ?array $discoveredCache = null;
 
@@ -264,8 +267,10 @@ final class PluginManager
         }
 
         // 1. Wire shutdown fatal guard & recover any crash left behind from a prior request
-        $this->fatalGuard->registerShutdownHandler(function (string $slug, string $phase, string $message): void {
-            $this->isolatePluginFailure($slug, $phase, $message);
+        $this->fatalGuard->registerShutdownHandler(function (string $slug, string $phase, string $rawMessage, string $file, int $line): void {
+            $publicError = $this->formatPublicFatalError($slug, $rawMessage, $file, $line);
+            $rawDetail = sprintf('Erreur fatale PHP (%s) dans %s:%d', $rawMessage, $file, $line);
+            $this->isolatePluginFailure($slug, $phase, $publicError, rawLogDetail: $rawDetail);
         });
 
         $pendingCrash = $this->fatalGuard->consumePendingCrash();
@@ -286,7 +291,7 @@ final class PluginManager
             $this->isolatePluginFailure(
                 $owner,
                 'hook:' . $hookName,
-                sprintf('%s: %s (%s:%d)', $exception::class, $exception->getMessage(), $exception->getFile(), $exception->getLine()),
+                $this->formatPublicException($owner, $exception),
                 $exception,
             );
         });
@@ -389,7 +394,7 @@ final class PluginManager
                     $this->isolatePluginFailure(
                         $slug,
                         'upgrade',
-                        sprintf('Échec de la mise à jour %s → %s : %s', $info->installedVersion, $manifest->version, $exception->getMessage()),
+                        sprintf('Échec de la mise à jour %s → %s : %s', $info->installedVersion, $manifest->version, $this->formatPublicException($slug, $exception)),
                         $exception,
                         $manifest->version,
                         $manifest->hash,
@@ -429,7 +434,7 @@ final class PluginManager
                 $this->isolatePluginFailure(
                     $slug,
                     'register',
-                    sprintf('%s: %s (%s:%d)', $exception::class, $exception->getMessage(), $exception->getFile(), $exception->getLine()),
+                    $this->formatPublicException($slug, $exception),
                     $exception,
                     $manifest->version,
                     $manifest->hash,
@@ -451,7 +456,7 @@ final class PluginManager
                 $this->isolatePluginFailure(
                     $slug,
                     'boot',
-                    sprintf('%s: %s (%s:%d)', $exception::class, $exception->getMessage(), $exception->getFile(), $exception->getLine()),
+                    $this->formatPublicException($slug, $exception),
                     $exception,
                     $entry['manifest']->version,
                     $entry['manifest']->hash,
@@ -461,6 +466,7 @@ final class PluginManager
 
         // Refresh discovery cache so settingsUrl/errored states reflect boot results
         $this->invalidateCache();
+        $this->syncErroredPluginsNotice();
 
         // 6. Notify ecosystem that all active plugins have loaded
         $this->hooks->emit('plugins.loaded', $this->contexts);
@@ -473,7 +479,7 @@ final class PluginManager
     {
         $info = $this->get($slug, fresh: true);
         if ($info === null) {
-            throw new PluginException(sprintf('Plugin "%s" introuvable dans %s.', $slug, $this->pluginsPath));
+            throw new PluginException(sprintf('Plugin "%s" introuvable.', $slug));
         }
 
         if ($info->isActive()) {
@@ -565,10 +571,11 @@ final class PluginManager
             $this->hooks->removeByOwner($slug);
             unset($this->instances[$slug], $this->contexts[$slug]);
 
+            $publicError = $this->formatPublicException($slug, $exception);
             $this->isolatePluginFailure(
                 $slug,
                 'activate',
-                sprintf('%s: %s (%s:%d)', $exception::class, $exception->getMessage(), $exception->getFile(), $exception->getLine()),
+                $publicError,
                 $exception,
                 $manifest->version,
                 $manifest->hash,
@@ -576,16 +583,17 @@ final class PluginManager
             $this->invalidateCache();
 
             throw new PluginException(
-                sprintf('Échec de l\'activation du plugin "%s" : %s', $manifest->name, $exception->getMessage()),
+                sprintf('Échec de l\'activation du plugin "%s" : %s', $manifest->name, $publicError),
                 0,
                 $exception,
             );
         }
 
-        // Step 7: Mark active in DB, clear prior error notice, emit `plugin.activated`
+        // Step 7: Mark active in DB, refresh consolidated error notice, emit `plugin.activated`
         $this->repository->markActive($slug, $manifest->version, $manifest->hash);
-        $this->notices->remove($this->errorNoticeId($slug));
+        $this->notices->remove($this->legacyErrorNoticeId($slug));
         $this->invalidateCache();
+        $this->syncErroredPluginsNotice();
 
         $this->hooks->emit('plugin.activated', $manifest, $context);
 
@@ -640,8 +648,9 @@ final class PluginManager
             $info->manifest?->version,
             $info->manifest?->hash,
         );
-        $this->notices->remove($this->errorNoticeId($slug));
+        $this->notices->remove($this->legacyErrorNoticeId($slug));
         $this->invalidateCache();
+        $this->syncErroredPluginsNotice();
 
         $this->hooks->emit('plugin.deactivated', $info->manifest, $slug);
 
@@ -669,10 +678,11 @@ final class PluginManager
 
             $this->settings->deleteByPrefix('plugin.' . $slug . '.');
             $this->notices->removeBySource($slug);
-            $this->notices->remove($this->errorNoticeId($slug));
+            $this->notices->remove($this->legacyErrorNoticeId($slug));
             $this->assetPublisher->remove($slug);
             $this->repository->delete($slug);
             $this->invalidateCache();
+            $this->syncErroredPluginsNotice();
             $this->hooks->emit('plugin.uninstalled', $slug, $deleteFiles);
 
             return;
@@ -719,7 +729,7 @@ final class PluginManager
         // 3. Delete all `plugin.{slug}.*` settings & notices
         $this->settings->deleteByPrefix('plugin.' . $slug . '.');
         $this->notices->removeBySource($slug);
-        $this->notices->remove($this->errorNoticeId($slug));
+        $this->notices->remove($this->legacyErrorNoticeId($slug));
 
         // 4. Remove published public assets
         $this->assetPublisher->remove($slug);
@@ -739,6 +749,7 @@ final class PluginManager
         $this->hooks->removeByOwner($slug);
         unset($this->instances[$slug], $this->contexts[$slug]);
         $this->invalidateCache();
+        $this->syncErroredPluginsNotice();
 
         $this->hooks->emit('plugin.uninstalled', $slug, $deleteFiles);
     }
@@ -860,8 +871,13 @@ final class PluginManager
         ?Throwable $exception = null,
         ?string $version = null,
         ?string $manifestHash = null,
+        ?string $rawLogDetail = null,
     ): void {
-        $this->repository->markErrored($slug, $errorMessage, $version, $manifestHash);
+        $publicError = $exception !== null
+            ? $errorMessage
+            : $this->sanitizePublicMessage($slug, $errorMessage);
+
+        $this->repository->markErrored($slug, $publicError, $version, $manifestHash);
 
         $contextData = [
             'plugin' => $slug,
@@ -869,32 +885,218 @@ final class PluginManager
         ];
         if ($exception !== null) {
             $contextData['exception'] = $exception::class;
+            $contextData['raw_message'] = $exception->getMessage();
             $contextData['file'] = $exception->getFile();
             $contextData['line'] = $exception->getLine();
+            $contextData['trace'] = $exception->getTraceAsString();
+        } elseif ($rawLogDetail !== null) {
+            $contextData['raw_detail'] = $rawLogDetail;
         }
 
+        $logSummary = $rawLogDetail
+            ?? ($exception !== null
+                ? sprintf('%s: %s (%s:%d)', $exception::class, $exception->getMessage(), $exception->getFile(), $exception->getLine())
+                : $errorMessage);
+
         $this->pluginLogger($slug)->error(
-            sprintf('Plugin "%s" isolé en erreur pendant [%s] : %s', $slug, $phase, $errorMessage),
+            sprintf('Plugin "%s" isolé en erreur pendant [%s] : %s', $slug, $phase, $logSummary),
             $contextData,
         );
 
+        $this->notices->remove($this->legacyErrorNoticeId($slug));
+        $this->syncErroredPluginsNotice();
+
+        $this->hooks->emit('plugin.failed', $slug, $phase, $publicError, $exception);
+    }
+
+    /**
+     * Format an exception safely for UI (`last_error`):
+     * short exception class + message truncated to 300 chars + path relative to the plugin
+     * folder (omitted entirely if the file lies outside the plugin directory).
+     */
+    private function formatPublicException(string $slug, Throwable $exception): string
+    {
+        $fqcn = $exception::class;
+        $lastSep = strrpos($fqcn, '\\');
+        $shortClass = $lastSep !== false ? substr($fqcn, $lastSep + 1) : $fqcn;
+
+        $cleanMessage = $this->sanitizePublicMessage($slug, $exception->getMessage());
+        $relativeFile = $this->relativePluginPath($slug, $exception->getFile());
+
+        if ($relativeFile !== null) {
+            return sprintf('%s: %s (%s:%d)', $shortClass, $cleanMessage, $relativeFile, $exception->getLine());
+        }
+
+        return sprintf('%s: %s', $shortClass, $cleanMessage);
+    }
+
+    /**
+     * Format a fatal PHP shutdown error safely for UI (`last_error`).
+     */
+    private function formatPublicFatalError(string $slug, string $rawMessage, string $file, int $line): string
+    {
+        $cleanMessage = $this->sanitizePublicMessage($slug, $rawMessage);
+        $relativeFile = $this->relativePluginPath($slug, $file);
+
+        if ($relativeFile !== null) {
+            return sprintf('FatalError: %s (%s:%d)', $cleanMessage, $relativeFile, $line);
+        }
+
+        return sprintf('FatalError: %s', $cleanMessage);
+    }
+
+    /**
+     * Strip any server absolute paths from a message and truncate to 300 characters.
+     */
+    private function sanitizePublicMessage(string $slug, string $message): string
+    {
+        $sanitized = $message;
+        $prefixes = [];
+
+        $pluginDir = rtrim($this->pluginsPath, DIRECTORY_SEPARATOR . '/') . DIRECTORY_SEPARATOR . $slug;
+        foreach ([$pluginDir, $this->pluginsPath, $this->app->basePath()] as $candidate) {
+            $variants = [$candidate];
+            $real = realpath($candidate);
+            if ($real !== false && $real !== $candidate) {
+                $variants[] = $real;
+            }
+
+            foreach ($variants as $variant) {
+                $unix = rtrim(str_replace('\\', '/', $variant), '/');
+                if ($unix !== '') {
+                    $prefixes[] = $unix . '/';
+                    $prefixes[] = $unix;
+                }
+                $win = rtrim(str_replace('/', '\\', $variant), '\\');
+                if ($win !== '' && $win !== $unix) {
+                    $prefixes[] = $win . '\\';
+                    $prefixes[] = $win;
+                }
+            }
+        }
+
+        // Replace longest path prefixes first without altering PHP namespace backslashes
+        usort($prefixes, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+        foreach (array_unique($prefixes) as $prefix) {
+            if (str_contains($sanitized, $prefix)) {
+                $sanitized = str_replace($prefix, '', $sanitized);
+            }
+        }
+
+        $clean = trim((string) preg_replace('/\s+/', ' ', $sanitized));
+        if (mb_strlen($clean) > self::MAX_PUBLIC_ERROR_LENGTH) {
+            $clean = rtrim(mb_substr($clean, 0, self::MAX_PUBLIC_ERROR_LENGTH - 1)) . '…';
+        }
+
+        return $clean;
+    }
+
+    /**
+     * Return `$file` relative to the plugin directory (e.g. `src/Plugin.php`), or null if outside.
+     */
+    private function relativePluginPath(string $slug, string $file): ?string
+    {
+        $pluginDir = rtrim($this->pluginsPath, DIRECTORY_SEPARATOR . '/') . DIRECTORY_SEPARATOR . $slug;
+        $roots = [rtrim(str_replace('\\', '/', $pluginDir), '/')];
+        $realPluginDir = realpath($pluginDir);
+        if ($realPluginDir !== false) {
+            $realRoot = rtrim(str_replace('\\', '/', $realPluginDir), '/');
+            if (!in_array($realRoot, $roots, true)) {
+                $roots[] = $realRoot;
+            }
+        }
+
+        $fileCandidates = [str_replace('\\', '/', $file)];
+        $realFile = realpath($file);
+        if ($realFile !== false) {
+            $realUnix = str_replace('\\', '/', $realFile);
+            if (!in_array($realUnix, $fileCandidates, true)) {
+                $fileCandidates[] = $realUnix;
+            }
+        }
+
+        foreach ($fileCandidates as $candidate) {
+            foreach ($roots as $root) {
+                if ($root !== '' && str_starts_with($candidate, $root . '/')) {
+                    $relative = ltrim(substr($candidate, strlen($root) + 1), '/');
+
+                    return $relative !== '' ? $relative : null;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Maintain a single consolidated admin notice summarizing all errored plugins (C3).
+     */
+    private function syncErroredPluginsNotice(): void
+    {
+        if (!$this->repository->tableExists()) {
+            return;
+        }
+
+        $rows = $this->repository->all();
+        $erroredNames = [];
+
+        foreach ($rows as $slug => $row) {
+            if ($row['status'] !== PluginInfo::STATUS_ERRORED) {
+                continue;
+            }
+
+            $this->notices->remove($this->legacyErrorNoticeId($slug));
+            $erroredNames[] = $this->resolvePluginDisplayName($slug);
+        }
+
+        $count = count($erroredNames);
+        if ($count === 0) {
+            $this->notices->remove(self::ERRORED_SUMMARY_NOTICE_ID);
+
+            return;
+        }
+
+        if ($count === 1) {
+            $title = sprintf('Le plugin %s a été désactivé suite à une erreur', $erroredNames[0]);
+            $message = 'Consultez les détails et réessayez l\'activation depuis la page Plugins.';
+        } else {
+            $title = sprintf('%d plugins ont été désactivés suite à une erreur', $count);
+            $message = sprintf('Plugins concernés : %s.', implode(', ', $erroredNames));
+        }
+
         $this->notices->add(new Notice(
-            id: $this->errorNoticeId($slug),
+            id: self::ERRORED_SUMMARY_NOTICE_ID,
             type: Notice::TYPE_DANGER,
-            title: sprintf('Le plugin « %s » a été désactivé suite à une erreur', $slug),
-            message: mb_substr($errorMessage, 0, 280),
-            actionLabel: 'Réessayer l\'activation',
-            actionUrl: '/admin/plugins/' . rawurlencode($slug) . '/activate',
-            actionMethod: 'POST',
+            title: $title,
+            message: $message,
+            actionLabel: 'Voir les plugins en erreur',
+            actionUrl: '/admin/plugins?status=errored',
+            actionMethod: 'GET',
             capability: 'plugins.manage',
             dismissible: false,
             source: 'core.plugins',
         ));
-
-        $this->hooks->emit('plugin.failed', $slug, $phase, $errorMessage, $exception);
     }
 
-    private function errorNoticeId(string $slug): string
+    private function resolvePluginDisplayName(string $slug): string
+    {
+        $manifestPath = rtrim($this->pluginsPath, DIRECTORY_SEPARATOR . '/')
+            . DIRECTORY_SEPARATOR
+            . $slug
+            . DIRECTORY_SEPARATOR
+            . 'plugin.json';
+
+        if (is_file($manifestPath)) {
+            $result = $this->validator->validateFile($manifestPath, $slug);
+            if ($result['manifest'] !== null) {
+                return $result['manifest']->name;
+            }
+        }
+
+        return $slug;
+    }
+
+    private function legacyErrorNoticeId(string $slug): string
     {
         return 'plugin.errored.' . $slug;
     }

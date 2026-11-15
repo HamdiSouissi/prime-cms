@@ -165,7 +165,129 @@ final class PluginManagerTest extends TestCase
         $this->assertContains('boot-throw', $failedSlugs);
         $this->assertContains('syntax-error', $failedSlugs);
         $this->assertContains('listener-throw', $failedSlugs);
-        $this->assertGreaterThanOrEqual(3, count($this->notices->all()));
+
+        // C2: last_error uses short exception class and NEVER exposes absolute server path
+        $bootRow = $this->repository->find('boot-throw');
+        $this->assertNotNull($bootRow);
+        $bootError = (string) ($bootRow['last_error'] ?? '');
+        $this->assertStringStartsWith('RuntimeException:', $bootError);
+        $this->assertStringNotContainsString($this->tmpRoot, $bootError);
+        $this->assertStringNotContainsString(dirname(__DIR__, 3), $bootError);
+
+        // C2: full absolute path + stack trace ARE written in plugin.boot-throw daily log
+        $bootLogs = glob($this->tmpRoot . '/logs/plugin.boot-throw-*.log');
+        $this->assertIsArray($bootLogs);
+        $this->assertNotEmpty($bootLogs);
+        $bootLogContent = (string) file_get_contents($bootLogs[0]);
+        $this->assertStringContainsString('Plugin.php', $bootLogContent);
+        $this->assertStringContainsString('trace', $bootLogContent);
+
+        // C3: 4 errored plugins produce strictly ONE consolidated summary notice pointing to /admin/plugins?status=errored
+        $allNotices = $this->notices->all();
+        $this->assertCount(1, $allNotices);
+        $this->assertSame(PluginManager::ERRORED_SUMMARY_NOTICE_ID, $allNotices[0]->id);
+        $this->assertSame('4 plugins ont été désactivés suite à une erreur', $allNotices[0]->title);
+        $this->assertSame('Voir les plugins en erreur', $allNotices[0]->actionLabel);
+        $this->assertSame('/admin/plugins?status=errored', $allNotices[0]->actionUrl);
+    }
+
+    public function testSingleErroredPluginShowsNamedNoticeRelativePathTruncationAndHidesExternalPath(): void
+    {
+        // 1. Unique plugin throwing a >300-char message from inside its own src/Plugin.php
+        $suffix = bin2hex(random_bytes(4));
+        $ns = 'PathLeak' . ucfirst($suffix);
+        $inDir = $this->tmpRoot . '/plugins/path-leak';
+        mkdir($inDir . '/src', 0755, true);
+        file_put_contents($inDir . '/plugin.json', (string) json_encode([
+            'slug' => 'path-leak',
+            'name' => 'Path Leak Check',
+            'description' => 'Verifies plugin-relative file path and 300-char truncation.',
+            'version' => '1.0.0',
+            'author' => ['name' => 'Prime QA'],
+            'license' => 'proprietary',
+            'namespace' => $ns . '\\',
+            'main' => $ns . '\\Plugin',
+            'requires' => ['prime' => '^0.5', 'php' => '^8.2'],
+        ], JSON_UNESCAPED_SLASHES));
+        file_put_contents($inDir . '/src/Plugin.php', <<<PHP
+<?php
+declare(strict_types=1);
+namespace {$ns};
+use Prime\Plugins\AbstractPlugin;
+use Prime\Plugins\PluginContext;
+use RuntimeException;
+final class Plugin extends AbstractPlugin
+{
+    public function boot(PluginContext \$context): void
+    {
+        throw new RuntimeException('Erreur très longue : ' . str_repeat('X', 350));
+    }
+}
+PHP);
+
+        $this->repository->markActive('path-leak', '1.0.0', 'pl');
+        $manager = $this->makeManager();
+        $manager->bootActivePlugins();
+
+        $inRow = $this->repository->find('path-leak');
+        $this->assertNotNull($inRow);
+        $inError = (string) ($inRow['last_error'] ?? '');
+        $this->assertStringStartsWith('RuntimeException:', $inError);
+        $this->assertStringContainsString('(src/Plugin.php:11)', $inError);
+        $this->assertStringContainsString('…', $inError);
+        $this->assertStringNotContainsString($this->tmpRoot, $inError);
+        $this->assertStringNotContainsString(dirname(__DIR__, 3), $inError);
+
+        // Full server path + trace are logged exclusively in plugin.path-leak daily log
+        $logs = glob($this->tmpRoot . '/logs/plugin.path-leak-*.log');
+        $this->assertIsArray($logs);
+        $this->assertNotEmpty($logs);
+        $logContent = (string) file_get_contents($logs[0]);
+        $this->assertStringContainsString($this->tmpRoot, $logContent);
+        $this->assertStringContainsString('trace', $logContent);
+
+        // Single errored plugin gets a named notice
+        $singleNotices = $this->notices->all();
+        $this->assertCount(1, $singleNotices);
+        $this->assertSame('Le plugin Path Leak Check a été désactivé suite à une erreur', $singleNotices[0]->title);
+        $this->assertSame('/admin/plugins?status=errored', $singleNotices[0]->actionUrl);
+
+        // Uninstall path-leak -> notice disappears
+        $manager->uninstall('path-leak');
+        $this->assertSame([], $this->notices->all());
+
+        // 2. Plugin whose exception originates outside the plugin folder -> NO file path in last_error
+        $pluginDir = $this->tmpRoot . '/plugins/external-err';
+        mkdir($pluginDir . '/src', 0755, true);
+        file_put_contents($pluginDir . '/plugin.json', (string) json_encode([
+            'slug' => 'external-err',
+            'name' => 'External Error Plugin',
+            'description' => 'Throws an exception whose class file is outside the plugin folder.',
+            'version' => '1.0.0',
+            'author' => ['name' => 'Prime QA'],
+            'license' => 'proprietary',
+            'namespace' => 'ExternalErr\\',
+            'main' => 'ExternalErr\\Plugin',
+            'requires' => ['prime' => '^0.5', 'php' => '^8.2'],
+        ], JSON_UNESCAPED_SLASHES));
+
+        $this->repository->markActive('external-err', '1.0.0', 'ext');
+
+        $manager2 = $this->makeManager();
+        $manager2->bootActivePlugins();
+
+        $row = $this->repository->find('external-err');
+        $this->assertNotNull($row);
+        $this->assertSame(PluginInfo::STATUS_ERRORED, $row['status']);
+        $lastError = (string) ($row['last_error'] ?? '');
+        $this->assertStringStartsWith('PluginException:', $lastError);
+        $this->assertStringNotContainsString('PluginManager.php', $lastError);
+        $this->assertStringNotContainsString(dirname(__DIR__, 3), $lastError);
+
+        $allNotices = $this->notices->all();
+        $this->assertCount(1, $allNotices);
+        $this->assertSame('Le plugin External Error Plugin a été désactivé suite à une erreur', $allNotices[0]->title);
+        $this->assertSame('/admin/plugins?status=errored', $allNotices[0]->actionUrl);
     }
 
     public function testDependenciesTopologicalOrderCycleDetectionImpossiblePrimeAndSafeMode(): void
@@ -235,7 +357,7 @@ final class PluginManagerTest extends TestCase
 
     private function makeManager(bool $safeMode = false): PluginManager
     {
-        $app = new Application(dirname(__DIR__, 3), registerErrorHandler: false);
+        $app = new Application(dirname(__DIR__, 3), loadEnv: false, registerErrorHandler: false);
         $autoloader = new Autoloader();
         $autoloader->register();
 

@@ -222,7 +222,7 @@ final class Plugin extends AbstractPlugin
 }
 PHP);
 
-        $app = new Application(dirname(__DIR__, 2), registerErrorHandler: false);
+        $app = new Application(dirname(__DIR__, 2), loadEnv: false, registerErrorHandler: false);
         $hooks = new Hooks();
         $settings = new Settings($this->connection);
         $repository = new PluginRepository($this->connection, $schema);

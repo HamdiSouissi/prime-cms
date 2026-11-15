@@ -26,6 +26,7 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Http\Session;
 use Prime\Kernel\ServiceProvider;
+use Prime\Log\Logger;
 use Prime\Plugins\PluginInstaller;
 use Prime\Plugins\PluginManager;
 use Prime\Security\Hasher;
@@ -58,8 +59,17 @@ final class AdminServiceProvider extends ServiceProvider
             /** @var Session $session */
             $session = $this->app->get(Session::class);
             $notices = $this->app->container()->has(Notices::class) ? $this->app->get(Notices::class) : null;
+            $logger = $this->app->container()->has(Logger::class) ? $this->app->get(Logger::class) : null;
 
-            return new AdminContext($this->app, $menu, $hooks, $auth, $session, $notices instanceof Notices ? $notices : null);
+            return new AdminContext(
+                $this->app,
+                $menu,
+                $hooks,
+                $auth,
+                $session,
+                $notices instanceof Notices ? $notices : null,
+                $logger instanceof Logger ? $logger : null,
+            );
         });
 
         $container->singleton(NoticeController::class, function (): NoticeController {
@@ -90,6 +100,8 @@ final class AdminServiceProvider extends ServiceProvider
         });
 
         $container->singleton(DashboardController::class, function (): DashboardController {
+            $logger = $this->app->container()->has(Logger::class) ? $this->app->get(Logger::class) : null;
+
             return new DashboardController(
                 app: $this->app,
                 view: $this->app->get(View::class),
@@ -97,6 +109,7 @@ final class AdminServiceProvider extends ServiceProvider
                 demo: $this->app->get(DemoDashboardData::class),
                 auth: $this->app->get(Auth::class),
                 hooks: $this->app->get(Hooks::class),
+                logger: $logger instanceof Logger ? $logger : null,
             );
         });
 

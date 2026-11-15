@@ -214,6 +214,55 @@ final class Hooks
     }
 
     /**
+     * Apply all registered filters sequentially while validating/normalizing each filter's
+     * return value immediately with plugin-owner attribution.
+     *
+     * The `$validator` receives `($candidateValue, $previousValue, $owner, $hookName)` and
+     * must return the normalized safe value to pass to the next filter in the chain.
+     *
+     * @param callable(mixed, mixed, ?string, string): mixed $validator
+     */
+    public function applyValidated(string $name, mixed $value, callable $validator, mixed ...$args): mixed
+    {
+        $this->assertValidName($name);
+
+        $this->firedCounts[$name] = ($this->firedCounts[$name] ?? 0) + 1;
+
+        if (!isset($this->filters[$name]) || $this->filters[$name] === []) {
+            return $value;
+        }
+
+        $snapshot = $this->sortedSnapshot($this->filters[$name]);
+
+        $this->executionStack[] = $name;
+
+        try {
+            foreach ($snapshot as $entry) {
+                $owner = $entry['owner'];
+                $previousValue = $value;
+
+                if ($owner === null) {
+                    $candidate = ($entry['callback'])($value, ...$args);
+                } else {
+                    try {
+                        $candidate = ($entry['callback'])($value, ...$args);
+                    } catch (Throwable $exception) {
+                        $value = $previousValue;
+                        $this->handleOwnedFailure($owner, $name, $exception);
+                        continue;
+                    }
+                }
+
+                $value = $validator($candidate, $previousValue, $owner, $name);
+            }
+        } finally {
+            array_pop($this->executionStack);
+        }
+
+        return $value;
+    }
+
+    /**
      * Remove one callback or all callbacks registered under a hook name.
      */
     public function off(string $name, ?callable $callback = null): void

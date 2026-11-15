@@ -7,6 +7,7 @@ namespace Prime\Admin;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
+use Prime\Admin\Data\FilterValueHelper;
 
 /**
  * Immutable value object representing a persistent admin dashboard notice.
@@ -81,12 +82,18 @@ final readonly class Notice
     }
 
     /**
-     * Hydrate a Notice from stored JSON data (returns null if malformed).
-     *
-     * @param array<string, mixed> $data
+     * Hydrate and validate a Notice from stored JSON or filter data (returns null if malformed).
      */
-    public static function fromArray(array $data): ?self
+    public static function fromArray(mixed $data): ?self
     {
+        if ($data instanceof self) {
+            return $data;
+        }
+
+        if (!is_array($data)) {
+            return null;
+        }
+
         $id = $data['id'] ?? null;
         $type = $data['type'] ?? null;
         $title = $data['title'] ?? null;
@@ -94,38 +101,53 @@ final readonly class Notice
 
         if (
             !is_string($id) || !is_string($type) || !is_string($title) || !is_string($message)
+            || trim($title) === '' || trim($message) === ''
             || !in_array($type, self::ALLOWED_TYPES, true)
             || preg_match('/^[a-zA-Z0-9._-]{1,120}$/', $id) !== 1
         ) {
             return null;
         }
 
-        $actionLabel = isset($data['action_label']) && is_string($data['action_label']) && $data['action_label'] !== ''
-            ? $data['action_label']
-            : null;
-        $actionUrl = isset($data['action_url']) && is_string($data['action_url']) && $data['action_url'] !== ''
-            ? $data['action_url']
-            : null;
-        $actionMethod = isset($data['action_method']) && is_string($data['action_method'])
-            && in_array(strtoupper($data['action_method']), self::ALLOWED_METHODS, true)
-            ? strtoupper($data['action_method'])
-            : 'GET';
-        $capability = isset($data['capability']) && is_string($data['capability']) && $data['capability'] !== ''
-            ? $data['capability']
+        $actionLabel = null;
+        if (array_key_exists('action_label', $data) && $data['action_label'] !== null) {
+            if (!is_string($data['action_label'])) {
+                return null;
+            }
+            $actionLabel = trim($data['action_label']) !== '' ? trim($data['action_label']) : null;
+        }
+
+        $actionUrl = null;
+        if (array_key_exists('action_url', $data) && $data['action_url'] !== null && $data['action_url'] !== '') {
+            if (!is_string($data['action_url']) || !FilterValueHelper::isSafeUrl($data['action_url'])) {
+                return null;
+            }
+            $actionUrl = trim($data['action_url']);
+        }
+
+        $actionMethod = 'GET';
+        if (array_key_exists('action_method', $data) && $data['action_method'] !== null && $data['action_method'] !== '') {
+            if (!is_string($data['action_method']) || !in_array(strtoupper($data['action_method']), self::ALLOWED_METHODS, true)) {
+                return null;
+            }
+            $actionMethod = strtoupper($data['action_method']);
+        }
+
+        $capability = isset($data['capability']) && is_string($data['capability']) && trim($data['capability']) !== ''
+            ? trim($data['capability'])
             : null;
         $dismissible = array_key_exists('dismissible', $data) ? (bool) $data['dismissible'] : true;
-        $source = isset($data['source']) && is_string($data['source']) && $data['source'] !== ''
-            ? $data['source']
+        $source = isset($data['source']) && is_string($data['source']) && trim($data['source']) !== ''
+            ? trim($data['source'])
             : null;
-        $createdAt = isset($data['created_at']) && is_string($data['created_at']) && $data['created_at'] !== ''
-            ? $data['created_at']
+        $createdAt = isset($data['created_at']) && is_string($data['created_at']) && trim($data['created_at']) !== ''
+            ? trim($data['created_at'])
             : null;
 
         return new self(
             id: $id,
             type: $type,
-            title: $title,
-            message: $message,
+            title: trim($title),
+            message: trim($message),
             actionLabel: $actionLabel,
             actionUrl: $actionUrl,
             actionMethod: $actionMethod,

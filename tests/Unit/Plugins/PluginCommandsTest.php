@@ -66,7 +66,7 @@ final class PluginCommandsTest extends TestCase
         $autoloader = new Autoloader();
         $autoloader->register();
 
-        $this->app = new Application(dirname(__DIR__, 3), registerErrorHandler: false);
+        $this->app = new Application(dirname(__DIR__, 3), loadEnv: false, registerErrorHandler: false);
 
         $this->manager = new PluginManager(
             app: $this->app,
@@ -106,11 +106,28 @@ final class PluginCommandsTest extends TestCase
 
     public function testMakePluginAndFullCliLifecycle(): void
     {
-        // 1. make:plugin scaffolds a valid activatable plugin
+        // 1. make:plugin scaffolds a valid activatable plugin with default proprietary license
         $outMake = new ConsoleOutput(buffered: true);
         $makeCmd = new MakePluginCommand($this->app, $this->tmpRoot . '/plugins');
         $this->assertSame(CommandInterface::SUCCESS, $makeCmd->execute(['sample-addon', '--name=Sample Addon'], $outMake));
-        $this->assertTrue(is_file($this->tmpRoot . '/plugins/sample-addon/plugin.json'));
+        $manifestPath = $this->tmpRoot . '/plugins/sample-addon/plugin.json';
+        $this->assertTrue(is_file($manifestPath));
+        /** @var array<string, mixed> $decodedManifest */
+        $decodedManifest = json_decode((string) file_get_contents($manifestPath), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('proprietary', $decodedManifest['license']);
+
+        // --license= overrides the default license
+        $outMit = new ConsoleOutput(buffered: true);
+        $this->assertSame(CommandInterface::SUCCESS, $makeCmd->execute(['mit-addon', '--license=MIT'], $outMit));
+        /** @var array<string, mixed> $mitManifest */
+        $mitManifest = json_decode((string) file_get_contents($this->tmpRoot . '/plugins/mit-addon/plugin.json'), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('MIT', $mitManifest['license']);
+
+        // Official hello-prime also defaults to proprietary license
+        /** @var array<string, mixed> $helloManifest */
+        $helloManifest = json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/content/plugins/hello-prime/plugin.json'), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('proprietary', $helloManifest['license']);
+
         file_put_contents($this->tmpRoot . '/plugins/sample-addon/assets/style.css', 'body{}');
 
         // 2. plugin:list --json shows sample-addon inactive

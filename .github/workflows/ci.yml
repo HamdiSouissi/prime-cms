@@ -211,8 +211,9 @@ jobs:
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/profile | grep -q "Mon profil"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/styleguide | grep -q "Design System Prime CMS"
 
-          # Phase 5 plugin smoke test: activate hello-prime via CLI, verify public /hello-prime and admin page, then deactivate
+          # Phase 5 plugin smoke test: activate hello-prime via CLI, verify /admin dashboard shortcut, public /hello-prime and admin page, then deactivate
           docker compose exec -T app php bin/prime plugin:activate hello-prime | grep -q "activé"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Hello Prime"
           curl -sf http://localhost:8080/hello-prime | grep -q "Bonjour depuis Hello Prime"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/hello-prime | grep -q "Hello Prime"
           docker compose exec -T app php bin/prime plugin:deactivate hello-prime | grep -q "désactivé"

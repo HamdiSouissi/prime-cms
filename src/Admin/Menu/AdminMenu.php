@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\Admin\Menu;
 
+use Prime\Admin\Data\FilterValueHelper;
 use Prime\Admin\Exception\InvalidMenuItemException;
 use Prime\Http\Request;
 
@@ -65,6 +66,40 @@ final class AdminMenu
         ];
 
         return $this;
+    }
+
+    /**
+     * Remove any top-level or submenu entries carrying unsafe URLs or invalid icon names,
+     * returning diagnostic messages for each discarded item.
+     *
+     * @return list<string>
+     */
+    public function sanitize(): array
+    {
+        $issues = [];
+
+        foreach ($this->items as $id => $entry) {
+            $item = $entry['item'];
+            if (!FilterValueHelper::isSafeUrl($item->url) || !FilterValueHelper::isValidIcon($item->icon)) {
+                unset($this->items[$id], $this->children[$id]);
+                $issues[] = sprintf('Entrée de menu "%s" ignorée (URL ou icône invalide).', $id);
+                continue;
+            }
+
+            if (!isset($this->children[$id])) {
+                continue;
+            }
+
+            foreach ($this->children[$id] as $childId => $childEntry) {
+                $child = $childEntry['item'];
+                if (!FilterValueHelper::isSafeUrl($child->url) || !FilterValueHelper::isValidIcon($child->icon)) {
+                    unset($this->children[$id][$childId]);
+                    $issues[] = sprintf('Sous-menu "%s" ignoré (URL ou icône invalide).', $childId);
+                }
+            }
+        }
+
+        return $issues;
     }
 
     /**

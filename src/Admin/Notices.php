@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin;
 
 use Prime\Auth\User;
+use Prime\Log\Logger;
 use Prime\Settings\Settings;
 use Throwable;
 
@@ -21,8 +22,10 @@ final class Notices
     public const SETTINGS_KEY = 'admin.notices';
     private const DISMISSED_PREFIX = 'admin.notices.dismissed.';
 
-    public function __construct(private readonly ?Settings $settings = null)
-    {
+    public function __construct(
+        private readonly ?Settings $settings = null,
+        private readonly ?Logger $logger = null,
+    ) {
     }
 
     /**
@@ -184,14 +187,15 @@ final class Notices
         }
 
         $map = [];
-        foreach ($raw as $item) {
-            if (!is_array($item)) {
+        foreach ($raw as $index => $item) {
+            $notice = Notice::fromArray($item);
+            if ($notice === null) {
+                $this->logger?->warning('Notification admin invalide ignorée lors du chargement.', [
+                    'index' => $index,
+                ]);
                 continue;
             }
-            $notice = Notice::fromArray($item);
-            if ($notice !== null) {
-                $map[$notice->id] = $notice;
-            }
+            $map[$notice->id] = $notice;
         }
 
         return $map;
