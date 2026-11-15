@@ -1,0 +1,39 @@
+/* Page header: breadcrumb, title, subtitle, primary/secondary actions */
+
+.pc-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.pc-page-header__main {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.pc-page-header__heading {
+  min-width: 0;
+}
+
+.pc-page-header__title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text-strong);
+}
+
+.pc-page-header__subtitle {
+  margin-top: var(--space-1);
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.pc-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}

@@ -1,0 +1,50 @@
+/* Accessible Tabs (ARIA tablist, tab, tabpanel) */
+
+.pc-tabs__list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+
+.pc-tabs__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.pc-tabs__tab:hover {
+  color: var(--color-text-strong);
+}
+
+.pc-tabs__tab[aria-selected="true"] {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.pc-tabs__tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background-color: var(--brand-500);
+  border-radius: var(--radius-full);
+}
+
+.pc-tabs__panel {
+  padding-top: var(--space-4);
+}
+
+.pc-tabs__panel[hidden] {
+  display: none;
+}

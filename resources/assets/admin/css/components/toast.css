@@ -1,0 +1,74 @@
+/* Toast notifications stack (top-right, aria-live="polite") */
+
+.pc-toast-stack {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.pc-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-dropdown);
+  color: var(--color-text-strong);
+  font-size: var(--text-sm);
+}
+
+.pc-toast--success { border-left-color: var(--success); }
+.pc-toast--warning { border-left-color: var(--amber); }
+.pc-toast--danger  { border-left-color: var(--danger); }
+.pc-toast--info    { border-left-color: var(--sky); }
+
+.pc-toast__icon {
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.pc-toast--success .pc-toast__icon { color: var(--success-ink); }
+.pc-toast--warning .pc-toast__icon { color: var(--amber-ink); }
+.pc-toast--danger .pc-toast__icon  { color: var(--danger-ink); }
+.pc-toast--info .pc-toast__icon    { color: var(--sky-ink); }
+
+.pc-toast__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pc-toast__title {
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.pc-toast__message {
+  color: var(--color-text);
+  margin-top: 2px;
+}
+
+.pc-toast__close {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pc-toast__close:hover {
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-strong);
+}

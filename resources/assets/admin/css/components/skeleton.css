@@ -1,0 +1,39 @@
+/* Skeleton loading placeholders */
+
+.pc-skeleton {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%);
+  background-size: 200% 100%;
+  animation: pc-shimmer 1.4s ease-in-out infinite;
+}
+
+.pc-skeleton--line {
+  height: 14px;
+  width: 100%;
+}
+
+.pc-skeleton--title {
+  height: 20px;
+  width: 55%;
+}
+
+.pc-skeleton--short {
+  width: 35%;
+}
+
+.pc-skeleton--circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+}
+
+.pc-skeleton--card {
+  height: 120px;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes pc-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

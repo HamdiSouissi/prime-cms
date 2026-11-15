@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Console;
 
 use Prime\Console\Commands\AboutCommand;
+use Prime\Console\Commands\AssetsBuildCommand;
 use Prime\Console\Commands\ListCommand;
 use Prime\Console\Commands\RoutesCommand;
 use Prime\Hooks\Hooks;
@@ -93,6 +94,7 @@ final class ConsoleApplication
 
         $this->register(new ListCommand($this));
         $this->register(new AboutCommand($this->app));
+        $this->register(new AssetsBuildCommand($this->app));
         $this->register(new RoutesCommand($router));
 
         if ($this->app->container()->has(Hooks::class)) {

@@ -1,0 +1,42 @@
+/* Empty state block (icon tile, concise title, helper text, optional primary CTA) */
+
+.pc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+  gap: var(--space-3);
+}
+
+.pc-empty__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-tile);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-empty__title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.pc-empty__description {
+  max-width: 440px;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.pc-empty__actions {
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}

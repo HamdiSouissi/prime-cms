@@ -1,0 +1,22 @@
+/* Accessible floating tooltip (hover + focus, JS-positioned) */
+
+.pc-tooltip-popup {
+  position: fixed;
+  z-index: var(--z-tooltip);
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: var(--shadow-dropdown);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.pc-tooltip-popup.is-visible {
+  opacity: 1;
+}
