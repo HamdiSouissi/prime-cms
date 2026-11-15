@@ -104,7 +104,20 @@ jobs:
           PRIME_TEST_DB_DATABASE: prime_test
           PRIME_TEST_DB_USERNAME: root
           PRIME_TEST_DB_PASSWORD: root
-        run: vendor/bin/phpunit --group database --fail-on-skipped --testdox
+        run: vendor/bin/phpunit --group database --fail-on-skipped --testdox --log-junit /tmp/db-junit.xml
+
+      - name: Report failed database tests as annotations
+        if: failure()
+        run: |
+          php -r '
+          if (!is_file("/tmp/db-junit.xml")) { echo "::error::No JUnit report produced\n"; exit(0); }
+          $xml = simplexml_load_file("/tmp/db-junit.xml");
+          foreach ($xml->xpath("//testcase[failure or error]") as $tc) {
+              $msg = trim((string) ($tc->failure ?? $tc->error));
+              $msg = str_replace(["\r", "\n"], ["", " | "], substr($msg, 0, 1200));
+              echo "::error title=" . $tc["class"] . "::" . $tc["name"] . "::" . $msg . "\n";
+          }
+          '
 
   docker:
     name: Docker Compose install smoke test
@@ -138,6 +151,7 @@ jobs:
           curl -sI http://localhost:8080/install | grep -iq "X-Content-Type-Options: nosniff"
 
           # Execute full non-interactive CLI installation against real MySQL 8.0 container
+          # (`--skip-env` preserves docker-compose environment injection and avoids root-owned `.env` on the runner host)
           docker compose exec -T app php bin/prime install \
             --db-host=db \
             --db-port=3306 \
@@ -151,7 +165,8 @@ jobs:
             --timezone=Europe/Paris \
             --admin-name="Admin Docker" \
             --admin-email=admin@prime-docker.test \
-            --admin-password="Ciel!Mandarine#8429"
+            --admin-password="Ciel!Mandarine#8429" \
+            --skip-env
 
           # Verify CLI tools against live DB
           docker compose exec -T app php bin/prime db:check | grep -q "Connexion à la base de données réussie"
