@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Prime CMS">
-  <rect x="4" y="4" width="120" height="120" rx="30" ry="30" fill="#ED6647"/>
-  <g fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M 30 88 V 40 H 44 C 52.5 40 57.5 45 57.5 53 C 57.5 61 52.5 66 44 66 H 30"/>
-    <path d="M 97 48 C 93.5 42.8 88.5 40 82 40 C 73 40 67 49 67 64 C 67 79 73 88 82 88 C 88.5 88 93.5 85.2 97 80"/>
-  </g>
-</svg>

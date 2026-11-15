@@ -58,6 +58,6 @@ final class ApplicationTest extends TestCase
         $this->assertInstanceOf(Logger::class, logger());
         $this->assertSame('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;', e('<script>alert("x")</script>'));
         $this->assertStringEndsWith('/health', url('health'));
-        $this->assertStringContainsString('/assets/brand/logo.svg?v=', asset('brand/logo.svg'));
+        $this->assertStringContainsString('/assets/brand/logo-128.png?v=', asset('brand/logo-128.png'));
     }
 }

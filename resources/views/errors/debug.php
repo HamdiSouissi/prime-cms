@@ -4,9 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Erreur <?= $this->e($status ?? 500) ?> — <?= $this->e($exceptionClass ?? 'Exception') ?> · Prime CMS</title>
+  <link rel="preload" href="<?= $this->e(asset('fonts/inter/InterVariable.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="<?= $this->e(asset('brand/favicon.ico')) ?>" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="<?= $this->e(asset('brand/favicon-32.png')) ?>">
   <link rel="apple-touch-icon" sizes="180x180" href="<?= $this->e(asset('brand/apple-touch-icon.png')) ?>">
   <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("<?= $this->e(asset('fonts/inter/InterVariable.woff2')) ?>") format("woff2");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Plus Jakarta Sans";
+      src: url("<?= $this->e(asset('fonts/plus-jakarta-sans/PlusJakartaSans-Variable.woff2')) ?>") format("woff2");
+      font-weight: 200 800;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("<?= $this->e(asset('fonts/jetbrains-mono/JetBrainsMono-Variable.woff2')) ?>") format("woff2");
+      font-weight: 100 800;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
       --brand-50: #FFF4F1;
       --brand-100: #FDE3DC;
@@ -24,8 +50,9 @@
       --radius-badge: 6px;
       --radius-card: 14px;
       --shadow-card: 0 1px 2px rgba(26, 29, 41, .06), 0 4px 16px rgba(26, 29, 41, .06);
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
 
     *, *::before, *::after {
@@ -111,6 +138,7 @@
 
     .dbg-message {
       margin: 0 0 12px;
+      font-family: var(--font-display);
       font-size: 1.55rem;
       font-weight: 700;
       color: #FFFFFF;
@@ -268,7 +296,10 @@
     <div class="dbg-container">
       <div class="dbg-top">
         <div class="dbg-brand">
-          <img src="<?= $this->e(asset('brand/logo.svg')) ?>" alt="Prime CMS">
+          <picture>
+            <source srcset="<?= $this->e(asset('brand/logo-64.webp')) ?>" type="image/webp">
+            <img src="<?= $this->e(asset('brand/logo-64.png')) ?>" alt="Prime CMS" width="28" height="28">
+          </picture>
           <span>Prime CMS · Mode développement</span>
         </div>
         <div>
