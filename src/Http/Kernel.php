@@ -114,7 +114,7 @@ final class Kernel
         $resolved = $this->container->make($middleware);
         if (!$resolved instanceof MiddlewareInterface) {
             throw new RuntimeException(
-                sprintf('Middleware [%s] must implement %s.', $middleware, MiddlewareInterface::class)
+                sprintf('Middleware [%s] must implement %s.', $middleware, MiddlewareInterface::class),
             );
         }
 
@@ -149,7 +149,7 @@ final class Kernel
 
         if (!$result instanceof Response) {
             throw new RuntimeException(
-                sprintf('Route handler must return an instance of %s.', Response::class)
+                sprintf('Route handler must return an instance of %s.', Response::class),
             );
         }
 

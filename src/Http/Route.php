@@ -180,7 +180,7 @@ final class Route
                 }
 
                 throw new InvalidArgumentException(
-                    sprintf('Missing required parameter [%s] for route [%s].', $name, $this->name ?? $this->path)
+                    sprintf('Missing required parameter [%s] for route [%s].', $name, $this->name ?? $this->path),
                 );
             }
 
@@ -189,7 +189,7 @@ final class Route
 
             if (preg_match('#^' . $token['constraint'] . '$#', $value) !== 1) {
                 throw new InvalidArgumentException(
-                    sprintf('Parameter [%s] value [%s] does not match constraint [%s].', $name, $value, $token['constraint'])
+                    sprintf('Parameter [%s] value [%s] does not match constraint [%s].', $name, $value, $token['constraint']),
                 );
             }
 

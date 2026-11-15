@@ -218,7 +218,7 @@ final class Hooks
     {
         if (preg_match(self::NAME_PATTERN, $name) !== 1) {
             throw new InvalidHookNameException(
-                sprintf('Invalid hook name [%s]. Hook names must use lowercase dot notation (e.g. "app.booted").', $name)
+                sprintf('Invalid hook name [%s]. Hook names must use lowercase dot notation (e.g. "app.booted").', $name),
             );
         }
     }

@@ -124,7 +124,7 @@ final class Container
             $chain[] = $id;
 
             throw new CircularDependencyException(
-                'Circular dependency detected: ' . implode(' -> ', $chain)
+                'Circular dependency detected: ' . implode(' -> ', $chain),
             );
         }
 
@@ -210,7 +210,7 @@ final class Container
             }
 
             throw new ContainerException(
-                sprintf('Unable to resolve class dependency [%s] for parameter [$%s] in [%s].', $dependency, $name, $class)
+                sprintf('Unable to resolve class dependency [%s] for parameter [$%s] in [%s].', $dependency, $name, $class),
             );
         }
 
@@ -219,7 +219,7 @@ final class Container
         }
 
         throw new ContainerException(
-            sprintf('Unable to resolve parameter [$%s] in [%s].', $name, $class)
+            sprintf('Unable to resolve parameter [$%s] in [%s].', $name, $class),
         );
     }
 }
