@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Prime\Kernel;
 
 use Prime\Hooks\Hooks;
+use Prime\Log\Logger;
+use Prime\View\View;
 use RuntimeException;
 
 /**
@@ -29,8 +31,12 @@ final class Application
 
     private bool $booted = false;
 
-    public function __construct(string $basePath, ?Container $container = null, bool $loadEnv = true)
-    {
+    public function __construct(
+        string $basePath,
+        ?Container $container = null,
+        bool $loadEnv = true,
+        bool $registerErrorHandler = false,
+    ) {
         $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR . '/');
         $this->container = $container ?? new Container();
 
@@ -51,6 +57,32 @@ final class Application
         $this->container->instance(Config::class, $this->config);
 
         self::$instance = $this;
+
+        if ($registerErrorHandler) {
+            $this->registerErrorHandler();
+        }
+    }
+
+    /**
+     * Instantiate and register the global ErrorHandler with a base Logger and View
+     * so failures during provider registration and booting are caught and logged.
+     */
+    public function registerErrorHandler(): ErrorHandler
+    {
+        $logPath = (string) $this->config->get('logging.path', $this->storagePath('logs'));
+        $level = (string) $this->config->get('logging.level', Logger::DEBUG);
+        $prefix = (string) $this->config->get('logging.prefix', 'prime');
+
+        $logger = new Logger($logPath, $level, $prefix);
+        $view = new View($this->resourcesPath('views'));
+        $errorHandler = new ErrorHandler($logger, $view, $this->isDebug());
+
+        $this->container->instance(Logger::class, $logger);
+        $this->container->instance(ErrorHandler::class, $errorHandler);
+
+        $errorHandler->register();
+
+        return $errorHandler;
     }
 
     public static function setInstance(?self $app): void

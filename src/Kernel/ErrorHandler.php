@@ -30,11 +30,25 @@ final class ErrorHandler
 
     private bool $shutdownHookInstalled = false;
 
+    private ?int $previousErrorReporting = null;
+
+    private ?string $previousDisplayErrors = null;
+
     public function __construct(
         private readonly Logger $logger,
-        private readonly View $view,
+        private View $view,
         private bool $debug = false,
     ) {
+    }
+
+    public function isRegistered(): bool
+    {
+        return $this->registered;
+    }
+
+    public function setView(View $view): void
+    {
+        $this->view = $view;
     }
 
     public function isDebug(): bool
@@ -56,8 +70,9 @@ final class ErrorHandler
             return;
         }
 
-        error_reporting(E_ALL);
-        ini_set('display_errors', '0');
+        $this->previousErrorReporting = error_reporting(E_ALL);
+        $previousDisplay = ini_set('display_errors', '0');
+        $this->previousDisplayErrors = $previousDisplay === false ? null : $previousDisplay;
 
         set_error_handler([$this, 'handlePhpError']);
         set_exception_handler([$this, 'handleUncaughtException']);
@@ -81,6 +96,17 @@ final class ErrorHandler
 
         restore_error_handler();
         restore_exception_handler();
+
+        if ($this->previousErrorReporting !== null) {
+            error_reporting($this->previousErrorReporting);
+            $this->previousErrorReporting = null;
+        }
+
+        if ($this->previousDisplayErrors !== null) {
+            ini_set('display_errors', $this->previousDisplayErrors);
+            $this->previousDisplayErrors = null;
+        }
+
         $this->registered = false;
     }
 

@@ -12,6 +12,7 @@ use Prime\Http\Response;
 use Prime\Http\Router;
 use Prime\Kernel\Application;
 use Prime\Kernel\ErrorHandler;
+use Prime\Kernel\ServiceProvider;
 use Prime\Log\Logger;
 use RuntimeException;
 
@@ -194,6 +195,120 @@ final class HttpKernelTest extends TestCase
         $response = $kernel->handle(Request::create('GET', '/health'));
 
         $this->assertSame('yes', $response->header('X-Prime-Filtered'));
+    }
+
+    public function testErrorHandlerRegistersBeforeBootAndHandlesProviderBootFailureInProduction(): void
+    {
+        $earlyApp = new Application(dirname(__DIR__, 2), loadEnv: false, registerErrorHandler: true);
+        /** @var ErrorHandler $earlyHandler */
+        $earlyHandler = $earlyApp->get(ErrorHandler::class);
+
+        try {
+            $this->assertTrue($earlyHandler->isRegistered());
+            $this->assertFalse($earlyApp->isBooted());
+
+            $activeHandler = set_exception_handler(null);
+            restore_exception_handler();
+            $this->assertSame([$earlyHandler, 'handleUncaughtException'], $activeHandler);
+        } finally {
+            $earlyHandler->unregister();
+        }
+
+        $app = new Application(dirname(__DIR__, 2), loadEnv: false);
+        $app->config()->set('app.debug', false);
+        $app->config()->set('logging.path', $this->tempLogDir);
+
+        $failingProvider = new class ($app) extends ServiceProvider {
+            public function register(): void
+            {
+            }
+
+            public function boot(): void
+            {
+                throw new RuntimeException('Provider boot production failure');
+            }
+        };
+
+        $app->config()->set('app.providers', [$failingProvider::class]);
+
+        $errorHandler = $app->registerErrorHandler();
+
+        try {
+            $caught = null;
+
+            try {
+                $app->boot();
+            } catch (RuntimeException $e) {
+                $caught = $e;
+            }
+
+            $this->assertInstanceOf(RuntimeException::class, $caught);
+            $response = $errorHandler->handleException($caught, Request::create('GET', '/'));
+
+            $this->assertSame(500, $response->status());
+            $this->assertStringContainsString('Une erreur est survenue', $response->body());
+            $this->assertStringNotContainsString('Provider boot production failure', $response->body());
+
+            /** @var Logger $logger */
+            $logger = $app->get(Logger::class);
+            $this->assertFileExists($logger->logFilePath());
+            $this->assertStringContainsString(
+                'Provider boot production failure',
+                (string) file_get_contents($logger->logFilePath()),
+            );
+        } finally {
+            $errorHandler->unregister();
+        }
+    }
+
+    public function testProviderBootFailureRendersDebugPageAndLogsWhenDebugIsEnabled(): void
+    {
+        $app = new Application(dirname(__DIR__, 2), loadEnv: false);
+        $app->config()->set('app.debug', true);
+        $app->config()->set('logging.path', $this->tempLogDir);
+
+        $failingProvider = new class ($app) extends ServiceProvider {
+            public function register(): void
+            {
+            }
+
+            public function boot(): void
+            {
+                throw new RuntimeException('Provider boot debug failure');
+            }
+        };
+
+        $app->config()->set('app.providers', [$failingProvider::class]);
+
+        $errorHandler = $app->registerErrorHandler();
+
+        try {
+            $caught = null;
+
+            try {
+                $app->boot();
+            } catch (RuntimeException $e) {
+                $caught = $e;
+            }
+
+            $this->assertInstanceOf(RuntimeException::class, $caught);
+            $response = $errorHandler->handleException($caught, Request::create('GET', '/'));
+
+            $this->assertSame(500, $response->status());
+            $this->assertStringContainsString('RuntimeException', $response->body());
+            $this->assertStringContainsString('Provider boot debug failure', $response->body());
+            $this->assertStringContainsString('Extrait du code source', $response->body());
+
+            /** @var Logger $logger */
+            $logger = $app->get(Logger::class);
+            $this->assertFileExists($logger->logFilePath());
+            $this->assertStringContainsString(
+                'Provider boot debug failure',
+                (string) file_get_contents($logger->logFilePath()),
+            );
+        } finally {
+            $errorHandler->unregister();
+        }
     }
 
     private function createBootedApp(bool $debug = false): Application
