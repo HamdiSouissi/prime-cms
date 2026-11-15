@@ -6,11 +6,25 @@ namespace Prime\Console;
 
 use Prime\Console\Commands\AboutCommand;
 use Prime\Console\Commands\AssetsBuildCommand;
+use Prime\Console\Commands\DbCheckCommand;
+use Prime\Console\Commands\InstallCommand;
 use Prime\Console\Commands\ListCommand;
+use Prime\Console\Commands\MakeMigrationCommand;
+use Prime\Console\Commands\MigrateCommand;
+use Prime\Console\Commands\MigrateFreshCommand;
+use Prime\Console\Commands\MigrateResetCommand;
+use Prime\Console\Commands\MigrateRollbackCommand;
+use Prime\Console\Commands\MigrateStatusCommand;
 use Prime\Console\Commands\RoutesCommand;
+use Prime\Console\Commands\SettingsGetCommand;
+use Prime\Console\Commands\SettingsSetCommand;
+use Prime\Database\Connection;
+use Prime\Database\Migrations\Migrator;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
+use Prime\Install\Installer;
 use Prime\Kernel\Application;
+use Prime\Settings\Settings;
 
 /**
  * Extensible CLI runner for Prime CMS (`bin/prime`).
@@ -96,6 +110,36 @@ final class ConsoleApplication
         $this->register(new AboutCommand($this->app));
         $this->register(new AssetsBuildCommand($this->app));
         $this->register(new RoutesCommand($router));
+
+        if ($this->app->container()->has(Connection::class)) {
+            /** @var Connection $connection */
+            $connection = $this->app->get(Connection::class);
+            /** @var Migrator $migrator */
+            $migrator = $this->app->get(Migrator::class);
+
+            $this->register(new DbCheckCommand($connection));
+            $this->register(new MigrateCommand($migrator));
+            $this->register(new MigrateRollbackCommand($migrator));
+            $this->register(new MigrateStatusCommand($migrator));
+            $this->register(new MigrateResetCommand($migrator));
+            $this->register(new MigrateFreshCommand($this->app, $connection, $migrator));
+            $this->register(new MakeMigrationCommand($this->app));
+        }
+
+        if ($this->app->container()->has(Settings::class)) {
+            /** @var Settings $settings */
+            $settings = $this->app->get(Settings::class);
+
+            $this->register(new SettingsGetCommand($settings));
+            $this->register(new SettingsSetCommand($settings));
+        }
+
+        if ($this->app->container()->has(Installer::class)) {
+            /** @var Installer $installer */
+            $installer = $this->app->get(Installer::class);
+
+            $this->register(new InstallCommand($this->app->config(), $installer));
+        }
 
         if ($this->app->container()->has(Hooks::class)) {
             /** @var Hooks $hooks */

@@ -302,6 +302,14 @@ final class ErrorHandler
                 return Response::html($html, 405, $headers);
             }
 
+            if ($status === 419) {
+                $html = $this->view->render('errors.419', [
+                    'path' => $request?->path() ?? '/',
+                ]);
+
+                return Response::html($html, 419, $headers);
+            }
+
             if ($this->debug) {
                 $html = $this->view->render('errors.debug', [
                     'status' => $status,
@@ -344,6 +352,10 @@ final class ErrorHandler
 
         if ($status === 405) {
             return 'Méthode non autorisée.';
+        }
+
+        if ($status === 419) {
+            return 'Jeton CSRF invalide ou session expirée.';
         }
 
         if ($status >= 500) {

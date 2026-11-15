@@ -7,6 +7,8 @@ use Prime\Kernel\Application;
 use Prime\Kernel\Config;
 use Prime\Kernel\Env;
 use Prime\Log\Logger;
+use Prime\Security\Csrf;
+use Prime\Settings\Settings;
 use Prime\View\Icon;
 use Prime\View\View;
 
@@ -160,5 +162,44 @@ if (!function_exists('icon')) {
     function icon(string $name, int $size = 20, string $class = ''): string
     {
         return Icon::render($name, $size, $class);
+    }
+}
+
+if (!function_exists('setting')) {
+    /**
+     * Read a persistent site setting from `Prime\Settings\Settings`.
+     */
+    function setting(string $name, mixed $default = null): mixed
+    {
+        /** @var Settings $settings */
+        $settings = Application::getInstance()->get(Settings::class);
+
+        return $settings->get($name, $default);
+    }
+}
+
+if (!function_exists('csrf_token')) {
+    /**
+     * Retrieve the active session CSRF token.
+     */
+    function csrf_token(): string
+    {
+        /** @var Csrf $csrf */
+        $csrf = Application::getInstance()->get(Csrf::class);
+
+        return $csrf->token();
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    /**
+     * Render the hidden HTML input element carrying the active CSRF token.
+     */
+    function csrf_field(): string
+    {
+        /** @var Csrf $csrf */
+        $csrf = Application::getInstance()->get(Csrf::class);
+
+        return $csrf->field();
     }
 }

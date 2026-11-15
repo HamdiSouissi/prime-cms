@@ -10,6 +10,7 @@ use Prime\Admin\Menu\MenuItem;
 use Prime\Hooks\Hooks;
 use Prime\Http\Kernel;
 use Prime\Http\Request;
+use Prime\Install\InstallCheckerInterface;
 use Prime\Kernel\Application;
 
 final class AdminDashboardTest extends TestCase
@@ -352,6 +353,13 @@ final class AdminDashboardTest extends TestCase
         $app->config()->set('app.env', $env);
         $app->config()->set('app.debug', $debug);
         $app->boot();
+
+        $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {
+            public function isInstalled(): bool
+            {
+                return true;
+            }
+        });
 
         return $app;
     }

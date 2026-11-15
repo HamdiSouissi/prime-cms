@@ -37,6 +37,17 @@ Ce document recense l'ensemble des hooks (événements et filtres) déclenchés 
 
 ---
 
+## Hooks de base de données, réglages et installation (Phase 3)
+
+| Nom | Type | Arguments | Moment du déclenchement |
+|---|---|---|---|
+| `db.query` | Événement | `string $sql`, `array<int\|string, mixed> $bindings`, `float $durationMs` | Après l'exécution de chaque requête SQL dans `Prime\Database\Connection` (select, insert, update, delete, statement). Permet le profilage ou la télémétrie. |
+| `migrations.paths` | Filtre | `list<string> $paths` | Lors de la découverte des migrations par `Prime\Database\Migrations\Migrator`. Permet aux plugins d'ajouter leurs propres dossiers de migrations. |
+| `settings.updated` | Événement | `string $name`, `mixed $value`, `bool $autoload` | Après l'enregistrement réussi d'un réglage via `Prime\Settings\Settings::set()`. |
+| `install.completed` | Événement | `array<string, mixed> $payload` | Immédiatement après l'écriture de `storage/installed.lock` à la fin d'une installation (web ou CLI), avec les métadonnées sans secret (`site_name`, `site_url`, `site_locale`, `timezone`, `installed_at`, `version`, `migrations`). |
+
+---
+
 ## Exemples d'utilisation
 
 ### Ajouter une route via `routes.register`
@@ -86,3 +97,22 @@ $hooks->filter('admin.menu', static function (AdminMenu $menu): AdminMenu {
     return $menu;
 });
 ```
+
+### Ajouter un dossier de migrations depuis un plugin via `migrations.paths`
+
+```php
+$hooks->filter('migrations.paths', static function (array $paths): array {
+    $paths[] = __DIR__ . '/migrations';
+
+    return $paths;
+});
+```
+
+### Écouter la fin de l'installation via `install.completed`
+
+```php
+$hooks->on('install.completed', static function (array $payload): void {
+    // Exécuté une fois les migrations, le compte admin et storage/installed.lock en place.
+});
+```
+
