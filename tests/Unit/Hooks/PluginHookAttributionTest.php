@@ -15,9 +15,11 @@ final class PluginHookAttributionTest extends TestCase
     {
         $hooks = new Hooks();
 
-        $hooks->on('content.saved', static function (): void {});
+        $hooks->on('content.saved', static function (): void {
+        });
         $hooks->withOwner('hello-prime', static function () use ($hooks): void {
-            $hooks->on('content.saved', static function (): void {}, priority: 5);
+            $hooks->on('content.saved', static function (): void {
+            }, priority: 5);
             $hooks->filter('content.title', static fn (string $v): string => $v . '!', priority: 15);
         });
 
@@ -46,7 +48,8 @@ final class PluginHookAttributionTest extends TestCase
                 throw new RuntimeException('Plugin boom');
             }, priority: 5);
             // Second callback from same plugin should be detached after first failure
-            $hooks->on('app.other', static function (): void {}, priority: 10);
+            $hooks->on('app.other', static function (): void {
+            }, priority: 10);
         });
 
         $hooks->withOwner('healthy-plugin', static function () use ($hooks, &$called): void {

@@ -40,7 +40,13 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Check code style (PSR-12)
-        run: composer cs:check
+        run: |
+          set -o pipefail
+          if ! composer cs:check 2>&1 | tee /tmp/cs.log; then
+            SUMMARY=$(tail -n 60 /tmp/cs.log | tr '\n' ' ' | cut -c1-1200)
+            echo "::error title=PHP-CS-Fixer::$SUMMARY"
+            exit 1
+          fi
 
       - name: Run static analysis (PHPStan level 8)
         run: composer stan

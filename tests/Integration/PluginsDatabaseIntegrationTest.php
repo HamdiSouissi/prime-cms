@@ -125,7 +125,14 @@ final class PluginsDatabaseIntegrationTest extends DatabaseTestCase
             'created_at' => '2026-11-15 12:00:00',
         ]);
 
-        $response = $router->dispatch(Request::create('GET', '/hello-prime'), $app->container());
+        $request = Request::create('GET', '/hello-prime');
+        $matched = $router->dispatch($request);
+        $handler = $matched['route']->handler();
+        $this->assertIsArray($handler);
+        $controller = $app->make($handler[0]);
+        $method = $handler[1];
+        /** @var \Prime\Http\Response $response */
+        $response = $controller->{$method}($request);
         $this->assertSame(200, $response->status());
         $this->assertStringContainsString('Bienvenue sur MySQL Prime !', $response->body());
         $this->assertStringContainsString('Test intégration Phase 5', $response->body());

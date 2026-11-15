@@ -115,9 +115,9 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
         }
         $this->assertTrue($blocked, 'Disabling the sole active administrator must throw PolicyException.');
 
-        // Full rollback of all 6 migrations must succeed cleanly without FK errors
+        // Full rollback of all 8 migrations must succeed cleanly without FK errors
         $rolledBack = $migrator->reset();
-        $this->assertCount(6, $rolledBack);
+        $this->assertCount(8, $rolledBack);
     }
 
     public function testEndToEndAuthTwoFactorRateLimiterAndPasswordResetOnRealDatabase(): void
