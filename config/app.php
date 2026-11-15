@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Prime\Admin\AdminServiceProvider;
 use Prime\Http\Middleware\SecurityHeaders;
 use Prime\Http\Middleware\TrailingSlash;
 use Prime\Kernel\Env;
@@ -23,6 +24,7 @@ return [
         LogServiceProvider::class,
         ViewServiceProvider::class,
         HttpServiceProvider::class,
+        AdminServiceProvider::class,
     ],
 
     'middleware' => [
