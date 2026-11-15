@@ -27,6 +27,7 @@ final class AdminContext
         private readonly Hooks $hooks,
         private readonly ?Auth $auth = null,
         private readonly ?Session $session = null,
+        private readonly ?Notices $notices = null,
     ) {
     }
 
@@ -86,6 +87,8 @@ final class AdminContext
         $appName = (string) $this->app->config()->get('app.name', 'Prime CMS');
         $rawToasts = $this->session !== null ? $this->session->getFlash(self::FLASH_TOASTS_KEY, []) : [];
         $toasts = is_array($rawToasts) ? array_values($rawToasts) : [];
+        $adminNotices = $this->notices !== null ? $this->notices->forUser($user) : [];
+        $safeMode = (bool) $this->app->config()->get('plugins.safe_mode', false);
 
         return array_merge([
             'appName' => $appName,
@@ -96,6 +99,10 @@ final class AdminContext
             'createItems' => $createItems,
             'commandPaletteJson' => $this->encodeJson($paletteItems),
             'flashToastsJson' => $this->encodeJson($toasts),
+            'adminNotices' => $adminNotices,
+            'adminNoticesCount' => count($adminNotices),
+            'safeMode' => $safeMode,
+            'primaryCtaInContent' => false,
             'adminStyles' => $assets['css'],
             'adminScripts' => $assets['js'],
             'adminHeadExtra' => is_string($headExtra) ? $headExtra : '',

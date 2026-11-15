@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Prime\Admin;
 
 use Prime\Admin\Controller\DashboardController;
+use Prime\Admin\Controller\NoticeController;
+use Prime\Admin\Controller\PluginController;
 use Prime\Admin\Controller\ProfileController;
 use Prime\Admin\Controller\RoleController;
 use Prime\Admin\Controller\UserController;
@@ -24,6 +26,8 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Http\Session;
 use Prime\Kernel\ServiceProvider;
+use Prime\Plugins\PluginInstaller;
+use Prime\Plugins\PluginManager;
 use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\View\View;
@@ -53,8 +57,26 @@ final class AdminServiceProvider extends ServiceProvider
             $auth = $this->app->get(Auth::class);
             /** @var Session $session */
             $session = $this->app->get(Session::class);
+            $notices = $this->app->container()->has(Notices::class) ? $this->app->get(Notices::class) : null;
 
-            return new AdminContext($this->app, $menu, $hooks, $auth, $session);
+            return new AdminContext($this->app, $menu, $hooks, $auth, $session, $notices instanceof Notices ? $notices : null);
+        });
+
+        $container->singleton(NoticeController::class, function (): NoticeController {
+            return new NoticeController(
+                notices: $this->app->get(Notices::class),
+                auth: $this->app->get(Auth::class),
+            );
+        });
+
+        $container->singleton(PluginController::class, function (): PluginController {
+            return new PluginController(
+                app: $this->app,
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                manager: $this->app->get(PluginManager::class),
+                installer: $this->app->get(PluginInstaller::class),
+            );
         });
 
         $container->singleton(AuthController::class, function (): AuthController {
@@ -74,6 +96,7 @@ final class AdminServiceProvider extends ServiceProvider
                 context: $this->app->get(AdminContext::class),
                 demo: $this->app->get(DemoDashboardData::class),
                 auth: $this->app->get(Auth::class),
+                hooks: $this->app->get(Hooks::class),
             );
         });
 
@@ -231,8 +254,29 @@ final class AdminServiceProvider extends ServiceProvider
                     ->middleware('can:roles.manage')
                     ->name('roles.delete');
 
+                // Persistent dashboard notices dismissal
+                $r->post('/notices/{id:[a-zA-Z0-9._-]+}/dismiss', [NoticeController::class, 'dismiss'])
+                    ->name('notices.dismiss');
+
+                // Plugins management (L9)
+                $r->get('/plugins', [PluginController::class, 'index'])
+                    ->middleware('can:plugins.manage')
+                    ->name('plugins.index');
+                $r->post('/plugins/upload', [PluginController::class, 'upload'])
+                    ->middleware('can:plugins.manage')
+                    ->name('plugins.upload');
+                $r->post('/plugins/{slug:[a-z0-9-]+}/activate', [PluginController::class, 'activate'])
+                    ->middleware('can:plugins.manage')
+                    ->name('plugins.activate');
+                $r->post('/plugins/{slug:[a-z0-9-]+}/deactivate', [PluginController::class, 'deactivate'])
+                    ->middleware('can:plugins.manage')
+                    ->name('plugins.deactivate');
+                $r->post('/plugins/{slug:[a-z0-9-]+}/uninstall', [PluginController::class, 'uninstall'])
+                    ->middleware('can:plugins.manage')
+                    ->name('plugins.uninstall');
+
                 // Upcoming CMS module placeholders (capability verified in DashboardController::module)
-                $r->get('/{module:pages|articles|media|appearance|plugins|settings}', [DashboardController::class, 'module'])
+                $r->get('/{module:pages|articles|media|appearance|settings}', [DashboardController::class, 'module'])
                     ->name('module');
                 $r->get('/{module:appearance|settings}/{section:[a-z0-9-]+}', [DashboardController::class, 'module'])
                     ->name('module.section');

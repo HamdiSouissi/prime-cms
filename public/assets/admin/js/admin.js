@@ -4,6 +4,7 @@
  */
 
 import { initAdminUsers } from './admin-users.js';
+import { initAdminPlugins } from './plugins.js';
 import { initCommandPalette, openCommandPalette } from './command-palette.js';
 import { closeDrawer, initDrawers, openDrawer } from './drawer.js';
 import { initDropdowns } from './dropdown.js';
@@ -136,6 +137,7 @@ function bootstrap() {
   initPasswordToggles();
   initBulkTables();
   initAdminUsers();
+  initAdminPlugins();
 }
 
 window.Prime = Object.freeze({

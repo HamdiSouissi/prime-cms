@@ -7,6 +7,7 @@ namespace Prime\Admin\Controller;
 use Prime\Admin\AdminContext;
 use Prime\Admin\Demo\DemoDashboardData;
 use Prime\Auth\Auth;
+use Prime\Hooks\Hooks;
 use Prime\Http\Exception\ForbiddenException;
 use Prime\Http\Exception\NotFoundException;
 use Prime\Http\Request;
@@ -47,6 +48,7 @@ final class DashboardController
         private readonly AdminContext $context,
         private readonly DemoDashboardData $demo,
         private readonly Auth $auth,
+        private readonly ?Hooks $hooks = null,
     ) {
     }
 
@@ -98,6 +100,17 @@ final class DashboardController
                 return true;
             },
         ));
+
+        if ($this->hooks !== null) {
+            $filteredShortcuts = $this->hooks->apply('admin.dashboard.shortcuts', $shortcuts, $user);
+            if (is_array($filteredShortcuts)) {
+                $shortcuts = array_values($filteredShortcuts);
+            }
+            $filteredStats = $this->hooks->apply('admin.dashboard.stats', $stats, $user);
+            if (is_array($filteredStats)) {
+                $stats = array_values($filteredStats);
+            }
+        }
 
         $data = $this->context->build($request, 'Tableau de bord', [
             'stats' => $stats,

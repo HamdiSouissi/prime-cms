@@ -13,11 +13,18 @@ use Prime\Console\Commands\DbCheckCommand;
 use Prime\Console\Commands\InstallCommand;
 use Prime\Console\Commands\ListCommand;
 use Prime\Console\Commands\MakeMigrationCommand;
+use Prime\Console\Commands\MakePluginCommand;
 use Prime\Console\Commands\MigrateCommand;
 use Prime\Console\Commands\MigrateFreshCommand;
 use Prime\Console\Commands\MigrateResetCommand;
 use Prime\Console\Commands\MigrateRollbackCommand;
 use Prime\Console\Commands\MigrateStatusCommand;
+use Prime\Console\Commands\PluginActivateCommand;
+use Prime\Console\Commands\PluginDeactivateCommand;
+use Prime\Console\Commands\PluginInstallCommand;
+use Prime\Console\Commands\PluginListCommand;
+use Prime\Console\Commands\PluginPublishAssetsCommand;
+use Prime\Console\Commands\PluginUninstallCommand;
 use Prime\Console\Commands\RoleListCommand;
 use Prime\Console\Commands\RoutesCommand;
 use Prime\Console\Commands\SettingsGetCommand;
@@ -35,6 +42,8 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Install\Installer;
 use Prime\Kernel\Application;
+use Prime\Plugins\PluginInstaller;
+use Prime\Plugins\PluginManager;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
 
@@ -172,6 +181,22 @@ final class ConsoleApplication
             $this->register(new UserTwoFactorResetCommand($this->app));
             $this->register(new RoleListCommand($roleRepository));
         }
+
+        if ($this->app->container()->has(PluginManager::class)) {
+            /** @var PluginManager $pluginManager */
+            $pluginManager = $this->app->get(PluginManager::class);
+            /** @var PluginInstaller $pluginInstaller */
+            $pluginInstaller = $this->app->get(PluginInstaller::class);
+
+            $this->register(new PluginListCommand($pluginManager));
+            $this->register(new PluginActivateCommand($pluginManager));
+            $this->register(new PluginDeactivateCommand($pluginManager));
+            $this->register(new PluginUninstallCommand($pluginManager));
+            $this->register(new PluginInstallCommand($pluginInstaller));
+            $this->register(new PluginPublishAssetsCommand($pluginManager));
+        }
+
+        $this->register(new MakePluginCommand($this->app));
 
         if ($this->app->container()->has(Hooks::class)) {
             /** @var Hooks $hooks */
