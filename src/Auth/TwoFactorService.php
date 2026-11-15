@@ -11,6 +11,7 @@ use Prime\Database\Connection;
 use Prime\Hooks\Hooks;
 use Prime\Log\Logger;
 use Prime\Security\Encrypter;
+use Prime\Security\Hasher;
 use Prime\Security\Totp;
 
 /**
@@ -18,7 +19,7 @@ use Prime\Security\Totp;
  * recovery code regeneration, and disabling.
  *
  * Secrets are stored encrypted via `Encrypter` (AES-256-GCM) and recovery codes are stored hashed
- * via `password_hash()`. Neither secrets nor recovery codes are ever written to logs.
+ * via `Hasher`. Neither secrets nor recovery codes are ever written to logs.
  */
 final class TwoFactorService
 {
@@ -26,6 +27,8 @@ final class TwoFactorService
      * @var Closure(): int
      */
     private readonly Closure $clock;
+
+    private readonly Hasher $hasher;
 
     /**
      * @param (Closure(): int)|null $clock Optional Unix timestamp supplier for deterministic tests
@@ -37,8 +40,10 @@ final class TwoFactorService
         private readonly ?Hooks $hooks = null,
         private readonly ?Logger $logger = null,
         ?Closure $clock = null,
+        ?Hasher $hasher = null,
     ) {
         $this->clock = $clock ?? static fn (): int => time();
+        $this->hasher = $hasher ?? new Hasher();
     }
 
     /**
@@ -133,7 +138,7 @@ final class TwoFactorService
 
         $normalized = Totp::normalizeRecoveryCode($input);
         foreach ($hashes as $index => $hash) {
-            if (password_verify($normalized, $hash)) {
+            if ($this->hasher->verify($normalized, $hash)) {
                 unset($hashes[$index]);
                 $remaining = array_values($hashes);
 
@@ -224,10 +229,8 @@ final class TwoFactorService
      */
     private function hashRecoveryCodes(array $codes): array
     {
-        $algo = UserRepository::preferredHashAlgorithm();
-
         return array_map(
-            static fn (string $code): string => password_hash(Totp::normalizeRecoveryCode($code), $algo),
+            fn (string $code): string => $this->hasher->make(Totp::normalizeRecoveryCode($code)),
             $codes,
         );
     }

@@ -7,16 +7,21 @@ namespace Prime\Auth;
 use DateTimeImmutable;
 use DateTimeZone;
 use Prime\Database\Connection;
+use Prime\Security\Hasher;
 
 /**
  * Data access layer for `pc_users`, `pc_user_roles`, and `pc_remember_tokens`.
  */
 final class UserRepository
 {
+    private readonly Hasher $hasher;
+
     public function __construct(
         private readonly Connection $connection,
         private readonly RoleRepository $roles,
+        ?Hasher $hasher = null,
     ) {
+        $this->hasher = $hasher ?? new Hasher();
     }
 
     public function find(int $id): ?User
@@ -216,7 +221,7 @@ final class UserRepository
         string $locale = 'fr',
     ): User {
         $now = $this->nowUtc();
-        $hash = self::hashPassword($plainPassword);
+        $hash = $this->hasher->make($plainPassword);
         $cleanEmail = self::normalizeEmail($email);
 
         $userId = $this->connection->transaction(function () use ($cleanEmail, $displayName, $hash, $roleIds, $status, $locale, $now): int {
@@ -286,7 +291,7 @@ final class UserRepository
     public function updatePassword(int $userId, string $plainPassword): int
     {
         $now = $this->nowUtc();
-        $hash = self::hashPassword($plainPassword);
+        $hash = $this->hasher->make($plainPassword);
 
         return $this->connection->transaction(function () use ($userId, $hash, $now): int {
             $raw = $this->findRawById($userId);
@@ -343,21 +348,6 @@ final class UserRepository
         $this->connection->table('users')
             ->where('id', '=', $userId)
             ->delete();
-    }
-
-    /**
-     * Hash a password using Argon2id (with bcrypt fallback if unavailable).
-     */
-    public static function hashPassword(string $plainPassword): string
-    {
-        $algo = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
-
-        return password_hash($plainPassword, $algo);
-    }
-
-    public static function preferredHashAlgorithm(): string
-    {
-        return defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
     }
 
     public static function normalizeEmail(string $email): string

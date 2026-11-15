@@ -14,6 +14,7 @@ use Prime\Http\Response;
 use Prime\Http\Session;
 use Prime\Log\Logger;
 use Prime\Security\Csrf;
+use Prime\Security\Hasher;
 use Prime\Security\RateLimiter;
 
 /**
@@ -36,14 +37,11 @@ final class Auth
     private const SESSION_TWO_FACTOR = '_auth.two_factor';
 
     /**
-     * Pre-computed bcrypt hash verified when an e-mail is not found so login timing remains uniform.
-     */
-    private const DUMMY_HASH = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
-
-    /**
      * @var Closure(): int
      */
     private readonly Closure $clock;
+
+    private readonly Hasher $hasher;
 
     private ?User $cachedUser = null;
 
@@ -71,8 +69,10 @@ final class Auth
         private readonly ?Logger $logger = null,
         private readonly array $config = [],
         ?Closure $clock = null,
+        ?Hasher $hasher = null,
     ) {
         $this->clock = $clock ?? static fn (): int => time();
+        $this->hasher = $hasher ?? new Hasher($config);
     }
 
     /**
@@ -109,12 +109,17 @@ final class Auth
         }
 
         $raw = $this->users->findRawByEmail($normalizedEmail);
-        $storedHash = is_array($raw) && is_string($raw['password_hash'] ?? null)
+        $storedHash = is_array($raw) && is_string($raw['password_hash'] ?? null) && $raw['password_hash'] !== ''
             ? $raw['password_hash']
-            : self::DUMMY_HASH;
+            : null;
 
-        // Always execute password_verify to keep response timing uniform for missing emails.
-        $passwordOk = password_verify($password, $storedHash);
+        // Always execute a hash verification using the exact same algorithm & options to prevent timing enumeration.
+        if ($storedHash !== null) {
+            $passwordOk = $this->hasher->verify($password, $storedHash);
+        } else {
+            $this->hasher->dummyVerify($password);
+            $passwordOk = false;
+        }
 
         if ($raw === null || !$passwordOk || ($raw['status'] ?? '') !== User::STATUS_ACTIVE) {
             $emailHits = $this->rateLimiter->hit($emailKey, $decay);
@@ -148,12 +153,11 @@ final class Auth
         $userId = (int) $raw['id'];
 
         // Transparently rehash legacy or weaker password hashes.
-        $preferredAlgo = UserRepository::preferredHashAlgorithm();
-        if (password_needs_rehash($storedHash, $preferredAlgo)) {
+        if ($storedHash !== null && $this->hasher->needsRehash($storedHash)) {
             $this->connection->table('users')
                 ->where('id', '=', $userId)
                 ->update([
-                    'password_hash' => password_hash($password, $preferredAlgo),
+                    'password_hash' => $this->hasher->make($password),
                     'updated_at' => $this->formatUtc(($this->clock)()),
                 ]);
         }

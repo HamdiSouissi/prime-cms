@@ -34,4 +34,15 @@ return [
     // Pending 2FA login challenge limits (5 attempts, 5 minutes).
     'two_factor_max_attempts' => 5,
     'two_factor_ttl' => 300,
+
+    // Password hashing algorithm ('argon2id' preferred when supported by PHP, else automatic 'bcrypt' fallback).
+    'hash_driver' => Env::get('AUTH_HASH_DRIVER', 'argon2id'),
+    'argon2' => [
+        'memory_cost' => (int) Env::get('AUTH_ARGON2_MEMORY', '65536'),
+        'time_cost' => (int) Env::get('AUTH_ARGON2_TIME', '4'),
+        'threads' => (int) Env::get('AUTH_ARGON2_THREADS', '1'),
+    ],
+    'bcrypt' => [
+        'cost' => (int) Env::get('AUTH_BCRYPT_COST', '12'),
+    ],
 ];

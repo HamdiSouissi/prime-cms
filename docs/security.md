@@ -6,10 +6,17 @@ Ce document décrit les mécanismes de sécurité intégrés au noyau de **Prime
 
 ## 1. Mots de passe et politique de robustesse
 
-### Hachage adaptatif
-- Algorithme privilégié : **Argon2id** (`PASSWORD_ARGON2ID`), avec repli automatique sur **bcrypt** (`PASSWORD_BCRYPT`, coût 12) si l'extension PHP n'a pas été compilée avec `libargon2`.
-- **Rehachage transparent** : à chaque connexion réussie, `Prime\Auth\Auth::attempt()` vérifie `password_needs_rehash()` et met silencieusement le hash à jour en base si les paramètres ou l'algorithme recommandé ont évolué.
-- **Temps constant (anti-énumération)** : lorsqu'une adresse e-mail est inconnue ou qu'un compte est désactivé, `Auth::attempt()` exécute tout de même `password_verify()` contre un hash factice pour égaliser le temps de réponse.
+### Service centralisé de hachage (`Prime\Security\Hasher`)
+Tous les appels à `password_hash()`, `password_verify()` et `password_needs_rehash()` de l'application (`Auth`, `UserRepository`, `TwoFactorService`, `Installer`, `ProfileController`, réinitialisation de mot de passe et CLI) sont strictement centralisés dans `Prime\Security\Hasher`, enregistré comme singleton par `AuthServiceProvider` :
+- **Algorithme et coûts configurables** (`config/auth.php` : clés `hash_driver`, `argon2` et `bcrypt`) :
+  - Par défaut (`hash_driver: 'argon2id'`), utilise **Argon2id** (`PASSWORD_ARGON2ID`, `memory_cost: 65536` Kio, `time_cost: 4`, `threads: 1`) si disponible dans le binaire PHP, sinon bascule automatiquement sur **bcrypt** (`PASSWORD_BCRYPT`, `cost: 12`).
+- **API unique** : `make(string $plain): string`, `verify(string $plain, string $hash): bool`, `needsRehash(string $hash): bool` et `dummyVerify(string $plain): void`.
+- **Rehachage transparent** : à chaque connexion réussie, `Prime\Auth\Auth::attempt()` vérifie `$hasher->needsRehash($storedHash)` et met silencieusement le hash à jour en base si l'algorithme ou les options recommandées ont évolué.
+- **Protection contre l'énumération de comptes par canal temporel (timing attack)** :
+  - Lorsqu'une adresse e-mail est inconnue, `Auth::attempt()` appelle `$hasher->dummyVerify($password)` qui vérifie le mot de passe contre un hash factice généré avec **exactement le même algorithme et les mêmes paramètres** que `make()` (vérifié en tests via `password_get_info()`).
+  - Ce hash factice est généré paresseusement une seule fois, mémoïsé pour la requête et mis en cache de façon atomique dans `storage/cache/auth-dummy-hash-<empreinte>.txt` ; l'empreinte SHA-256 des paramètres invalide automatiquement le cache dès qu'un algorithme ou un coût est modifié dans `config/auth.php`.
+  - Pour un compte **désactivé**, la vérification complète du hash stocké est exécutée avant le rejet afin que la durée de réponse soit identique à celle d'un compte inexistant ou d'un mauvais mot de passe.
+  - Les tests automatisés mesurent la médiane de 5 tentatives entrelacées (e-mail inexistant, e-mail existant avec mauvais mot de passe, compte désactivé) et imposent un ratio compris entre `0,6` et `1,6`.
 
 ### Politique de mots de passe (`Prime\Security\PasswordPolicy`)
 Appliquée uniformément lors de l'installation (`/install` et CLI), de la création/édition d'utilisateur, du changement de mot de passe sur `/admin/profile`, de la réinitialisation par lien et de `bin/prime user:password` :

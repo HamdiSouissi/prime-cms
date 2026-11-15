@@ -18,6 +18,7 @@ use Prime\Log\Logger;
 use Prime\Mail\MailerInterface;
 use Prime\Security\Csrf;
 use Prime\Security\Encrypter;
+use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\Security\RateLimiter;
 use Prime\View\View;
@@ -36,6 +37,15 @@ final class AuthServiceProvider extends ServiceProvider
         $container = $app->container();
 
         $container->singleton(PasswordPolicy::class, static fn (): PasswordPolicy => new PasswordPolicy());
+
+        $container->singleton(Hasher::class, static function () use ($app): Hasher {
+            $cfg = $app->config()->get('auth', []);
+
+            return new Hasher(
+                config: is_array($cfg) ? $cfg : [],
+                cacheDir: $app->storagePath('cache'),
+            );
+        });
 
         $container->singleton(Encrypter::class, static function () use ($app): Encrypter {
             $key = (string) $app->config()->get('app.key', '');
@@ -59,6 +69,7 @@ final class AuthServiceProvider extends ServiceProvider
             return new UserRepository(
                 $container->get(Connection::class),
                 $container->get(RoleRepository::class),
+                $container->get(Hasher::class),
             );
         });
 
@@ -76,6 +87,7 @@ final class AuthServiceProvider extends ServiceProvider
                 encrypter: $container->get(Encrypter::class),
                 hooks: $container->get(Hooks::class),
                 logger: $container->get(Logger::class),
+                hasher: $container->get(Hasher::class),
             );
         });
 
@@ -114,6 +126,7 @@ final class AuthServiceProvider extends ServiceProvider
                 hooks: $container->get(Hooks::class),
                 logger: $container->get(Logger::class),
                 config: is_array($cfg) ? $cfg : [],
+                hasher: $container->get(Hasher::class),
             );
         });
     }

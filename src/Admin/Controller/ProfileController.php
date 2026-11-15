@@ -16,6 +16,7 @@ use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Http\Session;
 use Prime\Kernel\Application;
+use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
 use Prime\Validation\Validator;
@@ -51,6 +52,7 @@ final class ProfileController
         private readonly Session $session,
         private readonly Connection $connection,
         private readonly PasswordPolicy $passwordPolicy,
+        private readonly Hasher $hasher,
     ) {
     }
 
@@ -356,7 +358,7 @@ final class ProfileController
             return false;
         }
 
-        return password_verify($plainPassword, $raw['password_hash']);
+        return $this->hasher->verify($plainPassword, $raw['password_hash']);
     }
 
     private function requireUser(Request $request): User

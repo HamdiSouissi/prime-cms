@@ -19,6 +19,7 @@ use Prime\Database\Schema\Schema;
 use Prime\Kernel\Application;
 use Prime\Mail\MailerInterface;
 use Prime\Mail\Message;
+use Prime\Security\Hasher;
 use Prime\Security\RateLimiter;
 use Prime\Security\Totp;
 
@@ -218,5 +219,78 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertTrue($rateLimiter->tooManyAttempts($key, 2));
         $rateLimiter->clear($key);
         $this->assertFalse($rateLimiter->tooManyAttempts($key, 2));
+
+        // 5. Timing enumeration protection with real Hasher (Argon2id in CI) on live MySQL/MariaDB
+        /** @var Hasher $hasher */
+        $hasher = $app->get(Hasher::class);
+        $realInfo = password_get_info($hasher->make('Cerulean!Summit#4917'));
+        $dummyInfo = password_get_info($hasher->dummyHash());
+        $this->assertSame($realInfo['algoName'], $dummyInfo['algoName']);
+        $this->assertSame($realInfo['options'], $dummyInfo['options']);
+
+        $disabledUser = $usersRepo->create(
+            email: 'disabled@mysql-it.test',
+            displayName: 'Disabled DB',
+            plainPassword: 'Violet!Meadow#5182',
+            roleIds: [$adminRole->id],
+            status: 'disabled',
+        );
+        $this->assertFalse($disabledUser->isActive());
+
+        // Warm-up dummy hash & PDO statement caches
+        $auth->attempt('warmup@mysql-it.test', 'Wrong!Password#1111', ip: '198.51.100.1');
+        $auth->attempt('camille@mysql-it.test', 'Wrong!Password#1111', ip: '198.51.100.2');
+
+        $missingSamples = [];
+        $existingSamples = [];
+        $disabledSamples = [];
+
+        for ($i = 0; $i < 5; $i++) {
+            $t0 = hrtime(true);
+            $rMissing = $auth->attempt('nobody-' . $i . '@mysql-it.test', 'Wrong!Password#1111', ip: '198.51.100.' . (10 + $i));
+            $missingSamples[] = (hrtime(true) - $t0) / 1_000_000.0;
+            $this->assertSame(AuthResult::STATUS_FAILED, $rMissing->status);
+
+            $t0 = hrtime(true);
+            $rExisting = $auth->attempt('camille@mysql-it.test', 'Wrong!Password#1111', ip: '198.51.100.' . (30 + $i));
+            $existingSamples[] = (hrtime(true) - $t0) / 1_000_000.0;
+            $this->assertSame(AuthResult::STATUS_FAILED, $rExisting->status);
+
+            $t0 = hrtime(true);
+            $rDisabled = $auth->attempt('disabled@mysql-it.test', 'Violet!Meadow#5182', ip: '198.51.100.' . (50 + $i));
+            $disabledSamples[] = (hrtime(true) - $t0) / 1_000_000.0;
+            $this->assertSame(AuthResult::STATUS_FAILED, $rDisabled->status);
+        }
+
+        sort($missingSamples);
+        sort($existingSamples);
+        sort($disabledSamples);
+        $medianMissing = $missingSamples[2];
+        $medianExisting = $existingSamples[2];
+        $medianDisabled = $disabledSamples[2];
+
+        $ratioMissing = $medianMissing / $medianExisting;
+        $ratioDisabled = $medianDisabled / $medianExisting;
+
+        $this->assertGreaterThanOrEqual(
+            0.6,
+            $ratioMissing,
+            sprintf('Missing vs existing ratio too low: %.3f (missing=%.2fms, existing=%.2fms)', $ratioMissing, $medianMissing, $medianExisting),
+        );
+        $this->assertLessThanOrEqual(
+            1.6,
+            $ratioMissing,
+            sprintf('Missing vs existing ratio too high: %.3f (missing=%.2fms, existing=%.2fms)', $ratioMissing, $medianMissing, $medianExisting),
+        );
+        $this->assertGreaterThanOrEqual(
+            0.6,
+            $ratioDisabled,
+            sprintf('Disabled vs existing ratio too low: %.3f (disabled=%.2fms, existing=%.2fms)', $ratioDisabled, $medianDisabled, $medianExisting),
+        );
+        $this->assertLessThanOrEqual(
+            1.6,
+            $ratioDisabled,
+            sprintf('Disabled vs existing ratio too high: %.3f (disabled=%.2fms, existing=%.2fms)', $ratioDisabled, $medianDisabled, $medianExisting),
+        );
     }
 }

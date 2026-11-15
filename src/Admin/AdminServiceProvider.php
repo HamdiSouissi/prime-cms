@@ -24,6 +24,7 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Http\Session;
 use Prime\Kernel\ServiceProvider;
+use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\View\View;
 
@@ -114,6 +115,7 @@ final class AdminServiceProvider extends ServiceProvider
                 session: $this->app->get(Session::class),
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
+                hasher: $this->app->get(Hasher::class),
             );
         });
     }
