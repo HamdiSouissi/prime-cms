@@ -14,6 +14,7 @@ use Prime\Hooks\Hooks;
 use Prime\Install\Exception\InstallException;
 use Prime\Kernel\Application;
 use Prime\Kernel\Env;
+use Prime\Security\Hasher;
 use Prime\Settings\Settings;
 use Throwable;
 
@@ -26,13 +27,21 @@ use Throwable;
  */
 final class Installer
 {
+    private readonly Hasher $hasher;
+
     public function __construct(
         private readonly Application $app,
         private readonly InstallerValidator $validator = new InstallerValidator(),
         private readonly DatabaseTester $databaseTester = new DatabaseTester(),
         private readonly EnvWriter $envWriter = new EnvWriter(),
         private readonly ?Hooks $hooks = null,
+        ?Hasher $hasher = null,
     ) {
+        $authCfg = $app->config()->get('auth', []);
+        $this->hasher = $hasher ?? new Hasher(
+            config: is_array($authCfg) ? $authCfg : [],
+            cacheDir: $app->storagePath('cache'),
+        );
     }
 
     /**
@@ -109,8 +118,7 @@ final class Installer
         $installedAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DateTimeInterface::ATOM);
 
         try {
-            $algo = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
-            $passwordHash = password_hash($config->adminPassword, $algo);
+            $passwordHash = $this->hasher->make($config->adminPassword);
 
             $adminUserId = $connection->table('users')->insertGetId([
                 'email' => mb_strtolower(trim($config->adminEmail), 'UTF-8'),
@@ -119,9 +127,21 @@ final class Installer
                 'status' => 'active',
                 'locale' => $config->siteLocale,
                 'last_login_at' => null,
+                'password_changed_at' => $nowUtc,
                 'created_at' => $nowUtc,
                 'updated_at' => $nowUtc,
             ]);
+
+            $adminRole = $connection->table('roles')
+                ->where('slug', '=', 'administrator')
+                ->first();
+
+            if ($adminRole !== null) {
+                $connection->table('user_roles')->insert([
+                    'user_id' => $adminUserId,
+                    'role_id' => (int) $adminRole['id'],
+                ]);
+            }
         } catch (Throwable $exception) {
             throw new InstallException(
                 'admin',

@@ -12,26 +12,25 @@ declare(strict_types=1);
  * @var list<array{label: string, value: string, badge?: string, variant?: string}> $systemStatus
  */
 $this->layout('admin::layouts/app');
+$userName = (string) ($currentUser['name'] ?? 'Administrateur');
+$showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdmin']);
 ?>
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Bonjour, bienvenue sur Prime CMS',
-    'subtitle' => 'Aperçu du tableau de bord — Phase 2 (données de démonstration isolées, environnement local).',
-    'actions' => $this->insert('admin::components/button', [
-        'label' => 'Explorer le Design System',
-        'variant' => 'secondary',
-        'icon' => 'sparkles',
-        'href' => '/admin/styleguide',
-    ]),
+    'title' => 'Bonjour, ' . $userName,
+    'subtitle' => 'Bienvenue sur votre tableau de bord ' . $appName . '.',
+    'actions' => $showStyleguide
+        ? $this->insert('admin::components/button', [
+            'label' => 'Explorer le Design System',
+            'variant' => 'secondary',
+            'icon' => 'sparkles',
+            'href' => '/admin/styleguide',
+        ])
+        : '',
 ])) ?>
 
 <div class="pc-stack pc-stack--lg">
-    <?= $this->raw($this->insert('admin::components/alert', [
-        'variant' => 'info',
-        'title' => 'Aperçu local de la coque d’administration',
-        'message' => 'Les chiffres ci-dessous proviennent de DemoDashboardData. La base de données et l’authentification seront branchées aux Phases 3 et 4.',
-    ])) ?>
 
     <!-- 4 vibrant KPI stat tiles -->
     <section aria-label="Indicateurs clés" class="pc-grid pc-grid--stats">

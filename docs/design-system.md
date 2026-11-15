@@ -100,6 +100,20 @@ Chaque composant s'insère via `$this->insert('admin::components/<nom>', [...])`
 | `modal` | Modale native `<dialog>` | `id`, `title`, `body`, `footer`, `size` |
 | `drawer` | Panneau latéral coulissant | `id`, `title`, `body`, `footer` |
 
+### Règles de mise en page, CTA unique et tableaux mobiles
+
+- **Action primaire unique (corail)** : chaque écran ou panneau d'onglet visible ne comporte au maximum qu'**un seul** bouton `pc-btn--primary` (ex. « Mettre à jour le mot de passe » dans Profil → Sécurité ; « Activer la double authentification » reste en `pc-btn--secondary` avec icône bouclier). Les états vides sur une page disposant déjà d'un CTA primaire en en-tête utilisent `secondaryLabel` / `secondaryUrl`.
+- **Largeurs de formulaires confortables** (`auth.css`) :
+  - `.pc-form-narrow` (`max-width: 560px`) pour les formulaires en colonne simple (Profil → Informations & Sécurité).
+  - `.pc-form-wide` (`max-width: 880px`) et `.pc-form-grid--aside` (`minmax(0, 560px) minmax(260px, 1fr)`, plafond `880px`) pour les formulaires à deux colonnes (création/édition utilisateur, identité de rôle). Les matrices denses (matrice des permissions des rôles) conservent la pleine largeur.
+- **Variante tableau empilé mobile (`.pc-table--stacked`)** (`table.css`) :
+  - En ajoutant la classe `.pc-table--stacked` sur `<table class="pc-table pc-table--stacked">` dans `.pc-table-wrap`, le tableau conserve sa présentation tabulaire dès `768px` et bascule automatiquement en **cartes empilées** sous `768px` (sans scroll horizontal ni troncature à `375px`).
+  - Conventions de marquage des cellules :
+    - `td.pc-table__primary` : en-tête de carte (avatar, nom, e-mail ou nom du rôle), séparé par une bordure inférieure et décalé si une case `.pc-table__check` est présente.
+    - `td.pc-table__check` : case de sélection groupée ancrée en haut à droite de la carte (compatibilité complète avec `data-prime-table-bulk`).
+    - `td[data-prime-label="…"]` : cellules métadonnées affichées en ligne clé/valeur grâce à `::before { content: attr(data-prime-label); }` (attribut strictement préfixé `data-prime-*`).
+    - `td.pc-table__actions` : pied de carte pleine largeur regroupant les actions de la ligne.
+
 ---
 
 ## 6. Modules JavaScript ES2022 (`public/assets/admin/js/`)

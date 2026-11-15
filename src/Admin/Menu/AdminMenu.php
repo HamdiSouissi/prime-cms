@@ -109,6 +109,48 @@ final class AdminMenu
     }
 
     /**
+     * Filter the menu in place according to a capability callback `fn(string $cap): bool`.
+     *
+     * Top-level items with children remain visible when at least one child is permitted;
+     * if the parent's own capability is denied, its URL is transparently pointed to the first visible child.
+     *
+     * @param callable(string): bool $can
+     */
+    public function filterByCapability(callable $can): self
+    {
+        foreach (array_keys($this->items) as $parentId) {
+            $parent = $this->items[$parentId]['item'];
+            $hasDefinedChildren = isset($this->children[$parentId]) && $this->children[$parentId] !== [];
+
+            if ($hasDefinedChildren) {
+                foreach (array_keys($this->children[$parentId]) as $childId) {
+                    $child = $this->children[$parentId][$childId]['item'];
+                    if ($child->capability !== null && !$can($child->capability)) {
+                        unset($this->children[$parentId][$childId]);
+                    }
+                }
+            }
+
+            $parentAllowed = $parent->capability === null || $can($parent->capability);
+            $remainingChildren = $this->children[$parentId] ?? [];
+
+            if (!$parentAllowed) {
+                if ($remainingChildren !== []) {
+                    $sorted = array_values($remainingChildren);
+                    usort($sorted, self::compareEntries(...));
+                    $this->items[$parentId]['item'] = $parent->withUrl($sorted[0]['item']->url);
+                } else {
+                    unset($this->items[$parentId], $this->children[$parentId]);
+                }
+            } elseif ($hasDefinedChildren && $remainingChildren === [] && $parent->capability === null) {
+                unset($this->items[$parentId], $this->children[$parentId]);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Detect and mark the active menu item for the given HTTP request.
      * Prefers an exact path match, falling back to the longest matching URL prefix.
      */

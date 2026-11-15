@@ -25,6 +25,12 @@ $helpText = isset($help) && is_string($help) && $help !== '' ? $help : null;
 $errorText = isset($error) && is_string($error) && $error !== '' ? $error : null;
 $isRequired = (bool) ($required ?? false);
 $isDisabled = (bool) ($disabled ?? false);
+$isReadonly = (bool) ($readonly ?? false);
+$isAutofocus = (bool) ($autofocus ?? false);
+$autocompleteAttr = isset($autocomplete) && is_string($autocomplete) && $autocomplete !== '' ? ' autocomplete="' . $this->e($autocomplete) . '"' : '';
+$inputmodeAttr = isset($inputmode) && is_string($inputmode) && $inputmode !== '' ? ' inputmode="' . $this->e($inputmode) . '"' : '';
+$maxlengthAttr = isset($maxlength) && is_int($maxlength) && $maxlength > 0 ? ' maxlength="' . $maxlength . '"' : '';
+$extraClass = isset($inputClass) && is_string($inputClass) && $inputClass !== '' ? ' ' . $inputClass : '';
 $selectOptions = is_array($options ?? null) ? $options : [];
 
 $describedBy = [];
@@ -77,12 +83,14 @@ $invalidAttr = $errorText !== null ? ' aria-invalid="true"' : '';
                 type="password"
                 id="<?= $this->e($id) ?>"
                 name="<?= $this->e($name) ?>"
-                class="pc-input"
+                class="pc-input<?= $this->e($extraClass) ?>"
                 value="<?= $this->e($fieldValue) ?>"
                 placeholder="<?= $this->e($fieldPlaceholder) ?>"
                 <?= $isRequired ? 'required' : '' ?>
                 <?= $isDisabled ? 'disabled' : '' ?>
-                <?= $this->raw($invalidAttr . $describedAttr) ?>
+                <?= $isReadonly ? 'readonly' : '' ?>
+                <?= $isAutofocus ? 'autofocus' : '' ?>
+                <?= $this->raw($autocompleteAttr . $maxlengthAttr . $invalidAttr . $describedAttr) ?>
             >
             <button
                 type="button"
@@ -99,12 +107,14 @@ $invalidAttr = $errorText !== null ? ' aria-invalid="true"' : '';
             type="<?= $this->e($fieldType) ?>"
             id="<?= $this->e($id) ?>"
             name="<?= $this->e($name) ?>"
-            class="pc-input"
+            class="pc-input<?= $this->e($extraClass) ?>"
             value="<?= $this->e($fieldValue) ?>"
             placeholder="<?= $this->e($fieldPlaceholder) ?>"
             <?= $isRequired ? 'required' : '' ?>
             <?= $isDisabled ? 'disabled' : '' ?>
-            <?= $this->raw($invalidAttr . $describedAttr) ?>
+            <?= $isReadonly ? 'readonly' : '' ?>
+            <?= $isAutofocus ? 'autofocus' : '' ?>
+            <?= $this->raw($autocompleteAttr . $inputmodeAttr . $maxlengthAttr . $invalidAttr . $describedAttr) ?>
         >
     <?php endif; ?>
 

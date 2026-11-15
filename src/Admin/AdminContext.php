@@ -6,20 +6,51 @@ namespace Prime\Admin;
 
 use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Menu\MenuNode;
+use Prime\Auth\Auth;
+use Prime\Auth\User;
 use Prime\Hooks\Hooks;
 use Prime\Http\Request;
+use Prime\Http\Session;
 use Prime\Kernel\Application;
 
 /**
- * Builds shared shell data for every admin view and invokes admin hooks.
+ * Builds shared shell data for every admin view, filters navigation/actions by user
+ * capabilities, attaches flash toasts, and invokes admin hooks.
  */
 final class AdminContext
 {
+    public const FLASH_TOASTS_KEY = '_admin.toasts';
+
     public function __construct(
         private readonly Application $app,
         private readonly AdminMenu $baseMenu,
         private readonly Hooks $hooks,
+        private readonly ?Auth $auth = null,
+        private readonly ?Session $session = null,
     ) {
+    }
+
+    /**
+     * Queue a toast notification to be displayed once on the next admin page render.
+     */
+    public function flashToast(string $message, string $type = 'success', ?string $title = null): void
+    {
+        if ($this->session === null) {
+            return;
+        }
+
+        $existing = $this->session->getFlash(self::FLASH_TOASTS_KEY, []);
+        $list = is_array($existing) ? array_values($existing) : [];
+        $entry = [
+            'message' => $message,
+            'type' => $type,
+        ];
+        if ($title !== null && $title !== '') {
+            $entry['title'] = $title;
+        }
+        $list[] = $entry;
+
+        $this->session->flash(self::FLASH_TOASTS_KEY, $list);
     }
 
     /**
@@ -30,15 +61,22 @@ final class AdminContext
      */
     public function build(Request $request, string $pageTitle, array $extra = []): array
     {
+        $user = $this->auth?->user($request);
+
         $menu = clone $this->baseMenu;
         $filteredMenu = $this->hooks->apply('admin.menu', $menu);
         if ($filteredMenu instanceof AdminMenu) {
             $menu = $filteredMenu;
         }
+
+        if ($user !== null) {
+            $menu->filterByCapability(static fn (string $cap): bool => $user->can($cap));
+        }
+
         $menu->setActive($request);
 
         $menuGroups = $menu->groupedTree();
-        $createItems = $this->createItems();
+        $createItems = $this->createItems($user);
         $paletteItems = $this->commandPaletteItems($menu->tree(), $createItems);
         $assets = $this->assets();
 
@@ -46,6 +84,8 @@ final class AdminContext
         $footerExtra = $this->hooks->apply('admin.footer', '');
 
         $appName = (string) $this->app->config()->get('app.name', 'Prime CMS');
+        $rawToasts = $this->session !== null ? $this->session->getFlash(self::FLASH_TOASTS_KEY, []) : [];
+        $toasts = is_array($rawToasts) ? array_values($rawToasts) : [];
 
         return array_merge([
             'appName' => $appName,
@@ -55,25 +95,22 @@ final class AdminContext
             'menuGroups' => $menuGroups,
             'createItems' => $createItems,
             'commandPaletteJson' => $this->encodeJson($paletteItems),
+            'flashToastsJson' => $this->encodeJson($toasts),
             'adminStyles' => $assets['css'],
             'adminScripts' => $assets['js'],
             'adminHeadExtra' => is_string($headExtra) ? $headExtra : '',
             'adminFooterExtra' => is_string($footerExtra) ? $footerExtra : '',
-            'currentUser' => [
-                'name' => 'Administrateur',
-                'role' => 'Aperçu local',
-                'email' => 'admin@prime-cms.local',
-                'initials' => 'AD',
-            ],
+            'authUser' => $user,
+            'currentUser' => $this->formatCurrentUser($user),
         ], $extra);
     }
 
     /**
-     * Items listed in the topbar coral "Créer" dropdown (filterable via `admin.create.items`).
+     * Items listed in the topbar coral "Créer" dropdown (filtered by capabilities & `admin.create.items`).
      *
-     * @return list<array{id: string, label: string, description: string, icon: string, accent: string, url: string}>
+     * @return list<array{id: string, label: string, description: string, icon: string, accent: string, url: string, capability?: string}>
      */
-    public function createItems(): array
+    public function createItems(?User $user = null): array
     {
         $defaults = [
             [
@@ -83,6 +120,7 @@ final class AdminContext
                 'icon' => 'file-text',
                 'accent' => 'teal',
                 'url' => '/admin/pages',
+                'capability' => 'content.create',
             ],
             [
                 'id' => 'create.article',
@@ -91,6 +129,7 @@ final class AdminContext
                 'icon' => 'newspaper',
                 'accent' => 'teal',
                 'url' => '/admin/articles',
+                'capability' => 'content.create',
             ],
             [
                 'id' => 'create.media',
@@ -99,20 +138,34 @@ final class AdminContext
                 'icon' => 'upload',
                 'accent' => 'sky',
                 'url' => '/admin/media',
+                'capability' => 'media.upload',
             ],
             [
                 'id' => 'create.user',
                 'label' => 'Nouvel utilisateur',
-                'description' => 'Inviter un membre',
+                'description' => 'Créer ou inviter un membre',
                 'icon' => 'users',
                 'accent' => 'amber',
-                'url' => '/admin/users',
+                'url' => '/admin/users/create',
+                'capability' => 'users.create',
             ],
         ];
 
         $filtered = $this->hooks->apply('admin.create.items', $defaults);
+        $items = is_array($filtered) ? array_values($filtered) : $defaults;
 
-        return is_array($filtered) ? array_values($filtered) : $defaults;
+        if ($user !== null) {
+            $items = array_values(array_filter(
+                $items,
+                static function (array $item) use ($user): bool {
+                    $cap = $item['capability'] ?? null;
+
+                    return !is_string($cap) || $cap === '' || $user->can($cap);
+                },
+            ));
+        }
+
+        return $items;
     }
 
     /**
@@ -131,6 +184,9 @@ final class AdminContext
         'appearance.widgets' => ['blocs', 'zones', 'pied de page'],
         'plugins' => ['extensions', 'modules', 'compléments'],
         'users' => ['comptes', 'rôles', 'permissions', 'équipe', 'membres'],
+        'users.list' => ['utilisateurs', 'comptes', 'équipe', 'membres'],
+        'users.create' => ['ajouter', 'inviter', 'nouveau', 'utilisateur'],
+        'users.roles' => ['rôles', 'permissions', 'droits', 'rbac'],
         'settings' => ['paramètres', 'configuration', 'options', 'préférences'],
         'settings.general' => ['paramètres', 'configuration', 'site', 'langue', 'fuseau'],
         'settings.permalinks' => ['paramètres', 'configuration', 'urls', 'slugs', 'liens'],
@@ -144,10 +200,40 @@ final class AdminContext
     ];
 
     /**
-     * Command palette entries built from menu + quick actions (filterable via `admin.command_palette`).
+     * @return array{id: ?int, name: string, role: string, email: string, initials: string, accent: string, isAdmin: bool, canSettings: bool}
+     */
+    private function formatCurrentUser(?User $user): array
+    {
+        if ($user === null) {
+            return [
+                'id' => null,
+                'name' => 'Invité',
+                'role' => 'Non connecté',
+                'email' => '',
+                'initials' => 'IN',
+                'accent' => 'brand',
+                'isAdmin' => false,
+                'canSettings' => false,
+            ];
+        }
+
+        return [
+            'id' => $user->id,
+            'name' => $user->displayName,
+            'role' => $user->primaryRoleName(),
+            'email' => $user->email,
+            'initials' => $user->initials(),
+            'accent' => $user->avatarAccent(),
+            'isAdmin' => $user->isAdministrator(),
+            'canSettings' => $user->can('settings.manage'),
+        ];
+    }
+
+    /**
+     * Command palette entries built from capability-filtered menu + quick actions.
      *
      * @param list<MenuNode> $tree
-     * @param list<array{id: string, label: string, description: string, icon: string, accent: string, url: string}> $createItems
+     * @param list<array{id: string, label: string, description: string, icon: string, accent: string, url: string, capability?: string}> $createItems
      * @return list<array<string, mixed>>
      */
     private function commandPaletteItems(array $tree, array $createItems): array
@@ -198,6 +284,18 @@ final class AdminContext
                 'keywords' => self::DEFAULT_KEYWORDS[$create['id']] ?? ['créer', 'nouveau', 'ajouter'],
             ];
         }
+
+        $entries[] = [
+            'id' => 'action.profile',
+            'label' => 'Mon profil et sécurité',
+            'subtitle' => 'Mot de passe, 2FA et sessions',
+            'group' => 'Raccourcis',
+            'section' => 'Raccourcis',
+            'icon' => 'user',
+            'accent' => 'sky',
+            'url' => '/admin/profile',
+            'keywords' => ['profil', 'compte', 'mot de passe', '2fa', 'totp', 'sécurité'],
+        ];
 
         $entries[] = [
             'id' => 'action.view_site',

@@ -35,8 +35,8 @@ $envWritten = (bool) ($completion['env_written'] ?? true);
 
     <?= $this->raw($this->insert('admin::components/alert', [
         'variant' => 'info',
-        'title' => 'Connexion au tableau de bord (Phase 4)',
-        'message' => 'Votre compte administrateur est bien enregistré en base de données. L\'écran de connexion et la gestion des rôles arriveront avec la prochaine mise à jour (Phase 4).',
+        'title' => 'Accès au tableau de bord',
+        'message' => 'Votre compte administrateur est prêt. Cliquez ci-dessous pour vous connecter à l\'espace d\'administration.',
     ])) ?>
 
     <?php if (!$envWritten): ?>
@@ -52,7 +52,7 @@ $envWritten = (bool) ($completion['env_written'] ?? true);
             <?= $this->raw($this->icon('home', 16)) ?>
             <span>Voir le site</span>
         </a>
-        <a href="/admin" class="pc-btn pc-btn--secondary">
+        <a href="/admin/login" class="pc-btn pc-btn--secondary">
             <?= $this->raw($this->icon('layout-dashboard', 16)) ?>
             <span>Ouvrir le tableau de bord</span>
         </a>

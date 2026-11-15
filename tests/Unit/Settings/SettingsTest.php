@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Prime\Tests\Unit\Settings;
 
-use PDO;
 use PHPUnit\Framework\TestCase;
 use Prime\Database\Connection;
 use Prime\Hooks\Hooks;
 use Prime\Settings\Settings;
+use Prime\Tests\Support\MysqlEmulatingPdo;
 
 final class SettingsTest extends TestCase
 {
@@ -18,9 +18,7 @@ final class SettingsTest extends TestCase
 
     protected function setUp(): void
     {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo = new MysqlEmulatingPdo('name');
 
         $this->hooks = new Hooks();
         $this->connection = new Connection(['prefix' => 'pc_'], hooks: $this->hooks, debug: true, pdo: $pdo);

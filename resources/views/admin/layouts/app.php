@@ -202,6 +202,7 @@ declare(strict_types=1);
 
                 <div class="pc-topbar__actions">
                     <!-- Quick create dropdown (primary coral action) -->
+                    <?php if ($createItems !== []): ?>
                     <div class="pc-dropdown" data-prime-dropdown>
                         <button
                             type="button"
@@ -236,6 +237,7 @@ declare(strict_types=1);
                             <?php endforeach; ?>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Notifications dropdown -->
                     <div class="pc-dropdown" data-prime-dropdown>
@@ -283,7 +285,7 @@ declare(strict_types=1);
                             <?= $this->raw($this->insert('admin::components/avatar', [
                                 'initials' => $currentUser['initials'],
                                 'size' => 'sm',
-                                'accent' => 'brand',
+                                'accent' => $currentUser['accent'] ?? 'brand',
                             ])) ?>
                             <span class="pc-topbar__create-label"><?= $this->e($currentUser['name']) ?></span>
                             <?= $this->raw($this->icon('chevron-down', 14)) ?>
@@ -298,33 +300,30 @@ declare(strict_types=1);
                         >
                             <div class="pc-dropdown__header">
                                 <div class="pc-dropdown__title"><?= $this->e($currentUser['name']) ?></div>
-                                <div class="pc-dropdown__subtitle"><?= $this->e($currentUser['email']) ?></div>
+                                <div class="pc-dropdown__subtitle"><?= $this->e($currentUser['role']) ?><?= !empty($currentUser['email']) ? ' · ' . $this->e($currentUser['email']) : '' ?></div>
                             </div>
-                            <a class="pc-dropdown__item" role="menuitem" href="/admin/users">
+                            <a class="pc-dropdown__item" role="menuitem" href="/admin/profile">
                                 <?= $this->raw($this->icon('user', 16)) ?>
                                 <span>Mon profil</span>
                             </a>
-                            <a class="pc-dropdown__item" role="menuitem" href="/admin/settings">
-                                <?= $this->raw($this->icon('settings', 16)) ?>
-                                <span>Préférences</span>
-                            </a>
+                            <?php if (!empty($currentUser['canSettings'])): ?>
+                                <a class="pc-dropdown__item" role="menuitem" href="/admin/settings">
+                                    <?= $this->raw($this->icon('settings', 16)) ?>
+                                    <span>Réglages</span>
+                                </a>
+                            <?php endif; ?>
                             <a class="pc-dropdown__item" role="menuitem" href="/">
                                 <?= $this->raw($this->icon('external-link', 16)) ?>
                                 <span>Voir le site public</span>
                             </a>
                             <div class="pc-dropdown__separator" role="separator"></div>
-                            <button
-                                type="button"
-                                class="pc-dropdown__item"
-                                role="menuitem"
-                                data-prime-toast-trigger
-                                data-prime-toast-type="info"
-                                data-prime-toast-title="Authentification — Phase 4"
-                                data-prime-toast-message="La déconnexion sera activée avec le module Authentification."
-                            >
-                                <?= $this->raw($this->icon('log-out', 16)) ?>
-                                <span>Se déconnecter</span>
-                            </button>
+                            <form method="post" action="/admin/logout" class="pc-dropdown-form">
+                                <?= $this->raw($this->csrfField()) ?>
+                                <button type="submit" class="pc-dropdown__item" role="menuitem">
+                                    <?= $this->raw($this->icon('log-out', 16)) ?>
+                                    <span>Se déconnecter</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -381,6 +380,9 @@ declare(strict_types=1);
     </dialog>
 
     <script type="application/json" id="prime-command-palette-data"><?= $this->raw($commandPaletteJson) ?></script>
+    <?php if (!empty($flashToastsJson) && $flashToastsJson !== '[]'): ?>
+    <script type="application/json" id="prime-flash-toasts"><?= $this->raw($flashToastsJson) ?></script>
+    <?php endif; ?>
 
     <div class="pc-toast-stack" data-prime-toast-stack aria-live="polite" aria-atomic="false"></div>
 

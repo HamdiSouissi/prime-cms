@@ -2,7 +2,7 @@
 
 **Prime CMS** est un système de gestion de contenu (CMS) 100 % original écrit en **PHP 8.2+ natif**, sans framework et avec **zéro dépendance au runtime**.
 
-> Version actuelle : **0.1.0** (Phase 3 — Base de données et installateur)
+> Version actuelle : **0.1.0** (Phase 4 — Authentification, utilisateurs, rôles)
 > Référence complète d'architecture et de conventions : [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 ---
@@ -29,10 +29,12 @@ docker compose up -d
 3. Une fois installé, les routes `/install*` retournent `404` et le site est accessible :
    - **Accueil** : [http://localhost:8080](http://localhost:8080)
    - **Santé (JSON)** : [http://localhost:8080/health](http://localhost:8080/health)
-   - **Dashboard (aperçu local)** : [http://localhost:8080/admin](http://localhost:8080/admin)
-   - **Design System (styleguide)** : [http://localhost:8080/admin/styleguide](http://localhost:8080/admin/styleguide)
+   - **Connexion administration** : [http://localhost:8080/admin/login](http://localhost:8080/admin/login)
+   - **Tableau de bord (authentifié)** : [http://localhost:8080/admin](http://localhost:8080/admin)
+   - **Utilisateurs, rôles & profil** : `/admin/users`, `/admin/roles`, `/admin/profile`
+   - **Design System (styleguide, admin + `APP_ENV=local`)** : [http://localhost:8080/admin/styleguide](http://localhost:8080/admin/styleguide)
 
-> **Sécurité** : tant que l'authentification n'est pas en place (Phase 4), toutes les routes `/admin/*` sont restreintes à `APP_ENV=local` par `AdminPreviewGate` et retournent `404` dans tout autre environnement.
+> **Sécurité** : toutes les routes `/admin/*` sont protégées par session authentifiée, contrôle d'accès par rôles et permissions (RBAC), jetons CSRF, limitation de débit (HTTP 429), 2FA TOTP optionnelle et en-têtes `Cache-Control: no-store`. Voir [`docs/security.md`](docs/security.md).
 
 Pour arrêter les conteneurs :
 
@@ -73,6 +75,14 @@ php bin/prime make:migration <nom>           # Crée un fichier de migration hor
 php bin/prime settings:get <nom>             # Lit la valeur JSON d'un réglage
 php bin/prime settings:set <nom> <json>      # Enregistre un réglage typé JSON
 php bin/prime install [options]              # Installe Prime CMS sans interaction
+php bin/prime role:list                      # Liste les rôles, permissions et utilisateurs assignés
+php bin/prime user:list [options]            # Liste les utilisateurs (--role, --status, --search)
+php bin/prime user:create [options]          # Crée un utilisateur (--email, --name, --role, --password)
+php bin/prime user:password <email>          # Définit ou génère un nouveau mot de passe (révoque les sessions)
+php bin/prime user:role <email> <roles>      # Assigne, ajoute (--add) ou retire (--remove) des rôles
+php bin/prime user:disable <email>           # Désactive un compte et révoque ses sessions
+php bin/prime user:enable <email>            # Réactive un compte désactivé
+php bin/prime user:2fa:reset <email>         # Réinitialisation d'urgence de la 2FA (TOTP)
 ```
 
 ---
@@ -122,6 +132,8 @@ prime-cms/
 - [`docs/CONTEXT.md`](docs/CONTEXT.md) — Architecture, règles absolues, design system et feuille de route en 15 phases
 - [`docs/database.md`](docs/database.md) — Couche PDO, `QueryBuilder`, `Schema`/`Blueprint`, migrations et `Settings`
 - [`docs/install.md`](docs/install.md) — Assistant d'installation web, repli `.env` lecture seule et CLI `bin/prime install`
+- [`docs/security.md`](docs/security.md) — Architecture sécurité (Argon2id, AES-256-GCM, sessions, remember-me, rate limiting, 2FA TOTP)
+- [`docs/users-and-roles.md`](docs/users-and-roles.md) — Rôles, catalogue de permissions (RBAC), garde `UserGuard` et commandes CLI
 - [`docs/design-system.md`](docs/design-system.md) — Guide complet du design system, des composants, icônes et modules JS
 - [`docs/hooks.md`](docs/hooks.md) — Référence de tous les hooks (événements et filtres)
 - [`docs/nginx.conf.example`](docs/nginx.conf.example) — Exemple de configuration Nginx

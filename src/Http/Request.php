@@ -314,6 +314,21 @@ final class Request
         return is_string($addr) && $addr !== '' ? $addr : '127.0.0.1';
     }
 
+    public function isSecure(): bool
+    {
+        $https = $this->server['HTTPS'] ?? null;
+        if (is_string($https) && strtolower($https) !== 'off' && $https !== '') {
+            return true;
+        }
+
+        $port = $this->server['SERVER_PORT'] ?? null;
+        if ((string) $port === '443') {
+            return true;
+        }
+
+        return strtolower($this->header('x-forwarded-proto') ?? '') === 'https';
+    }
+
     public function isAjax(): bool
     {
         return strtolower($this->header('x-requested-with') ?? '') === 'xmlhttprequest';

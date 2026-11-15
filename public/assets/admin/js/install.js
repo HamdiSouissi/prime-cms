@@ -4,8 +4,9 @@
  * Strictly CSP-compliant (zero inline scripts), using `data-prime-*` hooks only:
  * - Password show/hide toggles (`data-prime-password-toggle`)
  * - Real-time password strength meter (`data-prime-password-strength`)
- * - On-blur accessible field validation (`data-prime-validate`)
- * - Auto-focus on the first server-flagged invalid input (`[aria-invalid="true"]`)
+ * - On-blur and on-submit accessible field validation (`data-prime-validate`, `[required]`)
+ * - Preserves existing `aria-describedby` IDs (help text) when toggling client errors
+ * - Moves focus to the first invalid field on submit failure or server-side errors
  * - Copy-to-clipboard for manual `.env` fallback (`data-prime-copy-target`)
  */
 
@@ -30,7 +31,12 @@ const FORBIDDEN_PASSWORDS = new Set([
 
 function initPasswordToggles() {
   document.addEventListener('click', (event) => {
-    const toggle = event.target.closest('[data-prime-password-toggle]');
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const toggle = target.closest('[data-prime-password-toggle]');
     if (!toggle) {
       return;
     }
@@ -128,24 +134,55 @@ function initPasswordStrength() {
   update();
 }
 
+function getDescribedByIds(input) {
+  const raw = input.getAttribute('aria-describedby');
+  if (!raw) {
+    return [];
+  }
+
+  return raw.trim().split(/\s+/).filter(Boolean);
+}
+
+function syncDescribedBy(input, ids) {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (unique.length === 0) {
+    input.removeAttribute('aria-describedby');
+  } else {
+    input.setAttribute('aria-describedby', unique.join(' '));
+  }
+}
+
 function setClientFieldError(input, message) {
   const wrapper = input.closest('.pc-field');
   if (!wrapper) {
     return;
   }
 
-  let errorEl = wrapper.querySelector('[data-prime-client-error]');
+  const clientErrorId = `${input.id || input.name}-client-error`;
+  let describedBy = getDescribedByIds(input);
+
   const serverError = wrapper.querySelector('.pc-field__error:not([data-prime-client-error])');
   if (serverError) {
+    if (serverError.id) {
+      describedBy = describedBy.filter((id) => id !== serverError.id);
+    }
     serverError.remove();
   }
+
+  let errorEl = wrapper.querySelector('[data-prime-client-error]');
 
   if (!message) {
     wrapper.classList.remove('pc-field--error');
     input.removeAttribute('aria-invalid');
     if (errorEl) {
+      if (errorEl.id) {
+        describedBy = describedBy.filter((id) => id !== errorEl.id);
+      }
       errorEl.remove();
+    } else {
+      describedBy = describedBy.filter((id) => id !== clientErrorId);
     }
+    syncDescribedBy(input, describedBy);
     return;
   }
 
@@ -157,18 +194,25 @@ function setClientFieldError(input, message) {
     errorEl.className = 'pc-field__error';
     errorEl.setAttribute('role', 'alert');
     errorEl.setAttribute('data-prime-client-error', 'true');
-    errorEl.id = `${input.id}-client-error`;
+    errorEl.id = clientErrorId;
     wrapper.appendChild(errorEl);
   }
 
   errorEl.textContent = message;
-  input.setAttribute('aria-describedby', errorEl.id);
+  if (!describedBy.includes(errorEl.id)) {
+    describedBy.push(errorEl.id);
+  }
+  syncDescribedBy(input, describedBy);
 }
 
-function validateInputOnBlur(input) {
+function validateInput(input, checkRequired = false) {
   const rule = input.getAttribute('data-prime-validate');
   const val = input.value;
   const trimmed = val.trim();
+
+  if (checkRequired && input.hasAttribute('required') && trimmed === '') {
+    return 'Ce champ est obligatoire.';
+  }
 
   if (rule === 'prefix') {
     if (!/^(?=.*[a-z0-9])[a-z0-9_]{1,19}_$/.test(trimmed)) {
@@ -218,17 +262,53 @@ function validateInputOnBlur(input) {
     return null;
   }
 
+  if (checkRequired && input.type === 'number' && trimmed !== '') {
+    const num = Number(trimmed);
+    if (!Number.isInteger(num) || num < 1 || num > 65535) {
+      return 'Indiquez un numéro de port valide (entre 1 et 65535).';
+    }
+  }
+
   return null;
 }
 
-function initBlurValidation() {
+function initFormValidation() {
   const inputs = document.querySelectorAll('[data-prime-validate]');
   inputs.forEach((input) => {
     input.addEventListener('blur', () => {
       if (input.value === '' && !input.hasAttribute('aria-invalid')) {
         return;
       }
-      setClientFieldError(input, validateInputOnBlur(input));
+      setClientFieldError(input, validateInput(input, false));
+    });
+  });
+
+  document.querySelectorAll('.pc-install__form').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      const fields = form.querySelectorAll('input[data-prime-validate], input[required], select[required], textarea[required]');
+      let firstInvalid = null;
+
+      fields.forEach((field) => {
+        if (field.disabled || field.type === 'hidden') {
+          return;
+        }
+        const error = validateInput(field, true);
+        if (error) {
+          setClientFieldError(field, error);
+          if (!firstInvalid) {
+            firstInvalid = field;
+          }
+        } else if (field.hasAttribute('data-prime-validate') || field.hasAttribute('aria-invalid')) {
+          setClientFieldError(field, null);
+        }
+      });
+
+      if (firstInvalid) {
+        event.preventDefault();
+        if (typeof firstInvalid.focus === 'function') {
+          firstInvalid.focus();
+        }
+      }
     });
   });
 }
@@ -242,7 +322,12 @@ function focusFirstInvalidField() {
 
 function initCopyButtons() {
   document.addEventListener('click', async (event) => {
-    const btn = event.target.closest('[data-prime-copy-target]');
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const btn = target.closest('[data-prime-copy-target]');
     if (!btn) {
       return;
     }
@@ -279,7 +364,7 @@ function initCopyButtons() {
 function bootInstaller() {
   initPasswordToggles();
   initPasswordStrength();
-  initBlurValidation();
+  initFormValidation();
   initCopyButtons();
   focusFirstInvalidField();
 }

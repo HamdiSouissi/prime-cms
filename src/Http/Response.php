@@ -19,6 +19,13 @@ final class Response
     private array $headers = [];
 
     /**
+     * Queued Set-Cookie definitions emitted when sending the response.
+     *
+     * @var list<array{name: string, value: string, maxAge: int, path: string, secure: bool, httpOnly: bool, sameSite: string}>
+     */
+    private array $cookies = [];
+
+    /**
      * @param array<string, string> $headers
      */
     public function __construct(
@@ -179,7 +186,74 @@ final class Response
     }
 
     /**
-     * Emit status code, headers, and body to the client.
+     * Attach a `Set-Cookie` directive to the response (immutable).
+     */
+    public function withCookie(
+        string $name,
+        string $value,
+        int $maxAge = 0,
+        string $path = '/',
+        bool $secure = false,
+        bool $httpOnly = true,
+        string $sameSite = 'Lax',
+    ): self {
+        $clone = clone $this;
+        $clone->cookies = array_values(array_filter(
+            $clone->cookies,
+            static fn (array $cookie): bool => $cookie['name'] !== $name,
+        ));
+        $clone->cookies[] = [
+            'name' => $name,
+            'value' => $value,
+            'maxAge' => $maxAge,
+            'path' => $path,
+            'secure' => $secure,
+            'httpOnly' => $httpOnly,
+            'sameSite' => $sameSite,
+        ];
+
+        return $clone;
+    }
+
+    /**
+     * Expire a cookie on the client immediately.
+     */
+    public function withoutCookie(
+        string $name,
+        string $path = '/',
+        bool $secure = false,
+        bool $httpOnly = true,
+        string $sameSite = 'Lax',
+    ): self {
+        return $this->withCookie($name, '', -3600, $path, $secure, $httpOnly, $sameSite);
+    }
+
+    /**
+     * @return list<array{name: string, value: string, maxAge: int, path: string, secure: bool, httpOnly: bool, sameSite: string}>
+     */
+    public function cookies(): array
+    {
+        return $this->cookies;
+    }
+
+    /**
+     * Find a queued cookie by name (primarily for testing and inspection).
+     *
+     * @return array{name: string, value: string, maxAge: int, path: string, secure: bool, httpOnly: bool, sameSite: string}|null
+     */
+    public function cookie(string $name): ?array
+    {
+        foreach ($this->cookies as $cookie) {
+            if ($cookie['name'] === $name) {
+                return $cookie;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Emit status code, headers, cookies, and body to the client.
      */
     public function send(): void
     {
@@ -188,10 +262,44 @@ final class Response
             foreach ($this->headers as $entry) {
                 header($entry['name'] . ': ' . $entry['value'], true);
             }
+            foreach ($this->cookies as $cookie) {
+                header('Set-Cookie: ' . self::formatCookieHeader($cookie), false);
+            }
         }
 
         if ($this->status !== 204) {
             echo $this->body;
         }
+    }
+
+    /**
+     * @param array{name: string, value: string, maxAge: int, path: string, secure: bool, httpOnly: bool, sameSite: string} $cookie
+     */
+    public static function formatCookieHeader(array $cookie): string
+    {
+        $parts = [
+            $cookie['name'] . '=' . rawurlencode($cookie['value']),
+            'Path=' . $cookie['path'],
+        ];
+
+        if ($cookie['maxAge'] !== 0) {
+            $expiresTs = $cookie['maxAge'] > 0 ? time() + $cookie['maxAge'] : time() - 3600;
+            $parts[] = 'Expires=' . gmdate('D, d M Y H:i:s', $expiresTs) . ' GMT';
+            $parts[] = 'Max-Age=' . max(0, $cookie['maxAge']);
+        }
+
+        if ($cookie['secure']) {
+            $parts[] = 'Secure';
+        }
+
+        if ($cookie['httpOnly']) {
+            $parts[] = 'HttpOnly';
+        }
+
+        if ($cookie['sameSite'] !== '') {
+            $parts[] = 'SameSite=' . $cookie['sameSite'];
+        }
+
+        return implode('; ', $parts);
     }
 }

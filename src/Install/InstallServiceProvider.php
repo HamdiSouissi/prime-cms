@@ -9,6 +9,7 @@ use Prime\Http\Router;
 use Prime\Install\Controller\InstallController;
 use Prime\Kernel\Container;
 use Prime\Kernel\ServiceProvider;
+use Prime\Security\Hasher;
 use Prime\View\View;
 
 /**
@@ -42,6 +43,7 @@ final class InstallServiceProvider extends ServiceProvider
             /** @var EnvWriter $envWriter */
             $envWriter = $c->get(EnvWriter::class);
             $hooks = $c->has(Hooks::class) ? $c->get(Hooks::class) : null;
+            $hasher = $c->has(Hasher::class) ? $c->get(Hasher::class) : null;
 
             return new Installer(
                 app: $app,
@@ -49,6 +51,7 @@ final class InstallServiceProvider extends ServiceProvider
                 databaseTester: $tester,
                 envWriter: $envWriter,
                 hooks: $hooks instanceof Hooks ? $hooks : null,
+                hasher: $hasher instanceof Hasher ? $hasher : null,
             );
         });
     }

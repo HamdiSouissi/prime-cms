@@ -199,30 +199,41 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
 
         // Run core migrations
         $ran = $migrator->run();
-        $this->assertCount(2, $ran);
+        $this->assertCount(6, $ran);
         $this->assertTrue($schema->hasTable('settings'));
         $this->assertTrue($schema->hasTable('users'));
+        $this->assertTrue($schema->hasColumn('users', 'session_version'));
+        $this->assertTrue($schema->hasColumn('users', 'two_factor_secret'));
+        $this->assertTrue($schema->hasTable('roles'));
+        $this->assertTrue($schema->hasTable('role_capabilities'));
+        $this->assertTrue($schema->hasTable('user_roles'));
+        $this->assertTrue($schema->hasTable('remember_tokens'));
+        $this->assertTrue($schema->hasTable('password_resets'));
+        $this->assertTrue($schema->hasTable('rate_limits'));
+        $this->assertSame(4, $this->connection->table('roles')->count());
 
         // Idempotent second run
         $this->assertSame([], $migrator->run());
 
-        // Status reflects both migrations as ran in batch 1
+        // Status reflects all core migrations as ran in batch 1
         $status = $migrator->status();
-        $this->assertCount(2, $status);
+        $this->assertCount(6, $status);
         $this->assertSame('ran', $status[0]['status']);
         $this->assertSame(1, $status[0]['batch']);
 
-        // Rollback removes both
+        // Rollback removes all batch-1 migrations cleanly
         $rolledBack = $migrator->rollback(1);
-        $this->assertCount(2, $rolledBack);
+        $this->assertCount(6, $rolledBack);
+        $this->assertFalse($schema->hasTable('roles'));
         $this->assertFalse($schema->hasTable('users'));
         $this->assertFalse($schema->hasTable('settings'));
 
         // Fresh recreates cleanly
         $freshRan = $migrator->fresh();
-        $this->assertCount(2, $freshRan);
+        $this->assertCount(6, $freshRan);
         $this->assertTrue($schema->hasTable('settings'));
         $this->assertTrue($schema->hasTable('users'));
+        $this->assertTrue($schema->hasTable('roles'));
 
         // Partial failure test: migration 1 succeeds, migration 2 fails → migration 1 stays recorded!
         $tempDir = sys_get_temp_dir() . '/prime_mig_fail_' . uniqid('', true);

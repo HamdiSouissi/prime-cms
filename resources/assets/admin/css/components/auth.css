@@ -1,0 +1,509 @@
+/* ==========================================================================
+   Prime CMS — Authentication, Users, Roles & Profile UI
+   All colors reference tokens.css exclusively (zero hardcoded hex/rgb values).
+   ========================================================================== */
+
+/* ---- Split-screen Auth Layout -------------------------------------------- */
+.pc-auth-page {
+  min-height: 100vh;
+  background-color: var(--canvas);
+  color: var(--color-text);
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.pc-auth-brand {
+  display: none;
+  background-color: var(--ink-900);
+  color: var(--sidebar-text);
+  padding: var(--space-12);
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+.pc-auth-brand__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pc-auth-brand__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+}
+
+.pc-auth-brand__name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--surface);
+}
+
+.pc-auth-brand__body {
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.pc-auth-brand__headline {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: -0.025em;
+  color: var(--surface);
+  margin: 0;
+}
+
+.pc-auth-brand__lead {
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  color: var(--sidebar-text-muted);
+  margin: 0;
+}
+
+.pc-auth-brand__pillars {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pc-auth-brand__pillar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-base);
+  color: var(--sidebar-text);
+}
+
+.pc-auth-brand__pillar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-500);
+  flex-shrink: 0;
+}
+
+.pc-auth-brand__footer {
+  font-size: var(--text-xs);
+  color: var(--sidebar-group-label);
+  border-top: 1px solid var(--sidebar-border);
+  padding-top: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.pc-auth-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+  min-height: 100vh;
+}
+
+.pc-auth-mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.pc-auth-mobile-brand__name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-strong);
+  letter-spacing: -0.02em;
+}
+
+.pc-auth-card {
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.pc-auth-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pc-auth-card__title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+  color: var(--color-text-strong);
+  margin: 0;
+}
+
+.pc-auth-card__subtitle {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.pc-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pc-auth-form__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pc-auth-link {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.pc-auth-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.pc-auth-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.pc-auth-link-btn:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.pc-auth-card__footer {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.pc-auth-otp-input {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  letter-spacing: 0.25em;
+  text-align: center;
+}
+
+.pc-auth-submit {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  .pc-auth-page {
+    grid-template-columns: minmax(420px, 44%) 1fr;
+  }
+
+  .pc-auth-brand {
+    display: flex;
+  }
+
+  .pc-auth-mobile-brand {
+    display: none;
+  }
+
+  .pc-auth-main {
+    padding: var(--space-10);
+  }
+}
+
+@media (max-width: 480px) {
+  .pc-auth-card {
+    padding: var(--space-6) var(--space-5);
+  }
+}
+
+/* ---- Users / Roles Admin Management -------------------------------------- */
+.pc-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: var(--surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.pc-filter-bar__search {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.pc-filter-bar__select {
+  flex: 0 1 180px;
+  min-width: 150px;
+}
+
+.pc-filter-bar__actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.pc-user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.pc-user-cell__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pc-user-cell__name {
+  font-weight: 600;
+  color: var(--color-text-strong);
+  text-decoration: none;
+}
+
+.pc-user-cell__name:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.pc-user-cell__email {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pc-badges-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.pc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.pc-pagination__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---- Role Capability Matrix ---------------------------------------------- */
+.pc-cap-matrix {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.pc-cap-group {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-subtle);
+  overflow: hidden;
+}
+
+.pc-cap-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--table-header-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pc-cap-group__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-strong);
+  margin: 0;
+}
+
+.pc-cap-group__list {
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pc-cap-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.pc-cap-item__key {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ---- 2FA Setup & Recovery Codes ------------------------------------------ */
+.pc-totp-secret-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.pc-totp-secret-code {
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-text-strong);
+  word-break: break-all;
+}
+
+.pc-recovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  list-style: none;
+  margin: 0;
+}
+
+.pc-recovery-grid__item {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-strong);
+  background-color: var(--surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  text-align: center;
+}
+
+.pc-inline-form {
+  display: inline;
+  margin: 0;
+}
+
+.pc-dropdown-form {
+  margin: 0;
+}
+
+.pc-dropdown-form .pc-dropdown__item {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.pc-form-narrow {
+  width: 100%;
+  max-width: 560px;
+}
+
+.pc-form-wide {
+  width: 100%;
+  max-width: 880px;
+}
+
+.pc-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: 560px;
+}
+
+@media (min-width: 960px) {
+  .pc-form-grid--aside {
+    grid-template-columns: minmax(0, 560px) minmax(260px, 1fr);
+    align-items: start;
+    max-width: 880px;
+  }
+}
+
+.pc-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pc-checkbox-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  cursor: pointer;
+}
+
+.pc-checkbox-card:hover {
+  background-color: var(--surface-subtle);
+}
+
+.pc-checkbox-card__title {
+  font-weight: 600;
+  font-size: var(--text-base);
+  color: var(--color-text-strong);
+  display: block;
+}
+
+.pc-checkbox-card__desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  display: block;
+}
