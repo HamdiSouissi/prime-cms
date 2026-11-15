@@ -107,6 +107,10 @@ Tout plugin implémente `Prime\Plugins\PluginInterface` (ou étend `Prime\Plugin
 | `$context->db()` | Instance `Prime\Database\Connection` (`QueryBuilder` + requêtes préparées). |
 | `$context->logger()` | Canal dédié `plugin.{slug}` (`storage/logs/plugin.{slug}-YYYY-MM-DD.log`). |
 | `$context->notices()` | Notifications persistantes du tableau de bord (`info`, `success`, `warning`, `danger`), nettoyées automatiquement à la désinstallation. |
+| `$context->contentTypes()` | Façade `PluginContentTypes` : enregistre des types de contenus (CPT) attribués automatiquement à `plugin:{slug}`. |
+| `$context->taxonomies()` | Façade `PluginTaxonomies` : enregistre des taxonomies attribuées automatiquement à `plugin:{slug}`. |
+| `$context->fields()` | Façade `PluginFields` : enregistre des groupes de champs personnalisés (`main`/`sidebar`) attribués à `plugin:{slug}`. |
+| `$context->blocks()` | Façade `PluginBlocks` : enregistre des blocs serveur Prime Editor et publie leurs scripts ES client via `enqueueScript()`. |
 | `$context->setSettingsUrl(string $url)` | Définit le lien du bouton **Réglages** sur `/admin/plugins`. |
 
 ---
@@ -162,4 +166,9 @@ php bin/prime make:plugin <slug> [--name="..."] [--author="..."] [--namespace=".
 
 ## 9. Plugin de référence `hello-prime`
 
-Le dépôt inclut `content/plugins/hello-prime/` (installé inactif par défaut) qui exerce l'intégralité de l'API : menu violet, capacité `hello_prime.manage`, réglages préfixés, migration SQL (`pc_hello_prime_greetings`), route publique `/hello-prime`, feuille de style publiée via `admin.assets`, raccourci tableau de bord et notification d'accueil persistante.
+Le dépôt inclut `content/plugins/hello-prime/` (`v1.1.0`, installé inactif par défaut) qui exerce l'intégralité de l'API Phases 5 & 6 :
+- menu violet, capacité `hello_prime.manage`, réglages préfixés, migration SQL (`pc_hello_prime_greetings`), route publique `/hello-prime`, feuille de style publiée via `admin.assets`, raccourci tableau de bord et notification d'accueil persistante ;
+- type de contenu personnalisé `testimonial` (« Témoignages »), taxonomie `testimonial_source` (« Sources »), groupe de champs latéral `hello-prime.testimonial_details` (`author_role`, `rating`, `featured`) et bloc Prime Editor personnalisé `hello-prime/highlight` (PHP + `assets/js/highlight-block.js`) ;
+- désinstallation sans trace (`EntryRepository::deleteByType('testimonial')` et `TermRepository::deleteByTaxonomy('testimonial_source')`).
+
+Pour l'API complète de gestion des contenus et de l'éditeur de blocs, consultez [`docs/content.md`](content.md) et [`docs/editor.md`](editor.md).

@@ -2,7 +2,7 @@
 
 **Prime CMS** est un système de gestion de contenu (CMS) 100 % original écrit en **PHP 8.2+ natif**, sans framework et avec **zéro dépendance au runtime**.
 
-> Version actuelle : **0.5.0** (Phase 5 — Système de plugins)
+> Version actuelle : **0.6.0** (Phase 6 — Contenus, taxonomies, champs personnalisés & Prime Editor)
 > Référence complète d'architecture et de conventions : [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 ---
@@ -31,6 +31,7 @@ docker compose up -d
    - **Santé (JSON)** : [http://localhost:8080/health](http://localhost:8080/health)
    - **Connexion administration** : [http://localhost:8080/admin/login](http://localhost:8080/admin/login)
    - **Tableau de bord (authentifié)** : [http://localhost:8080/admin](http://localhost:8080/admin)
+   - **Contenus & Taxonomies** : `/admin/content/page`, `/admin/content/post`, `/admin/taxonomies/category`, `/admin/taxonomies/tag` (éditeur de blocs natif **Prime Editor**, révisions/diff, autosave, verrous d'édition et aperçu sécurisé)
    - **Plugins** : `/admin/plugins` (incluant le plugin de référence `hello-prime`)
    - **Utilisateurs, rôles & profil** : `/admin/users`, `/admin/roles`, `/admin/profile`
    - **Design System (styleguide, admin + `APP_ENV=local`)** : [http://localhost:8080/admin/styleguide](http://localhost:8080/admin/styleguide)
@@ -91,6 +92,12 @@ php bin/prime plugin:uninstall <slug>        # Désinstalle un plugin inactif (-
 php bin/prime plugin:install <zip>           # Installe un plugin depuis une archive ZIP (--replace, --force)
 php bin/prime plugin:publish-assets [slug]   # Publie les assets statiques autorisés
 php bin/prime make:plugin <slug>             # Génère le squelette d'un nouveau plugin
+php bin/prime content:types                  # Liste les types de contenus et taxonomies enregistrés
+php bin/prime content:list [options]         # Liste les contenus (--type, --status, --search, --limit)
+php bin/prime content:create [options]       # Crée un contenu (--type, --title, --status, --body)
+php bin/prime content:publish-scheduled      # Publie les contenus planifiés arrivés à échéance
+php bin/prime content:purge-trash [--days=N] # Purge définitivement les contenus en corbeille
+php bin/prime content:rerender [--type=...]  # Re-génère content_html et content_text depuis JSON
 ```
 
 ---
@@ -143,6 +150,8 @@ prime-cms/
 - [`docs/security.md`](docs/security.md) — Architecture sécurité (Argon2id, AES-256-GCM, sessions, remember-me, rate limiting, 2FA TOTP)
 - [`docs/users-and-roles.md`](docs/users-and-roles.md) — Rôles, catalogue de permissions (RBAC), garde `UserGuard` et commandes CLI
 - [`docs/plugins.md`](docs/plugins.md) — Guide complet du système de plugins, API `PluginContext`, SemVer, isolation et sécurité ZIP
+- [`docs/content.md`](docs/content.md) — Types de contenus (CPT), taxonomies, champs personnalisés, `EntryService`, `EntryQuery`, révisions et verrous
+- [`docs/editor.md`](docs/editor.md) — Prime Editor (format JSON v1, 11 blocs natifs, `HtmlSanitizer`, CSP aperçu et blocs de plugins)
 - [`docs/design-system.md`](docs/design-system.md) — Guide complet du design system, des composants, icônes et modules JS
 - [`docs/hooks.md`](docs/hooks.md) — Référence de tous les hooks (événements et filtres)
 - [`docs/nginx.conf.example`](docs/nginx.conf.example) — Exemple de configuration Nginx

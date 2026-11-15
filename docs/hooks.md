@@ -197,4 +197,31 @@ Tout écouteur ou filtre enregistré via `$context->hooks()` (ou pendant l'exéc
 - Si un callback appartenant à un **plugin** lève une `Throwable` (exception ou `Error`), `Hooks` intercepte l'erreur, détache les hooks du plugin fautif pour la suite de la requête, délègue à `PluginManager` (statut `errored`, log dans `plugin.{slug}`, notice persistante, événement `plugin.failed`) et **laisse les autres écouteurs et filtres poursuivre normalement** (pour un filtre, la valeur précédente reste intacte).
 - Les écouteurs du **noyau** (sans propriétaire plugin) conservent leur comportement standard : leurs exceptions continuent de se propager normalement.
 
+---
+
+## Hooks de contenus et Prime Editor (Phase 6)
+
+### Filtres de registres et de rendu
+
+| Hook | Type | Valeur filtrée / Arguments | Usage |
+|------|------|----------------------------|-------|
+| `content.types` | Filtre | `array<string, Prime\Content\ContentType> $types` | Ajouter, enrichir ou modifier les types de contenus enregistrés (ex. ajouter une taxonomie à `post`). |
+| `content.taxonomies` | Filtre | `array<string, Prime\Content\Taxonomy> $taxonomies` | Modifier ou filtrer les taxonomies disponibles. |
+| `content.field_groups` | Filtre | `list<Prime\Content\Fields\FieldGroup> $groups`, `string $contentType` | Modifier les groupes de champs personnalisés affichés et validés pour un type de contenu. |
+| `editor.blocks` | Filtre | `array<string, Prime\Editor\BlockDefinition> $blocks` | Ajouter ou restreindre les définitions de blocs Prime Editor. |
+| `content.saving` | Filtre | `array<string, mixed> $payload`, `?Prime\Content\Entry $existing`, `Prime\Content\ContentType $type`, `Prime\Auth\User $actor` | Inspecter ou enrichir les données d'un contenu juste avant sa persistance en base. |
+| `content.render` | Filtre | `string $html`, `?Prime\Content\Entry $entry`, `array<string, mixed> $document` | Transformer le HTML généré par `Prime\Editor\Renderer::renderHtml()`. |
+
+### Événements du cycle de vie des contenus
+
+| Hook | Type | Paramètres | Déclenchement |
+|------|------|------------|---------------|
+| `content.created` | Événement | `Prime\Content\Entry $entry`, `Prime\Auth\User $actor` | Après création réussie d'un contenu (brouillon, publié, planifié…). |
+| `content.updated` | Événement | `Prime\Content\Entry $entry`, `Prime\Content\Entry $previous`, `Prime\Auth\User $actor` | Après mise à jour réussie d'un contenu. |
+| `content.published` | Événement | `Prime\Content\Entry $entry`, `?Prime\Auth\User $actor` | Lorsqu'un contenu passe au statut `published` (création publiée, mise à jour vers `published` ou publication planifiée automatique où `$actor` vaut `null`). |
+| `content.trashed` | Événement | `Prime\Content\Entry $entry`, `Prime\Auth\User $actor` | Après mise à la corbeille logique d'un contenu. |
+| `content.restored` | Événement | `Prime\Content\Entry $entry`, `Prime\Auth\User $actor` | Après restauration d'un contenu depuis la corbeille ou d'une révision. |
+| `content.deleted` | Événement | `Prime\Content\Entry $entry`, `?Prime\Auth\User $actor` | Après suppression définitive d'un contenu (manuelle ou purge automatique de la corbeille). |
+
+
 
