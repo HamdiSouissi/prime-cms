@@ -71,7 +71,7 @@ $this->layout('admin::layouts/app');
             'subtitle' => 'Dernières opérations simulées sur votre espace éditorial',
             'body' => $activityHtml,
             'flush' => true,
-            'footer' => '<span class="pc-text-xs pc-text-muted">Journal complet disponible en Phase 4</span>'
+            'footer' => '<span class="pc-text-xs pc-text-muted">Journal d’audit disponible en Phase 9</span>'
                 . $this->insert('admin::components/button', [
                     'label' => 'Voir les pages',
                     'variant' => 'ghost',
