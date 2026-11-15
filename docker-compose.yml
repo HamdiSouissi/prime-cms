@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: prime-cms-app
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      APP_NAME: "${APP_NAME:-Prime CMS}"
+      APP_ENV: "${APP_ENV:-local}"
+      APP_DEBUG: "${APP_DEBUG:-true}"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      APP_TIMEZONE: "${APP_TIMEZONE:-UTC}"
+      APP_LOCALE: "${APP_LOCALE:-fr}"
+      LOG_LEVEL: "${LOG_LEVEL:-debug}"
+      DB_HOST: "${DB_HOST:-db}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_DATABASE: "${DB_DATABASE:-prime_cms}"
+      DB_USERNAME: "${DB_USERNAME:-prime}"
+      DB_PASSWORD: "${DB_PASSWORD:-secret}"
+      DB_PREFIX: "${DB_PREFIX:-pc_}"
+    depends_on:
+      db:
+        condition: service_started
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: prime-cms-db
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE:-prime_cms}"
+      MYSQL_USER: "${DB_USERNAME:-prime}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-secret}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-root}"
+    volumes:
+      - prime_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  prime_db_data:
