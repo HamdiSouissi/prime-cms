@@ -20,6 +20,11 @@ final class BlockRegistry
      */
     private array $blocks = [];
 
+    /**
+     * @var list<string>
+     */
+    private array $extensionScripts = [];
+
     private bool $filtered = false;
 
     public function __construct(
@@ -35,6 +40,29 @@ final class BlockRegistry
     {
         $this->blocks[$block->type] = $block;
         $this->filtered = false;
+    }
+
+    /**
+     * Register a local ES2022 module script URL to be loaded by Prime Editor for plugin blocks.
+     */
+    public function enqueueScript(string $url): void
+    {
+        $clean = trim($url);
+        if ($clean === '' || !str_starts_with($clean, '/') || str_starts_with($clean, '//') || str_contains($clean, '..')) {
+            return;
+        }
+
+        if (!in_array($clean, $this->extensionScripts, true)) {
+            $this->extensionScripts[] = $clean;
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function extensionScripts(): array
+    {
+        return $this->extensionScripts;
     }
 
     public function has(string $type): bool

@@ -37,7 +37,7 @@ return new class () extends Migration {
             $table->foreign('author_id', 'fk_entries_author')
                 ->references('id')
                 ->on('users')
-                ->nullOnDelete();
+                ->onDelete('SET NULL');
         });
     }
 

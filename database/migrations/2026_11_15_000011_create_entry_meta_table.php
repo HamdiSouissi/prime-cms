@@ -21,7 +21,7 @@ return new class () extends Migration {
             $table->foreign('entry_id', 'fk_entry_meta_entry')
                 ->references('id')
                 ->on('entries')
-                ->cascadeOnDelete();
+                ->onDelete('CASCADE');
         });
     }
 

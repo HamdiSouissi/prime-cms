@@ -25,11 +25,11 @@ return new class () extends Migration {
             $table->foreign('entry_id', 'fk_revisions_entry')
                 ->references('id')
                 ->on('entries')
-                ->cascadeOnDelete();
+                ->onDelete('CASCADE');
             $table->foreign('author_id', 'fk_revisions_author')
                 ->references('id')
                 ->on('users')
-                ->nullOnDelete();
+                ->onDelete('SET NULL');
         });
     }
 

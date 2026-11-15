@@ -35,11 +35,11 @@ return new class () extends Migration {
             $table->foreign('entry_id', 'fk_entry_terms_entry')
                 ->references('id')
                 ->on('entries')
-                ->cascadeOnDelete();
+                ->onDelete('CASCADE');
             $table->foreign('term_id', 'fk_entry_terms_term')
                 ->references('id')
                 ->on('terms')
-                ->cascadeOnDelete();
+                ->onDelete('CASCADE');
         });
 
         // Seed the protected default category "Non classé".

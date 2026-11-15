@@ -7,7 +7,11 @@ namespace Prime\Plugins;
 use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Notices;
 use Prime\Auth\Capabilities;
+use Prime\Content\ContentTypeRegistry;
+use Prime\Content\Fields\FieldRegistry;
+use Prime\Content\TaxonomyRegistry;
 use Prime\Database\Connection;
+use Prime\Editor\BlockRegistry;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Kernel\Application;
@@ -139,6 +143,54 @@ final class PluginContext
     public function notices(): PluginNotices
     {
         return $this->pluginNotices;
+    }
+
+    public function contentTypes(): PluginContentTypes
+    {
+        $registry = $this->app->container()->has(ContentTypeRegistry::class)
+            ? $this->app->get(ContentTypeRegistry::class)
+            : new ContentTypeRegistry();
+
+        return new PluginContentTypes(
+            $registry instanceof ContentTypeRegistry ? $registry : new ContentTypeRegistry(),
+            $this->manifest->slug,
+        );
+    }
+
+    public function taxonomies(): PluginTaxonomies
+    {
+        $registry = $this->app->container()->has(TaxonomyRegistry::class)
+            ? $this->app->get(TaxonomyRegistry::class)
+            : new TaxonomyRegistry();
+
+        return new PluginTaxonomies(
+            $registry instanceof TaxonomyRegistry ? $registry : new TaxonomyRegistry(),
+            $this->manifest->slug,
+        );
+    }
+
+    public function fields(): PluginFields
+    {
+        $registry = $this->app->container()->has(FieldRegistry::class)
+            ? $this->app->get(FieldRegistry::class)
+            : new FieldRegistry();
+
+        return new PluginFields(
+            $registry instanceof FieldRegistry ? $registry : new FieldRegistry(),
+            $this->manifest->slug,
+        );
+    }
+
+    public function blocks(): PluginBlocks
+    {
+        $registry = $this->app->container()->has(BlockRegistry::class)
+            ? $this->app->get(BlockRegistry::class)
+            : new BlockRegistry();
+
+        return new PluginBlocks(
+            $registry instanceof BlockRegistry ? $registry : new BlockRegistry(),
+            $this->manifest->slug,
+        );
     }
 
     /**
