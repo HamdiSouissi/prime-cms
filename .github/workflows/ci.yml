@@ -170,15 +170,39 @@ jobs:
 
           # Verify CLI tools against live DB
           docker compose exec -T app php bin/prime db:check | grep -q "Connexion à la base de données réussie"
-          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000001_create_settings_table"
+          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000006_seed_default_roles"
           docker compose exec -T app php bin/prime settings:get site_name | grep -q '"Prime Docker Smoke"'
+          docker compose exec -T app php bin/prime role:list | grep -q "administrator"
+          docker compose exec -T app php bin/prime user:list | grep -q "admin@prime-docker.test"
 
-          # Post-install checks: / = 200, /install = 404, /admin = 200 (local env in compose), /inconnu = 404
+          # Post-install checks: / = 200, /install = 404, unauthenticated /admin -> 302 /admin/login, /inconnu = 404
           curl -sf http://localhost:8080/ | grep -q "Le noyau est en place"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/install)" = "404"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/install/database)" = "404"
-          curl -sf http://localhost:8080/admin | grep -q "Tableau de bord"
-          curl -sf http://localhost:8080/admin/styleguide | grep -q "Design System Prime CMS"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin)" = "302"
+          curl -sI http://localhost:8080/admin | grep -iq "^Location: /admin/login"
+          curl -sI http://localhost:8080/admin/login | grep -iq "Cache-Control:.*no-store"
+
+          # Authenticate via real POST /admin/login with CSRF token & session cookie jar
+          COOKIE_JAR=$(mktemp)
+          LOGIN_HTML=$(curl -sf -c "$COOKIE_JAR" http://localhost:8080/admin/login)
+          CSRF_TOKEN=$(printf '%s' "$LOGIN_HTML" | sed -n 's/.*name="_csrf_token" value="\([^"]*\)".*/\1/p' | head -n 1)
+          test -n "$CSRF_TOKEN"
+
+          LOGIN_CODE=$(curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" -o /dev/null -w '%{http_code}' \
+            -X POST http://localhost:8080/admin/login \
+            --data-urlencode "_csrf_token=$CSRF_TOKEN" \
+            --data-urlencode "email=admin@prime-docker.test" \
+            --data-urlencode "password=Ciel!Mandarine#8429")
+          test "$LOGIN_CODE" = "302"
+
+          # Authenticated admin checks: dashboard, users, roles, profile, styleguide
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Tableau de bord"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/users | grep -q "admin@prime-docker.test"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/roles | grep -q "Administrateur"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/profile | grep -q "Mon profil"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/styleguide | grep -q "Design System Prime CMS"
+          rm -f "$COOKIE_JAR"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inconnu)" = "404"
 
           docker compose exec -T app php -m | grep -iq "mbstring"

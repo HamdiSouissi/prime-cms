@@ -230,8 +230,9 @@ final class AdminServiceProvider extends ServiceProvider
                     ->name('roles.delete');
 
                 // Upcoming CMS module placeholders (capability verified in DashboardController::module)
-                $r->get('/{module:[a-z0-9-]+}', [DashboardController::class, 'module'])->name('module');
-                $r->get('/{module:[a-z0-9-]+}/{section:[a-z0-9-]+}', [DashboardController::class, 'module'])
+                $r->get('/{module:pages|articles|media|appearance|plugins|settings}', [DashboardController::class, 'module'])
+                    ->name('module');
+                $r->get('/{module:appearance|settings}/{section:[a-z0-9-]+}', [DashboardController::class, 'module'])
                     ->name('module.section');
             },
         );
