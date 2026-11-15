@@ -31,6 +31,11 @@ jobs:
           php bin/prime about
           php bin/prime routes
 
+      - name: Verify compiled admin CSS is up to date
+        run: |
+          php bin/prime assets:build
+          git diff --exit-code public/assets/admin/css/admin.css
+
       - name: Install dev dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
@@ -65,6 +70,9 @@ jobs:
 
           curl -sf http://localhost:8080/ | grep -q "Le noyau est en place"
           curl -sf http://localhost:8080/health | grep -q '"status":"ok"'
+          curl -sf http://localhost:8080/admin | grep -q "Tableau de bord"
+          curl -sf http://localhost:8080/admin/styleguide | grep -q "Design System Prime CMS"
+          curl -sf http://localhost:8080/assets/admin/css/admin.css | grep -q -- "--brand-500"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inconnu)" = "404"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health/)" = "301"
           test "$(curl -s -X POST -o /dev/null -w '%{http_code}' http://localhost:8080/health)" = "405"
