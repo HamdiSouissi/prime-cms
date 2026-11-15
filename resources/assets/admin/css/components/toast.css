@@ -2,7 +2,7 @@
 
 .pc-toast-stack {
   position: fixed;
-  top: var(--space-4);
+  top: calc(var(--topbar-height) + var(--space-4));
   right: var(--space-4);
   z-index: var(--z-toast);
   display: flex;
@@ -10,6 +10,16 @@
   gap: var(--space-2);
   width: min(360px, calc(100vw - 32px));
   pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .pc-toast-stack {
+    top: auto;
+    bottom: var(--space-4);
+    left: var(--space-4);
+    right: var(--space-4);
+    width: auto;
+  }
 }
 
 .pc-toast {

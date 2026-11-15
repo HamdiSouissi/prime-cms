@@ -97,6 +97,16 @@
   color: var(--color-text-muted);
 }
 
+.pc-stat__link {
+  color: var(--color-text-muted);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.pc-stat__link:hover {
+  color: var(--color-text-strong);
+  text-decoration: underline;
+}
+
 .pc-stat__trend {
   display: inline-flex;
   align-items: center;

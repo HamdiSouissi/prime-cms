@@ -91,24 +91,40 @@ button {
   vertical-align: middle;
 }
 
-/* Skip link (first focusable element in admin layout) */
+/* Skip link (first focusable element in admin layout — invisible off-focus, zero shadow bleed) */
 .pc-skip-link {
   position: fixed;
   top: var(--space-3);
   left: var(--space-3);
   z-index: var(--z-tooltip);
-  padding: var(--space-2) var(--space-4);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
   background: var(--color-primary);
   color: var(--color-text-inverse);
   font-weight: 600;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-dropdown);
-  transform: translateY(-160%);
-  transition: transform var(--duration-fast) var(--ease-standard);
+  box-shadow: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.pc-skip-link:focus {
-  transform: translateY(0);
+.pc-skip-link:focus,
+.pc-skip-link:focus-visible {
+  width: auto;
+  height: auto;
+  padding: var(--space-2) var(--space-4);
+  margin: 0;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  box-shadow: var(--shadow-dropdown);
+  opacity: 1;
+  pointer-events: auto;
   color: var(--color-text-inverse);
 }
 

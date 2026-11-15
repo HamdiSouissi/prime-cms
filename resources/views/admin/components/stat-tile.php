@@ -42,7 +42,7 @@ $trendIcon = $trendDir === 'up' ? 'arrow-up-right' : ($trendDir === 'down' ? 'ar
             </span>
         <?php endif; ?>
         <?php if ($targetUrl !== null): ?>
-            <a href="<?= $this->e($targetUrl) ?>"><?= $this->e($hintText ?? 'Voir tout') ?></a>
+            <a class="pc-stat__link" href="<?= $this->e($targetUrl) ?>"><?= $this->e($hintText ?? 'Voir tout') ?></a>
         <?php elseif ($hintText !== null): ?>
             <span><?= $this->e($hintText) ?></span>
         <?php endif; ?>
