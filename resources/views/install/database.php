@@ -123,8 +123,8 @@ $this->layout('install::layout', [
             'label' => 'Mot de passe',
             'type' => 'password',
             'value' => '',
-            'placeholder' => $hasStoredPassword ? 'Conservé en session (laissez vide pour ne pas changer)' : 'Mot de passe de la base',
-            'help' => $hasStoredPassword ? 'Un mot de passe est déjà enregistré en session.' : null,
+            'placeholder' => $hasStoredPassword ? 'Laisser vide pour conserver' : 'Mot de passe de la base',
+            'help' => $hasStoredPassword ? 'Un mot de passe est déjà conservé en session ; laissez ce champ vide pour ne pas le modifier.' : null,
         ])) ?>
     </div>
 
