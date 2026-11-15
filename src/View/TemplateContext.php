@@ -131,6 +131,14 @@ final class TemplateContext
     }
 
     /**
+     * Render an escaped Lucide SVG icon from the local sprite.
+     */
+    public function icon(string $name, int $size = 20, string $class = ''): string
+    {
+        return Icon::render($name, $size, $class);
+    }
+
+    /**
      * @internal
      */
     public function layoutTemplate(): ?string

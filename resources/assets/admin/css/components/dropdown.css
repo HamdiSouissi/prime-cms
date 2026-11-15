@@ -1,0 +1,91 @@
+/* Dropdown menu (topbar create, notifications, user menu, table row actions) */
+
+.pc-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.pc-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 224px;
+  max-width: min(320px, calc(100vw - 24px));
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-dropdown);
+  transform-origin: top right;
+}
+
+.pc-dropdown__menu--left {
+  right: auto;
+  left: 0;
+  transform-origin: top left;
+}
+
+.pc-dropdown__menu[hidden] {
+  display: none;
+}
+
+.pc-dropdown__header {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-1);
+}
+
+.pc-dropdown__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.pc-dropdown__subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.pc-dropdown__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.pc-dropdown__item:hover,
+.pc-dropdown__item:focus-visible {
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-strong);
+  outline: none;
+}
+
+.pc-dropdown__item--danger {
+  color: var(--danger-ink);
+}
+
+.pc-dropdown__item--danger:hover {
+  background-color: var(--danger-soft);
+  color: var(--danger-ink);
+}
+
+.pc-dropdown__separator {
+  height: 1px;
+  margin: var(--space-1) 0;
+  background-color: var(--color-border);
+}
+
+.pc-dropdown__empty {
+  padding: var(--space-5) var(--space-3);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}

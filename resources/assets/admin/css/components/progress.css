@@ -1,0 +1,42 @@
+/* Progress bar */
+
+.pc-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pc-progress__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.pc-progress__label {
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.pc-progress__track {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+.pc-progress__bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-500);
+  transition: width var(--duration-slow) var(--ease-standard);
+}
+
+.pc-progress__bar--teal    { background-color: var(--teal); }
+.pc-progress__bar--violet  { background-color: var(--violet); }
+.pc-progress__bar--sky     { background-color: var(--sky); }
+.pc-progress__bar--amber   { background-color: var(--amber); }
+.pc-progress__bar--success { background-color: var(--success); }
+.pc-progress__bar--danger  { background-color: var(--danger); }

@@ -1,0 +1,268 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Prime\Admin\Menu;
+
+use Prime\Admin\Exception\InvalidMenuItemException;
+use Prime\Http\Request;
+
+/**
+ * Extensible registry for the admin sidebar navigation tree.
+ */
+final class AdminMenu
+{
+    /**
+     * Top-level items indexed by ID.
+     *
+     * @var array<string, array{item: MenuItem, order: int}>
+     */
+    private array $items = [];
+
+    /**
+     * Child items grouped by parent ID, then indexed by child ID.
+     *
+     * @var array<string, array<string, array{item: MenuItem, order: int}>>
+     */
+    private array $children = [];
+
+    private int $sequence = 0;
+
+    private ?string $activeId = null;
+
+    /**
+     * Register or replace a top-level menu item.
+     */
+    public function add(MenuItem $item): self
+    {
+        $order = isset($this->items[$item->id]) ? $this->items[$item->id]['order'] : $this->sequence++;
+        $this->items[$item->id] = [
+            'item' => $item,
+            'order' => $order,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Attach a submenu item under an existing top-level item.
+     */
+    public function addChild(string $parentId, MenuItem $item): self
+    {
+        if (!isset($this->items[$parentId])) {
+            throw new InvalidMenuItemException(
+                sprintf('Cannot add child [%s] to unknown parent menu item [%s].', $item->id, $parentId),
+            );
+        }
+
+        $order = isset($this->children[$parentId][$item->id])
+            ? $this->children[$parentId][$item->id]['order']
+            : $this->sequence++;
+
+        $this->children[$parentId][$item->id] = [
+            'item' => $item,
+            'order' => $order,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Remove a top-level item (and its children) or a submenu item by ID.
+     */
+    public function remove(string $id): self
+    {
+        if (isset($this->items[$id])) {
+            unset($this->items[$id], $this->children[$id]);
+        } else {
+            foreach ($this->children as $parentId => $entries) {
+                if (isset($entries[$id])) {
+                    unset($this->children[$parentId][$id]);
+                    break;
+                }
+            }
+        }
+
+        if ($this->activeId === $id) {
+            $this->activeId = null;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Retrieve a top-level or submenu item by ID.
+     */
+    public function get(string $id): ?MenuItem
+    {
+        if (isset($this->items[$id])) {
+            return $this->items[$id]['item'];
+        }
+
+        foreach ($this->children as $entries) {
+            if (isset($entries[$id])) {
+                return $entries[$id]['item'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Detect and mark the active menu item for the given HTTP request.
+     * Prefers an exact path match, falling back to the longest matching URL prefix.
+     */
+    public function setActive(Request $request): self
+    {
+        $requestPath = $this->normalizePath($request->path());
+        $bestId = null;
+        $bestScore = -1;
+
+        foreach ($this->allItems() as $item) {
+            $itemPath = $this->normalizePath($item->url);
+            if ($itemPath === '') {
+                continue;
+            }
+
+            if ($requestPath === $itemPath) {
+                $score = 10_000 + strlen($itemPath);
+            } elseif ($itemPath !== '/' && $itemPath !== '/admin' && str_starts_with($requestPath, $itemPath . '/')) {
+                $score = strlen($itemPath);
+            } else {
+                continue;
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestId = $item->id;
+            }
+        }
+
+        $this->activeId = $bestId;
+
+        return $this;
+    }
+
+    /**
+     * Return the currently active menu item ID, if any.
+     */
+    public function activeId(): ?string
+    {
+        return $this->activeId;
+    }
+
+    /**
+     * Return the sorted hierarchical navigation tree.
+     *
+     * @return list<MenuNode>
+     */
+    public function tree(): array
+    {
+        $topEntries = array_values($this->items);
+        usort($topEntries, self::compareEntries(...));
+
+        $nodes = [];
+        foreach ($topEntries as $entry) {
+            $item = $entry['item'];
+            $childEntries = array_values($this->children[$item->id] ?? []);
+            usort($childEntries, self::compareEntries(...));
+
+            $childNodes = [];
+            $hasActiveChild = false;
+
+            foreach ($childEntries as $childEntry) {
+                $childItem = $childEntry['item'];
+                $childActive = $this->activeId === $childItem->id;
+                if ($childActive) {
+                    $hasActiveChild = true;
+                }
+
+                $childNodes[] = new MenuNode(
+                    item: $childItem,
+                    active: $childActive,
+                );
+            }
+
+            $nodes[] = new MenuNode(
+                item: $item,
+                active: $this->activeId === $item->id,
+                hasActiveChild: $hasActiveChild,
+                children: $childNodes,
+            );
+        }
+
+        return $nodes;
+    }
+
+    /**
+     * Group the sorted top-level tree by section label (`null` for ungrouped top items).
+     *
+     * @return list<array{label: ?string, items: list<MenuNode>}>
+     */
+    public function groupedTree(): array
+    {
+        $groups = [];
+        $indexByKey = [];
+
+        foreach ($this->tree() as $node) {
+            $label = $node->item->group;
+            $key = $label === null ? '__ungrouped__' : $label;
+
+            if (!isset($indexByKey[$key])) {
+                $indexByKey[$key] = count($groups);
+                $groups[] = [
+                    'label' => $label,
+                    'items' => [],
+                ];
+            }
+
+            $groups[$indexByKey[$key]]['items'][] = $node;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @return list<MenuItem>
+     */
+    private function allItems(): array
+    {
+        $all = [];
+        foreach ($this->items as $entry) {
+            $all[] = $entry['item'];
+        }
+        foreach ($this->children as $entries) {
+            foreach ($entries as $entry) {
+                $all[] = $entry['item'];
+            }
+        }
+
+        return $all;
+    }
+
+    /**
+     * @param array{item: MenuItem, order: int} $a
+     * @param array{item: MenuItem, order: int} $b
+     */
+    private static function compareEntries(array $a, array $b): int
+    {
+        $posComparison = $a['item']->position <=> $b['item']->position;
+        if ($posComparison !== 0) {
+            return $posComparison;
+        }
+
+        return $a['order'] <=> $b['order'];
+    }
+
+    private function normalizePath(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        if (!is_string($path) || $path === '') {
+            return '';
+        }
+
+        $trimmed = rtrim($path, '/');
+
+        return $trimmed === '' ? '/' : $trimmed;
+    }
+}

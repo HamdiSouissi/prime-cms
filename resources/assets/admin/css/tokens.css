@@ -1,0 +1,169 @@
+/* ==========================================================================
+   Prime CMS Design System — Tokens (Section 8 of CONTEXT.md)
+   All color values in the dashboard are defined exclusively in this file.
+   ========================================================================== */
+
+:root {
+  /* Brand — coral derived from the official Prime CMS logo */
+  --brand-50:  #FFF4F1;
+  --brand-100: #FDE3DC;
+  --brand-200: #FAC4B6;
+  --brand-400: #F28468;
+  --brand-500: #ED6647; /* Exact logo coral: accents, active indicators, focus ring */
+  --brand-600: #C9441F; /* Primary buttons with white text, links (AA 4.85:1) */
+  --brand-700: #A8381A; /* Primary hover / pressed state */
+
+  /* Neutrals — warm ink */
+  --ink-900: #1A1D29;   /* Sidebar, headings */
+  --ink-700: #3A3F52;   /* Body text */
+  --ink-500: #6B7085;   /* Secondary text */
+  --ink-300: #C9CCD6;   /* Input borders */
+  --ink-200: #E6E4E1;   /* Dividers, card borders */
+  --ink-100: #F3F1EE;   /* Subtle backgrounds, hover surfaces */
+  --canvas:  #FAF8F6;   /* Main page background */
+  --surface: #FFFFFF;   /* Cards, panels, modals, topbar */
+
+  /* Vibrant accent palette */
+  --violet:  #7C5CFF;   /* Plugins, appearance, builder */
+  --teal:    #14B8A6;   /* Pages, posts, media */
+  --sky:     #3B82F6;   /* Users, info */
+  --amber:   #F5A524;   /* Warning, commerce */
+  --success: #1F9D63;   /* Success */
+  --danger:  #D92D4A;   /* Crimson destructive actions, distinct from coral */
+
+  /* Accessible ink shades for vibrant soft badges & alerts (WCAG AA >= 4.5:1) */
+  --violet-ink:  #5235D6;
+  --teal-ink:    #0B6B61;
+  --sky-ink:     #1D56B8;
+  --amber-ink:   #8A5300;
+  --success-ink: #157448;
+  --danger-ink:  #B41E39;
+  --danger-600:  #B81D39;
+  --danger-700:  #99162E;
+
+  /* 12% soft tints for stat tiles, badges, and alerts */
+  --brand-soft:   rgba(237, 102, 71, 0.12);
+  --violet-soft:  rgba(124, 92, 255, 0.12);
+  --teal-soft:    rgba(20, 184, 166, 0.12);
+  --sky-soft:     rgba(59, 130, 246, 0.12);
+  --amber-soft:   rgba(245, 165, 36, 0.14);
+  --success-soft: rgba(31, 157, 99, 0.12);
+  --danger-soft:  rgba(217, 45, 74, 0.12);
+
+  /* Soft tinted borders for badges & alerts */
+  --violet-border:  rgba(124, 92, 255, 0.24);
+  --teal-border:    rgba(20, 184, 166, 0.26);
+  --sky-border:     rgba(59, 130, 246, 0.24);
+  --amber-border:   rgba(245, 165, 36, 0.30);
+  --success-border: rgba(31, 157, 99, 0.26);
+  --danger-border:  rgba(217, 45, 74, 0.24);
+
+  /* Sidebar chrome tokens (dark ink surface) */
+  --sidebar-bg:           var(--ink-900);
+  --sidebar-text:         #F4F5F7;
+  --sidebar-text-muted:   #9AA0B4;
+  --sidebar-group-label:  #8289A0;
+  --sidebar-hover-bg:     rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg:    rgba(237, 102, 71, 0.14);
+  --sidebar-border:       rgba(255, 255, 255, 0.08);
+  --sidebar-badge-bg:     rgba(255, 255, 255, 0.10);
+
+  /* Overlays & elevation */
+  --backdrop-bg: rgba(26, 29, 41, 0.48);
+  --focus-ring:  rgba(237, 102, 71, 0.22);
+  --skeleton-base: #ECEAE6;
+  --skeleton-shine: #F7F5F2;
+  --table-row-hover: #FCFBF9;
+  --table-header-bg: #F8F6F3;
+  --surface-subtle:  #FCFBF9;
+  --tooltip-bg:      var(--ink-900);
+  --tooltip-text:    var(--surface);
+
+  /* Semantic tokens (light theme default, ready for future dark mode) */
+  --color-bg:             var(--canvas);
+  --color-surface:        var(--surface);
+  --color-surface-subtle: var(--ink-100);
+  --color-text:           var(--ink-700);
+  --color-text-strong:    var(--ink-900);
+  --color-text-muted:     var(--ink-500);
+  --color-text-inverse:   var(--surface);
+  --color-border:         var(--ink-200);
+  --color-border-strong:  var(--ink-300);
+  --color-primary:        var(--brand-600);
+  --color-primary-hover:  var(--brand-700);
+  --color-accent:         var(--brand-500);
+
+  /* Typography */
+  --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-base: 14px;
+  --text-md:   16px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --text-2xl:  32px;
+
+  --leading-tight:  1.25;
+  --leading-snug:   1.4;
+  --leading-normal: 1.55;
+
+  /* Spacing scale (4px grid) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radii */
+  --radius-sm:   6px;   /* Badges, inputs */
+  --radius-md:   10px;  /* Buttons */
+  --radius-tile: 12px;  /* Stat & module icon tiles */
+  --radius-lg:   14px;  /* Cards */
+  --radius-xl:   20px;  /* Modals */
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-card:     0 1px 2px rgba(26, 29, 41, 0.06), 0 4px 16px rgba(26, 29, 41, 0.06);
+  --shadow-dropdown: 0 4px 12px rgba(26, 29, 41, 0.08), 0 12px 28px rgba(26, 29, 41, 0.10);
+  --shadow-modal:    0 12px 32px rgba(26, 29, 41, 0.16), 0 2px 8px rgba(26, 29, 41, 0.08);
+  --shadow-brand:    0 4px 12px rgba(201, 68, 31, 0.22);
+
+  /* Layout dimensions */
+  --sidebar-width:           264px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height:           64px;
+  --content-max-width:       1200px;
+
+  /* Motion */
+  --duration-fast:   150ms;
+  --duration-base:   180ms;
+  --duration-slow:   220ms;
+  --ease-standard:   cubic-bezier(0.2, 0, 0, 1);
+
+  /* Z-index layers */
+  --z-sticky:   20;
+  --z-topbar:   30;
+  --z-sidebar:  40;
+  --z-dropdown: 50;
+  --z-drawer:   60;
+  --z-modal:    70;
+  --z-toast:    80;
+  --z-tooltip:  90;
+}
+
+/* Future dark mode override block (intentionally empty in Phase 2)
+[data-theme="dark"] {
+  --color-bg: ...;
+  --color-surface: ...;
+  --color-text: ...;
+  --color-border: ...;
+}
+*/

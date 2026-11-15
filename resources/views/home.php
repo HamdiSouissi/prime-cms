@@ -2,13 +2,16 @@
 
 <?php $this->start('content'); ?>
   <header class="pc-header">
-    <img
-      src="<?= $this->e(asset('brand/logo.svg')) ?>"
-      alt="<?= $this->e($appName) ?>"
-      width="64"
-      height="64"
-      class="pc-logo"
-    >
+    <picture>
+      <source srcset="<?= $this->e(asset('brand/logo-128.webp')) ?>" type="image/webp">
+      <img
+        src="<?= $this->e(asset('brand/logo-128.png')) ?>"
+        alt="<?= $this->e($appName) ?>"
+        width="64"
+        height="64"
+        class="pc-logo"
+      >
+    </picture>
     <div class="pc-title-row">
       <h1 class="pc-title"><?= $this->e($appName) ?></h1>
       <span class="pc-badge pc-badge--brand pc-mono">v<?= $this->e($version) ?></span>

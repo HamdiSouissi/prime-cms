@@ -51,7 +51,8 @@ final class HttpKernelTest extends TestCase
         $this->assertStringContainsString('Prime CMS', $response->body());
         $this->assertStringContainsString(Application::VERSION, $response->body());
         $this->assertStringContainsString('Le noyau est en place', $response->body());
-        $this->assertStringContainsString('brand/logo.svg', $response->body());
+        $this->assertStringContainsString('brand/logo-128.webp', $response->body());
+        $this->assertStringContainsString('brand/logo-128.png', $response->body());
         $this->assertStringNotContainsString('État du système', $response->body());
         $this->assertStringNotContainsString(PHP_VERSION, $response->body());
         $this->assertStringNotContainsString('storage/logs', $response->body());

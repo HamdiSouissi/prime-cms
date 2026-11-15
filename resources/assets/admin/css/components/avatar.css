@@ -1,0 +1,29 @@
+/* Avatar component: image or initials in S / M / L sizes */
+
+.pc-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-soft);
+  color: var(--brand-600);
+  font-family: var(--font-display);
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--brand-200);
+}
+
+.pc-avatar--sm { width: 28px; height: 28px; font-size: var(--text-xs); }
+.pc-avatar--md { width: 36px; height: 36px; font-size: var(--text-sm); }
+.pc-avatar--lg { width: 48px; height: 48px; font-size: var(--text-md); }
+
+.pc-avatar--violet { background-color: var(--violet-soft); color: var(--violet-ink); border-color: var(--violet-border); }
+.pc-avatar--teal   { background-color: var(--teal-soft);   color: var(--teal-ink);   border-color: var(--teal-border); }
+.pc-avatar--sky    { background-color: var(--sky-soft);    color: var(--sky-ink);    border-color: var(--sky-border); }
+
+.pc-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -2,7 +2,7 @@
 
 **Prime CMS** est un système de gestion de contenu (CMS) 100 % original écrit en **PHP 8.2+ natif**, sans framework et avec **zéro dépendance au runtime**.
 
-> Version actuelle : **0.1.0** (Phase 1 — Fondations du noyau)
+> Version actuelle : **0.1.0** (Phase 2 — Design system et coque du dashboard)
 > Référence complète d'architecture et de conventions : [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 ---
@@ -28,6 +28,10 @@ L'application est immédiatement accessible sur :
 
 - **Accueil** : [http://localhost:8080](http://localhost:8080)
 - **Santé (JSON)** : [http://localhost:8080/health](http://localhost:8080/health)
+- **Dashboard (aperçu local)** : [http://localhost:8080/admin](http://localhost:8080/admin)
+- **Design System (styleguide)** : [http://localhost:8080/admin/styleguide](http://localhost:8080/admin/styleguide)
+
+> **Sécurité** : tant que l'authentification n'est pas en place (Phase 4), toutes les routes `/admin/*` sont restreintes à `APP_ENV=local` par `AdminPreviewGate` et retournent `404` dans tout autre environnement.
 
 Pour arrêter les conteneurs :
 
@@ -55,9 +59,10 @@ Pour un déploiement Apache ou Nginx, pointer le document root exclusivement ver
 ## Interface en ligne de commande (CLI)
 
 ```bash
-php bin/prime list      # Liste toutes les commandes disponibles
-php bin/prime about     # Version, PHP, environnement et chemins du noyau
-php bin/prime routes    # Tableau des routes HTTP enregistrées
+php bin/prime list          # Liste toutes les commandes disponibles
+php bin/prime about         # Version, PHP, environnement et chemins du noyau
+php bin/prime routes        # Tableau des routes HTTP enregistrées
+php bin/prime assets:build  # Compile les sources CSS du dashboard dans public/assets/admin/css/admin.css
 ```
 
 ---
@@ -104,6 +109,7 @@ prime-cms/
 ## Documentation
 
 - [`docs/CONTEXT.md`](docs/CONTEXT.md) — Architecture, règles absolues, design system et feuille de route en 15 phases
-- [`docs/hooks.md`](docs/hooks.md) — Référence de tous les hooks (événements et filtres) déclenchés par le noyau
+- [`docs/design-system.md`](docs/design-system.md) — Guide complet du design system, des composants, icônes et modules JS
+- [`docs/hooks.md`](docs/hooks.md) — Référence de tous les hooks (événements et filtres) déclenchés par le noyau et le dashboard
 - [`docs/nginx.conf.example`](docs/nginx.conf.example) — Exemple de configuration Nginx
 - [`docs/phases/`](docs/phases/) — Rapports détaillés de chaque phase

@@ -24,6 +24,19 @@ Ce document recense l'ensemble des hooks (événements et filtres) déclenchés 
 
 ---
 
+## Hooks du dashboard d'administration (Phase 2)
+
+| Nom | Type | Arguments | Moment du déclenchement |
+|---|---|---|---|
+| `admin.menu` | Filtre | `Prime\Admin\Menu\AdminMenu $menu` | Lors de la construction du contexte d'administration (`AdminContext::build()`), sur une copie isolée du menu par défaut. Permet d'ajouter, réordonner ou retirer des entrées et sous-menus via `$menu->add()`, `$menu->addChild()`, `$menu->remove()`. |
+| `admin.create.items` | Filtre | `list<array{id: string, label: string, description: string, icon: string, accent: string, url: string}> $items` | Lors de la génération du menu déroulant « Créer » de la barre supérieure. Permet aux plugins d'ajouter des raccourcis de création rapide. |
+| `admin.command_palette` | Filtre | `list<array<string, mixed>> $entries` | Lors de la construction du payload JSON de la palette de commandes (`Ctrl/⌘ + K`). Permet d'ajouter des pages, recherches ou actions rapides. |
+| `admin.assets` | Filtre | `array{css: list<string>, js: list<string>} $assets` | Lors de la préparation des feuilles de style et modules ES chargés dans le layout `admin::layouts/app`. |
+| `admin.head` | Filtre | `string $html` | Juste avant la fermeture de `<head>` dans `admin::layouts/app`. Permet d'injecter des balises `<meta>` ou `<link>` supplémentaires. |
+| `admin.footer` | Filtre | `string $html` | Juste avant la fermeture de `</body>` dans `admin::layouts/app`. Permet d'ajouter des panneaux ou conteneurs HTML additionnels. |
+
+---
+
 ## Exemples d'utilisation
 
 ### Ajouter une route via `routes.register`
@@ -50,5 +63,26 @@ $hooks->filter('view.data', static function (array $data, string $template): arr
     $data['siteYear'] = (int) date('Y');
 
     return $data;
+});
+```
+
+### Ajouter une entrée dans le menu d'administration via `admin.menu`
+
+```php
+use Prime\Admin\Menu\AdminMenu;
+use Prime\Admin\Menu\MenuItem;
+
+$hooks->filter('admin.menu', static function (AdminMenu $menu): AdminMenu {
+    $menu->add(new MenuItem(
+        id: 'commerce',
+        label: 'Boutique',
+        icon: 'shopping-bag',
+        url: '/admin/commerce',
+        position: 45,
+        accent: 'amber',
+        group: 'Contenu',
+    ));
+
+    return $menu;
 });
 ```

@@ -1,0 +1,57 @@
+/* Native <dialog> modal with backdrop, header, body, footer */
+
+.pc-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+}
+
+.pc-modal--sm { width: min(420px, calc(100vw - 32px)); }
+.pc-modal--lg { width: min(720px, calc(100vw - 32px)); }
+
+.pc-modal::backdrop {
+  background-color: var(--backdrop-bg);
+}
+
+.pc-modal[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.pc-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pc-modal__title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.pc-modal__body {
+  padding: var(--space-5) var(--space-6);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.pc-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--surface-subtle);
+}
