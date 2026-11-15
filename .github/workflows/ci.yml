@@ -47,8 +47,7 @@ jobs:
           code=$?
           echo "$output"
           if [ $code -ne 0 ]; then
-            echo "$output" | while IFS= read -r line; do
-              echo "::error::$line"
-            done
+            summary=$(echo "$output" | awk '/There was|There were/,0' | tr '\n' ' ')
+            echo "::error::$summary"
           fi
           exit $code
