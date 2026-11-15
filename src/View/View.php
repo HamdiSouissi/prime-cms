@@ -185,10 +185,15 @@ final class View
      */
     private function evaluateTemplate(string $file, array $data, TemplateContext $context): string
     {
+        if (array_key_exists('this', $data)) {
+            throw new ViewException('View data key "this" is reserved and cannot be used.');
+        }
+
         $renderer = function (string $__primeTemplateFile, array $__primeTemplateData): string {
             foreach ($__primeTemplateData as $__primeKey => $__primeValue) {
                 if (
                     is_string($__primeKey)
+                    && $__primeKey !== 'this'
                     && !str_starts_with($__primeKey, '__')
                     && preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $__primeKey) === 1
                 ) {

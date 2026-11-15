@@ -98,6 +98,17 @@ final class ViewTest extends TestCase
         $view->render('../etc/passwd');
     }
 
+    public function testThrowsViewExceptionWhenReservedThisKeyIsPassed(): void
+    {
+        file_put_contents($this->tempDir . '/simple.php', '<p><?= $this->e($title ?? "") ?></p>');
+
+        $view = new View($this->tempDir);
+
+        $this->expectException(ViewException::class);
+        $this->expectExceptionMessage('reserved');
+        $view->render('simple', ['this' => 'forbidden', 'title' => 'Hello']);
+    }
+
     private function removeDirectory(string $dir): void
     {
         if (!is_dir($dir)) {
