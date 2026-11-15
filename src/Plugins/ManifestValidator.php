@@ -83,7 +83,7 @@ final class ManifestValidator
             ];
         }
 
-        if (!is_array($decoded) || array_is_list($decoded)) {
+        if (!is_array($decoded) || ($decoded !== [] && array_is_list($decoded))) {
             return [
                 'manifest' => null,
                 'errors' => ['Le manifeste plugin.json doit contenir un objet JSON.'],
@@ -290,13 +290,14 @@ final class ManifestValidator
             if (!is_string($data['icon'])) {
                 $errors[] = 'Le champ "icon" doit être un chemin relatif vers un fichier image/SVG.';
             } else {
-                $cleanIcon = ltrim(str_replace('\\', '/', trim($data['icon'])), './');
+                $rawIcon = str_replace('\\', '/', trim($data['icon']));
+                $cleanIcon = preg_replace('#^(?:\./)+#', '', $rawIcon) ?? '';
                 $ext = strtolower(pathinfo($cleanIcon, PATHINFO_EXTENSION));
                 if (
                     $cleanIcon === ''
-                    || str_starts_with($data['icon'], '/')
-                    || str_contains($cleanIcon, '..')
-                    || str_contains($cleanIcon, "\0")
+                    || str_starts_with($rawIcon, '/')
+                    || str_contains($rawIcon, '..')
+                    || str_contains($rawIcon, "\0")
                     || !in_array($ext, self::ALLOWED_ICON_EXTENSIONS, true)
                 ) {
                     $errors[] = sprintf('Le chemin d\'icône "%s" est invalide ou non autorisé.', $data['icon']);

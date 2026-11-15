@@ -218,7 +218,12 @@ final class AssetPublisher
     public function publicUrl(string $slug, string $version, string $asset): string
     {
         $this->assertValidSlug($slug);
-        $cleanAsset = ltrim(str_replace('\\', '/', trim($asset)), './');
+        $rawAsset = str_replace('\\', '/', trim($asset));
+        if ($rawAsset === '' || str_starts_with($rawAsset, '/') || str_contains($rawAsset, '..') || str_contains($rawAsset, "\0")) {
+            throw new PluginException(sprintf('Chemin d\'asset non autorisé : "%s".', $asset));
+        }
+
+        $cleanAsset = preg_replace('#^(?:\./)+#', '', $rawAsset) ?? '';
         if (str_starts_with($cleanAsset, 'assets/')) {
             $cleanAsset = substr($cleanAsset, strlen('assets/'));
         }

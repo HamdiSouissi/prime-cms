@@ -1,0 +1,12 @@
+{
+  "slug": "cycle-alpha",
+  "name": "Cycle Alpha",
+  "description": "Circular dependency fixture A -> B.",
+  "version": "1.0.0",
+  "author": { "name": "Prime Tests" },
+  "namespace": "FixtureCycleAlpha\\",
+  "main": "FixtureCycleAlpha\\Plugin",
+  "dependencies": {
+    "cycle-beta": "^1.0"
+  }
+}

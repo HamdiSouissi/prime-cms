@@ -1,0 +1,10 @@
+{
+  "slug": "listener-throw",
+  "name": "Listener Throw Fixture",
+  "description": "Fixture plugin whose hook listener throws during execution.",
+  "version": "1.0.0",
+  "author": { "name": "Prime Tests" },
+  "namespace": "FixtureListenerThrow\\",
+  "main": "FixtureListenerThrow\\Plugin",
+  "requires": { "prime": "^0.5", "php": "^8.2" }
+}

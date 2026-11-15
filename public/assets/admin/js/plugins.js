@@ -79,8 +79,8 @@ function initDeleteModal() {
     }
 
     button.addEventListener('click', () => {
-      const slug = button.getAttribute('data-plugin-slug') || '';
-      const name = button.getAttribute('data-plugin-name') || slug;
+      const slug = button.getAttribute('data-prime-plugin-slug') || '';
+      const name = button.getAttribute('data-prime-plugin-name') || slug;
       if (!slug) {
         return;
       }
@@ -144,7 +144,7 @@ function initUploadDrawer() {
     return;
   }
 
-  const maxMb = parseInt(form.getAttribute('data-max-mb') || '20', 10) || 20;
+  const maxMb = parseInt(form.getAttribute('data-prime-max-mb') || '20', 10) || 20;
   let pendingForceOnConfirm = false;
 
   const resetAlerts = () => {

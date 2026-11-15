@@ -137,7 +137,7 @@ if ($allowUpload) {
                     default => 'Inactif',
                 };
                 ?>
-                <article class="pc-card pc-plugin-card pc-plugin-card--<?= $this->e($plugin->status) ?>" data-plugin-slug="<?= $this->e($plugin->slug) ?>">
+                <article class="pc-card pc-plugin-card pc-plugin-card--<?= $this->e($plugin->status) ?>" data-prime-plugin-slug="<?= $this->e($plugin->slug) ?>">
                     <div class="pc-plugin-card__header">
                         <div class="pc-plugin-card__identity">
                             <?php if ($plugin->iconUrl !== null): ?>
@@ -302,8 +302,8 @@ if ($allowUpload) {
                                 type="button"
                                 class="pc-btn pc-btn--ghost pc-btn--sm pc-plugin-card__delete-btn"
                                 data-prime-plugin-delete
-                                data-plugin-slug="<?= $this->e($plugin->slug) ?>"
-                                data-plugin-name="<?= $this->e($plugin->name()) ?>"
+                                data-prime-plugin-slug="<?= $this->e($plugin->slug) ?>"
+                                data-prime-plugin-name="<?= $this->e($plugin->name()) ?>"
                                 <?= !$plugin->canUninstall() ? 'disabled title="D\'autres plugins installés dépendent de ce plugin."' : '' ?>
                             >
                                 <?= $this->raw($this->icon('trash', 15)) ?>
@@ -328,7 +328,7 @@ if ($allowUpload) {
         enctype="multipart/form-data"
         class="pc-stack pc-stack--md"
         data-prime-plugin-upload-form
-        data-max-mb="<?= $this->e((string) $maxUploadMb) ?>"
+        data-prime-max-mb="<?= $this->e((string) $maxUploadMb) ?>"
     >
         <?= $this->raw($this->csrfField()) ?>
         <input type="hidden" name="replace_existing" value="0" data-prime-upload-replace>
@@ -448,4 +448,4 @@ $modalFooter = (string) ob_get_clean();
     'footer' => $modalFooter,
 ])) ?>
 
-<?php $this->end(); ?>
+<?php $this->stop(); ?>

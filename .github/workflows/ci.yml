@@ -42,7 +42,7 @@ jobs:
       - name: Check code style (PSR-12)
         run: composer cs:check
 
-      - name: Run static analysis (PHPStan level 6)
+      - name: Run static analysis (PHPStan level 8)
         run: composer stan
 
       - name: Run unit and HTTP test suite (PHPUnit 11)
@@ -170,10 +170,11 @@ jobs:
 
           # Verify CLI tools against live DB
           docker compose exec -T app php bin/prime db:check | grep -q "Connexion à la base de données réussie"
-          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000006_seed_default_roles"
+          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000008_create_plugins_table"
           docker compose exec -T app php bin/prime settings:get site_name | grep -q '"Prime Docker Smoke"'
           docker compose exec -T app php bin/prime role:list | grep -q "administrator"
           docker compose exec -T app php bin/prime user:list | grep -q "admin@prime-docker.test"
+          docker compose exec -T app php bin/prime plugin:list | grep -q "hello-prime"
 
           # Post-install checks: / = 200, /install = 404, unauthenticated /admin -> 302 /admin/login, /inconnu = 404
           curl -sf http://localhost:8080/ | grep -q "Le noyau est en place"
@@ -196,12 +197,20 @@ jobs:
             --data-urlencode "password=Ciel!Mandarine#8429")
           test "$LOGIN_CODE" = "302"
 
-          # Authenticated admin checks: dashboard, users, roles, profile, styleguide
+          # Authenticated admin checks: dashboard, plugins, users, roles, profile, styleguide
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Tableau de bord"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/plugins | grep -q "Hello Prime"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/users | grep -q "admin@prime-docker.test"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/roles | grep -q "Administrateur"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/profile | grep -q "Mon profil"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/styleguide | grep -q "Design System Prime CMS"
+
+          # Phase 5 plugin smoke test: activate hello-prime via CLI, verify public /hello-prime and admin page, then deactivate
+          docker compose exec -T app php bin/prime plugin:activate hello-prime | grep -q "activé"
+          curl -sf http://localhost:8080/hello-prime | grep -q "Bonjour depuis Hello Prime"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/hello-prime | grep -q "Hello Prime"
+          docker compose exec -T app php bin/prime plugin:deactivate hello-prime | grep -q "désactivé"
+
           rm -f "$COOKIE_JAR"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inconnu)" = "404"
 

@@ -179,10 +179,10 @@ final class Settings
             return $this->all();
         }
 
-        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $prefix);
         $table = Identifier::quoteSimple($this->connection->prefixed(self::TABLE));
         $rows = $this->connection->select(
-            sprintf("SELECT `name`, `value` FROM %s WHERE `name` LIKE ? ESCAPE '\\\\' ORDER BY `name` ASC", $table),
+            sprintf("SELECT `name`, `value` FROM %s WHERE `name` LIKE ? ESCAPE '!' ORDER BY `name` ASC", $table),
             [$escaped . '%'],
         );
 
@@ -207,10 +207,10 @@ final class Settings
             throw new InvalidArgumentException('Setting prefix must not be empty when deleting by prefix.');
         }
 
-        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $prefix);
         $table = Identifier::quoteSimple($this->connection->prefixed(self::TABLE));
         $deleted = $this->connection->delete(
-            sprintf("DELETE FROM %s WHERE `name` LIKE ? ESCAPE '\\\\'", $table),
+            sprintf("DELETE FROM %s WHERE `name` LIKE ? ESCAPE '!'", $table),
             [$escaped . '%'],
         );
 

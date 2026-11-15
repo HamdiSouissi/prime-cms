@@ -290,7 +290,6 @@ final class AdminDashboardTest extends TestCase
         $kernel = $app->get(Kernel::class);
 
         $expectedPhases = [
-            '/admin/plugins' => 'Phase 5',
             '/admin/pages' => 'Phase 6',
             '/admin/articles' => 'Phase 6',
             '/admin/media' => 'Phase 7',
@@ -388,7 +387,7 @@ final class AdminDashboardTest extends TestCase
         $kernel = $app->get(Kernel::class);
 
         $allowedStandardDataAttrs = ['data-theme'];
-        $paths = ['/admin', '/admin/styleguide', '/admin/users', '/admin/roles', '/admin/profile', '/admin/pages', '/admin/settings/security'];
+        $paths = ['/admin', '/admin/styleguide', '/admin/plugins', '/admin/users', '/admin/roles', '/admin/profile', '/admin/pages', '/admin/settings/security'];
 
         foreach ($paths as $path) {
             $body = $kernel->handle(Request::create('GET', $path))->body();

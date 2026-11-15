@@ -152,3 +152,34 @@ $hooks->on('auth.failed', static function (string $email, string $ip, string $re
 });
 ```
 
+---
+
+## Hooks du système de plugins (Phase 5)
+
+### Événements du cycle de vie des plugins
+
+| Hook | Type | Paramètres | Déclenchement |
+|------|------|------------|---------------|
+| `plugins.loaded` | Événement | `array<string, PluginContext> $contexts` | Une fois tous les plugins actifs enregistrés (`register()`) et démarrés (`boot()`) dans l'ordre topologique. |
+| `plugin.installed` | Événement | `PluginManifest $manifest, bool $replaced, ?string $previousVersion` | Après l'installation ou le remplacement d'un plugin depuis une archive ZIP. |
+| `plugin.activated` | Événement | `PluginManifest $manifest, PluginContext $context` | Après la réussite des 7 étapes d'activation d'un plugin. |
+| `plugin.deactivated` | Événement | `?PluginManifest $manifest, string $slug` | Après la désactivation d'un plugin (données conservées). |
+| `plugin.uninstalled` | Événement | `string $slug, bool $deleteFiles` | Après la désinstallation complète (migrations annulées, réglages/assets/notices/ligne DB nettoyés). |
+| `plugin.updated` | Événement | `PluginManifest $manifest, string $previousVersion` | Lorsqu'un plugin actif passe à une version SemVer supérieure (après exécution des nouvelles migrations et republication des assets). |
+| `plugin.failed` | Événement | `string $slug, string $phase, string $errorMessage, ?Throwable $exception` | Lorsqu'un plugin est isolé au statut `errored` (erreur dans `register`, `boot`, `activate`, un listener/filtre, dépendance circulaire ou crash fatal récupéré). |
+
+### Filtres du tableau de bord enrichis en Phase 5
+
+| Hook | Type | Valeur filtrée | Usage |
+|------|------|----------------|-------|
+| `admin.dashboard.shortcuts` | Filtre | `list<array{label: string, description: string, icon: string, accent: string, url: string}>` | Ajouter ou réorganiser les raccourcis affichés sur `/admin` (reçoit `User\|null` en second argument). |
+| `admin.dashboard.stats` | Filtre | `list<array<string, mixed>>` | Ajouter ou modifier les tuiles statistiques du tableau de bord `/admin` (reçoit `User\|null` en second argument). |
+
+### Attribution et isolation des erreurs de plugins (`Hooks::withOwner`)
+
+Tout écouteur ou filtre enregistré via `$context->hooks()` (ou pendant l'exécution de `register()`, `boot()`, `activate()`, `deactivate()`, `uninstall()`) est automatiquement attribué au slug du plugin propriétaire.
+
+- Si un callback appartenant à un **plugin** lève une `Throwable` (exception ou `Error`), `Hooks` intercepte l'erreur, détache les hooks du plugin fautif pour la suite de la requête, délègue à `PluginManager` (statut `errored`, log dans `plugin.{slug}`, notice persistante, événement `plugin.failed`) et **laisse les autres écouteurs et filtres poursuivre normalement** (pour un filtre, la valeur précédente reste intacte).
+- Les écouteurs du **noyau** (sans propriétaire plugin) conservent leur comportement standard : leurs exceptions continuent de se propager normalement.
+
+

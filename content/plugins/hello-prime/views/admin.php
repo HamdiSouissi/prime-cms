@@ -134,4 +134,4 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
     </section>
 </div>
 
-<?php $this->end(); ?>
+<?php $this->stop(); ?>

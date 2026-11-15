@@ -2,7 +2,7 @@
 
 **Prime CMS** est un système de gestion de contenu (CMS) 100 % original écrit en **PHP 8.2+ natif**, sans framework et avec **zéro dépendance au runtime**.
 
-> Version actuelle : **0.1.0** (Phase 4 — Authentification, utilisateurs, rôles)
+> Version actuelle : **0.5.0** (Phase 5 — Système de plugins)
 > Référence complète d'architecture et de conventions : [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 ---
@@ -31,6 +31,7 @@ docker compose up -d
    - **Santé (JSON)** : [http://localhost:8080/health](http://localhost:8080/health)
    - **Connexion administration** : [http://localhost:8080/admin/login](http://localhost:8080/admin/login)
    - **Tableau de bord (authentifié)** : [http://localhost:8080/admin](http://localhost:8080/admin)
+   - **Plugins** : `/admin/plugins` (incluant le plugin de référence `hello-prime`)
    - **Utilisateurs, rôles & profil** : `/admin/users`, `/admin/roles`, `/admin/profile`
    - **Design System (styleguide, admin + `APP_ENV=local`)** : [http://localhost:8080/admin/styleguide](http://localhost:8080/admin/styleguide)
 
@@ -83,6 +84,13 @@ php bin/prime user:role <email> <roles>      # Assigne, ajoute (--add) ou retire
 php bin/prime user:disable <email>           # Désactive un compte et révoque ses sessions
 php bin/prime user:enable <email>            # Réactive un compte désactivé
 php bin/prime user:2fa:reset <email>         # Réinitialisation d'urgence de la 2FA (TOTP)
+php bin/prime plugin:list [options]          # Liste les plugins (--status=..., --json)
+php bin/prime plugin:activate <slug>         # Active un plugin (migrations + assets + hooks)
+php bin/prime plugin:deactivate <slug>       # Désactive un plugin (données conservées)
+php bin/prime plugin:uninstall <slug>        # Désinstalle un plugin inactif (--keep-files)
+php bin/prime plugin:install <zip>           # Installe un plugin depuis une archive ZIP (--replace, --force)
+php bin/prime plugin:publish-assets [slug]   # Publie les assets statiques autorisés
+php bin/prime make:plugin <slug>             # Génère le squelette d'un nouveau plugin
 ```
 
 ---
@@ -100,7 +108,7 @@ Exécuter les vérifications :
 ```bash
 composer cs:check                                    # Vérification PSR-12 (PHP-CS-Fixer)
 composer cs:fix                                      # Correction automatique du style
-composer stan                                        # Analyse statique PHPStan (niveau 6)
+composer stan                                        # Analyse statique PHPStan (niveau 8)
 composer test                                        # Suite complète (Unit + Integration)
 vendor/bin/phpunit --group database --fail-on-skipped # Tests SQL réels (requiert PRIME_TEST_DB_*)
 ```
@@ -134,6 +142,7 @@ prime-cms/
 - [`docs/install.md`](docs/install.md) — Assistant d'installation web, repli `.env` lecture seule et CLI `bin/prime install`
 - [`docs/security.md`](docs/security.md) — Architecture sécurité (Argon2id, AES-256-GCM, sessions, remember-me, rate limiting, 2FA TOTP)
 - [`docs/users-and-roles.md`](docs/users-and-roles.md) — Rôles, catalogue de permissions (RBAC), garde `UserGuard` et commandes CLI
+- [`docs/plugins.md`](docs/plugins.md) — Guide complet du système de plugins, API `PluginContext`, SemVer, isolation et sécurité ZIP
 - [`docs/design-system.md`](docs/design-system.md) — Guide complet du design system, des composants, icônes et modules JS
 - [`docs/hooks.md`](docs/hooks.md) — Référence de tous les hooks (événements et filtres)
 - [`docs/nginx.conf.example`](docs/nginx.conf.example) — Exemple de configuration Nginx
