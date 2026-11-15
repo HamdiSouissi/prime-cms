@@ -116,6 +116,34 @@ final class AdminContext
     }
 
     /**
+     * Default search keywords attached to core menu & quick-create entries.
+     *
+     * @var array<string, list<string>>
+     */
+    private const DEFAULT_KEYWORDS = [
+        'dashboard' => ['accueil', 'statistiques', 'aperçu', 'indicateurs'],
+        'pages' => ['statiques', 'arborescence', 'éditorial'],
+        'articles' => ['blog', 'actualités', 'publications', 'billets'],
+        'media' => ['médiathèque', 'images', 'fichiers', 'photos', 'bibliothèque', 'upload'],
+        'appearance' => ['design', 'habillage', 'personnalisation'],
+        'appearance.themes' => ['habillage', 'design', 'aurora', 'modèles'],
+        'appearance.menus' => ['navigation', 'liens', 'en-tête'],
+        'appearance.widgets' => ['blocs', 'zones', 'pied de page'],
+        'plugins' => ['extensions', 'modules', 'compléments'],
+        'users' => ['comptes', 'rôles', 'permissions', 'équipe', 'membres'],
+        'settings' => ['paramètres', 'configuration', 'options', 'préférences'],
+        'settings.general' => ['paramètres', 'configuration', 'site', 'langue', 'fuseau'],
+        'settings.permalinks' => ['paramètres', 'configuration', 'urls', 'slugs', 'liens'],
+        'settings.security' => ['paramètres', 'configuration', 'protection', 'sessions', 'audit'],
+        'settings.emails' => ['paramètres', 'configuration', 'smtp', 'courriels', 'mails'],
+        'styleguide' => ['composants', 'ui', 'tokens', 'palette', 'couleurs'],
+        'create.page' => ['créer', 'nouveau', 'ajouter', 'page'],
+        'create.article' => ['créer', 'nouveau', 'ajouter', 'article', 'blog'],
+        'create.media' => ['créer', 'nouveau', 'ajouter', 'importer', 'upload', 'médias', 'images'],
+        'create.user' => ['créer', 'nouveau', 'ajouter', 'utilisateur', 'membre', 'inviter'],
+    ];
+
+    /**
      * Command palette entries built from menu + quick actions (filterable via `admin.command_palette`).
      *
      * @param list<MenuNode> $tree
@@ -128,15 +156,17 @@ final class AdminContext
 
         foreach ($tree as $node) {
             $item = $node->item;
+            $groupLabel = $item->group ?? 'Général';
             $entries[] = [
                 'id' => 'nav.' . $item->id,
                 'label' => $item->label,
-                'subtitle' => $item->group ?? 'Tableau de bord',
+                'subtitle' => $item->group ?? 'Accueil',
+                'group' => $groupLabel,
                 'section' => 'Navigation',
                 'icon' => $item->icon,
                 'accent' => $item->accent,
                 'url' => $item->url,
-                'keywords' => [$item->id, $item->group ?? 'accueil'],
+                'keywords' => self::DEFAULT_KEYWORDS[$item->id] ?? [],
             ];
 
             foreach ($node->children as $childNode) {
@@ -144,12 +174,13 @@ final class AdminContext
                 $entries[] = [
                     'id' => 'nav.' . $child->id,
                     'label' => $item->label . ' → ' . $child->label,
-                    'subtitle' => $child->url,
+                    'subtitle' => $item->group ?? $item->label,
+                    'group' => $groupLabel,
                     'section' => 'Navigation',
                     'icon' => $child->icon,
                     'accent' => $child->accent,
                     'url' => $child->url,
-                    'keywords' => [$item->label, $child->label, $child->id],
+                    'keywords' => self::DEFAULT_KEYWORDS[$child->id] ?? [],
                 ];
             }
         }
@@ -159,11 +190,12 @@ final class AdminContext
                 'id' => $create['id'],
                 'label' => $create['label'],
                 'subtitle' => $create['description'],
+                'group' => 'Actions rapides',
                 'section' => 'Actions rapides',
                 'icon' => $create['icon'],
                 'accent' => $create['accent'],
                 'url' => $create['url'],
-                'keywords' => ['creer', 'nouveau', 'ajouter'],
+                'keywords' => self::DEFAULT_KEYWORDS[$create['id']] ?? ['créer', 'nouveau', 'ajouter'],
             ];
         }
 
@@ -171,6 +203,7 @@ final class AdminContext
             'id' => 'action.view_site',
             'label' => 'Voir le site public',
             'subtitle' => 'Ouvrir la page d’accueil',
+            'group' => 'Raccourcis',
             'section' => 'Raccourcis',
             'icon' => 'external-link',
             'accent' => 'brand',

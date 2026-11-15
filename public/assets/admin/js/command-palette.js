@@ -6,13 +6,27 @@
 import { showToast } from './toast.js';
 
 /**
+ * @typedef {Object} CommandPaletteItem
+ * @property {string} id
+ * @property {string} label
+ * @property {string} [subtitle]
+ * @property {string} [group]
+ * @property {string} [section]
+ * @property {string} [icon]
+ * @property {string} [accent]
+ * @property {string} [url]
+ * @property {string[]} [keywords]
+ * @property {string} [action]
+ */
+
+/**
  * Normalize text for accent-insensitive and case-insensitive matching.
  *
  * @param {string} value
  * @returns {string}
  */
-function normalizeText(value) {
-  return value
+export function normalizeText(value) {
+  return String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -20,47 +34,78 @@ function normalizeText(value) {
 }
 
 /**
- * Simple accent-insensitive fuzzy score (higher is better, 0 = no match).
+ * Pure, deterministic search and ranking for command palette entries.
  *
- * @param {string} haystack
- * @param {string} needle
- * @returns {number}
+ * Rules:
+ * - Every whitespace-separated word in `query` must appear verbatim (ignoring
+ *   case and diacritics) in `label`, `group` (or `section`), or `keywords` — never `url`.
+ * - Ranking priority:
+ *   1. `label` starts with the query (400)
+ *   2. a word inside `label` starts with the query (300)
+ *   3. `label` contains the query / all query words (200)
+ *   4. match via `group` or `keywords` (100)
+ * - Ties preserve original insertion order.
+ *
+ * @param {CommandPaletteItem[]} items
+ * @param {string} query
+ * @returns {CommandPaletteItem[]}
  */
-function fuzzyScore(haystack, needle) {
-  if (!needle) {
-    return 1;
+export function searchCommands(items, query) {
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) {
+    return items.slice();
   }
 
-  const h = normalizeText(haystack);
-  const n = normalizeText(needle);
-  if (!n) {
-    return 1;
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) {
+    return items.slice();
   }
 
-  const exactPos = h.indexOf(n);
-  if (exactPos === 0) {
-    return 100;
-  }
-  if (exactPos > 0) {
-    return 70 - Math.min(exactPos, 30);
-  }
+  /** @type {Array<{ item: CommandPaletteItem, score: number, index: number }>} */
+  const ranked = [];
 
-  // Subsequence fuzzy match
-  let ni = 0;
-  let gaps = 0;
-  for (let hi = 0; hi < h.length && ni < n.length; hi += 1) {
-    if (h[hi] === n[ni]) {
-      ni += 1;
-    } else if (ni > 0) {
-      gaps += 1;
+  items.forEach((item, index) => {
+    const label = normalizeText(item.label || '');
+    const group = normalizeText(item.group || item.section || '');
+    const keywords = Array.isArray(item.keywords)
+      ? item.keywords.map((kw) => normalizeText(kw)).filter(Boolean)
+      : [];
+
+    // Every typed word must appear verbatim in label, group, or keywords (never in URL).
+    const allTokensMatch = tokens.every(
+      (token) =>
+        label.includes(token) ||
+        group.includes(token) ||
+        keywords.some((kw) => kw.includes(token)),
+    );
+
+    if (!allTokensMatch) {
+      return;
     }
-  }
 
-  if (ni === n.length) {
-    return Math.max(10, 40 - gaps);
-  }
+    const labelWords = label.split(/[\s\-→/'’]+/).filter(Boolean);
+    let score = 100;
 
-  return 0;
+    if (label.startsWith(normalizedQuery)) {
+      score = 400;
+    } else if (
+      labelWords.some((word) => word.startsWith(normalizedQuery)) ||
+      (tokens.length > 1 && tokens.every((token) => labelWords.some((word) => word.startsWith(token))))
+    ) {
+      score = 300;
+    } else if (
+      label.includes(normalizedQuery) ||
+      (tokens.length > 1 && tokens.every((token) => label.includes(token)))
+    ) {
+      score = 200;
+    }
+
+    ranked.push({ item, score, index });
+  });
+
+  ranked.sort((a, b) => (b.score !== a.score ? b.score - a.score : a.index - b.index));
+
+  return ranked.map((entry) => entry.item);
 }
 
 /** @returns {boolean} */
@@ -104,19 +149,6 @@ function buildIcon(name) {
   return svg;
 }
 
-/**
- * @typedef {Object} CommandPaletteItem
- * @property {string} id
- * @property {string} label
- * @property {string} [subtitle]
- * @property {string} [section]
- * @property {string} [icon]
- * @property {string} [accent]
- * @property {string} [url]
- * @property {string[]} [keywords]
- * @property {string} [action]
- */
-
 /** @type {(() => void)|null} */
 let openPaletteFn = null;
 
@@ -133,8 +165,8 @@ export function initCommandPalette() {
     return;
   }
 
-  const input = dialog.querySelector('[data-cmd-input]');
-  const resultsEl = dialog.querySelector('[data-cmd-results]');
+  const input = dialog.querySelector('[data-prime-cmd-input]');
+  const resultsEl = dialog.querySelector('[data-prime-cmd-results]');
   if (!(input instanceof HTMLInputElement) || !(resultsEl instanceof HTMLElement)) {
     return;
   }
@@ -158,7 +190,7 @@ export function initCommandPalette() {
 
   // Update visible shortcut badge for macOS users (⌘ vs Ctrl)
   const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent || '');
-  document.querySelectorAll('[data-shortcut-mod]').forEach((el) => {
+  document.querySelectorAll('[data-prime-shortcut-mod]').forEach((el) => {
     el.textContent = isMac ? '⌘' : 'Ctrl';
   });
 
@@ -175,7 +207,7 @@ export function initCommandPalette() {
   }
 
   function updateActiveClass() {
-    const buttons = Array.from(resultsEl.querySelectorAll('[data-cmd-index]'));
+    const buttons = Array.from(resultsEl.querySelectorAll('[data-prime-cmd-index]'));
     buttons.forEach((btn, idx) => {
       const isCurrent = idx === activeIndex;
       btn.classList.toggle('is-active', isCurrent);
@@ -188,20 +220,13 @@ export function initCommandPalette() {
 
   /** @param {string} query */
   function renderResults(query) {
-    const scored = items
-      .map((item) => {
-        const keywords = Array.isArray(item.keywords) ? item.keywords.join(' ') : '';
-        const haystack = `${item.label} ${item.subtitle || ''} ${item.section || ''} ${keywords}`;
-        return { item, score: fuzzyScore(haystack, query) };
-      })
-      .filter((entry) => entry.score > 0)
-      .sort((a, b) => b.score - a.score);
+    const matches = searchCommands(items, query);
 
     resultsEl.textContent = '';
     flatVisible = [];
     activeIndex = 0;
 
-    if (scored.length === 0) {
+    if (matches.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'pc-cmd__empty';
       empty.textContent = `Aucun résultat pour « ${query.trim()} ».`;
@@ -211,7 +236,7 @@ export function initCommandPalette() {
 
     /** @type {Map<string, CommandPaletteItem[]>} */
     const grouped = new Map();
-    scored.forEach(({ item }) => {
+    matches.forEach((item) => {
       const section = item.section || 'Navigation';
       const list = grouped.get(section) || [];
       list.push(item);
@@ -236,7 +261,7 @@ export function initCommandPalette() {
         btn.type = 'button';
         btn.className = 'pc-cmd__item';
         btn.setAttribute('role', 'option');
-        btn.setAttribute('data-cmd-index', String(index));
+        btn.setAttribute('data-prime-cmd-index', String(index));
 
         const accent = item.accent || 'neutral';
         const iconBox = document.createElement('span');
@@ -281,6 +306,7 @@ export function initCommandPalette() {
     if (!dialog.open) {
       dialog.showModal();
     }
+    input.setAttribute('aria-expanded', 'true');
     input.value = '';
     renderResults('');
     input.focus();
@@ -295,6 +321,7 @@ export function initCommandPalette() {
   openPaletteFn = open;
 
   dialog.addEventListener('close', () => {
+    input.setAttribute('aria-expanded', 'false');
     if (previousFocus && document.contains(previousFocus)) {
       previousFocus.focus();
     }
@@ -346,11 +373,11 @@ export function initCommandPalette() {
     if (!(target instanceof Element)) {
       return;
     }
-    if (target.closest('[data-command-palette-open]')) {
+    if (target.closest('[data-prime-command-palette-open]')) {
       event.preventDefault();
       open();
     }
-    if (target.closest('[data-command-palette-close]')) {
+    if (target.closest('[data-prime-command-palette-close]')) {
       event.preventDefault();
       close();
     }
