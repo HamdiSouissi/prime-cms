@@ -80,4 +80,37 @@ final class RequestTest extends TestCase
         $this->assertSame('42', $withMore->attribute('id'));
         $this->assertSame('admin', $withMore->attribute('role'));
     }
+
+    public function testNormalizesMultipleSlashesAndPreservesQueryString(): void
+    {
+        $doubleSlash = Request::create('GET', '//health');
+        $this->assertSame('/health', $doubleSlash->path());
+
+        $multiSlash = Request::create('GET', '///x//y/?foo=1&bar=2#section');
+        $this->assertSame('/x/y/', $multiSlash->path());
+        $this->assertSame('1', $multiSlash->query('foo'));
+        $this->assertSame('2', $multiSlash->query('bar'));
+
+        $absolute = Request::create('GET', 'https://example.com//health?check=1#top');
+        $this->assertSame('/health', $absolute->path());
+        $this->assertSame('1', $absolute->query('check'));
+
+        $previousServer = $_SERVER;
+        $previousGet = $_GET;
+
+        try {
+            $_SERVER = [
+                'REQUEST_METHOD' => 'GET',
+                'REQUEST_URI' => '//health?mode=raw#frag',
+            ];
+            $_GET = ['mode' => 'raw'];
+
+            $fromGlobals = Request::fromGlobals();
+            $this->assertSame('/health', $fromGlobals->path());
+            $this->assertSame('raw', $fromGlobals->query('mode'));
+        } finally {
+            $_SERVER = $previousServer;
+            $_GET = $previousGet;
+        }
+    }
 }

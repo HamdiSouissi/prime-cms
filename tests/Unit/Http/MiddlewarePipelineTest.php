@@ -97,6 +97,26 @@ final class MiddlewarePipelineTest extends TestCase
         $this->assertSame('/blog?page=2', $redirectResponse->header('Location'));
     }
 
+    public function testTrailingSlashMiddlewareNeverEmitsProtocolRelativeOpenRedirect(): void
+    {
+        $middleware = new TrailingSlash();
+        $next = static fn (Request $req): Response => Response::text($req->path());
+
+        $doubleSlashTarget = $middleware->process(Request::create('GET', '//evil.com/'), $next);
+        $this->assertSame(301, $doubleSlashTarget->status());
+        $this->assertSame('/evil.com', $doubleSlashTarget->header('Location'));
+        $this->assertStringStartsNotWith('//', (string) $doubleSlashTarget->header('Location'));
+
+        $tripleSlashWithQuery = $middleware->process(Request::create('GET', '///evil.com/path/?next=1'), $next);
+        $this->assertSame(301, $tripleSlashWithQuery->status());
+        $this->assertSame('/evil.com/path?next=1', $tripleSlashWithQuery->header('Location'));
+        $this->assertStringStartsNotWith('//', (string) $tripleSlashWithQuery->header('Location'));
+
+        $onlySlashes = $middleware->process(Request::create('GET', '//'), $next);
+        $this->assertSame(200, $onlySlashes->status());
+        $this->assertSame('/', $onlySlashes->body());
+    }
+
     public function testSecurityHeadersMiddlewareAddsAllRequiredHeaders(): void
     {
         $middleware = new SecurityHeaders();

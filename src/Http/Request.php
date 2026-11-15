@@ -122,8 +122,7 @@ final class Request
             ? $server['REQUEST_URI']
             : '/';
 
-        $parsedPath = parse_url($requestUri, PHP_URL_PATH);
-        $path = is_string($parsedPath) && $parsedPath !== '' ? $parsedPath : '/';
+        ['path' => $path] = self::extractUriParts($requestUri, allowAbsoluteUrl: false);
 
         $rawBody = file_get_contents('php://input');
         $headers = self::extractHeadersFromServer($server);
@@ -162,12 +161,10 @@ final class Request
         array $server = [],
         string $rawBody = '',
     ): self {
-        $parsedPath = parse_url($uri, PHP_URL_PATH);
-        $path = is_string($parsedPath) && $parsedPath !== '' ? $parsedPath : '/';
+        ['path' => $path, 'query' => $uriQueryString] = self::extractUriParts($uri, allowAbsoluteUrl: true);
 
-        $uriQueryString = parse_url($uri, PHP_URL_QUERY);
         $uriQuery = [];
-        if (is_string($uriQueryString) && $uriQueryString !== '') {
+        if ($uriQueryString !== '') {
             parse_str($uriQueryString, $parsedQuery);
             foreach ($parsedQuery as $k => $v) {
                 $uriQuery[(string) $k] = $v;
@@ -380,13 +377,54 @@ final class Request
         return $normalized;
     }
 
+    /**
+     * Extract path and query string from a request URI without invoking `parse_url()`
+     * on relative paths (avoiding protocol-relative `//host` misinterpretation).
+     *
+     * @return array{path: string, query: string}
+     */
+    private static function extractUriParts(string $uri, bool $allowAbsoluteUrl): array
+    {
+        if ($allowAbsoluteUrl && preg_match('#^https?://#i', $uri) === 1) {
+            $parsedPath = parse_url($uri, PHP_URL_PATH);
+            $parsedQuery = parse_url($uri, PHP_URL_QUERY);
+
+            return [
+                'path' => self::normalizePath(is_string($parsedPath) ? $parsedPath : '/'),
+                'query' => is_string($parsedQuery) ? $parsedQuery : '',
+            ];
+        }
+
+        $hashPos = strpos($uri, '#');
+        if ($hashPos !== false) {
+            $uri = substr($uri, 0, $hashPos);
+        }
+
+        $queryPos = strpos($uri, '?');
+        if ($queryPos !== false) {
+            $rawPath = substr($uri, 0, $queryPos);
+            $queryString = substr($uri, $queryPos + 1);
+        } else {
+            $rawPath = $uri;
+            $queryString = '';
+        }
+
+        return [
+            'path' => self::normalizePath($rawPath),
+            'query' => $queryString,
+        ];
+    }
+
     private static function normalizePath(string $path): string
     {
         if ($path === '') {
             return '/';
         }
 
-        return str_starts_with($path, '/') ? $path : '/' . $path;
+        $withLeadingSlash = str_starts_with($path, '/') ? $path : '/' . $path;
+        $collapsed = preg_replace('#/+#', '/', $withLeadingSlash);
+
+        return $collapsed ?? '/';
     }
 
     /**

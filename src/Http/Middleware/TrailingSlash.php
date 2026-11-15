@@ -17,10 +17,9 @@ final class TrailingSlash implements MiddlewareInterface
         $path = $request->path();
 
         if ($path !== '/' && str_ends_with($path, '/')) {
-            $normalized = rtrim($path, '/');
-            if ($normalized === '') {
-                $normalized = '/';
-            }
+            $normalized = '/' . ltrim(rtrim($path, '/'), '/');
+            $collapsed = preg_replace('#/+#', '/', $normalized);
+            $normalized = $collapsed ?? '/';
 
             $query = $request->query();
             if (is_array($query) && $query !== []) {
