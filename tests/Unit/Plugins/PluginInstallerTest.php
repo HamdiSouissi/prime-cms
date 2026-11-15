@@ -270,7 +270,7 @@ final class PluginInstallerTest extends TestCase
             'author' => ['name' => 'Prime Tests'],
             'namespace' => 'ZipDemo\\',
             'main' => 'ZipDemo\\Plugin',
-            'requires' => ['prime' => '^0.5', 'php' => '^8.2'],
+            'requires' => ['prime' => '>=0.5.0', 'php' => '^8.2'],
         ], JSON_THROW_ON_ERROR);
     }
 }

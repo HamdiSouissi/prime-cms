@@ -213,6 +213,22 @@ final class Blueprint
     }
 
     /**
+     * Add a FULLTEXT index (MySQL 8.0+ / MariaDB 10.6+ InnoDB).
+     *
+     * @param string|list<string> $columns
+     */
+    public function fullText(string|array $columns, ?string $name = null): self
+    {
+        $this->indexes[] = [
+            'type' => 'FULLTEXT',
+            'name' => $name !== null ? Identifier::validateSimple($name) : null,
+            'columns' => $this->normalizeColumns($columns),
+        ];
+
+        return $this;
+    }
+
+    /**
      * @param string|list<string> $columns
      */
     public function foreign(string|array $columns, ?string $name = null): ForeignKeyDefinition
@@ -407,11 +423,19 @@ final class Blueprint
             return sprintf('PRIMARY KEY (%s)', $cols);
         }
 
-        $prefix = $index['type'] === 'UNIQUE' ? 'uniq' : 'idx';
+        $prefix = match ($index['type']) {
+            'UNIQUE' => 'uniq',
+            'FULLTEXT' => 'ft',
+            default => 'idx',
+        };
         $name = $index['name'] ?? $this->defaultIndexName($prefix, $index['columns']);
 
         if ($index['type'] === 'UNIQUE') {
             return sprintf('UNIQUE KEY %s (%s)', Identifier::quoteSimple($name), $cols);
+        }
+
+        if ($index['type'] === 'FULLTEXT') {
+            return sprintf('FULLTEXT KEY %s (%s)', Identifier::quoteSimple($name), $cols);
         }
 
         return sprintf('INDEX %s (%s)', Identifier::quoteSimple($name), $cols);

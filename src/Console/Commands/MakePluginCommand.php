@@ -104,7 +104,7 @@ final class MakePluginCommand implements CommandInterface
             'namespace' => $namespace,
             'main' => $namespace . 'Plugin',
             'requires' => [
-                'prime' => '^0.5',
+                'prime' => '>=' . \Prime\Kernel\Application::VERSION,
                 'php' => '^8.2',
             ],
             'accent' => 'violet',

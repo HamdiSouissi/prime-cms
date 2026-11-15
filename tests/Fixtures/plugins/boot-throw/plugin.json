@@ -6,5 +6,5 @@
   "author": { "name": "Prime Tests" },
   "namespace": "FixtureBootThrow\\",
   "main": "FixtureBootThrow\\Plugin",
-  "requires": { "prime": "^0.5", "php": "^8.2" }
+  "requires": { "prime": ">=0.5.0", "php": "^8.2" }
 }

@@ -44,6 +44,9 @@ final class MysqlEmulatingPdo extends PDO
             $query = (string) preg_replace('/`id`\s+BIGINT\s+UNSIGNED\s+NOT\s+NULL\s+AUTO_INCREMENT(?:\s+PRIMARY\s+KEY)?/i', '`id` INTEGER PRIMARY KEY AUTOINCREMENT', $query);
             $query = (string) preg_replace('/,\s*PRIMARY\s+KEY\s*\(`id`\)/i', '', $query);
             $query = (string) preg_replace('/\bUNSIGNED\b/i', '', $query);
+            $query = (string) preg_replace('/\s+ON\s+UPDATE\s+CURRENT_TIMESTAMP/i', '', $query);
+            $query = (string) preg_replace('/,\s*FULLTEXT\s+KEY\s+`[^`]+`\s*\([^)]+\)/i', '', $query);
+            $query = (string) preg_replace('/,\s*UNIQUE\s+KEY\s+`[^`]+`\s*\(([^)]+)\)/i', ', UNIQUE ($1)', $query);
             $query = (string) preg_replace('/,\s*INDEX\s+`[^`]+`\s*\([^)]+\)/i', '', $query);
         }
 
