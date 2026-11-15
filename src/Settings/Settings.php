@@ -169,6 +169,62 @@ final class Settings
     }
 
     /**
+     * Load all settings whose names begin with `$prefix`.
+     *
+     * @return array<string, mixed>
+     */
+    public function allByPrefix(string $prefix): array
+    {
+        if ($prefix === '') {
+            return $this->all();
+        }
+
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);
+        $table = Identifier::quoteSimple($this->connection->prefixed(self::TABLE));
+        $rows = $this->connection->select(
+            sprintf("SELECT `name`, `value` FROM %s WHERE `name` LIKE ? ESCAPE '\\\\' ORDER BY `name` ASC", $table),
+            [$escaped . '%'],
+        );
+
+        $result = [];
+        foreach ($rows as $row) {
+            $key = (string) $row['name'];
+            $decoded = $this->decodeValue($row['value'] ?? null);
+            $result[$key] = $decoded;
+            $this->cache[$key] = $decoded;
+            unset($this->missing[$key]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Delete all settings whose names begin with `$prefix`. Returns the number of deleted rows.
+     */
+    public function deleteByPrefix(string $prefix): int
+    {
+        if ($prefix === '') {
+            throw new InvalidArgumentException('Setting prefix must not be empty when deleting by prefix.');
+        }
+
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);
+        $table = Identifier::quoteSimple($this->connection->prefixed(self::TABLE));
+        $deleted = $this->connection->delete(
+            sprintf("DELETE FROM %s WHERE `name` LIKE ? ESCAPE '\\\\'", $table),
+            [$escaped . '%'],
+        );
+
+        foreach (array_keys($this->cache) as $key) {
+            if (str_starts_with($key, $prefix)) {
+                unset($this->cache[$key]);
+                $this->missing[$key] = true;
+            }
+        }
+
+        return $deleted;
+    }
+
+    /**
      * Load and return all stored settings (both autoloaded and lazy).
      *
      * @return array<string, mixed>

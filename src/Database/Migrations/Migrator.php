@@ -11,13 +11,8 @@ use Prime\Hooks\Hooks;
 use Throwable;
 
 /**
- * Discovers, locks, executes, rolls back, and reports versioned database migrations.
- *
- * Note on MySQL DDL behavior: DDL statements (`CREATE TABLE`, `ALTER TABLE`, `DROP TABLE`)
- * trigger an implicit commit in MySQL/MariaDB. Consequently, each migration is recorded in
- * `pc_migrations` immediately after its `up()` completes. If a later migration fails, execution
- * stops cleanly with an exception identifying the failing migration while preserving the
- * history of migrations that already succeeded.
+ * Discovers, locks, executes, rolls back, and reports versioned database migrations
+ * for both core (`source = 'core'`) and plugins (`source = '<plugin-slug>'`).
  */
 final class Migrator
 {
@@ -36,6 +31,11 @@ final class Migrator
         private readonly int $lockTimeoutSeconds = 5,
     ) {
         $this->repository = new MigrationRepository($connection, $schema);
+    }
+
+    public function repository(): MigrationRepository
+    {
+        return $this->repository;
     }
 
     public function addPath(string $path): void
@@ -75,42 +75,17 @@ final class Migrator
      */
     public function discover(): array
     {
-        $files = [];
+        return $this->discoverFromDirectories($this->paths());
+    }
 
-        foreach ($this->paths() as $directory) {
-            if (!is_dir($directory) || !is_readable($directory)) {
-                continue;
-            }
-
-            $entries = scandir($directory);
-            if ($entries === false) {
-                continue;
-            }
-
-            foreach ($entries as $entry) {
-                if (preg_match(self::FILENAME_PATTERN, $entry) !== 1) {
-                    continue;
-                }
-
-                $name = substr($entry, 0, -4);
-                $fullPath = rtrim($directory, DIRECTORY_SEPARATOR . '/') . DIRECTORY_SEPARATOR . $entry;
-
-                if (isset($files[$name])) {
-                    throw new MigrationException(sprintf(
-                        'Duplicate migration [%s] found in [%s] and [%s].',
-                        $name,
-                        $files[$name],
-                        $fullPath,
-                    ));
-                }
-
-                $files[$name] = $fullPath;
-            }
-        }
-
-        ksort($files, SORT_STRING);
-
-        return $files;
+    /**
+     * Discover valid migration files inside a single directory (used for plugin migrations).
+     *
+     * @return array<string, string>
+     */
+    public function discoverInDirectory(string $directory): array
+    {
+        return $this->discoverFromDirectories([$directory]);
     }
 
     /**
@@ -147,11 +122,96 @@ final class Migrator
                     );
                 }
 
-                $this->repository->log($name, $batch);
+                $this->repository->log($name, $batch, MigrationRepository::DEFAULT_SOURCE);
                 $executed[] = $name;
             }
 
             return $executed;
+        });
+    }
+
+    /**
+     * Execute pending migrations belonging to a plugin (`source = $slug`) from `$directory`.
+     * Migration names are prefixed with `{$source}:` in `pc_migrations` to prevent name collisions
+     * between independent plugins sharing the same timestamp/filename.
+     *
+     * @return array{executed: list<string>, batch: ?int}
+     */
+    public function runForSource(string $source, string $directory): array
+    {
+        return $this->withLock(function () use ($source, $directory): array {
+            $this->repository->ensureTableExists();
+
+            $discovered = $this->discoverInDirectory($directory);
+            if ($discovered === []) {
+                return ['executed' => [], 'batch' => null];
+            }
+
+            $ran = $this->repository->ran($source);
+            $batch = null;
+            $executed = [];
+
+            foreach ($discovered as $baseName => $path) {
+                $recordName = $source . ':' . $baseName;
+                if (isset($ran[$recordName]) || isset($ran[$baseName])) {
+                    continue;
+                }
+
+                if ($batch === null) {
+                    $batch = $this->repository->lastBatchNumber() + 1;
+                }
+
+                $migration = $this->loadMigration($recordName, $path);
+
+                try {
+                    $migration->up($this->schema);
+                } catch (Throwable $exception) {
+                    throw new MigrationException(
+                        sprintf('Plugin migration [%s] failed during up(): %s', $recordName, $exception->getMessage()),
+                        0,
+                        $exception,
+                    );
+                }
+
+                $this->repository->log($recordName, $batch, $source);
+                $executed[] = $recordName;
+            }
+
+            return ['executed' => $executed, 'batch' => $batch];
+        });
+    }
+
+    /**
+     * Roll back all migrations executed for a plugin in a single batch (e.g. failed activation).
+     *
+     * @return list<string>
+     */
+    public function rollbackBatchForSource(string $source, int $batch, string $directory): array
+    {
+        return $this->withLock(function () use ($source, $batch, $directory): array {
+            $entries = $this->repository->batchForSource($source, $batch);
+            if ($entries === []) {
+                return [];
+            }
+
+            return $this->rollbackSourceEntries($source, $entries, $directory);
+        });
+    }
+
+    /**
+     * Roll back EVERY migration ever executed by a plugin (used during plugin uninstall).
+     *
+     * @return list<string>
+     */
+    public function rollbackAllForSource(string $source, string $directory): array
+    {
+        return $this->withLock(function () use ($source, $directory): array {
+            $entries = $this->repository->allDescending($source);
+            if ($entries === []) {
+                return [];
+            }
+
+            return $this->rollbackSourceEntries($source, $entries, $directory);
         });
     }
 
@@ -210,7 +270,7 @@ final class Migrator
     /**
      * Return status metadata for every discovered and previously executed migration.
      *
-     * @return list<array{migration: string, status: string, batch: ?int, ran_at: ?string, path: ?string}>
+     * @return list<array{migration: string, source: string, status: string, batch: ?int, ran_at: ?string, path: ?string}>
      */
     public function status(): array
     {
@@ -225,6 +285,7 @@ final class Migrator
             $isRan = isset($ran[$name]);
             $rows[] = [
                 'migration' => $name,
+                'source' => $isRan ? $ran[$name]['source'] : MigrationRepository::DEFAULT_SOURCE,
                 'status' => $isRan ? 'ran' : 'pending',
                 'batch' => $isRan ? $ran[$name]['batch'] : null,
                 'ran_at' => $isRan ? $ran[$name]['ran_at'] : null,
@@ -244,7 +305,95 @@ final class Migrator
     }
 
     /**
-     * @param list<array{id: int, migration: string, batch: int, ran_at: string}> $entries
+     * @param list<string> $directories
+     * @return array<string, string>
+     */
+    private function discoverFromDirectories(array $directories): array
+    {
+        $files = [];
+
+        foreach ($directories as $directory) {
+            if (!is_dir($directory) || !is_readable($directory)) {
+                continue;
+            }
+
+            $entries = scandir($directory);
+            if ($entries === false) {
+                continue;
+            }
+
+            foreach ($entries as $entry) {
+                if (preg_match(self::FILENAME_PATTERN, $entry) !== 1) {
+                    continue;
+                }
+
+                $name = substr($entry, 0, -4);
+                $fullPath = rtrim($directory, DIRECTORY_SEPARATOR . '/') . DIRECTORY_SEPARATOR . $entry;
+
+                if (isset($files[$name])) {
+                    throw new MigrationException(sprintf(
+                        'Duplicate migration [%s] found in [%s] and [%s].',
+                        $name,
+                        $files[$name],
+                        $fullPath,
+                    ));
+                }
+
+                $files[$name] = $fullPath;
+            }
+        }
+
+        ksort($files, SORT_STRING);
+
+        return $files;
+    }
+
+    /**
+     * @param list<array{id: int, migration: string, source: string, batch: int, ran_at: string}> $entries
+     * @return list<string>
+     */
+    private function rollbackSourceEntries(string $source, array $entries, string $directory): array
+    {
+        $discovered = $this->discoverInDirectory($directory);
+        $rolledBack = [];
+        $prefix = $source . ':';
+
+        foreach ($entries as $entry) {
+            $recordName = $entry['migration'];
+            $baseName = str_starts_with($recordName, $prefix)
+                ? substr($recordName, strlen($prefix))
+                : $recordName;
+
+            if (!isset($discovered[$baseName])) {
+                throw new MigrationException(sprintf(
+                    'Cannot roll back plugin migration [%s]: migration file [%s.php] not found in [%s].',
+                    $recordName,
+                    $baseName,
+                    $directory,
+                ));
+            }
+
+            $migration = $this->loadMigration($recordName, $discovered[$baseName]);
+
+            try {
+                $migration->down($this->schema);
+            } catch (Throwable $exception) {
+                throw new MigrationException(
+                    sprintf('Plugin migration [%s] failed during down(): %s', $recordName, $exception->getMessage()),
+                    0,
+                    $exception,
+                );
+            }
+
+            $this->repository->delete($recordName);
+            $rolledBack[] = $recordName;
+        }
+
+        return $rolledBack;
+    }
+
+    /**
+     * @param list<array{id: int, migration: string, source: string, batch: int, ran_at: string}> $entries
      * @return list<string>
      */
     private function rollbackEntries(array $entries): array

@@ -199,8 +199,10 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
 
         // Run core migrations
         $ran = $migrator->run();
-        $this->assertCount(6, $ran);
+        $this->assertCount(8, $ran);
         $this->assertTrue($schema->hasTable('settings'));
+        $this->assertTrue($schema->hasTable('plugins'));
+        $this->assertTrue($schema->hasColumn('migrations', 'source'));
         $this->assertTrue($schema->hasTable('users'));
         $this->assertTrue($schema->hasColumn('users', 'session_version'));
         $this->assertTrue($schema->hasColumn('users', 'two_factor_secret'));

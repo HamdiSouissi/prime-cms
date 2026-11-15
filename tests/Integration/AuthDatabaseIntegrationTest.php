@@ -39,7 +39,7 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
         );
         $ran = $migrator->run();
 
-        $this->assertCount(6, $ran);
+        $this->assertCount(8, $ran);
 
         $rolesRepo = new RoleRepository($this->connection);
         $usersRepo = new UserRepository($this->connection, $rolesRepo);
