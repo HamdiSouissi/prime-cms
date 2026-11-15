@@ -99,10 +99,12 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
         </div>
         <?php $metaBody = (string) ob_get_clean(); ?>
 
-        <?= $this->raw($this->insert('admin::components/card', [
-            'title' => 'Identité du rôle',
-            'body' => $metaBody,
-        ])) ?>
+        <div class="pc-form-wide">
+            <?= $this->raw($this->insert('admin::components/card', [
+                'title' => 'Identité du rôle',
+                'body' => $metaBody,
+            ])) ?>
+        </div>
 
         <?php ob_start(); ?>
         <div class="pc-cap-matrix">

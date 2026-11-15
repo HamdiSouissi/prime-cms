@@ -25,22 +25,22 @@ $this->layout('admin::layouts/app');
     ]),
 ])) ?>
 
-<div class="pc-card">
-    <div class="pc-table-wrap">
-        <table class="pc-table">
+<div class="pc-table-wrap">
+    <div class="pc-table-scroll">
+        <table class="pc-table pc-table--stacked">
             <thead>
                 <tr>
                     <th scope="col">Rôle</th>
                     <th scope="col">Slug</th>
                     <th scope="col">Permissions</th>
                     <th scope="col">Utilisateurs</th>
-                    <th scope="col" class="pc-table__actions-col">Actions</th>
+                    <th scope="col" class="pc-table__actions">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($roles as $role): ?>
                     <tr>
-                        <td>
+                        <td class="pc-table__primary">
                             <div class="pc-stack pc-stack--xs">
                                 <div class="pc-row pc-row--sm">
                                     <a href="/admin/roles/<?= $this->e((string) $role->id) ?>/edit" class="pc-user-cell__name">
@@ -58,8 +58,8 @@ $this->layout('admin::layouts/app');
                                 <?php endif; ?>
                             </div>
                         </td>
-                        <td><code class="pc-mono"><?= $this->e($role->slug) ?></code></td>
-                        <td>
+                        <td data-prime-label="Slug"><code class="pc-mono"><?= $this->e($role->slug) ?></code></td>
+                        <td data-prime-label="Permissions">
                             <?php if ($role->isAdministrator()): ?>
                                 <?= $this->raw($this->insert('admin::components/badge', [
                                     'label' => 'Toutes (*)',
@@ -72,14 +72,14 @@ $this->layout('admin::layouts/app');
                                 ])) ?>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td data-prime-label="Utilisateurs">
                             <?= $this->raw($this->insert('admin::components/badge', [
                                 'label' => $role->usersCount . ' utilisateur' . ($role->usersCount > 1 ? 's' : ''),
-                                'variant' => $role->usersCount > 0 ? 'neutral' : 'neutral',
+                                'variant' => 'neutral',
                                 'pill' => true,
                             ])) ?>
                         </td>
-                        <td class="pc-table__actions-col">
+                        <td class="pc-table__actions">
                             <div class="pc-row pc-row--sm">
                                 <a href="/admin/roles/<?= $this->e((string) $role->id) ?>/edit" class="pc-btn pc-btn--ghost pc-btn--sm">
                                     <?= $role->isAdministrator() ? 'Consulter' : 'Modifier' ?>

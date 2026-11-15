@@ -265,6 +265,79 @@ final class UsersAndRolesCrudTest extends TestCase
         $this->assertFalse($users->find($cliUser->id)?->hasTwoFactor());
     }
 
+    public function testAdminUsersRolesAndProfileRespectSinglePrimaryCtaFormWidthsAndStackedCards(): void
+    {
+        $app = $this->createApp(authenticateUserId: 1);
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $extractMain = function (string $html): string {
+            $this->assertSame(1, preg_match('/<main\b[^>]*>(.*?)<\/main>/s', $html, $m));
+
+            return $m[1];
+        };
+
+        // 1. Profile screen: each tab panel has strictly 1 primary coral CTA and comfortable 560px form width
+        $profileRes = $kernel->handle(Request::create('GET', '/admin/profile', query: ['tab' => 'security']));
+        $this->assertSame(200, $profileRes->status());
+        $profileMain = $extractMain($profileRes->body());
+        $this->assertStringContainsString('pc-form-narrow', $profileMain);
+        $this->assertStringContainsString('Mettre à jour le mot de passe', $profileMain);
+        $this->assertStringContainsString('Activer la double authentification', $profileMain);
+
+        // Extract both tab panels and assert strictly 1 pc-btn--primary button in each
+        $infoPos = strpos($profileMain, 'id="profile-tabs-panel-info"');
+        $securityPos = strpos($profileMain, 'id="profile-tabs-panel-security"');
+        $this->assertIsInt($infoPos);
+        $this->assertIsInt($securityPos);
+        $infoPanel = substr($profileMain, $infoPos, $securityPos - $infoPos);
+        $securityPanel = substr($profileMain, $securityPos);
+        $this->assertSame(1, substr_count($infoPanel, 'pc-btn--primary'));
+        $this->assertSame(1, substr_count($securityPanel, 'pc-btn--primary'));
+
+        // 2. Users index (non-empty + filtered empty state): strictly 1 primary CTA and stacked mobile cards
+        $usersRes = $kernel->handle(Request::create('GET', '/admin/users'));
+        $this->assertSame(200, $usersRes->status());
+        $usersMain = $extractMain($usersRes->body());
+        $this->assertSame(1, substr_count($usersMain, 'pc-btn--primary'));
+        $this->assertStringContainsString('pc-table--stacked', $usersMain);
+        $this->assertStringContainsString('data-prime-label="Rôles"', $usersMain);
+        $this->assertStringContainsString('data-prime-label="Statut"', $usersMain);
+        $this->assertStringContainsString('data-prime-label="Dernière connexion"', $usersMain);
+
+        $emptyUsersRes = $kernel->handle(Request::create('GET', '/admin/users', query: ['search' => 'zzznomatch999']));
+        $this->assertSame(200, $emptyUsersRes->status());
+        $this->assertSame(1, substr_count($extractMain($emptyUsersRes->body()), 'pc-btn--primary'));
+
+        // 3. Users create & edit forms: single primary CTA and constrained two-column grid (<= 880px)
+        $createRes = $kernel->handle(Request::create('GET', '/admin/users/create'));
+        $this->assertSame(200, $createRes->status());
+        $createMain = $extractMain($createRes->body());
+        $this->assertSame(1, substr_count($createMain, 'pc-btn--primary'));
+        $this->assertStringContainsString('pc-form-grid--aside', $createMain);
+
+        $editRes = $kernel->handle(Request::create('GET', '/admin/users/1/edit'));
+        $this->assertSame(200, $editRes->status());
+        $editMain = $extractMain($editRes->body());
+        $this->assertSame(1, substr_count($editMain, 'pc-btn--primary'));
+        $this->assertStringContainsString('pc-form-grid--aside', $editMain);
+
+        // 4. Roles index & edit: single primary CTA, stacked mobile cards, wide identity + full-width matrix
+        $rolesRes = $kernel->handle(Request::create('GET', '/admin/roles'));
+        $this->assertSame(200, $rolesRes->status());
+        $rolesMain = $extractMain($rolesRes->body());
+        $this->assertSame(1, substr_count($rolesMain, 'pc-btn--primary'));
+        $this->assertStringContainsString('pc-table--stacked', $rolesMain);
+        $this->assertStringContainsString('data-prime-label="Permissions"', $rolesMain);
+
+        $roleFormRes = $kernel->handle(Request::create('GET', '/admin/roles/create'));
+        $this->assertSame(200, $roleFormRes->status());
+        $roleFormMain = $extractMain($roleFormRes->body());
+        $this->assertSame(1, substr_count($roleFormMain, 'pc-btn--primary'));
+        $this->assertStringContainsString('pc-form-wide', $roleFormMain);
+        $this->assertStringContainsString('pc-cap-matrix', $roleFormMain);
+    }
+
     private function createApp(?int $authenticateUserId): Application
     {
         $this->sentMessages = [];

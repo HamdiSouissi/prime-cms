@@ -448,16 +448,29 @@
   cursor: pointer;
 }
 
+.pc-form-narrow {
+  width: 100%;
+  max-width: 560px;
+}
+
+.pc-form-wide {
+  width: 100%;
+  max-width: 880px;
+}
+
 .pc-form-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-6);
+  width: 100%;
+  max-width: 560px;
 }
 
 @media (min-width: 960px) {
   .pc-form-grid--aside {
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    grid-template-columns: minmax(0, 560px) minmax(260px, 1fr);
     align-items: start;
+    max-width: 880px;
   }
 }
 

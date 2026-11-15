@@ -113,17 +113,17 @@ if ($canCreate) {
                 'description' => $hasFilters
                     ? 'Essayez d\'élargir votre recherche ou de réinitialiser les filtres actifs.'
                     : 'Commencez par créer un compte utilisateur pour votre équipe.',
-                'actionLabel' => $hasFilters ? 'Réinitialiser les filtres' : ($canCreate ? 'Ajouter un utilisateur' : null),
-                'actionUrl' => $hasFilters ? '/admin/users' : ($canCreate ? '/admin/users/create' : null),
+                'secondaryLabel' => $hasFilters ? 'Réinitialiser les filtres' : null,
+                'secondaryUrl' => $hasFilters ? '/admin/users' : null,
             ]),
         ])) ?>
     <?php else: ?>
-        <div class="pc-card" data-prime-table-bulk>
+        <div class="pc-table-wrap" data-prime-table-bulk>
             <?php if ($canEdit): ?>
             <form method="post" action="/admin/users/bulk" id="pc-users-bulk-form">
                 <?= $this->raw($this->csrfField()) ?>
-                <div class="pc-table-bulk-bar" data-prime-table-bulk-bar hidden>
-                    <span class="pc-table-bulk-bar__count" data-prime-table-bulk-count>0 élément sélectionné</span>
+                <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
+                    <span class="pc-table-bulk__count" data-prime-table-bulk-count>0 élément sélectionné</span>
                     <div class="pc-row pc-row--sm">
                         <select name="bulk_action" class="pc-select" aria-label="Action groupée" data-prime-bulk-action-select>
                             <option value="">Choisir une action…</option>
@@ -140,12 +140,12 @@ if ($canCreate) {
             </form>
             <?php endif; ?>
 
-            <div class="pc-table-wrap">
-                <table class="pc-table">
+            <div class="pc-table-scroll">
+                <table class="pc-table pc-table--stacked">
                     <thead>
                         <tr>
                             <?php if ($canEdit): ?>
-                            <th scope="col" class="pc-table__check-col">
+                            <th scope="col" class="pc-table__check">
                                 <input type="checkbox" class="pc-checkbox" data-prime-table-select-all aria-label="Tout sélectionner">
                             </th>
                             <?php endif; ?>
@@ -160,7 +160,7 @@ if ($canCreate) {
                             <th scope="col">
                                 <a href="<?= $this->e($sortUrl('last_login_at')) ?>" class="pc-table__sort">Dernière connexion</a>
                             </th>
-                            <th scope="col" class="pc-table__actions-col">Actions</th>
+                            <th scope="col" class="pc-table__actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -171,7 +171,7 @@ if ($canCreate) {
                             ?>
                             <tr>
                                 <?php if ($canEdit): ?>
-                                <td class="pc-table__check-col">
+                                <td class="pc-table__check">
                                     <input
                                         type="checkbox"
                                         class="pc-checkbox"
@@ -185,7 +185,7 @@ if ($canCreate) {
                                 </td>
                                 <?php endif; ?>
 
-                                <td>
+                                <td class="pc-table__primary">
                                     <div class="pc-user-cell">
                                         <?= $this->raw($this->insert('admin::components/avatar', [
                                             'initials' => $user->initials(),
@@ -208,7 +208,7 @@ if ($canCreate) {
                                     </div>
                                 </td>
 
-                                <td>
+                                <td data-prime-label="Rôles">
                                     <div class="pc-badges-wrap">
                                         <?php if ($user->roles === []): ?>
                                             <?= $this->raw($this->insert('admin::components/badge', ['label' => 'Sans rôle', 'variant' => 'neutral'])) ?>
@@ -223,7 +223,7 @@ if ($canCreate) {
                                     </div>
                                 </td>
 
-                                <td>
+                                <td data-prime-label="Statut">
                                     <?= $this->raw($this->insert('admin::components/badge', [
                                         'label' => $user->isActive() ? 'Actif' : 'Désactivé',
                                         'variant' => $user->isActive() ? 'success' : 'neutral',
@@ -231,20 +231,20 @@ if ($canCreate) {
                                     ])) ?>
                                 </td>
 
-                                <td>
+                                <td data-prime-label="2FA">
                                     <?= $this->raw($this->insert('admin::components/badge', [
                                         'label' => $user->hasTwoFactor() ? 'Activée' : 'Inactive',
                                         'variant' => $user->hasTwoFactor() ? 'teal' : 'neutral',
                                     ])) ?>
                                 </td>
 
-                                <td>
+                                <td data-prime-label="Dernière connexion">
                                     <span title="<?= $this->e($rel['title']) ?>" data-prime-tooltip="<?= $this->e($rel['title']) ?>">
                                         <?= $this->e($rel['label']) ?>
                                     </span>
                                 </td>
 
-                                <td class="pc-table__actions-col">
+                                <td class="pc-table__actions">
                                     <div class="pc-row pc-row--sm">
                                         <?php if ($canEdit): ?>
                                             <a href="/admin/users/<?= $this->e((string) $user->id) ?>/edit" class="pc-btn pc-btn--ghost pc-btn--sm">

@@ -33,7 +33,7 @@ $this->layout('admin::layouts/app');
 // ---- Tab 1: Informations ----
 ob_start();
 ?>
-<form method="post" action="/admin/profile/info" class="pc-stack pc-stack--lg" novalidate>
+<form method="post" action="/admin/profile/info" class="pc-stack pc-stack--lg pc-form-narrow" novalidate>
     <?= $this->raw($this->csrfField()) ?>
 
     <?php ob_start(); ?>
@@ -106,7 +106,7 @@ $infoTabHtml = (string) ob_get_clean();
 // ---- Tab 2: Sécurité ----
 ob_start();
 ?>
-<div class="pc-stack pc-stack--lg">
+<div class="pc-stack pc-stack--lg pc-form-narrow">
     <!-- 1. Password change -->
     <form method="post" action="/admin/profile/password" novalidate>
         <?= $this->raw($this->csrfField()) ?>
@@ -220,7 +220,10 @@ ob_start();
                 </p>
                 <form method="post" action="/admin/profile/2fa/start">
                     <?= $this->raw($this->csrfField()) ?>
-                    <button type="submit" class="pc-btn pc-btn--primary">Activer la 2FA (TOTP)</button>
+                    <button type="submit" class="pc-btn pc-btn--secondary">
+                        <?= $this->raw($this->icon('shield', 16)) ?>
+                        <span>Activer la double authentification</span>
+                    </button>
                 </form>
             <?php else: ?>
                 <p class="pc-text-sm">
@@ -262,7 +265,10 @@ ob_start();
                         'required' => true,
                     ])) ?>
                     <div class="pc-row pc-row--sm">
-                        <button type="submit" class="pc-btn pc-btn--primary">Confirmer et activer</button>
+                        <button type="submit" class="pc-btn pc-btn--secondary">
+                            <?= $this->raw($this->icon('shield', 16)) ?>
+                            <span>Confirmer et activer</span>
+                        </button>
                         <button type="submit" formaction="/admin/profile/2fa/cancel" class="pc-btn pc-btn--ghost" formnovalidate>Annuler</button>
                     </div>
                 </form>
@@ -304,7 +310,7 @@ ob_start();
                 data-prime-confirm-form="Désactiver l'authentification à deux facteurs sur votre compte ?"
             >
                 <?= $this->raw($this->csrfField()) ?>
-                <div class="pc-grid pc-grid--2">
+                <div class="pc-stack pc-stack--md">
                     <?= $this->raw($this->insert('admin::components/field', [
                         'id' => 'profile-2fa-disable-password',
                         'name' => 'current_password',
