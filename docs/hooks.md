@@ -48,6 +48,21 @@ Ce document recense l'ensemble des hooks (événements et filtres) déclenchés 
 
 ---
 
+## Hooks d'authentification, sécurité et RBAC (Phase 4)
+
+| Nom | Type | Arguments | Moment du déclenchement |
+|---|---|---|---|
+| `auth.capabilities` | Filtre | `array<string, array<string, string>> $groups` | Lors de la résolution du catalogue de permissions dans `Prime\Auth\Capabilities::grouped()`. Permet aux plugins d'ajouter de nouveaux groupes et clés de permissions dans la matrice `/admin/roles`. |
+| `auth.login` | Événement | `Prime\Auth\User $user`, `string $ip` | Après une authentification complète réussie (y compris après validation du second facteur 2FA ou connexion automatique par cookie « Rester connecté »). |
+| `auth.logout` | Événement | `Prime\Auth\User $user`, `string $ip` | Lors de la déconnexion d'un utilisateur via `Prime\Auth\Auth::logout()`. |
+| `auth.failed` | Événement | `string $email`, `string $ip`, `string $reason` | Après un échec d'authentification (mot de passe incorrect, compte inconnu ou désactivé, code 2FA invalide). |
+| `auth.lockout` | Événement | `string $email`, `string $ip`, `int $retryAfterSeconds` | Lorsqu'une tentative de connexion ou de défi 2FA dépasse le seuil du `RateLimiter` (HTTP 429). |
+| `auth.password_reset` | Événement | `Prime\Auth\User $user` | Après une réinitialisation réussie du mot de passe via un jeton `/admin/reset-password/{token}`. |
+| `auth.two_factor_enabled` | Événement | `Prime\Auth\User $user` | Immédiatement après confirmation et activation de la 2FA (TOTP) sur un compte. |
+| `auth.two_factor_disabled` | Événement | `Prime\Auth\User $user`, `?int $actorUserId` | Après désactivation ou réinitialisation (profil, administrateur ou CLI `user:2fa:reset`) de la 2FA. |
+
+---
+
 ## Exemples d'utilisation
 
 ### Ajouter une route via `routes.register`
@@ -113,6 +128,27 @@ $hooks->filter('migrations.paths', static function (array $paths): array {
 ```php
 $hooks->on('install.completed', static function (array $payload): void {
     // Exécuté une fois les migrations, le compte admin et storage/installed.lock en place.
+});
+```
+
+### Déclarer des permissions personnalisées via `auth.capabilities`
+
+```php
+$hooks->filter('auth.capabilities', static function (array $groups): array {
+    $groups['Boutique'] = [
+        'shop.orders.view' => 'Consulter les commandes',
+        'shop.orders.manage' => 'Gérer les commandes',
+    ];
+
+    return $groups;
+});
+```
+
+### Journaliser les échecs de connexion via `auth.failed`
+
+```php
+$hooks->on('auth.failed', static function (string $email, string $ip, string $reason): void {
+    // Alerter un outil SIEM ou enregistrer un audit métier personnalisé.
 });
 ```
 
