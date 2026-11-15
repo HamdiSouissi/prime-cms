@@ -1,0 +1,220 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Prime\Tests\Integration;
+
+use PHPUnit\Framework\TestCase;
+use Prime\Hooks\Hooks;
+use Prime\Http\Kernel;
+use Prime\Http\Request;
+use Prime\Http\Response;
+use Prime\Http\Router;
+use Prime\Kernel\Application;
+use Prime\Kernel\ErrorHandler;
+use Prime\Log\Logger;
+use RuntimeException;
+
+final class HttpKernelTest extends TestCase
+{
+    private string $tempLogDir;
+
+    protected function setUp(): void
+    {
+        $this->tempLogDir = sys_get_temp_dir() . '/prime_int_logs_' . uniqid('', true);
+    }
+
+    protected function tearDown(): void
+    {
+        if (is_dir($this->tempLogDir)) {
+            $files = glob($this->tempLogDir . '/*');
+            if ($files !== false) {
+                foreach ($files as $file) {
+                    unlink($file);
+                }
+            }
+            rmdir($this->tempLogDir);
+        }
+    }
+
+    public function testHomeRouteReturns200WithBrandContentAndSecurityHeaders(): void
+    {
+        $app = $this->createBootedApp();
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $response = $kernel->handle(Request::create('GET', '/'));
+
+        $this->assertSame(200, $response->status());
+        $this->assertStringContainsString('<html lang="fr">', $response->body());
+        $this->assertStringContainsString('Prime CMS', $response->body());
+        $this->assertStringContainsString(Application::VERSION, $response->body());
+        $this->assertStringContainsString('Le noyau est en place', $response->body());
+        $this->assertStringContainsString('brand/logo.svg', $response->body());
+        $this->assertSecurityHeadersPresent($response);
+    }
+
+    public function testHealthRouteReturnsValidJsonPayload(): void
+    {
+        $app = $this->createBootedApp();
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $response = $kernel->handle(Request::create('GET', '/health'));
+
+        $this->assertSame(200, $response->status());
+        $this->assertStringContainsString('application/json', (string) $response->header('Content-Type'));
+        $this->assertSecurityHeadersPresent($response);
+
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode($response->body(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('ok', $payload['status']);
+        $this->assertSame('Prime CMS', $payload['app']);
+        $this->assertSame(Application::VERSION, $payload['version']);
+        $this->assertSame(PHP_VERSION, $payload['php']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', (string) $payload['time']);
+    }
+
+    public function testUnknownRouteReturns404PageWithSecurityHeaders(): void
+    {
+        $app = $this->createBootedApp();
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $response = $kernel->handle(Request::create('GET', '/inconnu'));
+
+        $this->assertSame(404, $response->status());
+        $this->assertStringContainsString('Page introuvable', $response->body());
+        $this->assertStringContainsString("Retourner à l'accueil", $response->body());
+        $this->assertSecurityHeadersPresent($response);
+    }
+
+    public function testWrongMethodReturns405WithAllowHeaderAndSecurityHeaders(): void
+    {
+        $app = $this->createBootedApp();
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $response = $kernel->handle(Request::create('POST', '/health'));
+
+        $this->assertSame(405, $response->status());
+        $this->assertSame('GET', $response->header('Allow'));
+        $this->assertSecurityHeadersPresent($response);
+    }
+
+    public function testTrailingSlashRedirects301WithSecurityHeaders(): void
+    {
+        $app = $this->createBootedApp();
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $response = $kernel->handle(Request::create('GET', '/health/'));
+
+        $this->assertSame(301, $response->status());
+        $this->assertSame('/health', $response->header('Location'));
+        $this->assertSecurityHeadersPresent($response);
+    }
+
+    public function testUnhandledExceptionRendersDebugPageWhenDebugIsEnabled(): void
+    {
+        $app = $this->createBootedApp(debug: true);
+        /** @var Router $router */
+        $router = $app->get(Router::class);
+        $router->get('/boom', static function (): Response {
+            throw new RuntimeException('Secret debug failure marker');
+        });
+
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        $response = $kernel->handle(Request::create('GET', '/boom'));
+
+        $this->assertSame(500, $response->status());
+        $this->assertStringContainsString('RuntimeException', $response->body());
+        $this->assertStringContainsString('Secret debug failure marker', $response->body());
+        $this->assertStringContainsString('Extrait du code source', $response->body());
+        $this->assertSecurityHeadersPresent($response);
+    }
+
+    public function testUnhandledExceptionHidesDetailsInProductionAndLogsError(): void
+    {
+        $app = $this->createBootedApp(debug: false);
+        /** @var Router $router */
+        $router = $app->get(Router::class);
+        $router->get('/boom', static function (): Response {
+            throw new RuntimeException('Confidential internal detail');
+        });
+
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        $response = $kernel->handle(Request::create('GET', '/boom'));
+
+        $this->assertSame(500, $response->status());
+        $this->assertStringContainsString('Une erreur est survenue', $response->body());
+        $this->assertStringNotContainsString('Confidential internal detail', $response->body());
+        $this->assertStringNotContainsString('RuntimeException', $response->body());
+        $this->assertSecurityHeadersPresent($response);
+
+        /** @var Logger $logger */
+        $logger = $app->get(Logger::class);
+        $this->assertFileExists($logger->logFilePath());
+        $logContent = (string) file_get_contents($logger->logFilePath());
+        $this->assertStringContainsString('Confidential internal detail', $logContent);
+    }
+
+    public function testJsonRequestReceivesStructuredJsonErrors(): void
+    {
+        $app = $this->createBootedApp(debug: false);
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $response = $kernel->handle(Request::create(
+            'GET',
+            '/missing-json',
+            headers: ['Accept' => 'application/json'],
+        ));
+
+        $this->assertSame(404, $response->status());
+        $this->assertStringContainsString('application/json', (string) $response->header('Content-Type'));
+
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode($response->body(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(404, $payload['error']['code']);
+        $this->assertSame('Page introuvable.', $payload['error']['message']);
+    }
+
+    public function testHttpResponseHookCanFilterOutgoingResponse(): void
+    {
+        $app = $this->createBootedApp();
+        /** @var Hooks $hooks */
+        $hooks = $app->get(Hooks::class);
+        $hooks->filter('http.response', static fn (Response $res): Response => $res->withHeader('X-Prime-Filtered', 'yes'));
+
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        $response = $kernel->handle(Request::create('GET', '/health'));
+
+        $this->assertSame('yes', $response->header('X-Prime-Filtered'));
+    }
+
+    private function createBootedApp(bool $debug = false): Application
+    {
+        $app = new Application(dirname(__DIR__, 2), loadEnv: false);
+        $app->config()->set('app.debug', $debug);
+        $app->config()->set('logging.path', $this->tempLogDir);
+        $app->boot();
+
+        /** @var ErrorHandler $errorHandler */
+        $errorHandler = $app->get(ErrorHandler::class);
+        $errorHandler->setDebug($debug);
+
+        return $app;
+    }
+
+    private function assertSecurityHeadersPresent(Response $response): void
+    {
+        $this->assertSame('nosniff', $response->header('X-Content-Type-Options'));
+        $this->assertSame('strict-origin-when-cross-origin', $response->header('Referrer-Policy'));
+        $this->assertSame('SAMEORIGIN', $response->header('X-Frame-Options'));
+        $this->assertStringContainsString("'self'", (string) $response->header('Content-Security-Policy'));
+    }
+}
