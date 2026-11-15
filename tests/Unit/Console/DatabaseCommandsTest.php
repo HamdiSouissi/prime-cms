@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Prime\Tests\Unit\Console;
 
-use PDO;
 use PHPUnit\Framework\TestCase;
 use Prime\Console\Commands\DbCheckCommand;
 use Prime\Console\Commands\InstallCommand;
@@ -21,6 +20,7 @@ use Prime\Database\Schema\Schema;
 use Prime\Install\Installer;
 use Prime\Kernel\Application;
 use Prime\Settings\Settings;
+use Prime\Tests\Support\MysqlEmulatingPdo;
 
 final class DatabaseCommandsTest extends TestCase
 {
@@ -125,9 +125,7 @@ final class DatabaseCommandsTest extends TestCase
 
     public function testSettingsCliGetAndSetRoundTripJsonTypes(): void
     {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo = new MysqlEmulatingPdo('name');
 
         $conn = new Connection(['prefix' => 'pc_'], pdo: $pdo);
         $conn->statement('CREATE TABLE `pc_settings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT UNIQUE NOT NULL, `value` TEXT NULL, `autoload` INTEGER NOT NULL DEFAULT 1, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL)');

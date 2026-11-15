@@ -45,3 +45,20 @@
   - Annoter leurs entrées de menu `MenuItem(..., capability: '...')` dans **`admin.menu`** afin que la barre latérale et la palette de commandes se filtrent automatiquement selon le rôle connecté.
   - Écouter les événements de cycle de vie sécurité (**`auth.login`**, **`auth.logout`**, **`auth.failed`**, **`auth.lockout`**, **`auth.password_reset`**, **`auth.two_factor_enabled`**, **`auth.two_factor_disabled`**).
 - L'entrée `/admin/plugins` (`plugins.manage`) et son écran d'attente sont prêts à accueillir le gestionnaire de plugins de la Phase 5.
+
+---
+
+## 4. Corrections (revue 1)
+
+Suite à la revue technique, sécurité et ergonomique de la Phase 4, 5 corrections ciblées ont été appliquées directement sur la branche `arena/8a25419c-prime-cms` :
+
+| Correction | Résumé des changements |
+|---|---|
+| **C1 — Anti-énumération temporelle & `Prime\Security\Hasher`** | Création de `Prime\Security\Hasher` (`make`, `verify`, `needsRehash`, `dummyVerify`, `dummyHash`) configuré via `config/auth.php` (`hash_driver`, `argon2`, `bcrypt`) avec cache atomique fingerprinted du hash factice dans `storage/cache/`. Remplacement de **100 %** des appels directs `password_hash()` / `password_verify()` / `password_needs_rehash()` dans `src/` (`Auth`, `UserRepository`, `TwoFactorService`, `Installer`, `ProfileController`). Suppression de `Auth::DUMMY_HASH` (qui utilisait bcrypt cost 10 face à Argon2id) et maintien du même temps de réponse pour les comptes inexistants, mauvais mots de passe et comptes désactivés. Ajout des tests `tests/Unit/Security/HasherTest.php` et de la vérification live MySQL/MariaDB dans `tests/Integration/AuthDatabaseIntegrationTest.php` (parité `password_get_info()` + médiane sur 5 essais avec ratio dans `[0,6 ; 1,6]`). |
+| **C2 — Action primaire corail unique par écran** | Sur `/admin/profile?tab=security`, « Mettre à jour le mot de passe » reste le seul bouton `pc-btn--primary` ; « Activer la double authentification » (et sa confirmation d'étape 2) passe en `pc-btn--secondary` avec icône bouclier (`shield`). Sur `/admin/users`, l'état vide filtré bascule sur un bouton secondaire afin de conserver un unique CTA primaire corail sur tous les écrans Utilisateurs, Rôles et Profil. |
+| **C3 — Largeurs de formulaires confortables** | Ajout de `.pc-form-narrow` (`max-width: 560px`) et `.pc-form-wide` (`max-width: 880px`) dans `resources/assets/admin/css/components/auth.css`, plafonnement de `.pc-form-grid--aside` à `880px` (colonne principale `560px`). Appliqué sur Profil (`info` & `security`), création/édition utilisateur et carte d'identité d'un rôle, tout en laissant la matrice de permissions pleine largeur. |
+| **C4 — Cartes empilées mobiles sur les tableaux Utilisateurs & Rôles** | Ajout de la variante réutilisable `.pc-table--stacked` dans `resources/assets/admin/css/components/table.css` (`@media (max-width: 767.98px)`) exploitant `data-prime-label` (strictement préfixé `data-prime-*`), `.pc-table__primary`, `.pc-table__check` (sélection groupée conservée) et `.pc-table__actions`. Appliquée sur `users/index.php` et `roles/index.php`, recompilation de `public/assets/admin/css/admin.css` via `bin/prime assets:build`, et documentée dans `docs/design-system.md`. |
+| **C5 — Zéro branche SQLite dans `src/`** | Suppression de la branche `driverName() === 'sqlite'` dans `src/Settings/Settings.php` (upsert MySQL/MariaDB `ON DUPLICATE KEY UPDATE` uniquement). Isolation de la compatibilité SQLite des tests unitaires dans le double de test `tests/Support/MysqlEmulatingPdo.php` (`SettingsTest` et `DatabaseCommandsTest`). Vérification : **0 occurrence** de `sqlite` dans `src/`. |
+
+- **Couverture de tests mise à jour** : **185 tests** (dont 11 tests `#[Group('database')]` exécutés contre MySQL 8.0 et MariaDB 10.6 en CI, +4 nouveaux tests couvrant `HasherTest` et les assertions C2/C3/C4 dans `UsersAndRolesCrudTest`).
+

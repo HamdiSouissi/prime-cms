@@ -123,19 +123,11 @@ final class Settings
         $table = Identifier::quoteSimple($this->connection->prefixed(self::TABLE));
         $autoloadInt = $autoload ? 1 : 0;
 
-        if ($this->connection->driverName() === 'sqlite') {
-            $sql = sprintf(
-                'INSERT INTO %s (`name`, `value`, `autoload`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?)'
-                . ' ON CONFLICT(`name`) DO UPDATE SET `value` = ?, `autoload` = ?, `updated_at` = ?',
-                $table,
-            );
-        } else {
-            $sql = sprintf(
-                'INSERT INTO %s (`name`, `value`, `autoload`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?)'
-                . ' ON DUPLICATE KEY UPDATE `value` = ?, `autoload` = ?, `updated_at` = ?',
-                $table,
-            );
-        }
+        $sql = sprintf(
+            'INSERT INTO %s (`name`, `value`, `autoload`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?)'
+            . ' ON DUPLICATE KEY UPDATE `value` = ?, `autoload` = ?, `updated_at` = ?',
+            $table,
+        );
 
         $this->connection->statement($sql, [
             $cleanName,
