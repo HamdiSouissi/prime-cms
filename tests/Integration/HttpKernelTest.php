@@ -38,9 +38,9 @@ final class HttpKernelTest extends TestCase
         }
     }
 
-    public function testHomeRouteReturns200WithBrandContentAndSecurityHeaders(): void
+    public function testHomeRouteHidesSystemDetailsInProductionMode(): void
     {
-        $app = $this->createBootedApp();
+        $app = $this->createBootedApp(debug: false);
         /** @var Kernel $kernel */
         $kernel = $app->get(Kernel::class);
 
@@ -52,12 +52,53 @@ final class HttpKernelTest extends TestCase
         $this->assertStringContainsString(Application::VERSION, $response->body());
         $this->assertStringContainsString('Le noyau est en place', $response->body());
         $this->assertStringContainsString('brand/logo.svg', $response->body());
+        $this->assertStringNotContainsString('État du système', $response->body());
+        $this->assertStringNotContainsString(PHP_VERSION, $response->body());
+        $this->assertStringNotContainsString('storage/logs', $response->body());
         $this->assertSecurityHeadersPresent($response);
     }
 
-    public function testHealthRouteReturnsValidJsonPayload(): void
+    public function testHomeRouteDisplaysSystemStatusCardWhenDebugIsEnabled(): void
     {
-        $app = $this->createBootedApp();
+        $app = $this->createBootedApp(debug: true);
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $response = $kernel->handle(Request::create('GET', '/'));
+
+        $this->assertSame(200, $response->status());
+        $this->assertStringContainsString('Prime CMS', $response->body());
+        $this->assertStringContainsString('Le noyau est en place', $response->body());
+        $this->assertStringContainsString('État du système', $response->body());
+        $this->assertStringContainsString(PHP_VERSION, $response->body());
+        $this->assertStringContainsString('storage/logs', $response->body());
+        $this->assertSecurityHeadersPresent($response);
+    }
+
+    public function testHealthRouteOmitsPhpVersionInProductionMode(): void
+    {
+        $app = $this->createBootedApp(debug: false);
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $response = $kernel->handle(Request::create('GET', '/health'));
+
+        $this->assertSame(200, $response->status());
+        $this->assertStringContainsString('application/json', (string) $response->header('Content-Type'));
+        $this->assertSecurityHeadersPresent($response);
+
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode($response->body(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('ok', $payload['status']);
+        $this->assertSame('Prime CMS', $payload['app']);
+        $this->assertSame(Application::VERSION, $payload['version']);
+        $this->assertArrayNotHasKey('php', $payload);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', (string) $payload['time']);
+    }
+
+    public function testHealthRouteIncludesPhpVersionWhenDebugIsEnabled(): void
+    {
+        $app = $this->createBootedApp(debug: true);
         /** @var Kernel $kernel */
         $kernel = $app->get(Kernel::class);
 

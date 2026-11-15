@@ -30,33 +30,39 @@ final class HomeController
      */
     public function index(Request $request): Response
     {
-        $storageDirs = [
-            'storage/cache' => $this->app->storagePath('cache'),
-            'storage/logs' => $this->app->storagePath('logs'),
-            'storage/sessions' => $this->app->storagePath('sessions'),
-            'storage/tmp' => $this->app->storagePath('tmp'),
-        ];
-
-        $storageStatus = [];
-        $allWritable = true;
-
-        foreach ($storageDirs as $label => $fullPath) {
-            $writable = is_dir($fullPath) && is_writable($fullPath);
-            $storageStatus[$label] = $writable;
-            if (!$writable) {
-                $allWritable = false;
-            }
-        }
-
-        $html = $this->view->render('home', [
+        $debug = $this->app->isDebug();
+        $data = [
             'appName' => (string) $this->config->get('app.name', 'Prime CMS'),
             'version' => Application::VERSION,
-            'phpVersion' => PHP_VERSION,
-            'environment' => $this->app->environment(),
-            'debug' => $this->app->isDebug(),
-            'storageStatus' => $storageStatus,
-            'allWritable' => $allWritable,
-        ]);
+            'debug' => $debug,
+        ];
+
+        if ($debug) {
+            $storageDirs = [
+                'storage/cache' => $this->app->storagePath('cache'),
+                'storage/logs' => $this->app->storagePath('logs'),
+                'storage/sessions' => $this->app->storagePath('sessions'),
+                'storage/tmp' => $this->app->storagePath('tmp'),
+            ];
+
+            $storageStatus = [];
+            $allWritable = true;
+
+            foreach ($storageDirs as $label => $fullPath) {
+                $writable = is_dir($fullPath) && is_writable($fullPath);
+                $storageStatus[$label] = $writable;
+                if (!$writable) {
+                    $allWritable = false;
+                }
+            }
+
+            $data['phpVersion'] = PHP_VERSION;
+            $data['environment'] = $this->app->environment();
+            $data['storageStatus'] = $storageStatus;
+            $data['allWritable'] = $allWritable;
+        }
+
+        $html = $this->view->render('home', $data);
 
         return Response::html($html);
     }
@@ -68,12 +74,18 @@ final class HomeController
     {
         $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DateTimeInterface::ATOM);
 
-        return Response::json([
+        $payload = [
             'status' => 'ok',
             'app' => (string) $this->config->get('app.name', 'Prime CMS'),
             'version' => Application::VERSION,
-            'php' => PHP_VERSION,
-            'time' => $now,
-        ]);
+        ];
+
+        if ($this->app->isDebug()) {
+            $payload['php'] = PHP_VERSION;
+        }
+
+        $payload['time'] = $now;
+
+        return Response::json($payload);
     }
 }
