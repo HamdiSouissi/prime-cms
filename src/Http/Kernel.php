@@ -24,6 +24,13 @@ use Throwable;
 final class Kernel
 {
     /**
+     * Named middleware aliases supporting optional `:parameter` suffix (e.g. `can:users.view`).
+     *
+     * @var array<string, Closure(?string): MiddlewareInterface>
+     */
+    private array $middlewareAliases = [];
+
+    /**
      * @param list<string|MiddlewareInterface> $globalMiddleware
      * @param list<string|MiddlewareInterface> $routeMiddleware Middlewares executed on every matched route (e.g. CSRF)
      */
@@ -35,6 +42,16 @@ final class Kernel
         private array $globalMiddleware = [],
         private array $routeMiddleware = [],
     ) {
+    }
+
+    /**
+     * Register a named middleware alias (e.g. `'can'` for `'can:users.view'`).
+     *
+     * @param Closure(?string): MiddlewareInterface $factory
+     */
+    public function registerMiddlewareAlias(string $alias, Closure $factory): void
+    {
+        $this->middlewareAliases[$alias] = $factory;
     }
 
     /**
@@ -122,6 +139,14 @@ final class Kernel
             return $middleware;
         }
 
+        $colonPos = strpos($middleware, ':');
+        $alias = $colonPos !== false ? substr($middleware, 0, $colonPos) : $middleware;
+        $parameter = $colonPos !== false ? substr($middleware, $colonPos + 1) : null;
+
+        if (isset($this->middlewareAliases[$alias])) {
+            return ($this->middlewareAliases[$alias])($parameter);
+        }
+
         $resolved = $this->container->make($middleware);
         if (!$resolved instanceof MiddlewareInterface) {
             throw new RuntimeException(
@@ -135,17 +160,20 @@ final class Kernel
     /**
      * Invoke a route handler (Closure or `[Controller::class, 'method']`).
      *
-     * @param callable|array{0: class-string, 1: string} $handler
+     * @param callable|array{0: class-string|object, 1: string} $handler
      * @param array<string, string> $params
      */
     private function invokeHandler(callable|array $handler, Request $request, array $params): Response
     {
         if (is_array($handler)) {
-            [$controllerClass, $method] = $handler;
-            $controller = $this->container->make($controllerClass);
+            [$controllerTarget, $method] = $handler;
+            $controller = is_object($controllerTarget)
+                ? $controllerTarget
+                : $this->container->make($controllerTarget);
+            $controllerLabel = is_object($controllerTarget) ? $controllerTarget::class : $controllerTarget;
 
             if (!method_exists($controller, $method)) {
-                throw new RuntimeException(sprintf('Controller method [%s::%s] does not exist.', $controllerClass, $method));
+                throw new RuntimeException(sprintf('Controller method [%s::%s] does not exist.', $controllerLabel, $method));
             }
 
             $reflection = new ReflectionMethod($controller, $method);

@@ -242,7 +242,9 @@ final class Route
         }
 
         if (is_array($this->handler)) {
-            return $this->handler[0] . '::' . $this->handler[1];
+            $target = is_object($this->handler[0]) ? $this->handler[0]::class : $this->handler[0];
+
+            return $target . '::' . $this->handler[1];
         }
 
         if (is_string($this->handler)) {

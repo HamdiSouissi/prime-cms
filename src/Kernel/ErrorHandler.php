@@ -280,6 +280,15 @@ final class ErrorHandler
     private function renderHtml(Throwable $exception, int $status, array $headers, ?Request $request): Response
     {
         try {
+            if ($status === 403) {
+                $html = $this->view->render('errors.403', [
+                    'path' => $request?->path() ?? '/admin',
+                    'message' => $this->publicMessage($exception, 403),
+                ]);
+
+                return Response::html($html, 403, $headers);
+            }
+
             if ($status === 404) {
                 $html = $this->view->render('errors.404', [
                     'path' => $request?->path() ?? '',
@@ -346,6 +355,12 @@ final class ErrorHandler
 
     private function publicMessage(Throwable $exception, int $status): string
     {
+        if ($status === 403) {
+            return $exception->getMessage() !== ''
+                ? $exception->getMessage()
+                : 'Vous n\'avez pas la permission d\'accéder à cette ressource.';
+        }
+
         if ($status === 404) {
             return 'Page introuvable.';
         }
@@ -356,6 +371,12 @@ final class ErrorHandler
 
         if ($status === 419) {
             return 'Jeton CSRF invalide ou session expirée.';
+        }
+
+        if ($status === 429) {
+            return $exception->getMessage() !== ''
+                ? $exception->getMessage()
+                : 'Trop de tentatives. Veuillez réessayer ultérieurement.';
         }
 
         if ($status >= 500) {
