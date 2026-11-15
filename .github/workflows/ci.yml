@@ -6,7 +6,7 @@ on:
 
 jobs:
   quality:
-    name: PHP ${{ matrix.php-version }}
+    name: PHP ${{ matrix.php-version }} (Lint, PHPStan, Unit)
     runs-on: ubuntu-latest
 
     strategy:
@@ -45,11 +45,69 @@ jobs:
       - name: Run static analysis (PHPStan level 6)
         run: composer stan
 
-      - name: Run test suite (PHPUnit 11)
-        run: composer test
+      - name: Run unit and HTTP test suite (PHPUnit 11)
+        run: vendor/bin/phpunit --exclude-group database
+
+  database-tests:
+    name: DB Tests (PHP ${{ matrix.php-version }} + ${{ matrix.db-label }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php-version: '8.2'
+            db-label: MySQL 8.0
+            db-image: mysql:8.0
+            db-cmd: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+          - php-version: '8.3'
+            db-label: MySQL 8.0
+            db-image: mysql:8.0
+            db-cmd: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+          - php-version: '8.3'
+            db-label: MariaDB 10.6
+            db-image: mariadb:10.6
+            db-cmd: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+    services:
+      db:
+        image: ${{ matrix.db-image }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: prime_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, gd, pdo_mysql, zip, fileinfo, openssl, intl
+          coverage: none
+
+      - name: Install dev dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run database integration test suite (fail on skipped)
+        env:
+          PRIME_TEST_DB_HOST: 127.0.0.1
+          PRIME_TEST_DB_PORT: 3306
+          PRIME_TEST_DB_DATABASE: prime_test
+          PRIME_TEST_DB_USERNAME: root
+          PRIME_TEST_DB_PASSWORD: root
+        run: vendor/bin/phpunit --group database --fail-on-skipped --testdox
 
   docker:
-    name: Docker Compose smoke test
+    name: Docker Compose install smoke test
     runs-on: ubuntu-latest
 
     steps:
@@ -59,24 +117,55 @@ jobs:
       - name: Start stack with Docker Compose
         run: docker compose up -d --build
 
-      - name: Wait for application and verify HTTP endpoints
+      - name: Wait for database and application, test pre-install, install via CLI, and verify post-install
         run: |
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:8080/health > /dev/null; then
+          for i in $(seq 1 40); do
+            if curl -sf http://localhost:8080/health > /dev/null && \
+               docker compose exec -T db mysqladmin ping -h localhost -u root -proot --silent 2>/dev/null; then
               break
             fi
-            sleep 1
+            sleep 2
           done
 
-          curl -sf http://localhost:8080/ | grep -q "Le noyau est en place"
+          # Pre-install checks: /health = 200, / redirects to /install, /install = 200
           curl -sf http://localhost:8080/health | grep -q '"status":"ok"'
-          curl -sf http://localhost:8080/admin | grep -q "Tableau de bord"
-          curl -sf http://localhost:8080/admin/styleguide | grep -q "Design System Prime CMS"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" = "302"
+          curl -sI http://localhost:8080/ | grep -iq "^Location: /install"
+          curl -sf http://localhost:8080/install | grep -q "Bienvenue dans Prime CMS"
           curl -sf http://localhost:8080/assets/admin/css/admin.css | grep -q -- "--brand-500"
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inconnu)" = "404"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health/)" = "301"
           test "$(curl -s -X POST -o /dev/null -w '%{http_code}' http://localhost:8080/health)" = "405"
-          curl -sI http://localhost:8080/ | grep -iq "X-Content-Type-Options: nosniff"
+          curl -sI http://localhost:8080/install | grep -iq "X-Content-Type-Options: nosniff"
+
+          # Execute full non-interactive CLI installation against real MySQL 8.0 container
+          docker compose exec -T app php bin/prime install \
+            --db-host=db \
+            --db-port=3306 \
+            --db-name=prime_cms \
+            --db-user=prime \
+            --db-password=secret \
+            --db-prefix=pc_ \
+            --site-name="Prime Docker Smoke" \
+            --site-url=http://localhost:8080 \
+            --site-locale=fr \
+            --timezone=Europe/Paris \
+            --admin-name="Admin Docker" \
+            --admin-email=admin@prime-docker.test \
+            --admin-password="Docker!Prime#2026"
+
+          # Verify CLI tools against live DB
+          docker compose exec -T app php bin/prime db:check | grep -q "Connexion à la base de données réussie"
+          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000001_create_settings_table"
+          docker compose exec -T app php bin/prime settings:get site_name | grep -q '"Prime Docker Smoke"'
+
+          # Post-install checks: / = 200, /install = 404, /admin = 200 (local env in compose), /inconnu = 404
+          curl -sf http://localhost:8080/ | grep -q "Le noyau est en place"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/install)" = "404"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/install/database)" = "404"
+          curl -sf http://localhost:8080/admin | grep -q "Tableau de bord"
+          curl -sf http://localhost:8080/admin/styleguide | grep -q "Design System Prime CMS"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inconnu)" = "404"
+
           docker compose exec -T app php -m | grep -iq "mbstring"
           docker compose exec -T app php -m | grep -iq "pdo_mysql"
           docker compose exec -T app php -m | grep -iq "gd"
