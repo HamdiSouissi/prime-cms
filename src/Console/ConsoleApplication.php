@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Prime\Console;
 
+use Prime\Auth\RoleRepository;
+use Prime\Auth\UserGuard;
+use Prime\Auth\UserRepository;
 use Prime\Console\Commands\AboutCommand;
 use Prime\Console\Commands\AssetsBuildCommand;
 use Prime\Console\Commands\DbCheckCommand;
@@ -15,15 +18,24 @@ use Prime\Console\Commands\MigrateFreshCommand;
 use Prime\Console\Commands\MigrateResetCommand;
 use Prime\Console\Commands\MigrateRollbackCommand;
 use Prime\Console\Commands\MigrateStatusCommand;
+use Prime\Console\Commands\RoleListCommand;
 use Prime\Console\Commands\RoutesCommand;
 use Prime\Console\Commands\SettingsGetCommand;
 use Prime\Console\Commands\SettingsSetCommand;
+use Prime\Console\Commands\UserCreateCommand;
+use Prime\Console\Commands\UserDisableCommand;
+use Prime\Console\Commands\UserEnableCommand;
+use Prime\Console\Commands\UserListCommand;
+use Prime\Console\Commands\UserPasswordCommand;
+use Prime\Console\Commands\UserRoleCommand;
+use Prime\Console\Commands\UserTwoFactorResetCommand;
 use Prime\Database\Connection;
 use Prime\Database\Migrations\Migrator;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Install\Installer;
 use Prime\Kernel\Application;
+use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
 
 /**
@@ -139,6 +151,26 @@ final class ConsoleApplication
             $installer = $this->app->get(Installer::class);
 
             $this->register(new InstallCommand($this->app->config(), $installer));
+        }
+
+        if ($this->app->container()->has(UserRepository::class) && $this->app->container()->has(RoleRepository::class)) {
+            /** @var UserRepository $userRepository */
+            $userRepository = $this->app->get(UserRepository::class);
+            /** @var RoleRepository $roleRepository */
+            $roleRepository = $this->app->get(RoleRepository::class);
+            /** @var UserGuard $userGuard */
+            $userGuard = $this->app->get(UserGuard::class);
+            /** @var PasswordPolicy $passwordPolicy */
+            $passwordPolicy = $this->app->get(PasswordPolicy::class);
+
+            $this->register(new UserCreateCommand($userRepository, $roleRepository, $passwordPolicy));
+            $this->register(new UserListCommand($userRepository));
+            $this->register(new UserPasswordCommand($userRepository, $passwordPolicy));
+            $this->register(new UserRoleCommand($userRepository, $roleRepository, $userGuard));
+            $this->register(new UserDisableCommand($userRepository, $userGuard));
+            $this->register(new UserEnableCommand($userRepository));
+            $this->register(new UserTwoFactorResetCommand($this->app));
+            $this->register(new RoleListCommand($roleRepository));
         }
 
         if ($this->app->container()->has(Hooks::class)) {
