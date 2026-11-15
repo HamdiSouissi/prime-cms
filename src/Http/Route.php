@@ -34,14 +34,16 @@ final class Route
 
     private readonly string $namePrefix;
 
-    private ?string $compiledPattern = null;
-
     /**
-     * Parsed route tokens for compilation and URL generation.
+     * Parsed per-segment route definitions for segment-based matching and URL generation.
      *
-     * @var list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: string, optional: bool, precedingSlash: bool}>|null
+     * @var list<array{
+     *     tokens: list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: ?string, optional: bool}>,
+     *     regex: string,
+     *     optional: bool
+     * }>|null
      */
-    private ?array $tokens = null;
+    private ?array $segments = null;
 
     /**
      * @param list<string> $methods
@@ -137,70 +139,79 @@ final class Route
     /**
      * Attempt to match the route's path pattern against a request path.
      *
-     * @return array<string, string>|null Matched parameters, or null if no match.
+     * Splits the request path on `/` before applying `rawurldecode()` to each
+     * segment so encoded slashes (`%2F`) remain within a single parameter.
+     *
+     * @return array<string, string>|null Matched decoded parameters, or null if no match.
      */
     public function matchesPath(string $path): ?array
     {
-        $pattern = $this->compile();
+        $requestSegments = self::splitAndDecodeRequestPath($path);
+        $routeSegments = $this->parseSegments();
 
-        if (preg_match($pattern, $path, $matches) !== 1) {
-            return null;
-        }
-
-        $params = [];
-        foreach ($matches as $key => $value) {
-            if (is_string($key) && $value !== '') {
-                $params[$key] = $value;
-            }
-        }
-
-        return $params;
+        return $this->matchSegments($routeSegments, $requestSegments, 0, 0);
     }
 
     /**
      * Generate a relative URL path for this route with the provided parameters.
      *
+     * Validates raw parameter values against their constraints before encoding
+     * each value with `rawurlencode()`.
+     *
      * @param array<string, scalar|null> $params
      */
     public function generateUrl(array $params = []): string
     {
-        $tokens = $this->parseTokens();
+        $segments = $this->parseSegments();
         $usedParams = [];
         $url = '';
 
-        foreach ($tokens as $token) {
-            if ($token['type'] === 'static') {
-                $url .= $token['value'];
-                continue;
+        foreach ($segments as $segment) {
+            if ($segment['optional'] && count($segment['tokens']) === 1 && $segment['tokens'][0]['type'] === 'param') {
+                $onlyParam = $segment['tokens'][0];
+                $name = $onlyParam['name'];
+                $hasValue = array_key_exists($name, $params) && $params[$name] !== null && (string) $params[$name] !== '';
+
+                if (!$hasValue) {
+                    continue;
+                }
             }
 
-            $name = $token['name'];
-            $hasValue = array_key_exists($name, $params) && $params[$name] !== null && (string) $params[$name] !== '';
+            $encodedSegment = '';
 
-            if (!$hasValue) {
-                if ($token['optional']) {
+            foreach ($segment['tokens'] as $token) {
+                if ($token['type'] === 'static') {
+                    $encodedSegment .= $token['value'];
                     continue;
                 }
 
-                throw new InvalidArgumentException(
-                    sprintf('Missing required parameter [%s] for route [%s].', $name, $this->name ?? $this->path),
-                );
+                $name = $token['name'];
+                $hasValue = array_key_exists($name, $params) && $params[$name] !== null && (string) $params[$name] !== '';
+
+                if (!$hasValue) {
+                    if ($token['optional']) {
+                        continue;
+                    }
+
+                    throw new InvalidArgumentException(
+                        sprintf('Missing required parameter [%s] for route [%s].', $name, $this->name ?? $this->path),
+                    );
+                }
+
+                $value = (string) $params[$name];
+                $usedParams[$name] = true;
+                $constraint = $token['constraint'] ?? '.+';
+
+                if (preg_match('#^' . $constraint . '$#u', $value) !== 1) {
+                    throw new InvalidArgumentException(
+                        sprintf('Parameter [%s] value [%s] does not match constraint [%s].', $name, $value, $constraint),
+                    );
+                }
+
+                $encodedSegment .= rawurlencode($value);
             }
 
-            $value = (string) $params[$name];
-            $usedParams[$name] = true;
-
-            if (preg_match('#^' . $token['constraint'] . '$#', $value) !== 1) {
-                throw new InvalidArgumentException(
-                    sprintf('Parameter [%s] value [%s] does not match constraint [%s].', $name, $value, $token['constraint']),
-                );
-            }
-
-            if ($token['precedingSlash']) {
-                $url .= '/';
-            }
-
-            $url .= rawurlencode($value);
+            $url .= '/' . $encodedSegment;
         }
 
         if ($url === '') {
@@ -245,56 +256,163 @@ final class Route
         return 'callable';
     }
 
-    private function compile(): string
-    {
-        if ($this->compiledPattern !== null) {
-            return $this->compiledPattern;
+    /**
+     * @param list<array{
+     *     tokens: list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: ?string, optional: bool}>,
+     *     regex: string,
+     *     optional: bool
+     * }> $routeSegments
+     * @param list<string> $requestSegments
+     * @return array<string, string>|null
+     */
+    private function matchSegments(
+        array $routeSegments,
+        array $requestSegments,
+        int $routeIndex,
+        int $requestIndex,
+    ): ?array {
+        $routeCount = count($routeSegments);
+        $requestCount = count($requestSegments);
+
+        if ($routeIndex === $routeCount) {
+            return $requestIndex === $requestCount ? [] : null;
         }
 
-        $regex = '#^';
+        $segment = $routeSegments[$routeIndex];
 
-        foreach ($this->parseTokens() as $token) {
-            if ($token['type'] === 'static') {
-                $regex .= preg_quote($token['value'], '#');
-                continue;
-            }
+        if ($requestIndex < $requestCount && preg_match($segment['regex'], $requestSegments[$requestIndex], $matches) === 1) {
+            $tail = $this->matchSegments($routeSegments, $requestSegments, $routeIndex + 1, $requestIndex + 1);
+            if ($tail !== null) {
+                $params = [];
+                foreach ($matches as $key => $value) {
+                    if (is_string($key) && $value !== '') {
+                        $params[$key] = $value;
+                    }
+                }
 
-            $namedGroup = sprintf('(?P<%s>%s)', $token['name'], $token['constraint']);
-
-            if ($token['optional']) {
-                $regex .= $token['precedingSlash']
-                    ? '(?:/' . $namedGroup . ')?'
-                    : '(?:' . $namedGroup . ')?';
-            } else {
-                $regex .= $namedGroup;
+                return array_merge($params, $tail);
             }
         }
 
-        $this->compiledPattern = $regex . '$#';
+        if ($segment['optional']) {
+            return $this->matchSegments($routeSegments, $requestSegments, $routeIndex + 1, $requestIndex);
+        }
 
-        return $this->compiledPattern;
+        return null;
     }
 
     /**
-     * Tokenize the route path, supporting nested braces inside constraints (e.g. `{year:\d{4}}`).
+     * Split the route path into segments and compile per-segment regex patterns.
      *
-     * @return list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: string, optional: bool, precedingSlash: bool}>
+     * @return list<array{
+     *     tokens: list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: ?string, optional: bool}>,
+     *     regex: string,
+     *     optional: bool
+     * }>
      */
-    private function parseTokens(): array
+    private function parseSegments(): array
     {
-        if ($this->tokens !== null) {
-            return $this->tokens;
+        if ($this->segments !== null) {
+            return $this->segments;
         }
 
-        /** @var list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: string, optional: bool, precedingSlash: bool}> $tokens */
+        if ($this->path === '/') {
+            $this->segments = [];
+
+            return $this->segments;
+        }
+
+        $rawSegments = self::splitRoutePath($this->path);
+        $parsed = [];
+
+        foreach ($rawSegments as $rawSegment) {
+            $tokens = $this->parseSegmentTokens($rawSegment);
+            $regex = '#^';
+            $allOptionalParams = $tokens !== [];
+
+            foreach ($tokens as $token) {
+                if ($token['type'] === 'static') {
+                    $allOptionalParams = false;
+                    $regex .= preg_quote($token['value'], '#');
+                    continue;
+                }
+
+                if (!$token['optional']) {
+                    $allOptionalParams = false;
+                }
+
+                $pattern = $token['constraint'] ?? '.+';
+                $namedGroup = sprintf('(?P<%s>%s)', $token['name'], $pattern);
+                $regex .= $token['optional'] ? '(?:' . $namedGroup . ')?' : $namedGroup;
+            }
+
+            $parsed[] = [
+                'tokens' => $tokens,
+                'regex' => $regex . '$#u',
+                'optional' => $allOptionalParams,
+            ];
+        }
+
+        $this->segments = $parsed;
+
+        return $this->segments;
+    }
+
+    /**
+     * Split a route definition path on `/` outside `{...}` parameter braces.
+     *
+     * @return list<string>
+     */
+    private static function splitRoutePath(string $path): array
+    {
+        $trimmed = trim($path, '/');
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $segments = [];
+        $buffer = '';
+        $depth = 0;
+        $length = strlen($trimmed);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $trimmed[$i];
+            if ($char === '{') {
+                $depth++;
+            } elseif ($char === '}' && $depth > 0) {
+                $depth--;
+            }
+
+            if ($char === '/' && $depth === 0) {
+                $segments[] = $buffer;
+                $buffer = '';
+                continue;
+            }
+
+            $buffer .= $char;
+        }
+
+        $segments[] = $buffer;
+
+        return $segments;
+    }
+
+    /**
+     * Tokenize a single route path segment, supporting nested braces inside constraints (e.g. `{year:\d{4}}`).
+     *
+     * @return list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: ?string, optional: bool}>
+     */
+    private function parseSegmentTokens(string $segment): array
+    {
+        /** @var list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: ?string, optional: bool}> $tokens */
         $tokens = [];
-        $length = strlen($this->path);
+        $length = strlen($segment);
         $buffer = '';
         $i = 0;
 
         while ($i < $length) {
-            if ($this->path[$i] !== '{') {
-                $buffer .= $this->path[$i];
+            if ($segment[$i] !== '{') {
+                $buffer .= $segment[$i];
                 $i++;
                 continue;
             }
@@ -305,9 +423,9 @@ final class Route
             $end = null;
 
             for ($j = $i; $j < $length; $j++) {
-                if ($this->path[$j] === '{') {
+                if ($segment[$j] === '{') {
                     $depth++;
-                } elseif ($this->path[$j] === '}') {
+                } elseif ($segment[$j] === '}') {
                     $depth--;
                     if ($depth === 0) {
                         $end = $j;
@@ -320,15 +438,16 @@ final class Route
                 throw new InvalidArgumentException(sprintf('Unclosed route parameter in path [%s].', $this->path));
             }
 
-            $definition = substr($this->path, $start, $end - $start);
+            $definition = substr($segment, $start, $end - $start);
             $colonPos = strpos($definition, ':');
 
             if ($colonPos !== false) {
                 $rawName = substr($definition, 0, $colonPos);
-                $constraint = substr($definition, $colonPos + 1);
+                $rawConstraint = substr($definition, $colonPos + 1);
+                $constraint = $rawConstraint !== '' ? $rawConstraint : null;
             } else {
                 $rawName = $definition;
-                $constraint = '[^/]+';
+                $constraint = null;
             }
 
             $optional = str_ends_with($rawName, '?');
@@ -336,12 +455,6 @@ final class Route
 
             if ($paramName === '' || preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $paramName) !== 1) {
                 throw new InvalidArgumentException(sprintf('Invalid route parameter name [%s] in path [%s].', $paramName, $this->path));
-            }
-
-            $precedingSlash = false;
-            if ($optional && str_ends_with($buffer, '/') && $i > 1) {
-                $buffer = substr($buffer, 0, -1);
-                $precedingSlash = true;
             }
 
             if ($buffer !== '') {
@@ -352,9 +465,8 @@ final class Route
             $tokens[] = [
                 'type' => 'param',
                 'name' => $paramName,
-                'constraint' => $constraint !== '' ? $constraint : '[^/]+',
+                'constraint' => $constraint,
                 'optional' => $optional,
-                'precedingSlash' => $precedingSlash,
             ];
 
             $i = $end + 1;
@@ -364,9 +476,24 @@ final class Route
             $tokens[] = ['type' => 'static', 'value' => $buffer];
         }
 
-        $this->tokens = $tokens;
+        return $tokens;
+    }
 
-        return $this->tokens;
+    /**
+     * Split a request path on `/` and apply `rawurldecode()` to each segment.
+     *
+     * @return list<string>
+     */
+    private static function splitAndDecodeRequestPath(string $path): array
+    {
+        if ($path === '' || $path === '/') {
+            return [];
+        }
+
+        $trimmedLeading = str_starts_with($path, '/') ? substr($path, 1) : $path;
+        $rawSegments = explode('/', $trimmedLeading);
+
+        return array_map('rawurldecode', $rawSegments);
     }
 
     private static function normalizePath(string $path): string

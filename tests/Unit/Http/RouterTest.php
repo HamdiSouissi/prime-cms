@@ -134,4 +134,42 @@ final class RouterTest extends TestCase
         $router->get('/head-check', $handler);
         $this->assertSame('/head-check', $router->dispatch(Request::create('HEAD', '/head-check'))['route']->path());
     }
+
+    public function testDecodesPercentEncodedRouteParametersPerSegment(): void
+    {
+        $router = new Router();
+        $handler = static fn (): Response => Response::text('ok');
+
+        $router->get('/post/{slug}', $handler)->name('post');
+        $router->get('/article/{slug:[\p{L}]+}', $handler)->name('article');
+
+        $spaceMatch = $router->dispatch(Request::create('GET', '/post/hello%20world'));
+        $this->assertSame(['slug' => 'hello world'], $spaceMatch['params']);
+
+        $utf8Match = $router->dispatch(Request::create('GET', '/article/%C3%A9t%C3%A9'));
+        $this->assertSame(['slug' => 'été'], $utf8Match['params']);
+
+        $encodedSlashMatch = $router->dispatch(Request::create('GET', '/post/a%2Fb'));
+        $this->assertSame(['slug' => 'a/b'], $encodedSlashMatch['params']);
+
+        $this->expectException(NotFoundException::class);
+        $router->dispatch(Request::create('GET', '/post/a/b'));
+    }
+
+    public function testUrlGenerationValidatesRawValuesAndEncodesParameters(): void
+    {
+        $router = new Router();
+        $handler = static fn (): Response => Response::text('ok');
+
+        $router->get('/post/{slug}', $handler)->name('post');
+        $router->get('/article/{slug:[\p{L}\s0-9-]+}', $handler)->name('article');
+
+        $this->assertSame('/post/hello%20world', $router->url('post', ['slug' => 'hello world']));
+        $this->assertSame('/post/%C3%A9t%C3%A9%202026', $router->url('post', ['slug' => 'été 2026']));
+        $this->assertSame('/post/a%2Fb', $router->url('post', ['slug' => 'a/b']));
+        $this->assertSame('/article/%C3%A9t%C3%A9%202026', $router->url('article', ['slug' => 'été 2026']));
+
+        $this->expectException(InvalidArgumentException::class);
+        $router->url('article', ['slug' => 'a/b']);
+    }
 }
