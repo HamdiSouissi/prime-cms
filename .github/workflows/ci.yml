@@ -73,12 +73,12 @@ jobs:
       db:
         image: ${{ matrix.db-image }}
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: prime_ci_secret_987
           MYSQL_DATABASE: prime_test
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -pprime_ci_secret_987"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=12
@@ -103,7 +103,7 @@ jobs:
           PRIME_TEST_DB_PORT: 3306
           PRIME_TEST_DB_DATABASE: prime_test
           PRIME_TEST_DB_USERNAME: root
-          PRIME_TEST_DB_PASSWORD: root
+          PRIME_TEST_DB_PASSWORD: prime_ci_secret_987
         run: vendor/bin/phpunit --group database --fail-on-skipped --testdox --log-junit /tmp/db-junit.xml
 
       - name: Report failed database tests as annotations

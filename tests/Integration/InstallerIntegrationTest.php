@@ -136,7 +136,7 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         $this->assertSame(200, $runGet->status());
         $this->assertStringContainsString('Atelier Lumière', $runGet->body());
         $this->assertStringNotContainsString($adminPass, $runGet->body());
-        if ($this->dbConfig['password'] !== '') {
+        if ($this->dbConfig['password'] !== '' && $this->dbConfig['password'] !== $this->dbConfig['username']) {
             $this->assertStringNotContainsString($this->dbConfig['password'], $runGet->body());
         }
 
