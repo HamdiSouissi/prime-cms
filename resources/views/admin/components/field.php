@@ -87,7 +87,7 @@ $invalidAttr = $errorText !== null ? ' aria-invalid="true"' : '';
             <button
                 type="button"
                 class="pc-input-group__action"
-                data-password-toggle
+                data-prime-password-toggle
                 aria-label="Afficher le mot de passe"
                 aria-pressed="false"
             >

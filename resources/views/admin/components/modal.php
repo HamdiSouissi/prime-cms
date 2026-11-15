@@ -19,7 +19,7 @@ $footerHtml = isset($footer) && is_string($footer) && $footer !== '' ? $footer :
 <dialog id="<?= $this->e($id) ?>" class="pc-modal<?= $this->e($sizeClass) ?>" aria-labelledby="<?= $this->e($id) ?>-title">
     <header class="pc-modal__header">
         <h2 class="pc-modal__title" id="<?= $this->e($id) ?>-title"><?= $this->e($title) ?></h2>
-        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-modal-close aria-label="Fermer la fenêtre">
+        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="Fermer la fenêtre">
             <?= $this->raw($this->icon('x', 18)) ?>
         </button>
     </header>

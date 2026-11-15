@@ -49,14 +49,14 @@ function createSpriteIcon(name, size = 18) {
 
 /** @returns {HTMLElement} */
 function ensureStack() {
-  let stack = document.querySelector('[data-toast-stack]');
+  let stack = document.querySelector('[data-prime-toast-stack]');
   if (stack instanceof HTMLElement) {
     return stack;
   }
 
   stack = document.createElement('div');
   stack.className = 'pc-toast-stack';
-  stack.setAttribute('data-toast-stack', '');
+  stack.setAttribute('data-prime-toast-stack', '');
   stack.setAttribute('aria-live', 'polite');
   stack.setAttribute('aria-atomic', 'false');
   document.body.appendChild(stack);
@@ -153,16 +153,16 @@ export function initToasts() {
       return;
     }
 
-    const trigger = target.closest('[data-toast-trigger]');
+    const trigger = target.closest('[data-prime-toast-trigger]');
     if (!(trigger instanceof HTMLElement)) {
       return;
     }
 
-    const message = trigger.getAttribute('data-toast-message') || 'Action effectuée.';
+    const message = trigger.getAttribute('data-prime-toast-message') || 'Action effectuée.';
     const type = /** @type {'info'|'success'|'warning'|'danger'} */ (
-      trigger.getAttribute('data-toast-type') || 'info'
+      trigger.getAttribute('data-prime-toast-type') || 'info'
     );
-    const title = trigger.getAttribute('data-toast-title') || undefined;
+    const title = trigger.getAttribute('data-prime-toast-title') || undefined;
 
     showToast(message, type, { title });
   });

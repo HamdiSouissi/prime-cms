@@ -29,7 +29,7 @@ export function openDrawer(target) {
   activeDrawer = drawer;
   document.body.style.overflow = 'hidden';
 
-  const panel = drawer.querySelector('[data-drawer-panel]');
+  const panel = drawer.querySelector('[data-prime-drawer-panel]');
   releaseTrap = createFocusTrap(panel instanceof HTMLElement ? panel : drawer);
 }
 
@@ -69,9 +69,9 @@ export function initDrawers() {
       return;
     }
 
-    const openTrigger = target.closest('[data-drawer-open]');
+    const openTrigger = target.closest('[data-prime-drawer-open]');
     if (openTrigger instanceof HTMLElement) {
-      const drawerId = openTrigger.getAttribute('data-drawer-open');
+      const drawerId = openTrigger.getAttribute('data-prime-drawer-open');
       if (drawerId) {
         event.preventDefault();
         openDrawer(drawerId);
@@ -79,9 +79,9 @@ export function initDrawers() {
       return;
     }
 
-    const closeTrigger = target.closest('[data-drawer-close]');
+    const closeTrigger = target.closest('[data-prime-drawer-close]');
     if (closeTrigger instanceof HTMLElement) {
-      const drawer = closeTrigger.closest('[data-drawer]');
+      const drawer = closeTrigger.closest('[data-prime-drawer]');
       if (drawer instanceof HTMLElement) {
         event.preventDefault();
         closeDrawer(drawer);

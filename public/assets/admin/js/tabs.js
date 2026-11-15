@@ -3,7 +3,7 @@
  */
 
 export function initTabs() {
-  document.querySelectorAll('[data-tabs]').forEach((root) => {
+  document.querySelectorAll('[data-prime-tabs]').forEach((root) => {
     if (!(root instanceof HTMLElement)) {
       return;
     }

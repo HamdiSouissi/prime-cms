@@ -1,6 +1,6 @@
 /**
  * Accessible floating tooltips on hover and keyboard focus.
- * Supports `[data-tooltip]` (always) and `[data-tooltip-collapsed]` (only when sidebar is collapsed).
+ * Supports `[data-prime-tooltip]` (always) and `[data-prime-tooltip-collapsed]` (only when sidebar is collapsed).
  */
 
 export function initTooltips() {
@@ -19,14 +19,14 @@ export function initTooltips() {
    * @returns {string}
    */
   function resolveText(element) {
-    const direct = element.getAttribute('data-tooltip');
+    const direct = element.getAttribute('data-prime-tooltip');
     if (direct) {
       return direct;
     }
 
-    const collapsedText = element.getAttribute('data-tooltip-collapsed');
+    const collapsedText = element.getAttribute('data-prime-tooltip-collapsed');
     if (collapsedText && window.innerWidth >= 768) {
-      const shell = document.querySelector('[data-admin-shell]');
+      const shell = document.querySelector('[data-prime-admin-shell]');
       if (shell && shell.classList.contains('is-sidebar-collapsed')) {
         return collapsedText;
       }
@@ -50,7 +50,7 @@ export function initTooltips() {
 
     const rect = target.getBoundingClientRect();
     const popRect = popup.getBoundingClientRect();
-    const preferredPlacement = target.getAttribute('data-tooltip-placement') || 'top';
+    const preferredPlacement = target.getAttribute('data-prime-tooltip-placement') || 'top';
 
     let top = rect.top - popRect.height - 8;
     let left = rect.left + (rect.width - popRect.width) / 2;
@@ -85,7 +85,7 @@ export function initTooltips() {
     if (!(target instanceof Element)) {
       return null;
     }
-    const found = target.closest('[data-tooltip], [data-tooltip-collapsed]');
+    const found = target.closest('[data-prime-tooltip], [data-prime-tooltip-collapsed]');
     return found instanceof HTMLElement ? found : null;
   }
 

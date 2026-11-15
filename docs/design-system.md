@@ -13,7 +13,7 @@ Un aperçu interactif complet est accessible en environnement local (`APP_ENV=lo
 - **Une seule action primaire corail par écran** ; libellés formulés en verbes d'action explicites.
 - **Zéro requête externe** : polices variables locales (OFL), icônes Lucide en sprite SVG local (ISC), logo officiel servi en WebP + PNG 2× Retina.
 - **Navigation clavier complète** : lien d'évitement « Aller au contenu », focus ring 2 px `--brand-500`, fermeture par `Échap`, piège et restauration de focus, respect strict de `prefers-reduced-motion`.
-- **CSP stricte** : aucun script inline exécutable ni attribut `on*` ; les données serveur passent par `<script type="application/json">` ou attributs `data-*`.
+- **CSP stricte** : aucun script inline exécutable ni attribut `on*` ; les données serveur passent par `<script type="application/json">` ou attributs préfixés `data-prime-*`.
 
 ---
 
@@ -104,16 +104,16 @@ Chaque composant s'insère via `$this->insert('admin::components/<nom>', [...])`
 
 ## 6. Modules JavaScript ES2022 (`public/assets/admin/js/`)
 
-Chargés nativement via `<script type="module" src="/assets/admin/js/admin.js" defer>` :
+Chargés nativement via `<script type="module" src="/assets/admin/js/admin.js" defer>`. Tous les attributs HTML pilotés par le JavaScript du dashboard sont strictement préfixés **`data-prime-*`** afin d'éviter toute collision avec des thèmes ou plugins tiers :
 
-- `sidebar.js` — réduction desktop/tablette persistée de manière sûre (`localStorage` dans `try/catch`), tiroir mobile `< 768 px` avec piège de focus, sous-menus repliables.
-- `dropdown.js` — navigation flèches `↑`/`↓`, `Début`/`Fin`, fermeture clic extérieur et `Échap`.
-- `modal.js` — API `<dialog>` native, clic arrière-plan, restauration du focus.
-- `drawer.js` — tiroir latéral avec `focus-trap.js` et restauration du focus.
-- `tabs.js` — onglets clavier (`←`, `→`, `Début`, `Fin`).
-- `toast.js` — pile de notifications `aria-live="polite"` avec pause au survol/focus, exposée via `window.Prime.toast(message, type, options)` ou déclenchable sans JS inline via `data-toast-trigger`.
-- `tooltip.js` — infobulles au survol et au focus clavier (`data-tooltip`, `data-tooltip-collapsed`).
-- `command-palette.js` — palette de commandes (`Ctrl/⌘ + K` ou `/`), recherche floue insensible aux accents et à la casse, regroupement par section.
+- `sidebar.js` — réduction desktop/tablette persistée de manière sûre (`localStorage` dans `try/catch`), tiroir mobile `< 768 px` avec piège de focus, sous-menus repliables (`data-prime-sidebar-*`, `data-prime-submenu-toggle`).
+- `dropdown.js` — navigation flèches `↑`/`↓`, `Début`/`Fin`, fermeture clic extérieur et `Échap` (`data-prime-dropdown`, `data-prime-dropdown-trigger`, `data-prime-dropdown-menu`).
+- `modal.js` — API `<dialog>` native, clic arrière-plan, restauration du focus (`data-prime-modal-open`, `data-prime-modal-close`).
+- `drawer.js` — tiroir latéral avec `focus-trap.js` et restauration du focus (`data-prime-drawer`, `data-prime-drawer-open`, `data-prime-drawer-close`).
+- `tabs.js` — onglets clavier (`←`, `→`, `Début`, `Fin`) (`data-prime-tabs`).
+- `toast.js` — pile de notifications `aria-live="polite"` (sous la topbar sur ordinateur/tablette, en bas pleine largeur sur mobile) avec pause au survol/focus, exposée via `window.Prime.toast(message, type, options)` ou déclenchable sans JS inline via `data-prime-toast-trigger`.
+- `tooltip.js` — infobulles au survol et au focus clavier (`data-prime-tooltip`, `data-prime-tooltip-collapsed`, `data-prime-tooltip-placement`).
+- `command-palette.js` — palette de commandes (`Ctrl/⌘ + K` ou `/`), recherche stricte par mots (insensible aux accents et à la casse, sur libellé, groupe et mots-clés — jamais sur l'URL), classement hiérarchique (`searchCommands()` exportée) (`data-prime-command-palette-open`, `data-prime-cmd-input`, `data-prime-cmd-results`).
 
 ---
 

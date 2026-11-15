@@ -11,4 +11,4 @@ declare(strict_types=1);
  */
 $isPlatformMod = (bool) ($platformMod ?? false);
 ?>
-<kbd class="pc-kbd"<?= $isPlatformMod ? ' data-shortcut-mod' : '' ?>><?= $this->e($keys) ?></kbd>
+<kbd class="pc-kbd"<?= $isPlatformMod ? ' data-prime-shortcut-mod' : '' ?>><?= $this->e($keys) ?></kbd>

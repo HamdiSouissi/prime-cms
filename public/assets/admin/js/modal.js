@@ -47,9 +47,9 @@ export function initModals() {
       return;
     }
 
-    const openTrigger = target.closest('[data-modal-open]');
+    const openTrigger = target.closest('[data-prime-modal-open]');
     if (openTrigger instanceof HTMLElement) {
-      const modalId = openTrigger.getAttribute('data-modal-open');
+      const modalId = openTrigger.getAttribute('data-prime-modal-open');
       if (modalId) {
         event.preventDefault();
         openModal(modalId);
@@ -57,7 +57,7 @@ export function initModals() {
       return;
     }
 
-    const closeTrigger = target.closest('[data-modal-close]');
+    const closeTrigger = target.closest('[data-prime-modal-close]');
     if (closeTrigger instanceof HTMLElement) {
       const dialog = closeTrigger.closest('dialog');
       if (dialog instanceof HTMLDialogElement) {

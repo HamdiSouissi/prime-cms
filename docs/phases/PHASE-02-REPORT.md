@@ -29,7 +29,7 @@
 ## 2. Vérifications qualité, sécurité et accessibilité
 
 - **Analyse statique** : PHPStan niveau 6 — **0 erreur**.
-- **Tests PHP 8.2 & 8.3** : **93 tests, 515 assertions, 0 échec** (Unit + Integration).
+- **Tests PHP 8.2 & 8.3** : **97 tests, 907 assertions, 0 échec** (Unit + Integration).
 - **Exécution sans `vendor/`** : `bin/prime list`, `bin/prime about`, `bin/prime routes`, `bin/prime assets:build` vérifiés sans dossier `vendor/`.
 - **CSP stricte & sécurité** :
   - Aucun script inline exécutable (`<script>` uniquement avec `src=` ou `type="application/json"`), aucun gestionnaire d'événement inline (`on*`), vérifié par assertion automatique dans `AdminDashboardTest`.
@@ -40,7 +40,38 @@
 
 ---
 
-## 3. Suite logique (Phases 3 et 4)
+## 3. Corrections (revue 1)
 
-- **Phase 3 (Base de données & Migrations)** : connexion PDO préparée, migrations, remplacement progressif de `DemoDashboardData` par des statistiques réelles.
-- **Phase 4 (Authentification & RBAC)** : remplacement de `AdminPreviewGate` par un middleware d'authentification par session + Argon2id, activation de la déconnexion et filtrage des items de `AdminMenu` par `$item->capability`.
+Les 7 points relevés lors de la revue de la PR #2 ont été corrigés sur la branche `arena/6bec0d01-prime-cms` :
+
+- **C1 — Barre supérieure mobile (< 768 px)** : le champ de recherche étendu est masqué en dessous de 768 px et remplacé par un bouton icône loupe dédié (`.pc-topbar__search-mobile`, `aria-label="Rechercher"`, infobulle `data-prime-tooltip="Rechercher"`). Toutes les zones cliquables de la barre supérieure mobile font au minimum **40 × 40 px** ; la somme des largeurs tient dans **264 px** (aucun chevauchement ni découpe à 320, 375, 414 et 768 px).
+- **C2 — Numéros de phase alignés sur `docs/CONTEXT.md` §4** : mise à jour de `DemoDashboardData::modulePlaceholders()` (badges, descriptions et fonctionnalités prévues), du styleguide (« Édition … (Phase 6) ») et du pied de carte d'activité (« Journal d'audit disponible en Phase 9 ») :
+  - Utilisateurs → **Phase 4** · Plugins → **Phase 5** · Pages & Articles → **Phase 6** · Médias → **Phase 7** · Apparence (thèmes, menus, widgets) → **Phase 8** · Réglages (général, permaliens, sécurité, e-mails) → **Phase 9**.
+  - Vérifié par `AdminDashboardTest::testModulePlaceholdersAnnounceOfficialRoadmapPhases()`.
+- **C3 — Palette de commandes (3 correctifs)** :
+  1. **Titre et sous-titre séparés** : `.pc-cmd__item-body` passe en colonne (`display: flex; flex-direction: column; gap: 2px`), sous-titre sur sa propre ligne en `--color-text-muted` (`--ink-500`) 12 px ; les sous-menus affichent désormais un libellé de groupe lisible et non plus l'URL brute.
+  2. **Un seul bouton de fermeture** : le champ passe de `type="search"` à `type="text" role="combobox"` (et les pseudo-éléments `::-webkit-search-cancel-button` sont masqués en sécurité), supprimant la croix native bleue de Chrome.
+  3. **Recherche stricte par mots et classement** : logique extraite dans deux fonctions pures exportées (`normalizeText`, `searchCommands`) dans `public/assets/admin/js/command-palette.js`, avec mots-clés français ajoutés dans `AdminContext::DEFAULT_KEYWORDS` (ex. `paramètres`, `configuration` pour Réglages). L'URL n'est jamais fouillée. Cas vérifiés directement sous Node.js contre le payload réel du serveur :
+     - `"medi"` → `['Médias', 'Téléverser un média']` uniquement (sans Thèmes, Menus, Permaliens ni Widgets) ;
+     - `"medias"` et `"Médias"` → résultats identiques (insensible aux accents et à la casse) ;
+     - `"paramètres"` et `"configuration"` → remontent `Réglages` et ses sous-menus via les mots-clés ;
+     - `"appearance"` → `[]` (les segments d'URL ne sont jamais inclus dans la recherche) ;
+     - `"nouvel article"` → `['Nouvel article']` (tous les mots saisis doivent correspondre) ;
+     - classement vérifié : `startsWith` (400) > début de mot du libellé (300) > libellé contient (200) > groupe ou mots-clés (100).
+  - Payload serveur vérifié par `AdminDashboardTest::testCommandPalettePayloadHasKeywordsCleanSubtitlesAndSingleCloseControl()`.
+- **C4 — Lien d'évitement sans trace hors focus** : `.pc-skip-link` utilise hors focus `clip-path: inset(50%); width: 1px; height: 1px; box-shadow: none; opacity: 0; pointer-events: none` (zéro pixel ni ombre visible au repos) tout en restant immédiatement focalisable au clavier (`:focus` / `:focus-visible`).
+- **C5 — Positionnement de la pile de toasts** : décalée sous la topbar sur ordinateur et tablette (`top: calc(var(--topbar-height) + var(--space-4))`, `right: var(--space-4)`), et ancrée en bas pleine largeur moins 16 px de marge sur mobile (`@media (max-width: 767px)`), sans jamais masquer la barre supérieure.
+- **C6 — Usage maîtrisé du corail et des actions neutres** :
+  - liens de métadonnées secondaires des tuiles KPI (`2 brouillons`, `5 programmés`, `WebP & PNG`, `3 rôles`) passés en `--color-text-muted` (`--ink-500`) via `.pc-stat__link` ;
+  - « Se déconnecter » passé en élément de menu neutre (`.pc-dropdown__item--danger` réservé aux actions destructrices) ;
+  - message du bouton « Dupliquer » dans le styleguide corrigé en « Élément dupliqué (démo). ».
+- **C7 — Convention stricte `data-prime-*`** : tous les attributs HTML pilotés par le JavaScript du dashboard ont été préfixés `data-prime-*` dans les 10 modules JS, les partiels, le layout, le styleguide et `docs/design-system.md`. Vérifié automatiquement par `AdminDashboardTest::testAllAdminPagesUsePrimePrefixedDataAttributesOnly()`.
+
+> **Captures d'écran** : le sandbox d'exécution ne dispose pas de navigateur headless (Chromium / Playwright non installés, accès réseau restreint hors téléchargement de binaires), aucune capture automatisée n'a donc été générée dans `docs/phases/screens/phase-02/`. Toutes les règles CSS, zones tactiles, positions et sorties HTML ont été vérifiées par calcul et tests automatisés.
+
+---
+
+## 4. Suite logique (Phases 3 et 4)
+
+- **Phase 3 (Base de données et installateur)** : connexion PDO préparée, migrations, remplacement progressif de `DemoDashboardData` par des statistiques réelles.
+- **Phase 4 (Authentification, utilisateurs, rôles)** : remplacement de `AdminPreviewGate` par un middleware d'authentification par session + Argon2id, activation de la déconnexion et filtrage des items de `AdminMenu` par `$item->capability`.

@@ -35,16 +35,16 @@ function writeSavedCollapse(collapsed) {
 }
 
 export function initSidebar() {
-  const shell = document.querySelector('[data-admin-shell]');
-  const sidebar = document.querySelector('[data-sidebar]');
+  const shell = document.querySelector('[data-prime-admin-shell]');
+  const sidebar = document.querySelector('[data-prime-sidebar]');
   if (!(shell instanceof HTMLElement) || !(sidebar instanceof HTMLElement)) {
     return;
   }
 
-  const collapseBtn = sidebar.querySelector('[data-sidebar-collapse]');
-  const mobileOpenBtn = document.querySelector('[data-sidebar-mobile-open]');
-  const mobileCloseBtn = sidebar.querySelector('[data-sidebar-mobile-close]');
-  const backdrop = document.querySelector('[data-sidebar-backdrop]');
+  const collapseBtn = sidebar.querySelector('[data-prime-sidebar-collapse]');
+  const mobileOpenBtn = document.querySelector('[data-prime-sidebar-mobile-open]');
+  const mobileCloseBtn = sidebar.querySelector('[data-prime-sidebar-mobile-close]');
+  const backdrop = document.querySelector('[data-prime-sidebar-backdrop]');
 
   /** @type {(() => void)|null} */
   let releaseTrap = null;
@@ -58,7 +58,7 @@ export function initSidebar() {
         'aria-label',
         collapsed ? 'Déplier la barre latérale' : 'Réduire la barre latérale',
       );
-      const label = collapseBtn.querySelector('[data-sidebar-collapse-label]');
+      const label = collapseBtn.querySelector('[data-prime-sidebar-collapse-label]');
       if (label) {
         label.textContent = collapsed ? 'Déplier' : 'Réduire';
       }
@@ -154,7 +154,7 @@ export function initSidebar() {
   });
 
   // Submenu toggles
-  sidebar.querySelectorAll('[data-submenu-toggle]').forEach((button) => {
+  sidebar.querySelectorAll('[data-prime-submenu-toggle]').forEach((button) => {
     if (!(button instanceof HTMLButtonElement)) {
       return;
     }

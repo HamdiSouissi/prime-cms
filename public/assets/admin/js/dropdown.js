@@ -11,8 +11,8 @@ export function initDropdowns() {
    * @param {boolean} restoreFocus
    */
   function closeDropdown(container, restoreFocus = false) {
-    const trigger = container.querySelector('[data-dropdown-trigger]');
-    const menu = container.querySelector('[data-dropdown-menu]');
+    const trigger = container.querySelector('[data-prime-dropdown-trigger]');
+    const menu = container.querySelector('[data-prime-dropdown-menu]');
     if (menu instanceof HTMLElement) {
       menu.hidden = true;
     }
@@ -36,8 +36,8 @@ export function initDropdowns() {
       closeDropdown(openContainer, false);
     }
 
-    const trigger = container.querySelector('[data-dropdown-trigger]');
-    const menu = container.querySelector('[data-dropdown-menu]');
+    const trigger = container.querySelector('[data-prime-dropdown-trigger]');
+    const menu = container.querySelector('[data-prime-dropdown-menu]');
     if (!(menu instanceof HTMLElement) || !(trigger instanceof HTMLElement)) {
       return;
     }
@@ -70,9 +70,9 @@ export function initDropdowns() {
       return;
     }
 
-    const trigger = target.closest('[data-dropdown-trigger]');
+    const trigger = target.closest('[data-prime-dropdown-trigger]');
     if (trigger instanceof HTMLElement) {
-      const container = trigger.closest('[data-dropdown]');
+      const container = trigger.closest('[data-prime-dropdown]');
       if (container instanceof HTMLElement) {
         event.preventDefault();
         const isOpen = trigger.getAttribute('aria-expanded') === 'true';
@@ -87,7 +87,7 @@ export function initDropdowns() {
 
     // Close menu after clicking a menu item (unless marked persistent)
     const menuItem = target.closest('[role="menuitem"]');
-    if (menuItem instanceof HTMLElement && openContainer && !menuItem.hasAttribute('data-dropdown-keep-open')) {
+    if (menuItem instanceof HTMLElement && openContainer && !menuItem.hasAttribute('data-prime-dropdown-keep-open')) {
       closeDropdown(openContainer, false);
       return;
     }
@@ -102,10 +102,10 @@ export function initDropdowns() {
       const active = document.activeElement;
       if (
         active instanceof HTMLElement &&
-        active.matches('[data-dropdown-trigger]') &&
+        active.matches('[data-prime-dropdown-trigger]') &&
         (event.key === 'ArrowDown' || event.key === 'ArrowUp')
       ) {
-        const container = active.closest('[data-dropdown]');
+        const container = active.closest('[data-prime-dropdown]');
         if (container instanceof HTMLElement) {
           event.preventDefault();
           openDropdown(container, true);
@@ -114,7 +114,7 @@ export function initDropdowns() {
       return;
     }
 
-    const menu = openContainer.querySelector('[data-dropdown-menu]');
+    const menu = openContainer.querySelector('[data-prime-dropdown-menu]');
     if (!(menu instanceof HTMLElement)) {
       return;
     }

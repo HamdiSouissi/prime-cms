@@ -38,10 +38,10 @@ declare(strict_types=1);
 <body>
     <a class="pc-skip-link" href="#content">Aller au contenu</a>
 
-    <div class="pc-admin" data-admin-shell>
-        <div class="pc-sidebar__backdrop" data-sidebar-backdrop aria-hidden="true"></div>
+    <div class="pc-admin" data-prime-admin-shell>
+        <div class="pc-sidebar__backdrop" data-prime-sidebar-backdrop aria-hidden="true"></div>
 
-        <aside class="pc-sidebar" data-sidebar>
+        <aside class="pc-sidebar" data-prime-sidebar>
             <div class="pc-sidebar__brand">
                 <a class="pc-sidebar__brand-link" href="/admin">
                     <picture>
@@ -66,7 +66,7 @@ declare(strict_types=1);
                 <button
                     type="button"
                     class="pc-sidebar__close-mobile"
-                    data-sidebar-mobile-close
+                    data-prime-sidebar-mobile-close
                     aria-label="Fermer le menu de navigation"
                 >
                     <?= $this->raw($this->icon('x', 20)) ?>
@@ -94,8 +94,8 @@ declare(strict_types=1);
                                             href="<?= $this->e($item->url) ?>"
                                             class="pc-sidebar__link<?= ($isCurrent || $node->hasActiveChild) ? ' pc-sidebar__link--active' : '' ?>"
                                             <?= $isCurrent ? 'aria-current="page"' : '' ?>
-                                            data-tooltip-collapsed="<?= $this->e($item->label) ?>"
-                                            data-tooltip-placement="right"
+                                            data-prime-tooltip-collapsed="<?= $this->e($item->label) ?>"
+                                            data-prime-tooltip-placement="right"
                                         >
                                             <span class="pc-sidebar__icon pc-sidebar__icon--<?= $this->e($item->accent) ?>" aria-hidden="true">
                                                 <?= $this->raw($this->icon($item->icon, 20)) ?>
@@ -110,7 +110,7 @@ declare(strict_types=1);
                                             <button
                                                 type="button"
                                                 class="pc-sidebar__submenu-toggle"
-                                                data-submenu-toggle
+                                                data-prime-submenu-toggle
                                                 aria-expanded="<?= $isExpanded ? 'true' : 'false' ?>"
                                                 aria-controls="<?= $this->e($submenuId) ?>"
                                                 aria-label="Afficher les sous-menus de <?= $this->e($item->label) ?>"
@@ -150,14 +150,14 @@ declare(strict_types=1);
                 <button
                     type="button"
                     class="pc-sidebar__collapse-btn"
-                    data-sidebar-collapse
+                    data-prime-sidebar-collapse
                     aria-expanded="true"
                     aria-label="Réduire la barre latérale"
-                    data-tooltip-collapsed="Déplier la barre latérale"
-                    data-tooltip-placement="right"
+                    data-prime-tooltip-collapsed="Déplier la barre latérale"
+                    data-prime-tooltip-placement="right"
                 >
                     <?= $this->raw($this->icon('panel-left-close', 18)) ?>
-                    <span class="pc-sidebar__collapse-label" data-sidebar-collapse-label>Réduire</span>
+                    <span class="pc-sidebar__collapse-label" data-prime-sidebar-collapse-label>Réduire</span>
                 </button>
             </div>
         </aside>
@@ -168,7 +168,7 @@ declare(strict_types=1);
                     <button
                         type="button"
                         class="pc-topbar__menu-btn"
-                        data-sidebar-mobile-open
+                        data-prime-sidebar-mobile-open
                         aria-label="Ouvrir le menu de navigation"
                         aria-expanded="false"
                     >
@@ -178,7 +178,7 @@ declare(strict_types=1);
                     <button
                         type="button"
                         class="pc-topbar__search"
-                        data-command-palette-open
+                        data-prime-command-palette-open
                         aria-label="Rechercher ou ouvrir la palette de commandes"
                     >
                         <?= $this->raw($this->icon('search', 16)) ?>
@@ -188,15 +188,26 @@ declare(strict_types=1);
                             <?= $this->raw($this->insert('admin::components/kbd', ['keys' => 'K'])) ?>
                         </span>
                     </button>
+
+                    <button
+                        type="button"
+                        class="pc-topbar__search-mobile"
+                        data-prime-command-palette-open
+                        data-prime-tooltip="Rechercher"
+                        aria-label="Rechercher"
+                    >
+                        <?= $this->raw($this->icon('search', 18)) ?>
+                    </button>
                 </div>
 
                 <div class="pc-topbar__actions">
                     <!-- Quick create dropdown (primary coral action) -->
-                    <div class="pc-dropdown" data-dropdown>
+                    <div class="pc-dropdown" data-prime-dropdown>
                         <button
                             type="button"
                             class="pc-btn pc-btn--primary pc-btn--sm"
-                            data-dropdown-trigger
+                            data-prime-dropdown-trigger
+                            aria-label="Créer un contenu"
                             aria-haspopup="menu"
                             aria-expanded="false"
                             aria-controls="pc-topbar-create-menu"
@@ -210,7 +221,7 @@ declare(strict_types=1);
                             class="pc-dropdown__menu"
                             role="menu"
                             aria-label="Création rapide"
-                            data-dropdown-menu
+                            data-prime-dropdown-menu
                             hidden
                         >
                             <div class="pc-dropdown__header">
@@ -227,12 +238,12 @@ declare(strict_types=1);
                     </div>
 
                     <!-- Notifications dropdown -->
-                    <div class="pc-dropdown" data-dropdown>
+                    <div class="pc-dropdown" data-prime-dropdown>
                         <button
                             type="button"
                             class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm"
-                            data-dropdown-trigger
-                            data-tooltip="Notifications"
+                            data-prime-dropdown-trigger
+                            data-prime-tooltip="Notifications"
                             aria-label="Notifications"
                             aria-haspopup="menu"
                             aria-expanded="false"
@@ -245,7 +256,7 @@ declare(strict_types=1);
                             class="pc-dropdown__menu"
                             role="menu"
                             aria-label="Notifications"
-                            data-dropdown-menu
+                            data-prime-dropdown-menu
                             hidden
                         >
                             <div class="pc-dropdown__header">
@@ -259,11 +270,11 @@ declare(strict_types=1);
                     </div>
 
                     <!-- User menu dropdown -->
-                    <div class="pc-dropdown" data-dropdown>
+                    <div class="pc-dropdown" data-prime-dropdown>
                         <button
                             type="button"
                             class="pc-btn pc-btn--ghost pc-btn--sm"
-                            data-dropdown-trigger
+                            data-prime-dropdown-trigger
                             aria-label="Menu utilisateur : <?= $this->e($currentUser['name']) ?>"
                             aria-haspopup="menu"
                             aria-expanded="false"
@@ -282,7 +293,7 @@ declare(strict_types=1);
                             class="pc-dropdown__menu"
                             role="menu"
                             aria-label="Menu utilisateur"
-                            data-dropdown-menu
+                            data-prime-dropdown-menu
                             hidden
                         >
                             <div class="pc-dropdown__header">
@@ -304,12 +315,12 @@ declare(strict_types=1);
                             <div class="pc-dropdown__separator" role="separator"></div>
                             <button
                                 type="button"
-                                class="pc-dropdown__item pc-dropdown__item--danger"
+                                class="pc-dropdown__item"
                                 role="menuitem"
-                                data-toast-trigger
-                                data-toast-type="info"
-                                data-toast-title="Authentification — Phase 4"
-                                data-toast-message="La déconnexion sera activée avec le module Authentification."
+                                data-prime-toast-trigger
+                                data-prime-toast-type="info"
+                                data-prime-toast-title="Authentification — Phase 4"
+                                data-prime-toast-message="La déconnexion sera activée avec le module Authentification."
                             >
                                 <?= $this->raw($this->icon('log-out', 16)) ?>
                                 <span>Se déconnecter</span>
@@ -336,9 +347,13 @@ declare(strict_types=1);
                 <?= $this->raw($this->icon('search', 18)) ?>
             </span>
             <input
-                type="search"
+                type="text"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded="false"
+                aria-controls="prime-cmd-results"
                 class="pc-cmd__input"
-                data-cmd-input
+                data-prime-cmd-input
                 placeholder="Rechercher un module, une page ou une action…"
                 autocomplete="off"
                 aria-label="Filtrer les commandes"
@@ -346,14 +361,14 @@ declare(strict_types=1);
             <button
                 type="button"
                 class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm"
-                data-command-palette-close
+                data-prime-command-palette-close
                 aria-label="Fermer la palette de commandes"
             >
                 <?= $this->raw($this->icon('x', 16)) ?>
             </button>
         </div>
 
-        <div class="pc-cmd__results" role="listbox" aria-label="Résultats de recherche" data-cmd-results></div>
+        <div id="prime-cmd-results" class="pc-cmd__results" role="listbox" aria-label="Résultats de recherche" data-prime-cmd-results></div>
 
         <footer class="pc-cmd__footer">
             <div class="pc-cmd__hints">
@@ -367,7 +382,7 @@ declare(strict_types=1);
 
     <script type="application/json" id="prime-command-palette-data"><?= $this->raw($commandPaletteJson) ?></script>
 
-    <div class="pc-toast-stack" data-toast-stack aria-live="polite" aria-atomic="false"></div>
+    <div class="pc-toast-stack" data-prime-toast-stack aria-live="polite" aria-atomic="false"></div>
 
     <?php foreach ($adminScripts as $scriptUrl): ?>
     <script type="module" src="<?= $this->e($scriptUrl) ?>" defer></script>

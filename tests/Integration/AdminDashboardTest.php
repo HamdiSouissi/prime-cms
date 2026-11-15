@@ -212,6 +212,140 @@ final class AdminDashboardTest extends TestCase
         $this->assertStringContainsString('<!-- prime-plugin-footer -->', $body);
     }
 
+    public function testModulePlaceholdersAnnounceOfficialRoadmapPhases(): void
+    {
+        $app = $this->createApp(env: 'local', debug: true);
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $expectedPhases = [
+            '/admin/users' => 'Phase 4',
+            '/admin/plugins' => 'Phase 5',
+            '/admin/pages' => 'Phase 6',
+            '/admin/articles' => 'Phase 6',
+            '/admin/media' => 'Phase 7',
+            '/admin/appearance' => 'Phase 8',
+            '/admin/appearance/themes' => 'Phase 8',
+            '/admin/appearance/menus' => 'Phase 8',
+            '/admin/appearance/widgets' => 'Phase 8',
+            '/admin/settings' => 'Phase 9',
+            '/admin/settings/general' => 'Phase 9',
+            '/admin/settings/permalinks' => 'Phase 9',
+            '/admin/settings/security' => 'Phase 9',
+            '/admin/settings/emails' => 'Phase 9',
+        ];
+
+        foreach ($expectedPhases as $path => $expectedPhase) {
+            $response = $kernel->handle(Request::create('GET', $path));
+            $this->assertSame(200, $response->status(), sprintf('Expected 200 for %s.', $path));
+            $this->assertStringContainsString(
+                $expectedPhase,
+                $response->body(),
+                sprintf('Expected %s to announce %s.', $path, $expectedPhase),
+            );
+        }
+
+        // Styleguide row actions reflect Phase 6 editing and accurate demo duplicate text.
+        $styleguideBody = $kernel->handle(Request::create('GET', '/admin/styleguide'))->body();
+        $this->assertStringContainsString('(Phase 6).', $styleguideBody);
+        $this->assertStringContainsString('Élément dupliqué (démo).', $styleguideBody);
+        $this->assertStringNotContainsString('Lien copié.', $styleguideBody);
+    }
+
+    public function testCommandPalettePayloadHasKeywordsCleanSubtitlesAndSingleCloseControl(): void
+    {
+        $app = $this->createApp(env: 'local', debug: true);
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $body = $kernel->handle(Request::create('GET', '/admin'))->body();
+
+        $this->assertStringContainsString('type="text"', $body);
+        $this->assertStringContainsString('role="combobox"', $body);
+        $this->assertStringNotContainsString('type="search"', $body);
+
+        $matched = preg_match(
+            '/<script type="application\/json" id="prime-command-palette-data">(.*?)<\/script>/s',
+            $body,
+            $matches,
+        );
+        $this->assertSame(1, $matched, 'Command palette JSON script tag must exist.');
+
+        $items = json_decode($matches[1], true);
+        $this->assertIsArray($items);
+        $this->assertNotEmpty($items);
+
+        $byId = [];
+        foreach ($items as $item) {
+            $this->assertIsArray($item);
+            $subtitle = (string) ($item['subtitle'] ?? '');
+            $this->assertStringNotContainsString('/admin/', $subtitle, 'Subtitles must not display raw URLs.');
+            $byId[(string) $item['id']] = $item;
+        }
+
+        $this->assertArrayHasKey('nav.settings', $byId);
+        $this->assertContains('paramètres', $byId['nav.settings']['keywords']);
+        $this->assertContains('configuration', $byId['nav.settings']['keywords']);
+
+        $this->assertArrayHasKey('nav.media', $byId);
+        $this->assertContains('médiathèque', $byId['nav.media']['keywords']);
+    }
+
+    public function testTopbarMobileSearchButtonAndNeutralSecondaryStyles(): void
+    {
+        $app = $this->createApp(env: 'local', debug: true);
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $body = $kernel->handle(Request::create('GET', '/admin'))->body();
+
+        // Mobile search icon button with accessible label and tooltip (C1)
+        $this->assertStringContainsString('class="pc-topbar__search-mobile"', $body);
+        $this->assertStringContainsString('aria-label="Rechercher"', $body);
+        $this->assertStringContainsString('data-prime-tooltip="Rechercher"', $body);
+
+        // Stat tile metadata uses muted link class instead of coral accent (C6)
+        $this->assertStringContainsString('class="pc-stat__link"', $body);
+
+        // Logout menu item is neutral, not danger-styled (C6)
+        $this->assertStringNotContainsString('pc-dropdown__item--danger', $body);
+    }
+
+    public function testAllAdminPagesUsePrimePrefixedDataAttributesOnly(): void
+    {
+        $app = $this->createApp(env: 'local', debug: true);
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+
+        $allowedStandardDataAttrs = ['data-theme'];
+        $paths = ['/admin', '/admin/styleguide', '/admin/pages', '/admin/settings/security'];
+
+        foreach ($paths as $path) {
+            $body = $kernel->handle(Request::create('GET', $path))->body();
+            // Strip JSON payload contents so we only inspect real HTML element attributes.
+            $htmlOnly = preg_replace(
+                '/<script type="application\/json"[^>]*>.*?<\/script>/s',
+                '',
+                $body,
+            ) ?? $body;
+
+            if (preg_match_all('/<[a-zA-Z][^>]*>/', $htmlOnly, $tagMatches) > 0) {
+                foreach ($tagMatches[0] as $tag) {
+                    if (preg_match_all('/\s(data-[a-z0-9-]+)\b/i', $tag, $attrMatches) > 0) {
+                        foreach ($attrMatches[1] as $attr) {
+                            $isPrimePrefixed = str_starts_with($attr, 'data-prime-');
+                            $isWhitelisted = in_array($attr, $allowedStandardDataAttrs, true);
+                            $this->assertTrue(
+                                $isPrimePrefixed || $isWhitelisted,
+                                sprintf('Unprefixed attribute [%s] found on %s.', $attr, $path),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private function createApp(string $env, bool $debug): Application
     {
         $app = new Application(dirname(__DIR__, 2), loadEnv: false);

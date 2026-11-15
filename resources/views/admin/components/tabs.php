@@ -12,7 +12,7 @@ declare(strict_types=1);
  */
 $tabItems = is_array($tabs ?? null) ? array_values($tabs) : [];
 ?>
-<div class="pc-tabs" data-tabs>
+<div class="pc-tabs" data-prime-tabs>
     <div class="pc-tabs__list" role="tablist" aria-label="<?= $this->e($label) ?>">
         <?php foreach ($tabItems as $index => $tab): ?>
             <?php

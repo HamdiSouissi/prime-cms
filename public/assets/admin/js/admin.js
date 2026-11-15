@@ -22,7 +22,7 @@ function initPasswordToggles() {
       return;
     }
 
-    const button = target.closest('[data-password-toggle]');
+    const button = target.closest('[data-prime-password-toggle]');
     if (!(button instanceof HTMLButtonElement)) {
       return;
     }
@@ -54,18 +54,18 @@ function initPasswordToggles() {
  * Progressive enhancement for bulk row selection checkboxes in tables.
  */
 function initBulkTables() {
-  document.querySelectorAll('[data-table-bulk]').forEach((wrapper) => {
+  document.querySelectorAll('[data-prime-table-bulk]').forEach((wrapper) => {
     if (!(wrapper instanceof HTMLElement)) {
       return;
     }
 
-    const selectAll = wrapper.querySelector('[data-table-select-all]');
-    const rowBoxes = Array.from(wrapper.querySelectorAll('[data-table-select-row]')).filter(
+    const selectAll = wrapper.querySelector('[data-prime-table-select-all]');
+    const rowBoxes = Array.from(wrapper.querySelectorAll('[data-prime-table-select-row]')).filter(
       (el) => el instanceof HTMLInputElement,
     );
-    const bulkBar = wrapper.querySelector('[data-table-bulk-bar]');
-    const countEl = wrapper.querySelector('[data-table-bulk-count]');
-    const clearBtn = wrapper.querySelector('[data-table-bulk-clear]');
+    const bulkBar = wrapper.querySelector('[data-prime-table-bulk-bar]');
+    const countEl = wrapper.querySelector('[data-prime-table-bulk-count]');
+    const clearBtn = wrapper.querySelector('[data-prime-table-bulk-clear]');
 
     if (rowBoxes.length === 0) {
       return;

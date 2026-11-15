@@ -24,16 +24,16 @@ $this->layout('admin::layouts/app');
         'variant' => 'secondary',
         'icon' => 'bell',
         'attrs' => [
-            'data-toast-trigger' => '1',
-            'data-toast-type' => 'success',
-            'data-toast-title' => 'Composant prêt',
-            'data-toast-message' => 'Le système de notifications fonctionne sans script inline.',
+            'data-prime-toast-trigger' => '1',
+            'data-prime-toast-type' => 'success',
+            'data-prime-toast-title' => 'Composant prêt',
+            'data-prime-toast-message' => 'Le système de notifications fonctionne sans script inline.',
         ],
     ]) . $this->insert('admin::components/button', [
         'label' => 'Ouvrir la palette',
         'variant' => 'primary',
         'icon' => 'command',
-        'attrs' => ['data-command-palette-open' => '1'],
+        'attrs' => ['data-prime-command-palette-open' => '1'],
     ]),
 ])) ?>
 
@@ -286,25 +286,25 @@ $this->layout('admin::layouts/app');
     <!-- 6. Table with sticky header, bulk actions, row dropdown, pagination -->
     <section id="sg-table" class="pc-sg-section pc-stack">
         <h2>Tableau de données</h2>
-        <div class="pc-table-wrap" data-table-bulk>
-            <div class="pc-table-bulk" data-table-bulk-bar hidden>
-                <span class="pc-table-bulk__count" data-table-bulk-count>0 élément sélectionné</span>
+        <div class="pc-table-wrap" data-prime-table-bulk>
+            <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
+                <span class="pc-table-bulk__count" data-prime-table-bulk-count>0 élément sélectionné</span>
                 <div class="pc-row pc-row--sm">
                     <?= $this->raw($this->insert('admin::components/button', [
                         'label' => 'Publier la sélection',
                         'variant' => 'secondary',
                         'size' => 'sm',
                         'attrs' => [
-                            'data-toast-trigger' => '1',
-                            'data-toast-type' => 'success',
-                            'data-toast-message' => 'Action groupée simulée avec succès.',
+                            'data-prime-toast-trigger' => '1',
+                            'data-prime-toast-type' => 'success',
+                            'data-prime-toast-message' => 'Action groupée simulée avec succès.',
                         ],
                     ])) ?>
                     <?= $this->raw($this->insert('admin::components/button', [
                         'label' => 'Désélectionner',
                         'variant' => 'ghost',
                         'size' => 'sm',
-                        'attrs' => ['data-table-bulk-clear' => '1'],
+                        'attrs' => ['data-prime-table-bulk-clear' => '1'],
                     ])) ?>
                 </div>
             </div>
@@ -314,7 +314,7 @@ $this->layout('admin::layouts/app');
                     <thead>
                         <tr>
                             <th class="pc-table__check">
-                                <input type="checkbox" data-table-select-all aria-label="Tout sélectionner">
+                                <input type="checkbox" data-prime-table-select-all aria-label="Tout sélectionner">
                             </th>
                             <th>
                                 <button type="button" class="pc-table__sort">
@@ -342,7 +342,7 @@ $this->layout('admin::layouts/app');
                                     <input
                                         type="checkbox"
                                         value="<?= $this->e($row['id']) ?>"
-                                        data-table-select-row
+                                        data-prime-table-select-row
                                         aria-label="Sélectionner <?= $this->e($row['title']) ?>"
                                     >
                                 </td>
@@ -363,11 +363,11 @@ $this->layout('admin::layouts/app');
                                     <?= $this->raw($this->insert('admin::components/dropdown', [
                                         'id' => 'sg-row-menu-' . $row['id'],
                                         'menuLabel' => 'Actions pour ' . $row['title'],
-                                        'triggerHtml' => '<button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-dropdown-trigger aria-label="Actions pour ' . $this->e($row['title']) . '" aria-haspopup="menu" aria-expanded="false">' . $this->icon('more-horizontal', 16) . '</button>',
-                                        'menuHtml' => '<button type="button" class="pc-dropdown__item" role="menuitem" data-toast-trigger data-toast-type="info" data-toast-message="Édition de « ' . $this->e($row['title']) . ' » (Phase 5).">' . $this->icon('pencil', 15) . '<span>Modifier</span></button>'
-                                            . '<button type="button" class="pc-dropdown__item" role="menuitem" data-toast-trigger data-toast-type="info" data-toast-message="Lien copié.">' . $this->icon('copy', 15) . '<span>Dupliquer</span></button>'
+                                        'triggerHtml' => '<button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-dropdown-trigger aria-label="Actions pour ' . $this->e($row['title']) . '" aria-haspopup="menu" aria-expanded="false">' . $this->icon('more-horizontal', 16) . '</button>',
+                                        'menuHtml' => '<button type="button" class="pc-dropdown__item" role="menuitem" data-prime-toast-trigger data-prime-toast-type="info" data-prime-toast-message="Édition de « ' . $this->e($row['title']) . ' » (Phase 6).">' . $this->icon('pencil', 15) . '<span>Modifier</span></button>'
+                                            . '<button type="button" class="pc-dropdown__item" role="menuitem" data-prime-toast-trigger data-prime-toast-type="info" data-prime-toast-message="Élément dupliqué (démo).">' . $this->icon('copy', 15) . '<span>Dupliquer</span></button>'
                                             . '<div class="pc-dropdown__separator" role="separator"></div>'
-                                            . '<button type="button" class="pc-dropdown__item pc-dropdown__item--danger" role="menuitem" data-toast-trigger data-toast-type="danger" data-toast-message="Suppression simulée.">' . $this->icon('trash', 15) . '<span>Supprimer</span></button>',
+                                            . '<button type="button" class="pc-dropdown__item pc-dropdown__item--danger" role="menuitem" data-prime-toast-trigger data-prime-toast-type="danger" data-prime-toast-message="Suppression simulée.">' . $this->icon('trash', 15) . '<span>Supprimer</span></button>',
                                     ])) ?>
                                 </td>
                             </tr>
@@ -432,19 +432,19 @@ $this->layout('admin::layouts/app');
         <?= $this->raw($this->insert('admin::components/button', [
             'label' => 'Ouvrir la modale',
             'variant' => 'primary',
-            'attrs' => ['data-modal-open' => 'sg-demo-modal'],
+            'attrs' => ['data-prime-modal-open' => 'sg-demo-modal'],
         ])) ?>
         <?= $this->raw($this->insert('admin::components/button', [
             'label' => 'Ouvrir le tiroir latéral',
             'variant' => 'secondary',
-            'attrs' => ['data-drawer-open' => 'sg-demo-drawer'],
+            'attrs' => ['data-prime-drawer-open' => 'sg-demo-drawer'],
         ])) ?>
         <?= $this->raw($this->insert('admin::components/dropdown', [
             'id' => 'sg-demo-dropdown',
             'align' => 'left',
-            'triggerHtml' => '<button type="button" class="pc-btn pc-btn--secondary" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false"><span>Menu déroulant</span>' . $this->icon('chevron-down', 16) . '</button>',
-            'menuHtml' => '<button type="button" class="pc-dropdown__item" role="menuitem" data-toast-trigger data-toast-type="info" data-toast-message="Option Exporter cliquée.">' . $this->icon('download', 15) . '<span>Exporter en JSON</span></button>'
-                . '<button type="button" class="pc-dropdown__item" role="menuitem" data-toast-trigger data-toast-type="info" data-toast-message="Option Filtrer cliquée.">' . $this->icon('filter', 15) . '<span>Filtrer les résultats</span></button>',
+            'triggerHtml' => '<button type="button" class="pc-btn pc-btn--secondary" data-prime-dropdown-trigger aria-haspopup="menu" aria-expanded="false"><span>Menu déroulant</span>' . $this->icon('chevron-down', 16) . '</button>',
+            'menuHtml' => '<button type="button" class="pc-dropdown__item" role="menuitem" data-prime-toast-trigger data-prime-toast-type="info" data-prime-toast-message="Option Exporter cliquée.">' . $this->icon('download', 15) . '<span>Exporter en JSON</span></button>'
+                . '<button type="button" class="pc-dropdown__item" role="menuitem" data-prime-toast-trigger data-prime-toast-type="info" data-prime-toast-message="Option Filtrer cliquée.">' . $this->icon('filter', 15) . '<span>Filtrer les résultats</span></button>',
         ])) ?>
     </div>
     <?php $overlaysHtml = (string) ob_get_clean(); ?>
@@ -465,10 +465,10 @@ $this->layout('admin::layouts/app');
                 'variant' => 'secondary',
                 'size' => 'sm',
                 'attrs' => [
-                    'data-toast-trigger' => '1',
-                    'data-toast-type' => 'success',
-                    'data-toast-title' => 'Enregistré',
-                    'data-toast-message' => 'Vos modifications ont bien été prises en compte.',
+                    'data-prime-toast-trigger' => '1',
+                    'data-prime-toast-type' => 'success',
+                    'data-prime-toast-title' => 'Enregistré',
+                    'data-prime-toast-message' => 'Vos modifications ont bien été prises en compte.',
                 ],
             ])) ?>
             <?= $this->raw($this->insert('admin::components/button', [
@@ -476,10 +476,10 @@ $this->layout('admin::layouts/app');
                 'variant' => 'secondary',
                 'size' => 'sm',
                 'attrs' => [
-                    'data-toast-trigger' => '1',
-                    'data-toast-type' => 'info',
-                    'data-toast-title' => 'Information',
-                    'data-toast-message' => 'Une synchronisation planifiée démarre dans 5 minutes.',
+                    'data-prime-toast-trigger' => '1',
+                    'data-prime-toast-type' => 'info',
+                    'data-prime-toast-title' => 'Information',
+                    'data-prime-toast-message' => 'Une synchronisation planifiée démarre dans 5 minutes.',
                 ],
             ])) ?>
             <?= $this->raw($this->insert('admin::components/button', [
@@ -487,10 +487,10 @@ $this->layout('admin::layouts/app');
                 'variant' => 'secondary',
                 'size' => 'sm',
                 'attrs' => [
-                    'data-toast-trigger' => '1',
-                    'data-toast-type' => 'warning',
-                    'data-toast-title' => 'Attention',
-                    'data-toast-message' => 'Certains médias dépassent la taille recommandée.',
+                    'data-prime-toast-trigger' => '1',
+                    'data-prime-toast-type' => 'warning',
+                    'data-prime-toast-title' => 'Attention',
+                    'data-prime-toast-message' => 'Certains médias dépassent la taille recommandée.',
                 ],
             ])) ?>
             <?= $this->raw($this->insert('admin::components/button', [
@@ -498,10 +498,10 @@ $this->layout('admin::layouts/app');
                 'variant' => 'secondary',
                 'size' => 'sm',
                 'attrs' => [
-                    'data-toast-trigger' => '1',
-                    'data-toast-type' => 'danger',
-                    'data-toast-title' => 'Erreur',
-                    'data-toast-message' => 'Impossible de joindre le service distant.',
+                    'data-prime-toast-trigger' => '1',
+                    'data-prime-toast-type' => 'danger',
+                    'data-prime-toast-title' => 'Erreur',
+                    'data-prime-toast-message' => 'Impossible de joindre le service distant.',
                 ],
             ])) ?>
         </div>
@@ -619,15 +619,15 @@ $this->layout('admin::layouts/app');
     'footer' => $this->insert('admin::components/button', [
         'label' => 'Annuler',
         'variant' => 'ghost',
-        'attrs' => ['data-modal-close' => '1'],
+        'attrs' => ['data-prime-modal-close' => '1'],
     ]) . $this->insert('admin::components/button', [
         'label' => 'Confirmer',
         'variant' => 'primary',
         'attrs' => [
-            'data-modal-close' => '1',
-            'data-toast-trigger' => '1',
-            'data-toast-type' => 'success',
-            'data-toast-message' => 'Action confirmée depuis la modale.',
+            'data-prime-modal-close' => '1',
+            'data-prime-toast-trigger' => '1',
+            'data-prime-toast-type' => 'success',
+            'data-prime-toast-message' => 'Action confirmée depuis la modale.',
         ],
     ]),
 ])) ?>
@@ -654,15 +654,15 @@ $this->layout('admin::layouts/app');
     'footer' => $this->insert('admin::components/button', [
         'label' => 'Fermer',
         'variant' => 'secondary',
-        'attrs' => ['data-drawer-close' => '1'],
+        'attrs' => ['data-prime-drawer-close' => '1'],
     ]) . $this->insert('admin::components/button', [
         'label' => 'Enregistrer',
         'variant' => 'primary',
         'attrs' => [
-            'data-drawer-close' => '1',
-            'data-toast-trigger' => '1',
-            'data-toast-type' => 'success',
-            'data-toast-message' => 'Modifications enregistrées depuis le tiroir.',
+            'data-prime-drawer-close' => '1',
+            'data-prime-toast-trigger' => '1',
+            'data-prime-toast-type' => 'success',
+            'data-prime-toast-message' => 'Modifications enregistrées depuis le tiroir.',
         ],
     ]),
 ])) ?>

@@ -50,7 +50,7 @@ if ($isIconOnly) {
     $attrPairs[] = 'aria-label="' . $this->e($label) . '"';
 }
 if ($tooltipText !== null) {
-    $attrPairs[] = 'data-tooltip="' . $this->e($tooltipText) . '"';
+    $attrPairs[] = 'data-prime-tooltip="' . $this->e($tooltipText) . '"';
 }
 if ($isLoading) {
     $attrPairs[] = 'aria-busy="true"';
