@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    name: PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, gd, pdo_mysql, zip, fileinfo, openssl, intl
+          coverage: none
+
+      - name: Verify runtime without vendor/
+        run: |
+          php bin/prime list
+          php bin/prime about
+          php bin/prime routes
+
+      - name: Install dev dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Check code style (PSR-12)
+        run: composer cs:check
+
+      - name: Run static analysis (PHPStan level 6)
+        run: composer stan
+
+      - name: Run test suite (PHPUnit 11)
+        run: composer test
