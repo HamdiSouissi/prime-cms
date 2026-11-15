@@ -37,11 +37,29 @@ final class ErrorHandlerTest extends TestCase
     public function testConvertsPhpErrorIntoErrorException(): void
     {
         $handler = $this->createHandler(debug: true);
+        $previous = error_reporting(E_ALL);
 
-        $this->expectException(ErrorException::class);
-        $this->expectExceptionMessage('Synthetic warning');
+        try {
+            $this->expectException(ErrorException::class);
+            $this->expectExceptionMessage('Synthetic warning');
 
-        $handler->handlePhpError(E_USER_WARNING, 'Synthetic warning', __FILE__, __LINE__);
+            $handler->handlePhpError(E_USER_WARNING, 'Synthetic warning', __FILE__, __LINE__);
+        } finally {
+            error_reporting($previous);
+        }
+    }
+
+    public function testIgnoresSuppressedPhpErrors(): void
+    {
+        $handler = $this->createHandler(debug: true);
+        $previous = error_reporting(0);
+
+        try {
+            $result = $handler->handlePhpError(E_USER_WARNING, 'Suppressed warning', __FILE__, __LINE__);
+            $this->assertFalse($result);
+        } finally {
+            error_reporting($previous);
+        }
     }
 
     public function testExtractsSurroundingCodeExcerptWithHighlight(): void

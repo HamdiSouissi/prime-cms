@@ -41,13 +41,4 @@ jobs:
         run: composer stan
 
       - name: Run test suite (PHPUnit 11)
-        run: |
-          set +e
-          output=$(vendor/bin/phpunit --display-all-issues 2>&1)
-          code=$?
-          echo "$output"
-          if [ $code -ne 0 ]; then
-            summary=$(echo "$output" | awk '/There was|There were/,0' | tr '\n' ' ')
-            echo "::error::$summary"
-          fi
-          exit $code
+        run: composer test
