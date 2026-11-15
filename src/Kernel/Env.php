@@ -179,6 +179,7 @@ final class Env
                     't' => "\t",
                     '"' => '"',
                     '\\' => '\\',
+                    '$' => '$',
                     default => '\\' . $char,
                 };
                 $escaped = false;

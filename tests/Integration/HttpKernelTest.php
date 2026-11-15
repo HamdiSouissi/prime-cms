@@ -10,6 +10,7 @@ use Prime\Http\Kernel;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Http\Router;
+use Prime\Install\InstallCheckerInterface;
 use Prime\Kernel\Application;
 use Prime\Kernel\ErrorHandler;
 use Prime\Kernel\ServiceProvider;
@@ -359,6 +360,13 @@ final class HttpKernelTest extends TestCase
         $app->config()->set('app.debug', $debug);
         $app->config()->set('logging.path', $this->tempLogDir);
         $app->boot();
+
+        $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {
+            public function isInstalled(): bool
+            {
+                return true;
+            }
+        });
 
         /** @var ErrorHandler $errorHandler */
         $errorHandler = $app->get(ErrorHandler::class);
