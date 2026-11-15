@@ -67,12 +67,18 @@ final class PluginsDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertTrue($schema->hasTable('plugins'));
         $this->assertTrue($schema->hasColumn('migrations', 'source'));
 
-        $app = new Application(dirname(__DIR__, 2), registerErrorHandler: false);
+        $app = new Application(dirname(__DIR__, 2), loadEnv: false, registerErrorHandler: false);
+        $app->config()->set('app.env', 'testing');
+        $app->config()->set('app.url', 'https://prime-db.example');
+        $app->config()->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
         $app->boot();
+        $app->container()->instance(Connection::class, $this->connection);
         $hooks = new Hooks();
         $router = new Router();
         $views = new View(dirname(__DIR__, 2) . '/resources/views');
         $settings = new Settings($this->connection);
+        $app->container()->instance(Settings::class, $settings);
+        $app->container()->instance(View::class, $views);
         $notices = new Notices($settings);
         $repository = new PluginRepository($this->connection, $schema);
         $autoloader = new Autoloader();
