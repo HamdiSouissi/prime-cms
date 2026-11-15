@@ -243,25 +243,24 @@ final class AdminMenu
      */
     public function groupedTree(): array
     {
-        $groups = [];
-        $indexByKey = [];
+        /** @var array<string, array{label: ?string, items: list<MenuNode>}> $byKey */
+        $byKey = [];
 
         foreach ($this->tree() as $node) {
             $label = $node->item->group;
             $key = $label === null ? '__ungrouped__' : $label;
 
-            if (!isset($indexByKey[$key])) {
-                $indexByKey[$key] = count($groups);
-                $groups[] = [
+            if (!isset($byKey[$key])) {
+                $byKey[$key] = [
                     'label' => $label,
                     'items' => [],
                 ];
             }
 
-            $groups[$indexByKey[$key]]['items'][] = $node;
+            $byKey[$key]['items'][] = $node;
         }
 
-        return $groups;
+        return array_values($byKey);
     }
 
     /**

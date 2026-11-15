@@ -121,7 +121,7 @@ final class Auth
             $passwordOk = false;
         }
 
-        if ($raw === null || !$passwordOk || ($raw['status'] ?? '') !== User::STATUS_ACTIVE) {
+        if ($raw === null || $storedHash === null || !$passwordOk || ($raw['status'] ?? '') !== User::STATUS_ACTIVE) {
             $emailHits = $this->rateLimiter->hit($emailKey, $decay);
             $ipHits = $this->rateLimiter->hit($ipKey, $decay);
 

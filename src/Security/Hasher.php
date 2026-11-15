@@ -136,7 +136,7 @@ final class Hasher
             $this->persistDummyHash($cacheFile, $generated);
         }
 
-        return $this->dummyHash;
+        return $generated;
     }
 
     /**

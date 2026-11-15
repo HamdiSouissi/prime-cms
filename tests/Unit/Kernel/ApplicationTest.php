@@ -37,9 +37,9 @@ final class ApplicationTest extends TestCase
         $app->container()->instance(Hooks::class, $hooks);
         $app->boot();
 
-        $this->assertSame('0.1.0', Application::VERSION);
+        $this->assertSame('0.5.0', Application::VERSION);
         $this->assertTrue($app->isBooted());
-        $this->assertSame(['registered:0.1.0', 'booted:yes'], $events);
+        $this->assertSame(['registered:0.5.0', 'booted:yes'], $events);
         $this->assertSame($this->rootDir . '/config', $app->configPath());
         $this->assertSame($this->rootDir . '/storage/logs', $app->storagePath('logs'));
         $this->assertSame($this->rootDir . '/content/plugins', $app->contentPath('plugins'));
