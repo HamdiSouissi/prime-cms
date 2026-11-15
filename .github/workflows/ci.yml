@@ -41,4 +41,14 @@ jobs:
         run: composer stan
 
       - name: Run test suite (PHPUnit 11)
-        run: composer test
+        run: |
+          set +e
+          output=$(vendor/bin/phpunit --display-all-issues 2>&1)
+          code=$?
+          echo "$output"
+          if [ $code -ne 0 ]; then
+            echo "$output" | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+          fi
+          exit $code
