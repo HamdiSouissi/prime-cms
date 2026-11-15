@@ -2,7 +2,7 @@
   "name": "prime-cms/prime-cms",
   "description": "Prime CMS — Modern, zero-dependency PHP 8.2+ content management system.",
   "type": "project",
-  "license": "MIT",
+  "license": "proprietary",
   "require": {
     "php": ">=8.2"
   },
