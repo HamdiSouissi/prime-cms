@@ -102,6 +102,11 @@ final class Blueprint
         return $this->addColumn(new ColumnDefinition($name, 'INT'));
     }
 
+    public function unsignedInteger(string $name): ColumnDefinition
+    {
+        return $this->addColumn(new ColumnDefinition($name, 'INT', unsigned: true));
+    }
+
     public function bigInteger(string $name): ColumnDefinition
     {
         return $this->addColumn(new ColumnDefinition($name, 'BIGINT'));

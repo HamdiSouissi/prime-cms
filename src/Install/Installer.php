@@ -119,9 +119,21 @@ final class Installer
                 'status' => 'active',
                 'locale' => $config->siteLocale,
                 'last_login_at' => null,
+                'password_changed_at' => $nowUtc,
                 'created_at' => $nowUtc,
                 'updated_at' => $nowUtc,
             ]);
+
+            $adminRole = $connection->table('roles')
+                ->where('slug', '=', 'administrator')
+                ->first();
+
+            if ($adminRole !== null) {
+                $connection->table('user_roles')->insert([
+                    'user_id' => $adminUserId,
+                    'role_id' => (int) $adminRole['id'],
+                ]);
+            }
         } catch (Throwable $exception) {
             throw new InstallException(
                 'admin',

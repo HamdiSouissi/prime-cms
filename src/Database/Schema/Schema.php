@@ -16,6 +16,11 @@ final class Schema
     {
     }
 
+    public function connection(): Connection
+    {
+        return $this->connection;
+    }
+
     /**
      * Create a new table using the provided Blueprint callback.
      *
