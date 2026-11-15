@@ -35,7 +35,7 @@ final class Hasher
     ) {
         $requestedDriver = strtolower(trim((string) ($config['hash_driver'] ?? 'argon2id')));
         $argonAlgo = defined('PASSWORD_ARGON2ID') ? constant('PASSWORD_ARGON2ID') : null;
-        $useArgon2id = $requestedDriver !== 'bcrypt' && is_string($argonAlgo) && $argonAlgo !== '';
+        $useArgon2id = $requestedDriver !== 'bcrypt' && is_string($argonAlgo);
 
         if ($useArgon2id) {
             $this->algorithm = $argonAlgo;

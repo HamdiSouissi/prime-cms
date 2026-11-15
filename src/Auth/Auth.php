@@ -153,7 +153,7 @@ final class Auth
         $userId = (int) $raw['id'];
 
         // Transparently rehash legacy or weaker password hashes.
-        if ($storedHash !== null && $this->hasher->needsRehash($storedHash)) {
+        if ($this->hasher->needsRehash($storedHash)) {
             $this->connection->table('users')
                 ->where('id', '=', $userId)
                 ->update([
