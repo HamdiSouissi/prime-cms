@@ -16,6 +16,7 @@ use Prime\Kernel\Providers\HttpServiceProvider;
 use Prime\Kernel\Providers\LogServiceProvider;
 use Prime\Kernel\Providers\ViewServiceProvider;
 use Prime\Mail\MailServiceProvider;
+use Prime\Plugins\PluginServiceProvider;
 use Prime\Settings\SettingsServiceProvider;
 
 return [
@@ -38,6 +39,7 @@ return [
         AuthServiceProvider::class,
         InstallServiceProvider::class,
         AdminServiceProvider::class,
+        PluginServiceProvider::class,
     ],
 
     'middleware' => [

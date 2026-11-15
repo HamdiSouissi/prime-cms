@@ -45,6 +45,8 @@ final class Logger
 
     private readonly string $directory;
 
+    private readonly string $minLevelName;
+
     private readonly int $minSeverity;
 
     private readonly string $prefix;
@@ -60,8 +62,21 @@ final class Logger
         }
 
         $this->directory = rtrim($directory, DIRECTORY_SEPARATOR . '/');
+        $this->minLevelName = $normalizedLevel;
         $this->minSeverity = self::LEVELS[$normalizedLevel];
         $this->prefix = $prefix !== '' ? $prefix : 'prime';
+    }
+
+    /**
+     * Create a child logger writing to the same directory with a dedicated channel prefix
+     * (e.g. `plugin.hello-prime` -> `storage/logs/plugin.hello-prime-YYYY-MM-DD.log`).
+     */
+    public function withChannel(string $channel): self
+    {
+        $sanitized = preg_replace('/[^a-zA-Z0-9._-]/', '-', trim($channel));
+        $prefix = is_string($sanitized) && $sanitized !== '' ? $sanitized : $this->prefix;
+
+        return new self($this->directory, $this->minLevelName, $prefix);
     }
 
     /**
