@@ -7,6 +7,7 @@ use Prime\Kernel\Application;
 use Prime\Kernel\Config;
 use Prime\Kernel\Env;
 use Prime\Log\Logger;
+use Prime\View\Icon;
 use Prime\View\View;
 
 if (!function_exists('app')) {
@@ -149,5 +150,15 @@ if (!function_exists('logger')) {
         $log = Application::getInstance()->get(Logger::class);
 
         return $log;
+    }
+}
+
+if (!function_exists('icon')) {
+    /**
+     * Render a Lucide SVG icon from the local admin sprite.
+     */
+    function icon(string $name, int $size = 20, string $class = ''): string
+    {
+        return Icon::render($name, $size, $class);
     }
 }
