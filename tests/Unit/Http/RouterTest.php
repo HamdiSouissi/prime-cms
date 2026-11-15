@@ -130,5 +130,8 @@ final class RouterTest extends TestCase
         $this->assertSame('/patch', $router->dispatch(Request::create('PATCH', '/patch'))['route']->path());
         $this->assertSame('/delete', $router->dispatch(Request::create('DELETE', '/delete'))['route']->path());
         $this->assertSame('/any', $router->dispatch(Request::create('PATCH', '/any'))['route']->path());
+
+        $router->get('/head-check', $handler);
+        $this->assertSame('/head-check', $router->dispatch(Request::create('HEAD', '/head-check'))['route']->path());
     }
 }

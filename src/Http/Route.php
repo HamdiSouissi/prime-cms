@@ -128,7 +128,10 @@ final class Route
 
     public function matchesMethod(string $method): bool
     {
-        return in_array(strtoupper($method), $this->methods, true);
+        $upper = strtoupper($method);
+
+        return in_array($upper, $this->methods, true)
+            || ($upper === 'HEAD' && in_array('GET', $this->methods, true));
     }
 
     /**

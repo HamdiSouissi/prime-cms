@@ -42,3 +42,37 @@ jobs:
 
       - name: Run test suite (PHPUnit 11)
         run: composer test
+
+  docker:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start stack with Docker Compose
+        run: docker compose up -d --build
+
+      - name: Wait for application and verify HTTP endpoints
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          curl -sf http://localhost:8080/ | grep -q "Le noyau est en place"
+          curl -sf http://localhost:8080/health | grep -q '"status":"ok"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inconnu)" = "404"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health/)" = "301"
+          test "$(curl -s -X POST -o /dev/null -w '%{http_code}' http://localhost:8080/health)" = "405"
+          curl -sI http://localhost:8080/ | grep -iq "X-Content-Type-Options: nosniff"
+          docker compose exec -T app php -m | grep -iq "mbstring"
+          docker compose exec -T app php -m | grep -iq "pdo_mysql"
+          docker compose exec -T app php -m | grep -iq "gd"
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v

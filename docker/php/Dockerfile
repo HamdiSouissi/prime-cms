@@ -5,7 +5,6 @@ RUN apt-get update \
         libfreetype6-dev \
         libicu-dev \
         libjpeg62-turbo-dev \
-        libonig-dev \
         libpng-dev \
         libwebp-dev \
         libzip-dev \
@@ -14,7 +13,6 @@ RUN apt-get update \
     && docker-php-ext-install -j"$(nproc)" \
         gd \
         intl \
-        mbstring \
         opcache \
         pdo_mysql \
         zip \
