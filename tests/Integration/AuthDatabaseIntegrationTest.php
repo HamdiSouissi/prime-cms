@@ -7,18 +7,18 @@ namespace Prime\Tests\Integration;
 use PHPUnit\Framework\Attributes\Group;
 use Prime\Auth\Auth;
 use Prime\Auth\AuthResult;
-use Prime\Auth\Capabilities;
 use Prime\Auth\Exception\PolicyException;
 use Prime\Auth\PasswordResetService;
 use Prime\Auth\RoleRepository;
 use Prime\Auth\TwoFactorService;
 use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
+use Prime\Database\Connection;
 use Prime\Database\Migrations\Migrator;
+use Prime\Database\Schema\Schema;
 use Prime\Kernel\Application;
 use Prime\Mail\MailerInterface;
 use Prime\Mail\Message;
-use Prime\Security\Encrypter;
 use Prime\Security\RateLimiter;
 use Prime\Security\Totp;
 
@@ -31,13 +31,16 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
 {
     public function testMigrationsSeedSystemRolesAndCascadeDeletesOnMysqlAndMariaDb(): void
     {
-        $migrator = new Migrator($this->connection, dirname(__DIR__, 2) . '/database/migrations');
-        $ran = $migrator->migrate();
+        $migrator = new Migrator(
+            $this->connection,
+            new Schema($this->connection),
+            [dirname(__DIR__, 2) . '/database/migrations'],
+        );
+        $ran = $migrator->run();
 
         $this->assertCount(6, $ran);
 
-        $capabilities = new Capabilities();
-        $rolesRepo = new RoleRepository($this->connection, $capabilities);
+        $rolesRepo = new RoleRepository($this->connection);
         $usersRepo = new UserRepository($this->connection, $rolesRepo);
 
         // Verify 4 seeded system roles
@@ -118,17 +121,21 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
 
     public function testEndToEndAuthTwoFactorRateLimiterAndPasswordResetOnRealDatabase(): void
     {
-        $migrator = new Migrator($this->connection, dirname(__DIR__, 2) . '/database/migrations');
-        $migrator->migrate();
+        $migrator = new Migrator(
+            $this->connection,
+            new Schema($this->connection),
+            [dirname(__DIR__, 2) . '/database/migrations'],
+        );
+        $migrator->run();
 
         $app = new Application(dirname(__DIR__, 2), loadEnv: false);
         $app->config()->set('app.env', 'production');
         $app->config()->set('app.debug', false);
         $app->config()->set('app.url', 'https://prime-db.example');
-        $app->config()->set('app.key', Encrypter::generateKey());
+        $app->config()->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
         $app->boot();
 
-        $app->container()->instance(\Prime\Database\Connection::class, $this->connection);
+        $app->container()->instance(Connection::class, $this->connection);
 
         $sent = [];
         $app->container()->instance(MailerInterface::class, new class ($sent) implements MailerInterface {
@@ -191,12 +198,16 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame(7, $twoFactor->remainingRecoveryCodesCount($user->id));
 
         // 3. Password reset persists hashed token and rotates password
-        $passwordResets->requestReset('camille@mysql-it.test', '203.0.113.10');
+        $passwordResets->requestPublicReset(
+            'camille@mysql-it.test',
+            '203.0.113.10',
+            'https://prime-db.example',
+            'Prime DB',
+        );
         $this->assertCount(1, $sent);
         $this->assertSame(1, preg_match('#/admin/reset-password/([a-f0-9]{64})#', $sent[0]->text, $m));
 
-        $resetUser = $passwordResets->resetPassword($m[1], 'Cerulean!Summit#4917');
-        $this->assertNotNull($resetUser);
+        $resetUser = $passwordResets->resetPassword($m[1], 'Cerulean!Summit#4917', 'Prime DB');
         $this->assertSame($user->id, $resetUser->id);
 
         // 4. Database-backed RateLimiter increments & resets cleanly on MySQL/MariaDB
