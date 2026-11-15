@@ -118,7 +118,7 @@ final class Router
         $middleware = [];
         if (isset($attributes['middleware'])) {
             $middleware = is_array($attributes['middleware'])
-                ? array_values($attributes['middleware'])
+                ? $attributes['middleware']
                 : [$attributes['middleware']];
         }
 

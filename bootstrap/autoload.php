@@ -13,7 +13,7 @@ if (!class_exists(Autoloader::class, false)) {
 $autoloader = null;
 
 foreach (spl_autoload_functions() as $callback) {
-    if (is_array($callback) && isset($callback[0]) && $callback[0] instanceof Autoloader) {
+    if (is_array($callback) && $callback[0] instanceof Autoloader) {
         $autoloader = $callback[0];
         break;
     }

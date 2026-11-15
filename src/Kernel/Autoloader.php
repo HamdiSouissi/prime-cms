@@ -27,7 +27,7 @@ final class Autoloader
             return;
         }
 
-        spl_autoload_register([$this, 'loadClass'], true, $prepend);
+        spl_autoload_register([$this, 'autoload'], true, $prepend);
         $this->registered = true;
     }
 
@@ -40,8 +40,16 @@ final class Autoloader
             return;
         }
 
-        spl_autoload_unregister([$this, 'loadClass']);
+        spl_autoload_unregister([$this, 'autoload']);
         $this->registered = false;
+    }
+
+    /**
+     * SPL autoload callback wrapper matching `callable(string): void`.
+     */
+    public function autoload(string $class): void
+    {
+        $this->loadClass($class);
     }
 
     /**

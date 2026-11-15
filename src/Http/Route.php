@@ -227,7 +227,7 @@ final class Route
             return 'Closure';
         }
 
-        if (is_array($this->handler) && count($this->handler) === 2) {
+        if (is_array($this->handler)) {
             return $this->handler[0] . '::' . $this->handler[1];
         }
 
@@ -283,6 +283,7 @@ final class Route
             return $this->tokens;
         }
 
+        /** @var list<array{type: 'static', value: string}|array{type: 'param', name: string, constraint: string, optional: bool, precedingSlash: bool}> $tokens */
         $tokens = [];
         $length = strlen($this->path);
         $buffer = '';
@@ -335,7 +336,7 @@ final class Route
             }
 
             $precedingSlash = false;
-            if ($optional && str_ends_with($buffer, '/') && ($buffer !== '/' || $tokens !== [])) {
+            if ($optional && str_ends_with($buffer, '/') && $i > 1) {
                 $buffer = substr($buffer, 0, -1);
                 $precedingSlash = true;
             }
@@ -367,8 +368,6 @@ final class Route
 
     private static function normalizePath(string $path): string
     {
-        $trimmed = '/' . trim($path, '/');
-
-        return $trimmed === '' ? '/' : $trimmed;
+        return '/' . trim($path, '/');
     }
 }

@@ -8,7 +8,6 @@ use Prime\Kernel\Exception\CircularDependencyException;
 use Prime\Kernel\Exception\ContainerException;
 use Prime\Kernel\Exception\NotFoundException;
 use ReflectionClass;
-use ReflectionException;
 use ReflectionNamedType;
 use ReflectionParameter;
 
@@ -165,11 +164,7 @@ final class Container
             throw new NotFoundException(sprintf('Class [%s] does not exist.', $class));
         }
 
-        try {
-            $reflection = new ReflectionClass($class);
-        } catch (ReflectionException $e) {
-            throw new ContainerException(sprintf('Failed to reflect class [%s]: %s', $class, $e->getMessage()), 0, $e);
-        }
+        $reflection = new ReflectionClass($class);
 
         if (!$reflection->isInstantiable()) {
             throw new ContainerException(sprintf('Class [%s] is not instantiable.', $class));
