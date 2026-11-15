@@ -79,8 +79,8 @@ function initQuickTermCreate() {
     const input = box.querySelector('[data-prime-quick-term-input]');
     const button = box.querySelector('[data-prime-quick-term-submit]');
     const list = box.closest('[data-prime-taxonomy-panel]')?.querySelector('[data-prime-term-list]');
-    const endpoint = box.getAttribute('data-endpoint') || '';
-    const taxName = box.getAttribute('data-taxonomy') || '';
+    const endpoint = box.getAttribute('data-prime-endpoint') || '';
+    const taxName = box.getAttribute('data-prime-taxonomy') || '';
 
     if (!(input instanceof HTMLInputElement) || !(button instanceof HTMLButtonElement) || !list || !endpoint) {
       return;
@@ -151,8 +151,8 @@ function initEntryRelationFields() {
     const resultsBox = wrap.querySelector('[data-prime-entry-results]');
     const selectedBadge = wrap.querySelector('[data-prime-entry-selected]');
     const clearBtn = wrap.querySelector('[data-prime-entry-clear]');
-    const endpoint = wrap.getAttribute('data-endpoint') || '/admin/content/search-entries';
-    const types = wrap.getAttribute('data-types') || '';
+    const endpoint = wrap.getAttribute('data-prime-endpoint') || '/admin/content/search-entries';
+    const types = wrap.getAttribute('data-prime-types') || '';
 
     if (!(searchInput instanceof HTMLInputElement) || !(hiddenInput instanceof HTMLInputElement) || !resultsBox) {
       return;
@@ -257,9 +257,9 @@ function initConfirmDeleteButtons() {
     if (!(trigger instanceof HTMLElement)) return;
 
     event.preventDefault();
-    const action = trigger.getAttribute('data-action') || '';
-    const itemName = trigger.getAttribute('data-item-name') || 'cet élément';
-    const warning = trigger.getAttribute('data-warning') || 'Cette action est définitive et irréversible.';
+    const action = trigger.getAttribute('data-prime-action') || '';
+    const itemName = trigger.getAttribute('data-prime-item-name') || 'cet élément';
+    const warning = trigger.getAttribute('data-prime-warning') || 'Cette action est définitive et irréversible.';
 
     if (titleEl) titleEl.textContent = `Supprimer « ${itemName} » ?`;
     if (bodyEl) bodyEl.textContent = warning;

@@ -42,40 +42,53 @@ $showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdm
     <!-- Main two-column dashboard grid -->
     <div class="pc-grid pc-grid--dashboard">
         <!-- Recent activity -->
+        <?php $liveMode = !empty($isLiveActivity); ?>
         <?php ob_start(); ?>
-        <ul class="pc-activity-list">
-            <?php foreach ($recentActivity as $event): ?>
-                <li class="pc-activity-item">
-                    <?= $this->raw($this->insert('admin::components/avatar', [
-                        'initials' => $event['initials'],
-                        'size' => 'md',
-                        'accent' => $event['accent'],
-                    ])) ?>
-                    <div class="pc-activity-item__body">
-                        <p class="pc-activity-item__title"><?= $this->e($event['title']) ?></p>
-                        <p class="pc-activity-item__meta"><?= $this->e($event['meta']) ?></p>
-                    </div>
-                    <?= $this->raw($this->insert('admin::components/badge', [
-                        'label' => $event['status'],
-                        'variant' => $event['statusVariant'],
-                        'dot' => true,
-                    ])) ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+        <?php if ($recentActivity === []): ?>
+            <div style="padding:24px;text-align:center;" class="pc-text-sm pc-text-muted">
+                Aucun contenu créé pour le moment. Commencez par créer une page ou un article !
+            </div>
+        <?php else: ?>
+            <ul class="pc-activity-list">
+                <?php foreach ($recentActivity as $event): ?>
+                    <li class="pc-activity-item">
+                        <?= $this->raw($this->insert('admin::components/avatar', [
+                            'initials' => $event['initials'],
+                            'size' => 'md',
+                            'accent' => $event['accent'],
+                        ])) ?>
+                        <div class="pc-activity-item__body">
+                            <p class="pc-activity-item__title">
+                                <?php if (!empty($event['url'])): ?>
+                                    <a href="<?= $this->e((string) $event['url']) ?>" style="color:inherit;text-decoration:none;"><?= $this->e($event['title']) ?></a>
+                                <?php else: ?>
+                                    <?= $this->e($event['title']) ?>
+                                <?php endif; ?>
+                            </p>
+                            <p class="pc-activity-item__meta"><?= $this->e($event['meta']) ?></p>
+                        </div>
+                        <?= $this->raw($this->insert('admin::components/badge', [
+                            'label' => $event['status'],
+                            'variant' => $event['statusVariant'],
+                            'dot' => true,
+                        ])) ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
         <?php $activityHtml = (string) ob_get_clean(); ?>
 
         <?= $this->raw($this->insert('admin::components/card', [
             'title' => 'Activité récente',
-            'subtitle' => 'Dernières opérations simulées sur votre espace éditorial',
+            'subtitle' => $liveMode ? 'Derniers contenus créés ou modifiés' : 'Dernières opérations sur votre espace éditorial',
             'body' => $activityHtml,
             'flush' => true,
-            'footer' => '<span class="pc-text-xs pc-text-muted">Journal d’audit disponible en Phase 9</span>'
+            'footer' => '<span class="pc-text-xs pc-text-muted">Journal d’audit complet en Phase 9</span>'
                 . $this->insert('admin::components/button', [
                     'label' => 'Voir les pages',
                     'variant' => 'ghost',
                     'size' => 'sm',
-                    'href' => '/admin/pages',
+                    'href' => '/admin/content/page',
                 ]),
         ])) ?>
 

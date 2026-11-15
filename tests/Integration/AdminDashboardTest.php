@@ -47,8 +47,12 @@ final class AdminDashboardTest extends TestCase
         $paths = [
             '/admin',
             '/admin/styleguide',
-            '/admin/pages',
-            '/admin/articles',
+            '/admin/content/page',
+            '/admin/content/page/create',
+            '/admin/content/post',
+            '/admin/content/post/create',
+            '/admin/taxonomies/category',
+            '/admin/taxonomies/tag',
             '/admin/media',
             '/admin/appearance',
             '/admin/appearance/themes',
@@ -77,6 +81,15 @@ final class AdminDashboardTest extends TestCase
             $this->assertSame('no-cache', $response->header('Pragma'));
             $this->assertNoExecutableInlineScripts($response->body());
         }
+
+        // Legacy Phase 2 content URLs cleanly redirect to the dynamic Phase 6 routes
+        $legacyPages = $kernel->handle(Request::create('GET', '/admin/pages'));
+        $this->assertSame(302, $legacyPages->status());
+        $this->assertSame('/admin/content/page', $legacyPages->header('Location'));
+
+        $legacyArticles = $kernel->handle(Request::create('GET', '/admin/articles'));
+        $this->assertSame(302, $legacyArticles->status());
+        $this->assertSame('/admin/content/post', $legacyArticles->header('Location'));
     }
 
     public function testStyleguideRequiresBothLocalEnvAndAdministratorRole(): void
@@ -105,9 +118,10 @@ final class AdminDashboardTest extends TestCase
         $body = $response->body();
 
         $this->assertSame(200, $response->status());
-        // Contributor can access dashboard, pages, media, profile
+        // Contributor can access dashboard, content pages/posts, media, profile
         $this->assertStringContainsString('Bonjour, Lucas Contributeur', $body);
-        $this->assertStringContainsString('href="/admin/pages"', $body);
+        $this->assertStringContainsString('href="/admin/content/page"', $body);
+        $this->assertStringContainsString('href="/admin/content/post"', $body);
         $this->assertStringContainsString('href="/admin/media"', $body);
         $this->assertStringContainsString('href="/admin/profile"', $body);
 
@@ -290,8 +304,6 @@ final class AdminDashboardTest extends TestCase
         $kernel = $app->get(Kernel::class);
 
         $expectedPhases = [
-            '/admin/pages' => 'Phase 6',
-            '/admin/articles' => 'Phase 6',
             '/admin/media' => 'Phase 7',
             '/admin/appearance' => 'Phase 8',
             '/admin/appearance/themes' => 'Phase 8',
@@ -387,7 +399,18 @@ final class AdminDashboardTest extends TestCase
         $kernel = $app->get(Kernel::class);
 
         $allowedStandardDataAttrs = ['data-theme'];
-        $paths = ['/admin', '/admin/styleguide', '/admin/plugins', '/admin/users', '/admin/roles', '/admin/profile', '/admin/pages', '/admin/settings/security'];
+        $paths = [
+            '/admin',
+            '/admin/styleguide',
+            '/admin/plugins',
+            '/admin/users',
+            '/admin/roles',
+            '/admin/profile',
+            '/admin/content/page',
+            '/admin/content/post/create',
+            '/admin/taxonomies/category',
+            '/admin/settings/security',
+        ];
 
         foreach ($paths as $path) {
             $body = $kernel->handle(Request::create('GET', $path))->body();
@@ -440,6 +463,12 @@ final class AdminDashboardTest extends TestCase
         $pdo->exec('CREATE TABLE pc_remember_tokens (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, selector CHAR(24) UNIQUE, validator_hash CHAR(64), expires_at DATETIME, last_used_at DATETIME NULL, user_agent VARCHAR(255) NULL, created_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_password_resets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, token_hash CHAR(64) UNIQUE, expires_at DATETIME, used_at DATETIME NULL, created_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_rate_limits (key CHAR(64) PRIMARY KEY, hits INTEGER DEFAULT 0, reset_at DATETIME)');
+        $pdo->exec('CREATE TABLE pc_entries (id INTEGER PRIMARY KEY AUTOINCREMENT, type VARCHAR(40), status VARCHAR(20), title VARCHAR(255), slug VARCHAR(191), excerpt TEXT NULL, content LONGTEXT, content_html LONGTEXT, content_text LONGTEXT, author_id INTEGER NULL, parent_id INTEGER DEFAULT 0, menu_order INTEGER DEFAULT 0, template VARCHAR(100) NULL, published_at DATETIME NULL, previous_status VARCHAR(20) NULL, trashed_at DATETIME NULL, created_at DATETIME, updated_at DATETIME)');
+        $pdo->exec('CREATE TABLE pc_entry_meta (id INTEGER PRIMARY KEY AUTOINCREMENT, entry_id INTEGER, meta_key VARCHAR(191), meta_value LONGTEXT)');
+        $pdo->exec('CREATE TABLE pc_terms (id INTEGER PRIMARY KEY AUTOINCREMENT, taxonomy VARCHAR(40), name VARCHAR(191), slug VARCHAR(191), description TEXT NULL, parent_id INTEGER DEFAULT 0, menu_order INTEGER DEFAULT 0, count INTEGER DEFAULT 0, created_at DATETIME, updated_at DATETIME)');
+        $pdo->exec('CREATE TABLE pc_term_relationships (entry_id INTEGER, term_id INTEGER, term_order INTEGER DEFAULT 0, PRIMARY KEY (entry_id, term_id))');
+        $pdo->exec('CREATE TABLE pc_revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, entry_id INTEGER, author_id INTEGER NULL, is_autosave INTEGER DEFAULT 0, title VARCHAR(255), excerpt TEXT NULL, content LONGTEXT, meta LONGTEXT, created_at DATETIME)');
+        $pdo->exec('CREATE TABLE pc_entry_locks (entry_id INTEGER PRIMARY KEY, user_id INTEGER, acquired_at DATETIME, heartbeat_at DATETIME)');
 
         $now = '2026-11-15 12:00:00';
         $pdo->exec("INSERT INTO pc_roles (id, slug, name, description, is_system, created_at, updated_at) VALUES (1, 'administrator', 'Administrateur', 'Accès complet', 1, '{$now}', '{$now}')");

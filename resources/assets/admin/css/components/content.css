@@ -247,8 +247,8 @@
     border: 0;
   }
 
-  .pc-content-table td[data-label]::before {
-    content: attr(data-label) " : ";
+  .pc-content-table td[data-prime-label]::before {
+    content: attr(data-prime-label) " : ";
     font-size: 12px;
     font-weight: 600;
     color: var(--ink-500);

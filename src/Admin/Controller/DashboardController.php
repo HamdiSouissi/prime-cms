@@ -9,6 +9,11 @@ use Prime\Admin\Data\DashboardShortcut;
 use Prime\Admin\Data\DashboardStat;
 use Prime\Admin\Demo\DemoDashboardData;
 use Prime\Auth\Auth;
+use Prime\Auth\User;
+use Prime\Auth\UserRepository;
+use Prime\Content\ContentTypeRegistry;
+use Prime\Content\Entry;
+use Prime\Content\EntryRepository;
 use Prime\Hooks\Hooks;
 use Prime\Http\Exception\ForbiddenException;
 use Prime\Http\Exception\NotFoundException;
@@ -18,6 +23,7 @@ use Prime\Kernel\Application;
 use Prime\Log\Logger;
 use Prime\View\Icon;
 use Prime\View\View;
+use Throwable;
 
 /**
  * Controller serving the dashboard home, local dev styleguide, and upcoming CMS module placeholders.
@@ -53,6 +59,9 @@ final class DashboardController
         private readonly Auth $auth,
         private readonly ?Hooks $hooks = null,
         private readonly ?Logger $logger = null,
+        private readonly ?EntryRepository $entries = null,
+        private readonly ?UserRepository $users = null,
+        private readonly ?ContentTypeRegistry $types = null,
     ) {
     }
 
@@ -70,7 +79,7 @@ final class DashboardController
                 if ($url === '/admin/styleguide') {
                     return $this->app->environment() === 'local' && $user !== null && $user->isAdministrator();
                 }
-                if (str_starts_with($url, '/admin/pages') || str_starts_with($url, '/admin/articles')) {
+                if (str_starts_with($url, '/admin/content/')) {
                     return $user === null || $user->can('content.view');
                 }
                 if (str_starts_with($url, '/admin/media')) {
@@ -87,8 +96,9 @@ final class DashboardController
             },
         ));
 
+        $rawStats = $this->buildLiveStats() ?? $this->demo->stats();
         $stats = array_values(array_filter(
-            $this->demo->stats(),
+            $rawStats,
             static function (array $tile) use ($user): bool {
                 $url = $tile['url'];
                 if (str_starts_with($url, '/admin/users')) {
@@ -97,7 +107,7 @@ final class DashboardController
                 if (str_starts_with($url, '/admin/media')) {
                     return $user === null || $user->can('media.view');
                 }
-                if (str_starts_with($url, '/admin/pages') || str_starts_with($url, '/admin/articles')) {
+                if (str_starts_with($url, '/admin/content/')) {
                     return $user === null || $user->can('content.view');
                 }
 
@@ -165,14 +175,130 @@ final class DashboardController
             $stats = $normalizedStats;
         }
 
+        $liveActivity = $this->buildLiveRecentActivity();
         $data = $this->context->build($request, 'Tableau de bord', [
             'stats' => $stats,
-            'recentActivity' => $this->demo->recentActivity(),
+            'recentActivity' => $liveActivity ?? $this->demo->recentActivity(),
+            'isLiveActivity' => $liveActivity !== null,
             'shortcuts' => $shortcuts,
             'systemStatus' => $this->demo->systemStatus($this->app),
         ]);
 
         return Response::html($this->view->render('admin::dashboard/index', $data));
+    }
+
+    /**
+     * Build live KPI stats from database repositories, or return null if content tables do not exist yet.
+     *
+     * @return list<array{label: string, value: string, icon: string, accent: string, trend: string, trendDirection: 'up'|'down'|'flat', hint: string, url: string}>|null
+     */
+    private function buildLiveStats(): ?array
+    {
+        if ($this->entries === null) {
+            return null;
+        }
+
+        try {
+            $pageCounts = $this->entries->countByStatus('page');
+            $postCounts = $this->entries->countByStatus('post');
+            $usersTotal = $this->users !== null ? $this->users->paginate(page: 1, perPage: 1)['total'] : 0;
+        } catch (Throwable) {
+            return null;
+        }
+
+        return [
+            [
+                'label' => 'Pages publiées',
+                'value' => (string) ($pageCounts[Entry::STATUS_PUBLISHED] ?? 0),
+                'icon' => 'file-text',
+                'accent' => 'teal',
+                'trend' => sprintf('%d total', ($pageCounts[Entry::STATUS_PUBLISHED] ?? 0) + ($pageCounts[Entry::STATUS_DRAFT] ?? 0)),
+                'trendDirection' => 'flat',
+                'hint' => sprintf('%d brouillon(s)', $pageCounts[Entry::STATUS_DRAFT] ?? 0),
+                'url' => '/admin/content/page',
+            ],
+            [
+                'label' => 'Articles publiés',
+                'value' => (string) ($postCounts[Entry::STATUS_PUBLISHED] ?? 0),
+                'icon' => 'newspaper',
+                'accent' => 'violet',
+                'trend' => sprintf('%d brouillon(s)', $postCounts[Entry::STATUS_DRAFT] ?? 0),
+                'trendDirection' => 'flat',
+                'hint' => sprintf('%d planifié(s)', $postCounts[Entry::STATUS_SCHEDULED] ?? 0),
+                'url' => '/admin/content/post',
+            ],
+            [
+                'label' => 'Médias',
+                'value' => '0',
+                'icon' => 'image',
+                'accent' => 'sky',
+                'trend' => 'Phase 7',
+                'trendDirection' => 'flat',
+                'hint' => 'Médiathèque à venir',
+                'url' => '/admin/media',
+            ],
+            [
+                'label' => 'Utilisateurs',
+                'value' => (string) $usersTotal,
+                'icon' => 'users',
+                'accent' => 'amber',
+                'trend' => 'Comptes actifs',
+                'trendDirection' => 'up',
+                'hint' => 'RBAC + 2FA',
+                'url' => '/admin/users',
+            ],
+        ];
+    }
+
+    /**
+     * Build recent editorial activity from the latest updated entries.
+     *
+     * @return list<array{title: string, meta: string, author: string, initials: string, status: string, statusVariant: string, accent: string, url?: string}>|null
+     */
+    private function buildLiveRecentActivity(): ?array
+    {
+        if ($this->entries === null) {
+            return null;
+        }
+
+        try {
+            $recent = $this->entries->recentActivity(6);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ($recent === []) {
+            return [];
+        }
+
+        $authors = [];
+        if ($this->users !== null) {
+            foreach ($this->users->paginate(page: 1, perPage: 100)['items'] as $u) {
+                $authors[$u->id] = $u;
+            }
+        }
+
+        $items = [];
+        foreach ($recent as $entry) {
+            $author = $entry->authorId !== null ? ($authors[$entry->authorId] ?? null) : null;
+            $authorName = $author instanceof User ? $author->displayName : ($entry->authorName ?? 'Système');
+            $initials = $author instanceof User ? $author->initials() : 'SY';
+            $ct = $this->types?->get($entry->type);
+            $typeLabel = $ct !== null ? $ct->label('singular') : $entry->type;
+
+            $items[] = [
+                'title' => sprintf('%s « %s »', $typeLabel, $entry->title),
+                'meta' => sprintf('Mis à jour par %s · %s UTC', $authorName, $entry->updatedAt),
+                'author' => $authorName,
+                'initials' => $initials,
+                'status' => $entry->statusLabel(),
+                'statusVariant' => $entry->statusVariant(),
+                'accent' => $ct !== null ? $ct->accent : 'teal',
+                'url' => $entry->editUrl(),
+            ];
+        }
+
+        return $items;
     }
 
     /**

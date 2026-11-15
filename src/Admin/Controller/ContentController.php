@@ -1,0 +1,1129 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Prime\Admin\Controller;
+
+use Prime\Admin\AdminContext;
+use Prime\Auth\Auth;
+use Prime\Auth\User;
+use Prime\Auth\UserRepository;
+use Prime\Content\ContentType;
+use Prime\Content\ContentTypeRegistry;
+use Prime\Content\Entry;
+use Prime\Content\EntryLock;
+use Prime\Content\EntryLockRepository;
+use Prime\Content\EntryQuery;
+use Prime\Content\EntryRepository;
+use Prime\Content\EntryService;
+use Prime\Content\Exception\ContentException;
+use Prime\Content\Exception\ContentForbiddenException;
+use Prime\Content\Exception\ContentLockedException;
+use Prime\Content\Exception\ContentValidationException;
+use Prime\Content\Fields\FieldGroup;
+use Prime\Content\Fields\FieldRegistry;
+use Prime\Content\Revision;
+use Prime\Content\RevisionDiff;
+use Prime\Content\RevisionRepository;
+use Prime\Content\TaxonomyRegistry;
+use Prime\Content\TermRepository;
+use Prime\Editor\BlockRegistry;
+use Prime\Editor\Renderer;
+use Prime\Http\Exception\ForbiddenException;
+use Prime\Http\Exception\NotFoundException;
+use Prime\Http\Request;
+use Prime\Http\Response;
+use Prime\Kernel\Application;
+use Prime\View\View;
+
+/**
+ * Dynamic administration controller for all registered content types (`/admin/content/{type}`).
+ */
+final class ContentController
+{
+    /**
+     * Preview-only CSP extending the baseline policy with whitelisted YouTube/Vimeo iframes and HTTPS images.
+     */
+    private const PREVIEW_CSP = "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; script-src 'self'; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'";
+
+    public function __construct(
+        private readonly Application $app,
+        private readonly View $view,
+        private readonly AdminContext $context,
+        private readonly Auth $auth,
+        private readonly ContentTypeRegistry $types,
+        private readonly TaxonomyRegistry $taxonomies,
+        private readonly FieldRegistry $fields,
+        private readonly BlockRegistry $blocks,
+        private readonly Renderer $renderer,
+        private readonly EntryRepository $entries,
+        private readonly EntryQuery $query,
+        private readonly EntryService $service,
+        private readonly TermRepository $terms,
+        private readonly RevisionRepository $revisions,
+        private readonly EntryLockRepository $locks,
+        private readonly UserRepository $users,
+    ) {
+    }
+
+    /**
+     * List entries for a content type (`GET /admin/content/{type}`).
+     */
+    public function index(Request $request, string $type): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+
+        // Opportunistically publish due scheduled entries on admin access.
+        $this->service->maybePublishScheduled();
+
+        $statusParam = trim((string) $request->query('status', 'all'));
+        $allowedStatuses = array_merge(['all'], Entry::ALL_STATUSES);
+        if (!in_array($statusParam, $allowedStatuses, true)) {
+            $statusParam = 'all';
+        }
+
+        $search = trim((string) $request->query('q', ''));
+        $authorFilter = $this->optionalInt($request->query('author'));
+        $termFilter = trim((string) $request->query('term', ''));
+        $sort = trim((string) $request->query('sort', 'updated_at'));
+        $direction = strtolower(trim((string) $request->query('dir', 'desc'))) === 'asc' ? 'ASC' : 'DESC';
+        $page = max(1, (int) $request->query('page', '1'));
+        $perPage = 20;
+
+        $q = $this->query->newQuery()
+            ->type($contentType->name)
+            ->includeFuture(true);
+
+        if ($statusParam === 'all') {
+            $q->anyStatus(includeTrash: false);
+        } else {
+            $q->status($statusParam);
+        }
+
+        if ($search !== '') {
+            $q->search($search);
+        }
+        if ($authorFilter !== null) {
+            $q->author($authorFilter);
+        }
+        if ($termFilter !== '' && str_contains($termFilter, ':')) {
+            [$taxSlug, $termIdStr] = explode(':', $termFilter, 2);
+            if ($this->taxonomies->has($taxSlug) && ctype_digit($termIdStr) && (int) $termIdStr > 0) {
+                $q->whereTerm($taxSlug, (int) $termIdStr);
+            }
+        }
+
+        $q->orderBy($sort, $direction);
+        $result = $q->paginate($page, $perPage);
+
+        $counts = $this->entries->countByStatus($contentType->name);
+        $allTotal = ($counts[Entry::STATUS_PUBLISHED] ?? 0)
+            + ($counts[Entry::STATUS_DRAFT] ?? 0)
+            + ($counts[Entry::STATUS_PENDING] ?? 0)
+            + ($counts[Entry::STATUS_SCHEDULED] ?? 0)
+            + ($counts[Entry::STATUS_PRIVATE] ?? 0);
+
+        $items = $result['items'];
+        $entryIds = array_map(static fn (Entry $e): int => $e->id, $items);
+
+        $authorsMap = $this->loadAuthorsMap();
+        $locksMap = $this->locks->activeForEntries($entryIds);
+
+        // Depth map for hierarchical types
+        $depths = [];
+        if ($contentType->hierarchical && $search === '' && $statusParam !== Entry::STATUS_TRASH) {
+            foreach ($this->entries->hierarchicalTree($contentType->name) as $node) {
+                $depths[$node['entry']->id] = $node['depth'];
+            }
+        }
+
+        $associatedTaxonomies = array_values($this->taxonomies->forContentType($contentType->name, $contentType));
+        $filterTerms = [];
+        foreach ($associatedTaxonomies as $tax) {
+            foreach ($this->terms->allForTaxonomy($tax->name) as $term) {
+                $filterTerms[] = [
+                    'value' => $tax->name . ':' . $term->id,
+                    'label' => $tax->label('singular') . ' : ' . $term->name,
+                ];
+            }
+        }
+
+        $canCreate = $this->service->canCreate($user, $contentType);
+        $canPublish = $this->service->canPublish($user, $contentType);
+        $canDelete = $user->can($contentType->capability('delete_any')) || $user->can($contentType->capability('delete_own'));
+
+        $html = $this->view->render('admin::content/index', $this->context->build($request, $contentType->label('plural'), [
+            'contentType' => $contentType,
+            'entries' => $items,
+            'total' => $result['total'],
+            'page' => $result['page'],
+            'perPage' => $result['per_page'],
+            'totalPages' => max(1, $result['last_page']),
+            'counts' => $counts,
+            'allTotal' => $allTotal,
+            'filters' => [
+                'status' => $statusParam,
+                'q' => $search,
+                'author' => $authorFilter,
+                'term' => $termFilter,
+                'sort' => $sort,
+                'dir' => strtolower($direction),
+            ],
+            'authorsMap' => $authorsMap,
+            'locksMap' => $locksMap,
+            'depths' => $depths,
+            'filterTerms' => $filterTerms,
+            'associatedTaxonomies' => $associatedTaxonomies,
+            'canCreate' => $canCreate,
+            'canPublish' => $canPublish,
+            'canDelete' => $canDelete,
+            'canEditOthers' => $user->can($contentType->capability('edit_any')),
+            'primaryCtaInContent' => $canCreate,
+            'breadcrumbs' => [
+                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $contentType->label('plural'), 'url' => null],
+            ],
+        ]));
+
+        return Response::html($html);
+    }
+
+    /**
+     * Show the create entry editor (`GET /admin/content/{type}/create`).
+     */
+    public function create(Request $request, string $type): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+
+        if (!$this->service->canCreate($user, $contentType)) {
+            throw new ForbiddenException('Vous n’avez pas la permission de créer ce type de contenu.');
+        }
+
+        return $this->renderEditor($request, $contentType, $user, null, [], []);
+    }
+
+    /**
+     * Persist a newly created entry (`POST /admin/content/{type}`).
+     */
+    public function store(Request $request, string $type): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+
+        $input = $this->extractFormInput($request, $contentType, $user);
+
+        try {
+            $entry = $this->service->create($contentType->name, $input, $user);
+            $this->context->flashToast(
+                sprintf('« %s » a été enregistré.', $entry->title),
+                'success',
+                $contentType->label('singular') . ' créé',
+            );
+
+            return Response::redirect($entry->editUrl());
+        } catch (ContentValidationException $exception) {
+            $this->context->flashToast('Veuillez corriger les erreurs signalées dans le formulaire.', 'danger', 'Validation');
+
+            return $this->renderEditor($request, $contentType, $user, null, $input, $this->flattenErrors($exception->errors()), 422);
+        } catch (ContentForbiddenException $exception) {
+            throw new ForbiddenException($exception->getMessage());
+        } catch (ContentException $exception) {
+            $this->context->flashToast($exception->getMessage(), 'danger', 'Erreur');
+
+            return $this->renderEditor($request, $contentType, $user, null, $input, [], 422);
+        }
+    }
+
+    /**
+     * Show the edit entry editor (`GET /admin/content/{type}/{id}/edit`).
+     */
+    public function edit(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        if (!$this->service->canEdit($user, $entry, $contentType)) {
+            throw new ForbiddenException('Vous ne disposez pas des droits nécessaires pour modifier ce contenu.');
+        }
+
+        // Check/acquire cooperative edit lock (120s TTL)
+        $result = $this->locks->acquire($entry->id, $user->id, force: false);
+        if (!$result['acquired'] && $result['lock']->userId !== $user->id) {
+            $holder = $this->users->find($result['lock']->userId);
+
+            return $this->renderLockedScreen($request, $contentType, $entry, $result['lock'], $holder, $user);
+        }
+
+        return $this->renderEditor($request, $contentType, $user, $entry, [], []);
+    }
+
+    /**
+     * Update an existing entry (`POST /admin/content/{type}/{id}`).
+     */
+    public function update(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        $input = $this->extractFormInput($request, $contentType, $user);
+
+        try {
+            $updated = $this->service->update($entry->id, $input, $user);
+            $this->locks->acquire($updated->id, $user->id, force: false);
+            $this->context->flashToast(
+                sprintf('« %s » a été mis à jour.', $updated->title),
+                'success',
+                'Modifications enregistrées',
+            );
+
+            return Response::redirect($updated->editUrl());
+        } catch (ContentLockedException $exception) {
+            $activeLock = $this->locks->current($entry->id);
+            if ($activeLock !== null) {
+                $holder = $this->users->find($activeLock->userId);
+
+                return $this->renderLockedScreen($request, $contentType, $entry, $activeLock, $holder, $user);
+            }
+            $this->context->flashToast($exception->getMessage(), 'warning', 'Contenu verrouillé');
+
+            return Response::redirect($entry->editUrl());
+        } catch (ContentValidationException $exception) {
+            $this->context->flashToast('Veuillez corriger les erreurs signalées.', 'danger', 'Validation');
+
+            return $this->renderEditor($request, $contentType, $user, $entry, $input, $this->flattenErrors($exception->errors()), 422);
+        } catch (ContentForbiddenException $exception) {
+            throw new ForbiddenException($exception->getMessage());
+        } catch (ContentException $exception) {
+            $this->context->flashToast($exception->getMessage(), 'danger', 'Erreur');
+
+            return $this->renderEditor($request, $contentType, $user, $entry, $input, [], 422);
+        }
+    }
+
+    /**
+     * AJAX autosave revision endpoint (`POST /admin/content/{type}/{id}/autosave`).
+     */
+    public function autosave(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        $payload = $this->decodeJsonBody($request);
+        $title = isset($payload['title']) && is_string($payload['title'])
+            ? $payload['title']
+            : (string) $request->body('title', $entry->title);
+        $contentJson = isset($payload['content_json']) && is_string($payload['content_json'])
+            ? $payload['content_json']
+            : (string) $request->body('content_json', $entry->content);
+
+        try {
+            $revision = $this->service->autosave($entry->id, [
+                'title' => $title,
+                'content' => $contentJson,
+            ], $user);
+
+            return Response::json([
+                'ok' => true,
+                'revision_id' => $revision->id,
+                'saved_at' => $revision->createdAt,
+            ]);
+        } catch (ContentLockedException $exception) {
+            return Response::json(['ok' => false, 'locked' => true, 'message' => $exception->getMessage()], 423);
+        } catch (ContentForbiddenException $exception) {
+            return Response::json(['ok' => false, 'message' => $exception->getMessage()], 403);
+        } catch (ContentException $exception) {
+            return Response::json(['ok' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * AJAX lock heartbeat (`POST /admin/content/{type}/{id}/lock/heartbeat`).
+     */
+    public function lockHeartbeat(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        if (!$this->service->canEdit($user, $entry, $contentType)) {
+            return Response::json(['ok' => false, 'message' => 'Accès refusé.'], 403);
+        }
+
+        $result = $this->locks->heartbeat($entry->id, $user->id);
+        if ($result['status'] !== 'ok') {
+            $holderLock = $result['lock'];
+            $holderName = $holderLock !== null && $holderLock->userName !== ''
+                ? $holderLock->userName
+                : 'un autre utilisateur';
+
+            return Response::json([
+                'ok' => false,
+                'locked_by_other' => true,
+                'holder' => $holderName,
+            ], 409);
+        }
+
+        return Response::json([
+            'ok' => true,
+            'heartbeat_at' => $result['lock']?->heartbeatAt,
+        ]);
+    }
+
+    /**
+     * Force-takeover an active edit lock (`POST /admin/content/{type}/{id}/lock/takeover`).
+     */
+    public function lockTakeover(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        if (!$this->service->canEdit($user, $entry, $contentType) || !$this->service->canTakeOverLock($user, $contentType)) {
+            throw new ForbiddenException('Vous ne pouvez pas prendre le contrôle de ce contenu.');
+        }
+
+        $this->locks->acquire($entry->id, $user->id, force: true);
+        $this->context->flashToast('Vous avez repris le contrôle de l’édition.', 'info', 'Verrou transféré');
+
+        return Response::redirect($entry->editUrl());
+    }
+
+    /**
+     * Release the current user's edit lock (`POST /admin/content/{type}/{id}/lock/release`).
+     */
+    public function lockRelease(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        $this->locks->release($entry->id, $user->id);
+
+        return Response::json(['ok' => true]);
+    }
+
+    /**
+     * Move an entry to trash (`POST /admin/content/{type}/{id}/trash`).
+     */
+    public function trash(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        try {
+            $this->service->trash($entry->id, $user);
+            $this->context->flashToast(sprintf('« %s » a été déplacé dans la corbeille.', $entry->title), 'info');
+        } catch (ContentForbiddenException $exception) {
+            throw new ForbiddenException($exception->getMessage());
+        } catch (ContentException $exception) {
+            $this->context->flashToast($exception->getMessage(), 'danger');
+        }
+
+        return Response::redirect($contentType->adminListUrl());
+    }
+
+    /**
+     * Restore a trashed entry (`POST /admin/content/{type}/{id}/restore`).
+     */
+    public function restore(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        try {
+            $this->service->restore($entry->id, $user);
+            $this->context->flashToast(sprintf('« %s » a été restauré.', $entry->title), 'success');
+        } catch (ContentForbiddenException $exception) {
+            throw new ForbiddenException($exception->getMessage());
+        } catch (ContentException $exception) {
+            $this->context->flashToast($exception->getMessage(), 'danger');
+        }
+
+        return Response::redirect($contentType->adminListUrl() . '?status=trash');
+    }
+
+    /**
+     * Permanently delete an entry (`POST /admin/content/{type}/{id}/delete`).
+     */
+    public function forceDelete(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        try {
+            $this->service->delete($entry->id, $user);
+            $this->context->flashToast(sprintf('« %s » a été supprimé définitivement.', $entry->title), 'success');
+        } catch (ContentForbiddenException $exception) {
+            throw new ForbiddenException($exception->getMessage());
+        } catch (ContentException $exception) {
+            $this->context->flashToast($exception->getMessage(), 'danger');
+        }
+
+        return Response::redirect($contentType->adminListUrl() . '?status=trash');
+    }
+
+    /**
+     * Duplicate an entry into a new draft (`POST /admin/content/{type}/{id}/duplicate`).
+     */
+    public function duplicate(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        try {
+            $copy = $this->service->duplicate($entry->id, $user);
+            $this->context->flashToast(sprintf('Copie « %s » créée en brouillon.', $copy->title), 'success');
+
+            return Response::redirect($copy->editUrl());
+        } catch (ContentForbiddenException $exception) {
+            throw new ForbiddenException($exception->getMessage());
+        } catch (ContentException $exception) {
+            $this->context->flashToast($exception->getMessage(), 'danger');
+
+            return Response::redirect($contentType->adminListUrl());
+        }
+    }
+
+    /**
+     * Bulk actions (`POST /admin/content/{type}/bulk`).
+     */
+    public function bulk(Request $request, string $type): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+
+        $action = trim((string) $request->body('bulk_action', ''));
+        $rawIds = $request->body('ids', []);
+        $ids = [];
+        if (is_array($rawIds)) {
+            foreach ($rawIds as $rawId) {
+                if (is_numeric($rawId) && (int) $rawId > 0) {
+                    $ids[] = (int) $rawId;
+                }
+            }
+        }
+
+        if ($ids === [] || $action === '') {
+            $this->context->flashToast('Sélectionnez au moins un contenu et une action groupée.', 'warning');
+
+            return Response::redirect($contentType->adminListUrl());
+        }
+
+        $processed = 0;
+        $errors = 0;
+        foreach ($ids as $entryId) {
+            $entry = $this->entries->find($entryId, withRelations: false);
+            if ($entry === null || $entry->type !== $contentType->name) {
+                continue;
+            }
+
+            try {
+                match ($action) {
+                    'publish' => $this->service->update($entry->id, ['status' => Entry::STATUS_PUBLISHED], $user),
+                    'draft' => $this->service->update($entry->id, ['status' => Entry::STATUS_DRAFT], $user),
+                    'trash' => $this->service->trash($entry->id, $user),
+                    'restore' => $this->service->restore($entry->id, $user),
+                    'delete' => $this->service->delete($entry->id, $user),
+                    default => throw new ContentException('Action groupée inconnue.'),
+                };
+                $processed++;
+            } catch (ContentException) {
+                $errors++;
+            }
+        }
+
+        if ($processed > 0) {
+            $this->context->flashToast(sprintf('%d contenu(s) traité(s).', $processed), 'success');
+        }
+        if ($errors > 0) {
+            $this->context->flashToast(sprintf('%d contenu(s) n’ont pas pu être modifiés (droits ou verrou).', $errors), 'warning');
+        }
+
+        return Response::redirect($contentType->adminListUrl());
+    }
+
+    /**
+     * Empty all trashed items for a content type (`POST /admin/content/{type}/trash/empty`).
+     */
+    public function emptyTrash(Request $request, string $type): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+
+        if (!$user->can($contentType->capability('delete_any'))) {
+            throw new ForbiddenException('Permission requise pour vider la corbeille.');
+        }
+
+        $trashed = $this->query->newQuery()
+            ->type($contentType->name)
+            ->status(Entry::STATUS_TRASH)
+            ->includeFuture(true)
+            ->withRelations(false, false, false)
+            ->limit(500)
+            ->get();
+
+        $deleted = 0;
+        foreach ($trashed as $item) {
+            $this->service->delete($item->id, $user);
+            $deleted++;
+        }
+
+        $this->context->flashToast(sprintf('%d élément(s) supprimé(s) définitivement.', $deleted), 'success', 'Corbeille vidée');
+
+        return Response::redirect($contentType->adminListUrl() . '?status=trash');
+    }
+
+    /**
+     * Standalone clean preview with preview-only CSP (`GET /admin/content/{type}/{id}/preview`).
+     */
+    public function preview(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        if (!$this->service->canPreview($user, $entry, $contentType)) {
+            throw new ForbiddenException('Vous ne pouvez pas prévisualiser ce contenu.');
+        }
+
+        // Optional revision preview (`?revision=123`)
+        $revisionId = $this->optionalInt($request->query('revision'));
+        $previewTitle = $entry->title;
+        $previewJson = $entry->content;
+        $previewRevision = null;
+
+        if ($revisionId !== null) {
+            $rev = $this->revisions->find($revisionId);
+            if ($rev !== null && $rev->entryId === $entry->id) {
+                $previewRevision = $rev;
+                $previewTitle = $rev->title;
+                $previewJson = $rev->content;
+            }
+        }
+
+        $author = $entry->authorId !== null ? $this->users->find($entry->authorId) : null;
+        $allowUnfiltered = $author !== null && $author->can('content.unfiltered_html');
+        $decoded = $this->renderer->decode($previewJson) ?? Renderer::emptyDocument();
+        $renderedHtml = $this->renderer->renderHtml($decoded, $entry, allowUnfilteredHtml: $allowUnfiltered);
+
+        $html = $this->view->render('admin::content/preview', [
+            'appName' => (string) $this->app->config()->get('app.name', 'Prime CMS'),
+            'contentType' => $contentType,
+            'entry' => $entry,
+            'author' => $author,
+            'previewTitle' => $previewTitle,
+            'previewRevision' => $previewRevision,
+            'renderedHtml' => $renderedHtml,
+            'canEdit' => $this->service->canEdit($user, $entry, $contentType),
+        ]);
+
+        return Response::html($html)->withHeader('Content-Security-Policy', self::PREVIEW_CSP);
+    }
+
+    /**
+     * Revisions list & line-by-line diff (`GET /admin/content/{type}/{id}/revisions`).
+     */
+    public function revisions(Request $request, string $type, int $id): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        if (!$this->service->canEdit($user, $entry, $contentType)) {
+            throw new ForbiddenException('Vous ne pouvez pas consulter les révisions de ce contenu.');
+        }
+
+        $revisions = $this->revisions->forEntry($entry->id, includeAutosaves: true);
+        $selectedId = $this->optionalInt($request->query('compare'));
+        $selected = null;
+
+        foreach ($revisions as $rev) {
+            if ($selectedId !== null && $rev->id === $selectedId) {
+                $selected = $rev;
+                break;
+            }
+        }
+        if ($selected === null && $revisions !== []) {
+            $selected = $revisions[0];
+        }
+
+        $titleDiff = null;
+        $bodyDiff = null;
+        if ($selected instanceof Revision) {
+            $titleDiff = RevisionDiff::diffLines($selected->title, $entry->title);
+            $oldDoc = $this->renderer->decode($selected->content) ?? Renderer::emptyDocument();
+            $newDoc = $this->renderer->decode($entry->content) ?? Renderer::emptyDocument();
+            $bodyDiff = RevisionDiff::diffLines(
+                $this->renderer->extractText($oldDoc),
+                $this->renderer->extractText($newDoc),
+            );
+        }
+
+        $html = $this->view->render('admin::content/revisions', $this->context->build($request, 'Révisions — ' . $entry->title, [
+            'contentType' => $contentType,
+            'entry' => $entry,
+            'revisions' => $revisions,
+            'selected' => $selected,
+            'titleDiff' => $titleDiff,
+            'bodyDiff' => $bodyDiff,
+            'authorsMap' => $this->loadAuthorsMap(),
+            'breadcrumbs' => [
+                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $contentType->label('plural'), 'url' => $contentType->adminListUrl()],
+                ['label' => $entry->title, 'url' => $entry->editUrl()],
+                ['label' => 'Révisions', 'url' => null],
+            ],
+        ]));
+
+        return Response::html($html);
+    }
+
+    /**
+     * Restore a historical revision (`POST /admin/content/{type}/{id}/revisions/{revId}/restore`).
+     */
+    public function restoreRevision(Request $request, string $type, int $id, int $revId): Response
+    {
+        $contentType = $this->requireContentType($type);
+        $user = $this->requireUser($request);
+        $entry = $this->requireEntry($contentType->name, $id);
+
+        try {
+            $this->service->restoreRevision($entry->id, $revId, $user);
+            $this->context->flashToast('La révision sélectionnée a été restaurée.', 'success', 'Révision restaurée');
+
+            return Response::redirect($entry->editUrl());
+        } catch (ContentForbiddenException $exception) {
+            throw new ForbiddenException($exception->getMessage());
+        } catch (ContentException $exception) {
+            $this->context->flashToast($exception->getMessage(), 'danger');
+
+            return Response::redirect(sprintf('/admin/content/%s/%d/revisions', $contentType->name, $entry->id));
+        }
+    }
+
+    /**
+     * AJAX autocomplete endpoint for `entry` relation custom fields (`GET /admin/content/search-entries`).
+     */
+    public function searchEntries(Request $request): Response
+    {
+        $this->requireUser($request);
+
+        $query = trim((string) $request->query('q', ''));
+        $rawTypes = trim((string) $request->query('types', ''));
+
+        $allowedTypes = [];
+        if ($rawTypes !== '') {
+            foreach (explode(',', $rawTypes) as $candidate) {
+                $slug = trim($candidate);
+                if ($slug !== '' && $this->types->has($slug)) {
+                    $allowedTypes[] = $slug;
+                }
+            }
+        }
+        if ($allowedTypes === []) {
+            $allowedTypes = array_keys($this->types->all());
+        }
+
+        $q = $this->query->newQuery()
+            ->type($allowedTypes)
+            ->anyStatus(includeTrash: false)
+            ->includeFuture(true)
+            ->withRelations(false, false, false)
+            ->orderBy('updated_at', 'DESC')
+            ->limit(20);
+
+        if ($query !== '') {
+            $q->search($query);
+        }
+
+        $items = [];
+        foreach ($q->get() as $entry) {
+            $ct = $this->types->get($entry->type);
+            $items[] = [
+                'id' => $entry->id,
+                'title' => $entry->title,
+                'slug' => $entry->slug,
+                'type' => $entry->type,
+                'type_label' => $ct !== null ? $ct->label('singular') : $entry->type,
+            ];
+        }
+
+        return Response::json(['items' => $items]);
+    }
+
+    /**
+     * Render the shared Create / Edit editor page.
+     *
+     * @param array<string, mixed> $oldInput
+     * @param array<string, string> $errors
+     */
+    private function renderEditor(
+        Request $request,
+        ContentType $contentType,
+        User $user,
+        ?Entry $entry,
+        array $oldInput,
+        array $errors,
+        int $statusCode = 200,
+    ): Response {
+        $isEdit = $entry !== null;
+        $formTitle = is_string($oldInput['title'] ?? null) ? $oldInput['title'] : ($entry !== null ? $entry->title : '');
+        $formSlug = is_string($oldInput['slug'] ?? null) ? $oldInput['slug'] : ($entry !== null ? $entry->slug : '');
+        $formExcerpt = is_string($oldInput['excerpt'] ?? null) ? $oldInput['excerpt'] : ($entry !== null && $entry->excerpt !== null ? $entry->excerpt : '');
+        $formContentJson = is_string($oldInput['content'] ?? null)
+            ? $oldInput['content']
+            : ($entry !== null ? $entry->content : '{"version":1,"blocks":[{"id":"b0","type":"paragraph","data":{"text":""}}]}');
+        $formStatus = is_string($oldInput['status'] ?? null) ? $oldInput['status'] : ($entry !== null ? $entry->status : Entry::STATUS_DRAFT);
+        $formPublishedAt = is_string($oldInput['published_at'] ?? null)
+            ? $oldInput['published_at']
+            : ($entry !== null && $entry->publishedAt !== null ? $entry->publishedAt : '');
+        $formAuthorId = isset($oldInput['author_id']) && is_int($oldInput['author_id'])
+            ? $oldInput['author_id']
+            : ($entry !== null && $entry->authorId !== null ? $entry->authorId : $user->id);
+        $formParentId = isset($oldInput['parent_id']) && is_int($oldInput['parent_id'])
+            ? $oldInput['parent_id']
+            : ($entry !== null ? $entry->parentId : 0);
+        $formMenuOrder = isset($oldInput['menu_order']) && is_int($oldInput['menu_order'])
+            ? $oldInput['menu_order']
+            : ($entry !== null ? $entry->menuOrder : 0);
+
+        // Custom fields metadata values
+        $metaValues = $entry !== null ? $entry->meta : [];
+        if (isset($oldInput['fields']) && is_array($oldInput['fields'])) {
+            $metaValues = array_merge($metaValues, $oldInput['fields']);
+        }
+
+        // Resolve existing labels for `entry` relation custom fields
+        $relatedEntryLabels = [];
+        $allGroups = $this->fields->forContentType($contentType->name);
+        foreach ($allGroups as $group) {
+            foreach ($group->fields as $field) {
+                if ($field->type === 'entry') {
+                    $rawRel = $metaValues[$field->name] ?? null;
+                    if (is_numeric($rawRel) && (int) $rawRel > 0) {
+                        $relEntry = $this->entries->find((int) $rawRel, withRelations: false);
+                        if ($relEntry !== null) {
+                            $relatedEntryLabels[$field->name] = sprintf('#%d — %s', $relEntry->id, $relEntry->title);
+                        }
+                    }
+                }
+            }
+        }
+
+        $mainFieldGroups = array_values(array_filter(
+            $allGroups,
+            static fn (FieldGroup $g): bool => $g->location === FieldGroup::LOCATION_MAIN,
+        ));
+        $sidebarFieldGroups = array_values(array_filter(
+            $allGroups,
+            static fn (FieldGroup $g): bool => $g->location === FieldGroup::LOCATION_SIDEBAR,
+        ));
+
+        // Associated taxonomies & selected terms
+        $associatedTaxonomies = array_values($this->taxonomies->forContentType($contentType->name, $contentType));
+        $selectedTermIds = $entry !== null ? $entry->termIds() : [];
+        if (isset($oldInput['terms']) && is_array($oldInput['terms'])) {
+            $selectedTermIds = [];
+            foreach ($oldInput['terms'] as $taxList) {
+                if (is_array($taxList)) {
+                    foreach ($taxList as $tid) {
+                        if (is_numeric($tid) && (int) $tid > 0) {
+                            $selectedTermIds[] = (int) $tid;
+                        }
+                    }
+                }
+            }
+        }
+
+        $taxonomyPanels = [];
+        foreach ($associatedTaxonomies as $tax) {
+            $allTerms = $this->terms->allForTaxonomy($tax->name);
+            $flatValue = '';
+            if (!$tax->hierarchical) {
+                if (isset($oldInput['new_terms'][$tax->name]) && is_string($oldInput['new_terms'][$tax->name])) {
+                    $flatValue = $oldInput['new_terms'][$tax->name];
+                } else {
+                    $flatNames = [];
+                    foreach ($allTerms as $term) {
+                        if (in_array($term->id, $selectedTermIds, true)) {
+                            $flatNames[] = $term->name;
+                        }
+                    }
+                    $flatValue = implode(', ', $flatNames);
+                }
+            }
+            $taxonomyPanels[] = [
+                'taxonomy' => $tax,
+                'terms' => $allTerms,
+                'flatValue' => $flatValue,
+            ];
+        }
+
+        // Parent options if hierarchical
+        $parentOptions = [];
+        if ($contentType->hierarchical) {
+            $parentOptions = $this->entries->hierarchicalTree($contentType->name, $entry?->id);
+        }
+
+        $recentRevisions = $entry !== null
+            ? array_slice($this->revisions->forEntry($entry->id, includeAutosaves: true), 0, 5)
+            : [];
+
+        $userCapabilities = $user->isAdministrator()
+            ? ['*', 'content.unfiltered_html', 'content.publish', 'content.create']
+            : $user->capabilities;
+
+        $pluginBlocks = [];
+        foreach ($this->blocks->clientDefinitions($user) as $def) {
+            if ($def['source'] !== 'core') {
+                $pluginBlocks[] = $def;
+            }
+        }
+
+        $editorConfig = [
+            'entryId' => $entry?->id,
+            'type' => $contentType->name,
+            'capabilities' => $userCapabilities,
+            'autosaveUrl' => $entry !== null ? sprintf('/admin/content/%s/%d/autosave', $contentType->name, $entry->id) : '',
+            'autosaveIntervalMs' => max(10, (int) $this->app->config()->get('content.autosave_interval_seconds', 30)) * 1000,
+            'heartbeatUrl' => $entry !== null ? sprintf('/admin/content/%s/%d/lock/heartbeat', $contentType->name, $entry->id) : '',
+            'heartbeatIntervalMs' => max(15, (int) $this->app->config()->get('content.lock_heartbeat_seconds', 30)) * 1000,
+            'releaseUrl' => $entry !== null ? sprintf('/admin/content/%s/%d/lock/release', $contentType->name, $entry->id) : '',
+            'pluginBlocks' => $pluginBlocks,
+        ];
+
+        $editorConfigJson = json_encode(
+            $editorConfig,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP,
+        );
+
+        $pageTitle = $isEdit ? 'Modifier : ' . $entry->title : $contentType->label('add_new');
+        $contextData = $this->context->build($request, $pageTitle, [
+            'contentType' => $contentType,
+            'entry' => $entry,
+            'isEdit' => $isEdit,
+            'form' => [
+                'title' => $formTitle,
+                'slug' => $formSlug,
+                'excerpt' => $formExcerpt,
+                'content_json' => $formContentJson,
+                'status' => $formStatus,
+                'published_at' => $formPublishedAt,
+                'author_id' => $formAuthorId,
+                'parent_id' => $formParentId,
+                'menu_order' => $formMenuOrder,
+            ],
+            'metaValues' => $metaValues,
+            'relatedEntryLabels' => $relatedEntryLabels,
+            'mainFieldGroups' => $mainFieldGroups,
+            'sidebarFieldGroups' => $sidebarFieldGroups,
+            'taxonomyPanels' => $taxonomyPanels,
+            'selectedTermIds' => $selectedTermIds,
+            'parentOptions' => $parentOptions,
+            'authorsMap' => $this->loadAuthorsMap(),
+            'recentRevisions' => $recentRevisions,
+            'errors' => $errors,
+            'canPublish' => $this->service->canPublish($user, $contentType),
+            'canEditOthers' => $user->can($contentType->capability('edit_any')),
+            'canDelete' => $entry !== null && $this->service->canDelete($user, $entry, $contentType),
+            'primaryCtaInContent' => true,
+            'editorConfigJson' => is_string($editorConfigJson) ? $editorConfigJson : '{}',
+            'breadcrumbs' => [
+                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $contentType->label('plural'), 'url' => $contentType->adminListUrl()],
+                ['label' => $isEdit ? $entry->title : 'Créer', 'url' => null],
+            ],
+        ]);
+
+        // Load plugin editor extension scripts after `admin.js` (so `window.Prime.editor` is ready).
+        $extensionScripts = $this->blocks->extensionScripts();
+        if ($extensionScripts !== [] && isset($contextData['adminScripts']) && is_array($contextData['adminScripts'])) {
+            $contextData['adminScripts'] = array_values(array_unique(array_merge($contextData['adminScripts'], $extensionScripts)));
+        }
+
+        $html = $this->view->render('admin::content/edit', $contextData);
+
+        return Response::html($html, $statusCode);
+    }
+
+    /**
+     * Render the cooperative edit lock takeover page.
+     */
+    private function renderLockedScreen(
+        Request $request,
+        ContentType $contentType,
+        Entry $entry,
+        EntryLock $lock,
+        ?User $holder,
+        User $currentUser,
+    ): Response {
+        $html = $this->view->render('admin::content/locked', $this->context->build($request, 'Contenu verrouillé', [
+            'contentType' => $contentType,
+            'entry' => $entry,
+            'lock' => $lock,
+            'holder' => $holder,
+            'canTakeOver' => $this->service->canTakeOverLock($currentUser, $contentType),
+            'breadcrumbs' => [
+                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $contentType->label('plural'), 'url' => $contentType->adminListUrl()],
+                ['label' => $entry->title, 'url' => null],
+            ],
+        ]));
+
+        return Response::html($html);
+    }
+
+    /**
+     * Extract normalized input from a POST editor submission aligned with `EntryService::preparePayload()`.
+     *
+     * @return array<string, mixed>
+     */
+    private function extractFormInput(Request $request, ContentType $contentType, User $user): array
+    {
+        $status = trim((string) $request->body('status', Entry::STATUS_DRAFT));
+        $publishedAtRaw = trim((string) $request->body('published_at', ''));
+        $publishedAt = $publishedAtRaw !== '' ? str_replace('T', ' ', $publishedAtRaw) : null;
+        if ($publishedAt !== null && strlen($publishedAt) === 16) {
+            $publishedAt .= ':00';
+        }
+
+        $parentIdRaw = $request->body('parent_id', '0');
+        $parentId = is_numeric($parentIdRaw) && (int) $parentIdRaw > 0 ? (int) $parentIdRaw : 0;
+
+        $authorIdRaw = $request->body('author_id', '');
+        $authorId = $user->can($contentType->capability('edit_any')) && is_numeric($authorIdRaw) && (int) $authorIdRaw > 0
+            ? (int) $authorIdRaw
+            : $user->id;
+
+        $rawTerms = $request->body('terms', []);
+        $terms = is_array($rawTerms) ? $rawTerms : [];
+
+        $rawNewTerms = $request->body('new_terms', []);
+        $newTerms = is_array($rawNewTerms) ? $rawNewTerms : [];
+
+        // Custom field values
+        $rawFields = $request->body('meta', []);
+        $fields = is_array($rawFields) ? $rawFields : [];
+        foreach ($this->fields->forContentType($contentType->name) as $group) {
+            foreach ($group->fields as $field) {
+                if ($field->type === 'checkbox' || $field->type === 'toggle') {
+                    $fields[$field->name] = isset($fields[$field->name]) && (string) $fields[$field->name] !== '' && (string) $fields[$field->name] !== '0';
+                }
+            }
+        }
+
+        return [
+            'title' => trim((string) $request->body('title', '')),
+            'slug' => trim((string) $request->body('slug', '')),
+            'excerpt' => trim((string) $request->body('excerpt', '')),
+            'content' => (string) $request->body('content_json', ''),
+            'status' => $status,
+            'published_at' => $publishedAt,
+            'author_id' => $authorId,
+            'parent_id' => $contentType->hierarchical ? $parentId : 0,
+            'menu_order' => max(0, (int) $request->body('menu_order', '0')),
+            'terms' => $terms,
+            'new_terms' => $newTerms,
+            'fields' => $fields,
+        ];
+    }
+
+    /**
+     * Flatten `array<string, list<string>>` validation errors into first-message-per-field map.
+     *
+     * @param array<string, list<string>> $errors
+     * @return array<string, string>
+     */
+    private function flattenErrors(array $errors): array
+    {
+        $flat = [];
+        foreach ($errors as $key => $messages) {
+            if ($messages !== []) {
+                $flat[$key] = $messages[0];
+            }
+        }
+
+        return $flat;
+    }
+
+    private function requireContentType(string $slug): ContentType
+    {
+        $contentType = $this->types->get($slug);
+        if ($contentType === null) {
+            throw new NotFoundException(sprintf('Type de contenu « %s » introuvable.', $slug));
+        }
+
+        return $contentType;
+    }
+
+    private function requireEntry(string $type, int $id): Entry
+    {
+        $entry = $this->entries->find($id);
+        if ($entry === null || $entry->type !== $type) {
+            throw new NotFoundException('Contenu introuvable.');
+        }
+
+        return $entry;
+    }
+
+    private function requireUser(Request $request): User
+    {
+        $user = $this->auth->user($request);
+        if ($user === null) {
+            throw new ForbiddenException('Authentification requise.');
+        }
+
+        return $user;
+    }
+
+    private function optionalInt(mixed $value): ?int
+    {
+        if (is_int($value) && $value > 0) {
+            return $value;
+        }
+        if (is_string($value) && ctype_digit($value) && (int) $value > 0) {
+            return (int) $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decodeJsonBody(Request $request): array
+    {
+        $raw = $request->rawBody();
+        if ($raw === '') {
+            return [];
+        }
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Load users indexed by ID for display in lists/dropdowns.
+     *
+     * @return array<int, User>
+     */
+    private function loadAuthorsMap(): array
+    {
+        $list = $this->users->paginate(page: 1, perPage: 200)['items'];
+        $map = [];
+        foreach ($list as $u) {
+            $map[$u->id] = $u;
+        }
+
+        return $map;
+    }
+}

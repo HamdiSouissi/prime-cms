@@ -8,14 +8,19 @@ use Prime\Admin\Data\AdminAssets;
 use Prime\Admin\Data\CommandPaletteItem;
 use Prime\Admin\Data\CreateMenuItem;
 use Prime\Admin\Menu\AdminMenu;
+use Prime\Admin\Menu\MenuItem;
 use Prime\Admin\Menu\MenuNode;
 use Prime\Auth\Auth;
 use Prime\Auth\User;
+use Prime\Content\ContentTypeRegistry;
+use Prime\Content\EntryRepository;
+use Prime\Content\TaxonomyRegistry;
 use Prime\Hooks\Hooks;
 use Prime\Http\Request;
 use Prime\Http\Session;
 use Prime\Kernel\Application;
 use Prime\Log\Logger;
+use Throwable;
 
 /**
  * Builds shared shell data for every admin view, filters navigation/actions by user
@@ -33,6 +38,9 @@ final class AdminContext
         private readonly ?Session $session = null,
         private readonly ?Notices $notices = null,
         private readonly ?Logger $logger = null,
+        private readonly ?ContentTypeRegistry $contentTypes = null,
+        private readonly ?TaxonomyRegistry $taxonomies = null,
+        private readonly ?EntryRepository $entries = null,
     ) {
     }
 
@@ -70,6 +78,7 @@ final class AdminContext
         $user = $this->auth?->user($request);
 
         $menu = clone $this->baseMenu;
+        $this->injectContentMenuItems($menu);
         $filteredMenu = $this->hooks->applyValidated(
             'admin.menu',
             $menu,
@@ -101,7 +110,7 @@ final class AdminContext
 
         $menuGroups = $menu->groupedTree();
         $createItems = $this->createItems($user);
-        $paletteItems = $this->commandPaletteItems($menu->tree(), $createItems);
+        $paletteItems = $this->commandPaletteItems($menu->tree(), $createItems, $user);
         $assets = $this->assets();
 
         $headExtra = $this->hooks->apply('admin.head', '');
@@ -143,43 +152,58 @@ final class AdminContext
      */
     public function createItems(?User $user = null): array
     {
-        $defaults = [
-            [
+        $defaults = [];
+
+        if ($this->contentTypes !== null) {
+            foreach ($this->contentTypes->all() as $ct) {
+                $defaults[] = [
+                    'id' => 'create.' . $ct->name,
+                    'label' => $ct->label('add_new'),
+                    'description' => 'Créer un élément (' . mb_strtolower($ct->label('singular')) . ')',
+                    'icon' => $ct->icon,
+                    'accent' => $ct->accent,
+                    'url' => $ct->adminCreateUrl(),
+                    'capability' => $ct->capability('create'),
+                ];
+            }
+        } else {
+            $defaults[] = [
                 'id' => 'create.page',
                 'label' => 'Nouvelle page',
                 'description' => 'Créer une page statique',
                 'icon' => 'file-text',
                 'accent' => 'teal',
-                'url' => '/admin/pages',
+                'url' => '/admin/content/page/create',
                 'capability' => 'content.create',
-            ],
-            [
-                'id' => 'create.article',
+            ];
+            $defaults[] = [
+                'id' => 'create.post',
                 'label' => 'Nouvel article',
                 'description' => 'Rédiger une actualité',
                 'icon' => 'newspaper',
                 'accent' => 'teal',
-                'url' => '/admin/articles',
+                'url' => '/admin/content/post/create',
                 'capability' => 'content.create',
-            ],
-            [
-                'id' => 'create.media',
-                'label' => 'Téléverser un média',
-                'description' => 'Ajouter image ou document',
-                'icon' => 'upload',
-                'accent' => 'sky',
-                'url' => '/admin/media',
-                'capability' => 'media.upload',
-            ],
-            [
-                'id' => 'create.user',
-                'label' => 'Nouvel utilisateur',
-                'description' => 'Créer ou inviter un membre',
-                'icon' => 'users',
-                'accent' => 'amber',
-                'url' => '/admin/users/create',
-                'capability' => 'users.create',
-            ],
+            ];
+        }
+
+        $defaults[] = [
+            'id' => 'create.media',
+            'label' => 'Téléverser un média',
+            'description' => 'Ajouter image ou document',
+            'icon' => 'upload',
+            'accent' => 'sky',
+            'url' => '/admin/media',
+            'capability' => 'media.upload',
+        ];
+        $defaults[] = [
+            'id' => 'create.user',
+            'label' => 'Nouvel utilisateur',
+            'description' => 'Créer ou inviter un membre',
+            'icon' => 'users',
+            'accent' => 'amber',
+            'url' => '/admin/users/create',
+            'capability' => 'users.create',
         ];
 
         /** @var list<array{id: string, label: string, description: string, icon: string, accent: string, url: string, capability?: string}> $items */
@@ -230,8 +254,8 @@ final class AdminContext
      */
     private const DEFAULT_KEYWORDS = [
         'dashboard' => ['accueil', 'statistiques', 'aperçu', 'indicateurs'],
-        'pages' => ['statiques', 'arborescence', 'éditorial'],
-        'articles' => ['blog', 'actualités', 'publications', 'billets'],
+        'content.page' => ['pages', 'statiques', 'arborescence', 'éditorial'],
+        'content.post' => ['articles', 'blog', 'actualités', 'publications', 'billets'],
         'media' => ['médiathèque', 'images', 'fichiers', 'photos', 'bibliothèque', 'upload'],
         'appearance' => ['design', 'habillage', 'personnalisation'],
         'appearance.themes' => ['habillage', 'design', 'aurora', 'modèles'],
@@ -249,10 +273,75 @@ final class AdminContext
         'settings.emails' => ['paramètres', 'configuration', 'smtp', 'courriels', 'mails'],
         'styleguide' => ['composants', 'ui', 'tokens', 'palette', 'couleurs'],
         'create.page' => ['créer', 'nouveau', 'ajouter', 'page'],
-        'create.article' => ['créer', 'nouveau', 'ajouter', 'article', 'blog'],
+        'create.post' => ['créer', 'nouveau', 'ajouter', 'article', 'blog'],
         'create.media' => ['créer', 'nouveau', 'ajouter', 'importer', 'upload', 'médias', 'images'],
         'create.user' => ['créer', 'nouveau', 'ajouter', 'utilisateur', 'membre', 'inviter'],
     ];
+
+    /**
+     * Dynamically inject registered ContentTypes and their associated Taxonomies into the Contenu group.
+     */
+    private function injectContentMenuItems(AdminMenu $menu): void
+    {
+        if ($this->contentTypes === null) {
+            return;
+        }
+
+        $position = 20;
+        foreach ($this->contentTypes->all() as $ct) {
+            $parentId = 'content.' . $ct->name;
+            $baseUrl = $ct->adminListUrl();
+
+            $menu->add(new MenuItem(
+                id: $parentId,
+                label: $ct->label('plural'),
+                icon: $ct->icon,
+                url: $baseUrl,
+                position: $ct->menuPosition > 0 ? $ct->menuPosition : $position,
+                accent: $ct->accent,
+                capability: $ct->capability('view'),
+                group: 'Contenu',
+            ));
+
+            $menu->addChild($parentId, new MenuItem(
+                id: $parentId . '.all',
+                label: 'Tous : ' . $ct->label('plural'),
+                icon: $ct->icon,
+                url: $baseUrl,
+                position: 10,
+                accent: $ct->accent,
+                capability: $ct->capability('view'),
+            ));
+
+            $menu->addChild($parentId, new MenuItem(
+                id: $parentId . '.create',
+                label: 'Ajouter',
+                icon: 'plus',
+                url: $ct->adminCreateUrl(),
+                position: 20,
+                accent: $ct->accent,
+                capability: $ct->capability('create'),
+            ));
+
+            if ($this->taxonomies !== null) {
+                $taxPos = 30;
+                foreach ($this->taxonomies->forContentType($ct->name, $ct) as $tax) {
+                    $menu->addChild($parentId, new MenuItem(
+                        id: $parentId . '.tax.' . $tax->name,
+                        label: $tax->label('plural'),
+                        icon: $tax->icon,
+                        url: $tax->adminUrl(),
+                        position: $taxPos,
+                        accent: $ct->accent,
+                        capability: $ct->capability('view'),
+                    ));
+                    $taxPos += 10;
+                }
+            }
+
+            $position += 5;
+        }
+    }
 
     /**
      * @return array{id: ?int, name: string, role: string, email: string, initials: string, accent: string, isAdmin: bool, canSettings: bool}
@@ -285,13 +374,13 @@ final class AdminContext
     }
 
     /**
-     * Command palette entries built from capability-filtered menu + quick actions.
+     * Command palette entries built from capability-filtered menu, quick actions, and recent entries.
      *
      * @param list<MenuNode> $tree
      * @param list<array{id: string, label: string, description: string, icon: string, accent: string, url: string, capability?: string}> $createItems
      * @return list<array<string, mixed>>
      */
-    private function commandPaletteItems(array $tree, array $createItems): array
+    private function commandPaletteItems(array $tree, array $createItems, ?User $user = null): array
     {
         $entries = [];
 
@@ -338,6 +427,27 @@ final class AdminContext
                 'url' => $create['url'],
                 'keywords' => self::DEFAULT_KEYWORDS[$create['id']] ?? ['créer', 'nouveau', 'ajouter'],
             ];
+        }
+
+        if ($this->entries !== null && ($user === null || $user->can('content.view'))) {
+            try {
+                foreach ($this->entries->recentActivity(8) as $recentEntry) {
+                    $ct = $this->contentTypes?->get($recentEntry->type);
+                    $entries[] = [
+                        'id' => 'entry.' . $recentEntry->id,
+                        'label' => $recentEntry->title,
+                        'subtitle' => ($ct !== null ? $ct->label('singular') : $recentEntry->type) . ' · ' . $recentEntry->statusLabel(),
+                        'group' => 'Contenus récents',
+                        'section' => 'Contenus récents',
+                        'icon' => $ct !== null ? $ct->icon : 'file-text',
+                        'accent' => $ct !== null ? $ct->accent : 'teal',
+                        'url' => $recentEntry->editUrl(),
+                        'keywords' => [$recentEntry->slug, $recentEntry->type, $recentEntry->status],
+                    ];
+                }
+            } catch (Throwable) {
+                // Gracefully skip if content tables have not been migrated yet.
+            }
         }
 
         $entries[] = [

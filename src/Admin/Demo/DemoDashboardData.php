@@ -39,7 +39,7 @@ final class DemoDashboardData
                 'trend' => '+3 ce mois',
                 'trendDirection' => 'up',
                 'hint' => '2 brouillons',
-                'url' => '/admin/pages',
+                'url' => '/admin/content/page',
             ],
             [
                 'label' => 'Articles',
@@ -49,7 +49,7 @@ final class DemoDashboardData
                 'trend' => '+12 %',
                 'trendDirection' => 'up',
                 'hint' => '5 programmés',
-                'url' => '/admin/articles',
+                'url' => '/admin/content/post',
             ],
             [
                 'label' => 'Médias',
@@ -148,14 +148,14 @@ final class DemoDashboardData
                 'description' => 'Nouveau contenu éditorial',
                 'icon' => 'file-text',
                 'accent' => 'teal',
-                'url' => '/admin/pages',
+                'url' => '/admin/content/page/create',
             ],
             [
                 'title' => 'Rédiger un article',
                 'description' => 'Actualité ou dossier blog',
                 'icon' => 'newspaper',
                 'accent' => 'violet',
-                'url' => '/admin/articles',
+                'url' => '/admin/content/post/create',
             ],
             [
                 'title' => 'Ouvrir les médias',
@@ -185,7 +185,7 @@ final class DemoDashboardData
             [
                 'label' => 'Version de Prime CMS',
                 'value' => Application::VERSION,
-                'badge' => 'Phase 4',
+                'badge' => 'Phase 6',
                 'variant' => 'brand',
             ],
             [
