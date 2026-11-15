@@ -24,7 +24,7 @@ Garanties appliquées à chaque connexion (`Prime\Database\Connection`) :
 - **Connexion paresseuse** : aucune ouverture de socket tant qu'aucune requête n'est exécutée.
 - **Encodage complet** : `utf8mb4` / `utf8mb4_unicode_ci` (`SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'`).
 - **Attributs PDO stricts** : `ATTR_ERRMODE => ERRMODE_EXCEPTION`, `ATTR_DEFAULT_FETCH_MODE => FETCH_ASSOC`, `ATTR_EMULATE_PREPARES => false`, `ATTR_STRINGIFY_FETCHES => false`.
-- **Mode SQL strict et fuseau UTC** : `SET SESSION sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'` et `SET SESSION time_zone = '+00:00'`.
+- **Mode SQL strict et fuseau UTC** : `SET SESSION sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,ONLY_FULL_GROUP_BY'` et `SET time_zone = '+00:00'`.
 - **Zéro fuite de secrets** : `ConnectionException` et `QueryException` masquent systématiquement le mot de passe et le DSN complet. En mode `APP_DEBUG=false`, les requêtes et bindings ne sont jamais exposés dans les messages d'exception.
 
 ---
@@ -35,9 +35,9 @@ Garanties appliquées à chaque connexion (`Prime\Database\Connection`) :
 use Prime\Database\Connection;
 
 /** @var Connection $db */
-$rows = $db->select('SELECT id, email FROM ' . $db->prefixTable('users') . ' WHERE status = ?', ['active']);
-$user = $db->selectOne('SELECT * FROM ' . $db->prefixTable('users') . ' WHERE id = ?', [1]);
-$count = (int) $db->selectValue('SELECT COUNT(*) FROM ' . $db->prefixTable('users'));
+$rows = $db->select('SELECT id, email FROM ' . $db->prefixed('users') . ' WHERE status = ?', ['active']);
+$user = $db->selectOne('SELECT * FROM ' . $db->prefixed('users') . ' WHERE id = ?', [1]);
+$count = (int) $db->scalar('SELECT COUNT(*) FROM ' . $db->prefixed('users'));
 
 // Transactions imbriquées par SAVEPOINT
 $db->transaction(function (Connection $db): void {
@@ -112,7 +112,8 @@ use Prime\Database\Schema\Schema;
 
 $schema->create('entries', static function (Blueprint $table): void {
     $table->id();
-    $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
+    $table->foreignId('author_id');
+    $table->foreign('author_id')->references('id')->on('users')->onDelete('CASCADE');
     $table->string('slug')->unique();              // VARCHAR(191) sûr en utf8mb4
     $table->string('title', 255);
     $table->longText('body')->nullable();

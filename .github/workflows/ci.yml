@@ -119,9 +119,9 @@ jobs:
 
       - name: Wait for database and application, test pre-install, install via CLI, and verify post-install
         run: |
-          for i in $(seq 1 40); do
+          for i in $(seq 1 45); do
             if curl -sf http://localhost:8080/health > /dev/null && \
-               docker compose exec -T db mysqladmin ping -h localhost -u root -proot --silent 2>/dev/null; then
+               docker compose exec -T app php bin/prime db:check > /dev/null 2>&1; then
               break
             fi
             sleep 2
@@ -151,7 +151,7 @@ jobs:
             --timezone=Europe/Paris \
             --admin-name="Admin Docker" \
             --admin-email=admin@prime-docker.test \
-            --admin-password="Docker!Prime#2026"
+            --admin-password="Ciel!Mandarine#8429"
 
           # Verify CLI tools against live DB
           docker compose exec -T app php bin/prime db:check | grep -q "Connexion à la base de données réussie"

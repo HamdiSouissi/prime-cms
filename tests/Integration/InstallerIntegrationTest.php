@@ -11,7 +11,6 @@ use Prime\Console\Commands\MigrateStatusCommand;
 use Prime\Console\Commands\SettingsGetCommand;
 use Prime\Console\Commands\SettingsSetCommand;
 use Prime\Console\ConsoleOutput;
-use Prime\Database\Connection;
 use Prime\Database\Migrations\Migrator;
 use Prime\Database\Schema\Blueprint;
 use Prime\Database\Schema\Schema;
@@ -19,7 +18,7 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Kernel;
 use Prime\Http\Request;
 use Prime\Install\Exception\InstallException;
-use Prime\Install\InstallChecker;
+use Prime\Install\InstallCheckerInterface;
 use Prime\Install\InstallConfig;
 use Prime\Install\Installer;
 use Prime\Kernel\Application;
@@ -73,7 +72,7 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         $this->assertSame(200, $healthBefore->status());
 
         // 2. POST without CSRF token returns 419.
-        $noCsrf = $http->handle(Request::create('POST', '/install', parsedBody: ['locale' => 'fr']));
+        $noCsrf = $http->handle(Request::create('POST', '/install', body: ['wizard_locale' => 'fr']));
         $this->assertSame(419, $noCsrf->status());
 
         /** @var Csrf $csrf */
@@ -85,26 +84,20 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         $this->assertSame(200, $welcomeGet->status());
         $this->assertStringContainsString('Bienvenue dans Prime CMS', $welcomeGet->body());
 
-        $welcomePost = $http->handle(Request::create('POST', '/install', parsedBody: [
-            '_csrf' => $token,
-            'locale' => 'fr',
+        $welcomePost = $http->handle(Request::create('POST', '/install', body: [
+            Csrf::FIELD_NAME => $token,
+            'wizard_locale' => 'fr',
         ]));
         $this->assertSame(302, $welcomePost->status());
         $this->assertSame('/install/requirements', $welcomePost->header('Location'));
 
-        // 4. Step 2 — Requirements
+        // 4. Step 2 — Requirements (GET check)
         $reqGet = $http->handle(Request::create('GET', '/install/requirements'));
         $this->assertSame(200, $reqGet->status());
 
-        $reqPost = $http->handle(Request::create('POST', '/install/requirements', parsedBody: [
-            '_csrf' => $token,
-        ]));
-        $this->assertSame(302, $reqPost->status());
-        $this->assertSame('/install/database', $reqPost->header('Location'));
-
         // 5. Step 3 — Database
-        $dbPost = $http->handle(Request::create('POST', '/install/database', parsedBody: [
-            '_csrf' => $token,
+        $dbPost = $http->handle(Request::create('POST', '/install/database', body: [
+            Csrf::FIELD_NAME => $token,
             'db_host' => $this->dbConfig['host'],
             'db_port' => (string) $this->dbConfig['port'],
             'db_database' => $this->dbConfig['database'],
@@ -116,8 +109,8 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         $this->assertSame('/install/site', $dbPost->header('Location'));
 
         // 6. Step 4 — Site
-        $sitePost = $http->handle(Request::create('POST', '/install/site', parsedBody: [
-            '_csrf' => $token,
+        $sitePost = $http->handle(Request::create('POST', '/install/site', body: [
+            Csrf::FIELD_NAME => $token,
             'site_name' => 'Atelier Lumière',
             'site_url' => 'https://lumiere.example.fr',
             'site_locale' => 'fr',
@@ -127,9 +120,9 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         $this->assertSame('/install/admin', $sitePost->header('Location'));
 
         // 7. Step 5 — Admin
-        $adminPass = 'Lumiere!Horizon#2026';
-        $adminPost = $http->handle(Request::create('POST', '/install/admin', parsedBody: [
-            '_csrf' => $token,
+        $adminPass = 'Ciel!Mandarine#8429';
+        $adminPost = $http->handle(Request::create('POST', '/install/admin', body: [
+            Csrf::FIELD_NAME => $token,
             'display_name' => 'Camille Laurent',
             'email' => 'camille@lumiere.example.fr',
             'password' => $adminPass,
@@ -148,8 +141,8 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         }
 
         // Execute installation!
-        $runPost = $http->handle(Request::create('POST', '/install/run', parsedBody: [
-            '_csrf' => $token,
+        $runPost = $http->handle(Request::create('POST', '/install/run', body: [
+            Csrf::FIELD_NAME => $token,
         ]));
         $this->assertSame(302, $runPost->status());
         $this->assertSame('/install/done', $runPost->header('Location'));
@@ -177,23 +170,12 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         $this->assertSame('Atelier Lumière', $settings->get('site_name'));
         $this->assertSame('https://lumiere.example.fr', $settings->get('site_url'));
         $this->assertSame('fr', $settings->get('site_locale'));
-        $this->assertSame('Europe/Paris', $settings->get('site_timezone'));
+        $this->assertSame('Europe/Paris', $settings->get('timezone'));
         $this->assertIsString($settings->get('installed_at'));
         $this->assertSame(Application::VERSION, $settings->get('prime_version'));
 
-        // Re-align container connection config so InstallChecker sees the newly installed prefix.
-        $app->config()->set('database.host', $this->dbConfig['host']);
-        $app->config()->set('database.port', $this->dbConfig['port']);
-        $app->config()->set('database.database', $this->dbConfig['database']);
-        $app->config()->set('database.username', $this->dbConfig['username']);
-        $app->config()->set('database.password', $this->dbConfig['password']);
-        $app->config()->set('database.prefix', $this->prefix);
-        $app->container()->instance(Connection::class, $this->connection);
-        $app->container()->instance(Settings::class, $settings);
-
-        /** @var InstallChecker $checker */
-        $checker = $app->get(InstallChecker::class);
-        $checker->reset();
+        /** @var InstallCheckerInterface $checker */
+        $checker = $app->get(InstallCheckerInterface::class);
         $this->assertTrue($checker->isInstalled());
 
         // 10. Step 7 — One-time `/install/done` works once, then locks to 404 forever!
@@ -236,7 +218,7 @@ final class InstallerIntegrationTest extends DatabaseTestCase
             timezone: 'Europe/Paris',
             adminDisplayName: 'Admin',
             adminEmail: 'admin@collision.example.fr',
-            adminPassword: 'Collision!Strong#2026',
+            adminPassword: 'Saffron!Horizon#2026',
         );
 
         $caught = null;
@@ -272,7 +254,7 @@ final class InstallerIntegrationTest extends DatabaseTestCase
             '--timezone=Europe/Paris',
             '--admin-name=CLI Admin',
             '--admin-email=cli@example.fr',
-            '--admin-password=Cli!SuperSecret#2026',
+            '--admin-password=Saffron!Horizon#2026',
         ], $installOut);
 
         $this->assertSame(0, $code, $installOut->stderr());

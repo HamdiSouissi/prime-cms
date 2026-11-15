@@ -44,7 +44,7 @@ Ce document recense l'ensemble des hooks (événements et filtres) déclenchés 
 | `db.query` | Événement | `string $sql`, `array<int\|string, mixed> $bindings`, `float $durationMs` | Après l'exécution de chaque requête SQL dans `Prime\Database\Connection` (select, insert, update, delete, statement). Permet le profilage ou la télémétrie. |
 | `migrations.paths` | Filtre | `list<string> $paths` | Lors de la découverte des migrations par `Prime\Database\Migrations\Migrator`. Permet aux plugins d'ajouter leurs propres dossiers de migrations. |
 | `settings.updated` | Événement | `string $name`, `mixed $value`, `bool $autoload` | Après l'enregistrement réussi d'un réglage via `Prime\Settings\Settings::set()`. |
-| `install.completed` | Événement | `Prime\Install\InstallResult $result` | Immédiatement après l'écriture de `storage/installed.lock` à la fin d'une installation (web ou CLI). |
+| `install.completed` | Événement | `array<string, mixed> $payload` | Immédiatement après l'écriture de `storage/installed.lock` à la fin d'une installation (web ou CLI), avec les métadonnées sans secret (`site_name`, `site_url`, `site_locale`, `timezone`, `installed_at`, `version`, `migrations`). |
 
 ---
 
@@ -111,7 +111,7 @@ $hooks->filter('migrations.paths', static function (array $paths): array {
 ### Écouter la fin de l'installation via `install.completed`
 
 ```php
-$hooks->on('install.completed', static function (Prime\Install\InstallResult $result): void {
+$hooks->on('install.completed', static function (array $payload): void {
     // Exécuté une fois les migrations, le compte admin et storage/installed.lock en place.
 });
 ```

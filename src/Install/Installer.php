@@ -298,7 +298,7 @@ final class Installer
             );
         }
 
-        @chmod($lockPath, 0640);
+        @chmod($lockPath, 0644);
     }
 
     private function syncRuntimeServices(InstallConfig $config, Connection $connection, Settings $settings): void

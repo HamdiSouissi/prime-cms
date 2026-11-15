@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Prime\Tests\Integration;
 
 use PHPUnit\Framework\Attributes\Group;
-use Prime\Database\Exception\QueryException;
+use Prime\Database\Exception\MigrationException;
 use Prime\Database\Migrations\Migrator;
 use Prime\Database\Query\Expression;
 use Prime\Database\Schema\Blueprint;
@@ -22,11 +22,11 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
         $version = $this->connection->serverVersion();
         $this->assertNotSame('', $version);
 
-        $tz = (string) $this->connection->selectValue('SELECT @@session.time_zone');
+        $tz = (string) $this->connection->scalar('SELECT @@session.time_zone');
         $this->assertSame('+00:00', $tz);
 
-        $sqlMode = strtoupper((string) $this->connection->selectValue('SELECT @@session.sql_mode'));
-        $this->assertStringContainsString('STRICT_TRANS_TABLES', $sqlMode);
+        $sqlMode = strtoupper((string) $this->connection->scalar('SELECT @@session.sql_mode'));
+        $this->assertStringContainsString('STRICT_ALL_TABLES', $sqlMode);
 
         $schema = new Schema($this->connection);
         $schema->create('utf8_probe', static function (Blueprint $table): void {
@@ -91,7 +91,8 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
         });
         $schema->create('articles', static function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('author_id')->constrained('authors')->cascadeOnDelete();
+            $table->foreignId('author_id');
+            $table->foreign('author_id')->references('id')->on('authors')->onDelete('CASCADE');
             $table->string('title');
             $table->string('status')->default('draft');
             $table->integer('views')->default(0);
@@ -108,7 +109,8 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
             ['author_id' => $bobId, 'title' => 'Draft', 'status' => 'draft', 'views' => 5, 'published_at' => null],
             ['author_id' => $bobId, 'title' => 'Third', 'status' => 'published', 'views' => 20, 'published_at' => '2026-11-03 10:00:00'],
         ]);
-        $this->assertSame(4, $inserted);
+        $this->assertTrue($inserted);
+        $this->assertSame(4, $this->connection->table('articles')->count());
 
         // Increment & decrement
         $this->connection->table('articles')->where('title', 'First')->increment('views', 5);
@@ -141,9 +143,9 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
             ->paginate(page: 1, perPage: 2);
 
         $this->assertSame(3, $page1['total']);
-        $this->assertSame(2, $page1['last_page']);
-        $this->assertCount(2, $page1['data']);
-        $this->assertSame('Third', $page1['data'][0]['title']);
+        $this->assertSame(2, $page1['total_pages']);
+        $this->assertCount(2, $page1['items']);
+        $this->assertSame('Third', $page1['items'][0]['title']);
 
         // Delete with where + FK cascade when deleting author
         $deletedDrafts = $this->connection->table('articles')->whereNull('published_at')->delete();
@@ -252,7 +254,7 @@ use Prime\Database\Migrations\Migration;
 use Prime\Database\Schema\Schema;
 return new class () extends Migration {
     public function up(Schema $schema): void {
-        $schema->connection()->statement('THIS IS INVALID SQL SYNTAX');
+        $schema->drop('definitely_missing_table_for_test');
     }
     public function down(Schema $schema): void {}
 };
@@ -263,7 +265,7 @@ PHP);
 
             try {
                 $migratorWithBad->run();
-            } catch (QueryException) {
+            } catch (MigrationException) {
                 $failed = true;
             }
 

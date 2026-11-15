@@ -31,7 +31,7 @@ L'assistant guide l'utilisateur en **7 étapes** protégées par jeton **CSRF** 
    - génération d'`APP_KEY` (`base64:` + 32 octets aléatoires `random_bytes(32)`) et écriture du fichier `.env` (`APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, `DB_*`, permissions `0640`, commentaires et clés externes préservés) ;
    - exécution des migrations du noyau (`pc_settings`, `pc_users`) ;
    - création du compte administrateur avec hachage `PASSWORD_ARGON2ID` (repli `PASSWORD_BCRYPT`) ;
-   - enregistrement des réglages initiaux (`site_name`, `site_url`, `site_locale`, `site_timezone`, `installed_at`, `prime_version`) ;
+   - enregistrement des réglages initiaux (`site_name`, `site_url`, `site_locale`, `timezone`, `installed_at`, `prime_version`) ;
    - écriture finale de `storage/installed.lock` (uniquement si toutes les étapes précédentes ont réussi) et émission du hook `install.completed`.
 7. **Terminé (`/install/done`)** : écran de confirmation à usage unique avec liens vers le site public (`/`) et le tableau de bord (`/admin`).
 

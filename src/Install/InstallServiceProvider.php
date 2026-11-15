@@ -9,7 +9,6 @@ use Prime\Http\Router;
 use Prime\Install\Controller\InstallController;
 use Prime\Kernel\Container;
 use Prime\Kernel\ServiceProvider;
-use Prime\Settings\Settings;
 use Prime\View\View;
 
 /**
@@ -33,12 +32,7 @@ final class InstallServiceProvider extends ServiceProvider
             return new RequirementsChecker($app, $envWriter);
         });
 
-        $container->singleton(InstallCheckerInterface::class, static function (Container $c) use ($app): InstallCheckerInterface {
-            /** @var Settings $settings */
-            $settings = $c->get(Settings::class);
-
-            return new InstallChecker($app, $settings);
-        });
+        $container->singleton(InstallCheckerInterface::class, static fn (): InstallCheckerInterface => new InstallChecker($app));
 
         $container->singleton(Installer::class, static function (Container $c) use ($app): Installer {
             /** @var InstallerValidator $validator */

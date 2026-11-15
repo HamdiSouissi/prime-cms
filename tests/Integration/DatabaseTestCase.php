@@ -74,7 +74,7 @@ abstract class DatabaseTestCase extends TestCase
     {
         $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);
         $rows = $connection->select(
-            'SELECT `TABLE_NAME` FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` LIKE ?',
+            "SELECT `TABLE_NAME` FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` LIKE ? ESCAPE '\\\\'",
             [$escaped . '%'],
         );
 
@@ -86,9 +86,9 @@ abstract class DatabaseTestCase extends TestCase
 
         try {
             foreach ($rows as $row) {
-                $table = (string) ($row['TABLE_NAME'] ?? '');
+                $table = (string) ($row['TABLE_NAME'] ?? $row['table_name'] ?? '');
                 if ($table !== '' && str_starts_with($table, $prefix)) {
-                    $connection->statement('DROP TABLE IF EXISTS ' . Identifier::quote($table));
+                    $connection->statement('DROP TABLE IF EXISTS ' . Identifier::quoteSimple($table));
                 }
             }
         } finally {

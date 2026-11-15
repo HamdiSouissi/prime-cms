@@ -16,10 +16,8 @@ final class InstallChecker implements InstallCheckerInterface
 {
     public const LOCK_FILENAME = 'installed.lock';
 
-    public function __construct(
-        private readonly Application $app,
-        private readonly Settings $settings,
-    ) {
+    public function __construct(private readonly Application $app)
+    {
     }
 
     public function lockFilePath(): string
@@ -34,7 +32,9 @@ final class InstallChecker implements InstallCheckerInterface
         }
 
         try {
-            $installedAt = $this->settings->get('installed_at');
+            /** @var Settings $settings */
+            $settings = $this->app->get(Settings::class);
+            $installedAt = $settings->get('installed_at');
 
             return is_string($installedAt) && trim($installedAt) !== '';
         } catch (Throwable) {
