@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Prime\View;
 
+use Prime\Kernel\Application;
+use Prime\Security\Csrf;
 use Prime\View\Exception\ViewException;
 use Stringable;
 
@@ -136,6 +138,28 @@ final class TemplateContext
     public function icon(string $name, int $size = 20, string $class = ''): string
     {
         return Icon::render($name, $size, $class);
+    }
+
+    /**
+     * Return the active session CSRF token.
+     */
+    public function csrfToken(): string
+    {
+        /** @var Csrf $csrf */
+        $csrf = Application::getInstance()->get(Csrf::class);
+
+        return $csrf->token();
+    }
+
+    /**
+     * Render a hidden HTML input containing the active CSRF token.
+     */
+    public function csrfField(): string
+    {
+        /** @var Csrf $csrf */
+        $csrf = Application::getInstance()->get(Csrf::class);
+
+        return $csrf->field();
     }
 
     /**

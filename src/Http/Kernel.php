@@ -25,6 +25,7 @@ final class Kernel
 {
     /**
      * @param list<string|MiddlewareInterface> $globalMiddleware
+     * @param list<string|MiddlewareInterface> $routeMiddleware Middlewares executed on every matched route (e.g. CSRF)
      */
     public function __construct(
         private readonly Router $router,
@@ -32,6 +33,7 @@ final class Kernel
         private readonly Hooks $hooks,
         private readonly ErrorHandler $errorHandler,
         private array $globalMiddleware = [],
+        private array $routeMiddleware = [],
     ) {
     }
 
@@ -41,6 +43,14 @@ final class Kernel
     public function addMiddleware(string|MiddlewareInterface $middleware): void
     {
         $this->globalMiddleware[] = $middleware;
+    }
+
+    /**
+     * Add a middleware executed for every matched route before route-specific middlewares.
+     */
+    public function addRouteMiddleware(string|MiddlewareInterface $middleware): void
+    {
+        $this->routeMiddleware[] = $middleware;
     }
 
     /**
@@ -78,8 +88,9 @@ final class Kernel
         $request = $request->withAttributes($params);
 
         $handlerCore = fn (Request $req): Response => $this->invokeHandler($route->handler(), $req, $params);
+        $middlewares = array_merge($this->routeMiddleware, $route->middlewares());
 
-        return $this->runPipeline($request, $route->middlewares(), $handlerCore);
+        return $this->runPipeline($request, $middlewares, $handlerCore);
     }
 
     /**

@@ -9,21 +9,35 @@ use Prime\Http\Controller\HomeController;
 use Prime\Http\Kernel;
 use Prime\Http\Middleware\MiddlewareInterface;
 use Prime\Http\Router;
+use Prime\Http\Session;
 use Prime\Kernel\Config;
 use Prime\Kernel\Container;
 use Prime\Kernel\ErrorHandler;
 use Prime\Kernel\ServiceProvider;
+use Prime\Security\Csrf;
 
 /**
- * Registers the HTTP router, HTTP kernel, and core Phase 1 routes.
+ * Registers the HTTP router, HTTP kernel, Session, Csrf, and core routes.
  */
 final class HttpServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $container = $this->app->container();
+        $app = $this->app;
 
         $container->singleton(Router::class, static fn (): Router => new Router());
+
+        $container->singleton(Session::class, static fn (): Session => new Session(
+            savePath: $app->storagePath('sessions'),
+        ));
+
+        $container->singleton(Csrf::class, static function (Container $c): Csrf {
+            /** @var Session $session */
+            $session = $c->get(Session::class);
+
+            return new Csrf($session);
+        });
 
         $container->singleton(Kernel::class, static function (Container $c): Kernel {
             /** @var Router $router */
@@ -39,7 +53,11 @@ final class HttpServiceProvider extends ServiceProvider
             /** @var list<string|MiddlewareInterface> $middlewares */
             $middlewares = is_array($rawMiddlewares) ? array_values($rawMiddlewares) : [];
 
-            return new Kernel($router, $c, $hooks, $errorHandler, $middlewares);
+            $rawRouteMiddlewares = $config->get('app.route_middleware', []);
+            /** @var list<string|MiddlewareInterface> $routeMiddlewares */
+            $routeMiddlewares = is_array($rawRouteMiddlewares) ? array_values($rawRouteMiddlewares) : [];
+
+            return new Kernel($router, $c, $hooks, $errorHandler, $middlewares, $routeMiddlewares);
         });
     }
 
