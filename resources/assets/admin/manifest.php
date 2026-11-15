@@ -33,4 +33,5 @@ return [
     'components/command-palette.css',
     'components/styleguide.css',
     'components/install.css',
+    'components/auth.css',
 ];

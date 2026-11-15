@@ -185,7 +185,7 @@ final class DemoDashboardData
             [
                 'label' => 'Version de Prime CMS',
                 'value' => Application::VERSION,
-                'badge' => 'Phase 2',
+                'badge' => 'Phase 4',
                 'variant' => 'brand',
             ],
             [
@@ -202,15 +202,15 @@ final class DemoDashboardData
             ],
             [
                 'label' => 'Base de données',
-                'value' => 'Non connectée',
-                'badge' => 'Phase 3',
-                'variant' => 'sky',
+                'value' => 'MySQL / MariaDB',
+                'badge' => 'Active',
+                'variant' => 'success',
             ],
             [
                 'label' => 'Authentification',
-                'value' => 'Aperçu local uniquement',
-                'badge' => 'Phase 4',
-                'variant' => 'violet',
+                'value' => 'Sessions + RBAC + 2FA',
+                'badge' => 'Active',
+                'variant' => 'success',
             ],
         ];
     }
@@ -338,19 +338,6 @@ final class DemoDashboardData
                     'Découverte, activation, désactivation et désinstallation propres',
                     'Migrations dédiées et installation par archive ZIP',
                     'Isolation des erreurs et plugin d’exemple officiel',
-                ],
-            ],
-            'users' => [
-                'title' => 'Utilisateurs',
-                'subtitle' => 'Administrez les comptes, rôles et permissions de votre équipe.',
-                'icon' => 'users',
-                'accent' => 'sky',
-                'phase' => 'Phase 4 — Authentification, utilisateurs, rôles',
-                'description' => 'L’authentification Argon2id, les sessions sécurisées, la 2FA (TOTP) et les rôles arriveront en Phase 4.',
-                'planned' => [
-                    'Comptes utilisateurs avec hachage Argon2id natif',
-                    'Rôles et matrice de permissions granulaires',
-                    'Authentification à deux facteurs (TOTP) et gestion du profil',
                 ],
             ],
             'settings' => [

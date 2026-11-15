@@ -147,6 +147,24 @@ export function showToast(message, type = 'info', options = {}) {
 }
 
 export function initToasts() {
+  const flashEl = document.getElementById('prime-flash-toasts');
+  if (flashEl && flashEl.textContent) {
+    try {
+      const items = JSON.parse(flashEl.textContent);
+      if (Array.isArray(items)) {
+        items.forEach((item) => {
+          if (item && typeof item.message === 'string' && item.message !== '') {
+            showToast(item.message, item.type || 'info', {
+              title: typeof item.title === 'string' ? item.title : undefined,
+            });
+          }
+        });
+      }
+    } catch {
+      // Ignore malformed flash payload.
+    }
+  }
+
   document.addEventListener('click', (event) => {
     const target = event.target;
     if (!(target instanceof Element)) {

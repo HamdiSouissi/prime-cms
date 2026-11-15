@@ -11,6 +11,16 @@ declare(strict_types=1);
  * @var list<array{id: string, label: string, content: string, badge?: string}> $tabs
  */
 $tabItems = is_array($tabs ?? null) ? array_values($tabs) : [];
+$activeId = isset($activeTab) && is_string($activeTab) && $activeTab !== '' ? $activeTab : null;
+$activeIndex = 0;
+if ($activeId !== null) {
+    foreach ($tabItems as $idx => $tab) {
+        if ($tab['id'] === $activeId) {
+            $activeIndex = $idx;
+            break;
+        }
+    }
+}
 ?>
 <div class="pc-tabs" data-prime-tabs>
     <div class="pc-tabs__list" role="tablist" aria-label="<?= $this->e($label) ?>">
@@ -18,7 +28,7 @@ $tabItems = is_array($tabs ?? null) ? array_values($tabs) : [];
             <?php
             $tabId = $id . '-tab-' . $tab['id'];
             $panelId = $id . '-panel-' . $tab['id'];
-            $selected = $index === 0;
+            $selected = $index === $activeIndex;
             ?>
             <button
                 type="button"
@@ -41,7 +51,7 @@ $tabItems = is_array($tabs ?? null) ? array_values($tabs) : [];
         <?php
         $tabId = $id . '-tab-' . $tab['id'];
         $panelId = $id . '-panel-' . $tab['id'];
-        $selected = $index === 0;
+        $selected = $index === $activeIndex;
         ?>
         <div
             role="tabpanel"

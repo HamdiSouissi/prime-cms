@@ -3,6 +3,7 @@
  * Zero external dependencies, strict CSP compliant (no inline executable scripts).
  */
 
+import { initAdminUsers } from './admin-users.js';
 import { initCommandPalette, openCommandPalette } from './command-palette.js';
 import { closeDrawer, initDrawers, openDrawer } from './drawer.js';
 import { initDropdowns } from './dropdown.js';
@@ -134,6 +135,7 @@ function bootstrap() {
   initCommandPalette();
   initPasswordToggles();
   initBulkTables();
+  initAdminUsers();
 }
 
 window.Prime = Object.freeze({
