@@ -5,24 +5,33 @@ declare(strict_types=1);
 namespace Prime\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
+use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Notice;
 use Prime\Admin\Notices;
 use Prime\Auth\Auth;
+use Prime\Auth\Capabilities;
 use Prime\Auth\UserRepository;
 use Prime\Database\Connection;
+use Prime\Database\Migrations\Migrator;
 use Prime\Hooks\Hooks;
 use Prime\Http\Kernel;
 use Prime\Http\Request;
+use Prime\Http\Router;
 use Prime\Http\Session;
 use Prime\Install\InstallCheckerInterface;
 use Prime\Kernel\Application;
+use Prime\Kernel\Autoloader;
 use Prime\Log\Logger;
 use Prime\Plugins\AssetPublisher;
+use Prime\Plugins\DependencyResolver;
 use Prime\Plugins\FatalLoadGuard;
+use Prime\Plugins\ManifestValidator;
 use Prime\Plugins\PluginManager;
 use Prime\Plugins\PluginRepository;
 use Prime\Security\Csrf;
+use Prime\Settings\Settings;
 use Prime\Tests\Support\MysqlEmulatingPdo;
+use Prime\View\View;
 
 final class AdminPluginsHttpTest extends TestCase
 {
@@ -206,23 +215,69 @@ final class AdminPluginsHttpTest extends TestCase
     public function testPluginsPageHidesServerPathsAndShowsConsolidatedErroredNotice(): void
     {
         $tmpDir = sys_get_temp_dir() . '/prime_err_http_' . bin2hex(random_bytes(4));
+        $pluginsDir = $tmpDir . '/plugins';
+        mkdir($pluginsDir . '/http-boot-err/src', 0755, true);
+        mkdir($pluginsDir . '/http-err-two/src', 0755, true);
+        mkdir($pluginsDir . '/http-err-three/src', 0755, true);
         mkdir($tmpDir . '/logs', 0755, true);
         mkdir($tmpDir . '/public-assets', 0755, true);
 
+        $suffix = ucfirst(bin2hex(random_bytes(4)));
+        $ns1 = 'HttpBootErr' . $suffix;
+        $ns2 = 'HttpErrTwo' . $suffix;
+        $ns3 = 'HttpErrThree' . $suffix;
+
+        $writeBrokenPlugin = static function (string $dir, string $slug, string $name, string $ns, string $body): void {
+            file_put_contents($dir . '/plugin.json', (string) json_encode([
+                'slug' => $slug,
+                'name' => $name,
+                'description' => 'Fixture HTTP isolée.',
+                'version' => '1.0.0',
+                'author' => ['name' => 'Prime QA'],
+                'license' => 'proprietary',
+                'namespace' => $ns . '\\',
+                'main' => $ns . '\\Plugin',
+                'requires' => ['prime' => '^0.5', 'php' => '^8.2'],
+            ], JSON_UNESCAPED_SLASHES));
+            file_put_contents($dir . '/src/Plugin.php', $body);
+        };
+
+        $writeBrokenPlugin(
+            $pluginsDir . '/http-boot-err',
+            'http-boot-err',
+            'HTTP Boot Error',
+            $ns1,
+            "<?php\ndeclare(strict_types=1);\nnamespace {$ns1};\nuse Prime\\Plugins\\AbstractPlugin;\nuse Prime\\Plugins\\PluginContext;\nuse RuntimeException;\nfinal class Plugin extends AbstractPlugin\n{\n    public function boot(PluginContext \$context): void\n    {\n        throw new RuntimeException('Erreur critique sur ' . __FILE__);\n    }\n}\n",
+        );
+        $writeBrokenPlugin(
+            $pluginsDir . '/http-err-two',
+            'http-err-two',
+            'HTTP Error Two',
+            $ns2,
+            "<?php\ndeclare(strict_types=1);\nnamespace {$ns2};\nuse Prime\\Plugins\\AbstractPlugin;\nuse Prime\\Plugins\\PluginContext;\nuse RuntimeException;\nfinal class Plugin extends AbstractPlugin\n{\n    public function boot(PluginContext \$context): void\n    {\n        throw new RuntimeException('Échec plugin 2');\n    }\n}\n",
+        );
+        $writeBrokenPlugin(
+            $pluginsDir . '/http-err-three',
+            'http-err-three',
+            'HTTP Error Three',
+            $ns3,
+            "<?php\ndeclare(strict_types=1);\nnamespace {$ns3};\nuse Prime\\Plugins\\AbstractPlugin;\nuse Prime\\Plugins\\PluginContext;\nuse RuntimeException;\nfinal class Plugin extends AbstractPlugin\n{\n    public function boot(PluginContext \$context): void\n    {\n        throw new RuntimeException('Échec plugin 3');\n    }\n}\n",
+        );
+
         try {
-            // 1. Single errored plugin -> named notice & zero server base path in HTML
+            // 1. Single errored plugin -> named notice & zero server base/plugin path in HTML
             $app = $this->createApp(
                 authenticateAs: 'admin',
                 safeMode: false,
                 logDir: $tmpDir . '/logs',
-                pluginsRelPath: 'tests/Fixtures/plugins',
+                pluginsAbsPath: $pluginsDir,
                 publicAssetsPath: $tmpDir . '/public-assets',
                 witnessFile: $tmpDir . '/loading.json',
             );
 
             /** @var PluginRepository $repo */
             $repo = $app->get(PluginRepository::class);
-            $repo->markActive('boot-throw', '1.0.0', 'h1');
+            $repo->markActive('http-boot-err', '1.0.0', 'h1');
 
             /** @var PluginManager $manager */
             $manager = $app->get(PluginManager::class);
@@ -234,11 +289,12 @@ final class AdminPluginsHttpTest extends TestCase
             $singleHtml = $singleRes->body();
 
             $this->assertSame(200, $singleRes->status());
-            $this->assertStringContainsString('Le plugin Boot Throw Fixture a été désactivé suite à une erreur', $singleHtml);
+            $this->assertStringContainsString('Le plugin HTTP Boot Error a été désactivé suite à une erreur', $singleHtml);
             $this->assertStringContainsString('/admin/plugins?status=errored', $singleHtml);
             $this->assertStringContainsString('RuntimeException:', $singleHtml);
-            $this->assertStringContainsString('(src/Plugin.php:', $singleHtml);
+            $this->assertStringContainsString('(src/Plugin.php:11)', $singleHtml);
             $this->assertStringNotContainsString($app->basePath(), $singleHtml);
+            $this->assertStringNotContainsString($tmpDir, $singleHtml);
 
             // 2. Four errored plugins -> strictly ONE consolidated summary notice + exact bell badge
             /** @var FatalLoadGuard $guard */
@@ -249,23 +305,19 @@ final class AdminPluginsHttpTest extends TestCase
                 authenticateAs: 'admin',
                 safeMode: false,
                 logDir: $tmpDir . '/logs',
-                pluginsRelPath: 'tests/Fixtures/plugins',
+                pluginsAbsPath: $pluginsDir,
                 publicAssetsPath: $tmpDir . '/public-assets',
                 witnessFile: $tmpDir . '/loading.json',
             );
             /** @var PluginRepository $repo2 */
             $repo2 = $app2->get(PluginRepository::class);
-            $repo2->markActive('boot-throw', '1.0.0', 'h1');
-            $repo2->markActive('syntax-error', '1.0.0', 'h2');
-            $repo2->markActive('listener-throw', '1.0.0', 'h3');
+            $repo2->markActive('http-boot-err', '1.0.0', 'h1');
+            $repo2->markActive('http-err-two', '1.0.0', 'h2');
+            $repo2->markActive('http-err-three', '1.0.0', 'h3');
 
             /** @var PluginManager $manager2 */
             $manager2 = $app2->get(PluginManager::class);
             $manager2->bootActivePlugins();
-
-            /** @var Hooks $hooks2 */
-            $hooks2 = $app2->get(Hooks::class);
-            $hooks2->emit('fixture.trigger');
 
             /** @var Kernel $kernel2 */
             $kernel2 = $app2->get(Kernel::class);
@@ -280,6 +332,7 @@ final class AdminPluginsHttpTest extends TestCase
             $this->assertStringContainsString('data-prime-notice="plugins.errored.summary"', $multiHtml);
             $this->assertStringContainsString('Réessayer l’activation', $multiHtml);
             $this->assertStringNotContainsString($app2->basePath(), $multiHtml);
+            $this->assertStringNotContainsString($tmpDir, $multiHtml);
         } finally {
             AssetPublisher::deleteDirectory($tmpDir);
         }
@@ -289,7 +342,7 @@ final class AdminPluginsHttpTest extends TestCase
         string $authenticateAs = 'admin',
         bool $safeMode = false,
         ?string $logDir = null,
-        ?string $pluginsRelPath = null,
+        ?string $pluginsAbsPath = null,
         ?string $publicAssetsPath = null,
         ?string $witnessFile = null,
     ): Application {
@@ -301,9 +354,6 @@ final class AdminPluginsHttpTest extends TestCase
         if ($logDir !== null) {
             $app->config()->set('logging.path', $logDir);
         }
-        if ($pluginsRelPath !== null) {
-            $app->config()->set('plugins.path', $pluginsRelPath);
-        }
         $app->boot();
 
         if ($logDir !== null) {
@@ -314,6 +364,34 @@ final class AdminPluginsHttpTest extends TestCase
         }
         if ($witnessFile !== null) {
             $app->container()->instance(FatalLoadGuard::class, new FatalLoadGuard($witnessFile));
+        }
+        if ($pluginsAbsPath !== null) {
+            $app->container()->singleton(PluginManager::class, static function () use ($app, $pluginsAbsPath, $safeMode): PluginManager {
+                $autoloader = new Autoloader();
+                $autoloader->register();
+
+                return new PluginManager(
+                    app: $app,
+                    pluginsPath: $pluginsAbsPath,
+                    autoloader: $autoloader,
+                    repository: $app->get(PluginRepository::class),
+                    validator: $app->get(ManifestValidator::class),
+                    resolver: $app->get(DependencyResolver::class),
+                    assetPublisher: $app->get(AssetPublisher::class),
+                    fatalGuard: $app->get(FatalLoadGuard::class),
+                    migrator: $app->get(Migrator::class),
+                    hooks: $app->get(Hooks::class),
+                    router: $app->get(Router::class),
+                    views: $app->get(View::class),
+                    adminMenu: $app->get(AdminMenu::class),
+                    capabilities: $app->get(Capabilities::class),
+                    settings: $app->get(Settings::class),
+                    db: $app->get(Connection::class),
+                    notices: $app->get(Notices::class),
+                    logger: $app->get(Logger::class),
+                    safeMode: $safeMode,
+                );
+            });
         }
 
         $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {
