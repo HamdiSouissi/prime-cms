@@ -98,6 +98,41 @@ final class ErrorHandlerTest extends TestCase
         $this->assertSame(RuntimeException::class, $devPayload['error']['exception']);
     }
 
+    public function testCliUncaughtExceptionPrintsSingleCleanBlockWithOptionalDebugTrace(): void
+    {
+        $prodStream = fopen('php://memory', 'w+b');
+        $this->assertIsResource($prodStream);
+
+        $logger = new Logger($this->tempLogDir, Logger::DEBUG);
+        $view = new View(dirname(__DIR__, 3) . '/resources/views');
+
+        $prodHandler = new ErrorHandler($logger, $view, debug: false, cliErrorStream: $prodStream, terminateOnCli: false);
+        $prodHandler->handleUncaughtException(new RuntimeException('CLI failure prod'));
+        // Calling a second time (e.g. from shutdown) must never duplicate output.
+        $prodHandler->handleUncaughtException(new RuntimeException('CLI failure prod'));
+
+        rewind($prodStream);
+        $prodOut = (string) stream_get_contents($prodStream);
+        fclose($prodStream);
+
+        $this->assertSame(1, substr_count($prodOut, '[RuntimeException] CLI failure prod'));
+        $this->assertStringContainsString('at ' . __FILE__ . ':', $prodOut);
+        $this->assertStringNotContainsString('Stack trace:', $prodOut);
+
+        $devStream = fopen('php://memory', 'w+b');
+        $this->assertIsResource($devStream);
+
+        $devHandler = new ErrorHandler($logger, $view, debug: true, cliErrorStream: $devStream, terminateOnCli: false);
+        $devHandler->handleUncaughtException(new RuntimeException('CLI failure debug'));
+
+        rewind($devStream);
+        $devOut = (string) stream_get_contents($devStream);
+        fclose($devStream);
+
+        $this->assertSame(1, substr_count($devOut, '[RuntimeException] CLI failure debug'));
+        $this->assertStringContainsString('Stack trace:', $devOut);
+    }
+
     private function createHandler(bool $debug): ErrorHandler
     {
         $logger = new Logger($this->tempLogDir, Logger::DEBUG);

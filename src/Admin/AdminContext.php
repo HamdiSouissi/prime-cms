@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Prime\Admin;
 
+use Prime\Admin\Data\AdminAssets;
+use Prime\Admin\Data\CommandPaletteItem;
+use Prime\Admin\Data\CreateMenuItem;
 use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Menu\MenuNode;
 use Prime\Auth\Auth;
@@ -12,6 +15,7 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Request;
 use Prime\Http\Session;
 use Prime\Kernel\Application;
+use Prime\Log\Logger;
 
 /**
  * Builds shared shell data for every admin view, filters navigation/actions by user
@@ -27,6 +31,8 @@ final class AdminContext
         private readonly Hooks $hooks,
         private readonly ?Auth $auth = null,
         private readonly ?Session $session = null,
+        private readonly ?Notices $notices = null,
+        private readonly ?Logger $logger = null,
     ) {
     }
 
@@ -64,7 +70,25 @@ final class AdminContext
         $user = $this->auth?->user($request);
 
         $menu = clone $this->baseMenu;
-        $filteredMenu = $this->hooks->apply('admin.menu', $menu);
+        $filteredMenu = $this->hooks->applyValidated(
+            'admin.menu',
+            $menu,
+            function (mixed $candidate, mixed $previous, ?string $owner, string $hookName): AdminMenu {
+                /** @var AdminMenu $fallback */
+                $fallback = $previous instanceof AdminMenu ? $previous : clone $this->baseMenu;
+                if (!$candidate instanceof AdminMenu) {
+                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une instance de AdminMenu.');
+
+                    return $fallback;
+                }
+
+                foreach ($candidate->sanitize() as $issue) {
+                    $this->logInvalidFilterData($hookName, $owner, $issue);
+                }
+
+                return $candidate;
+            },
+        );
         if ($filteredMenu instanceof AdminMenu) {
             $menu = $filteredMenu;
         }
@@ -86,6 +110,9 @@ final class AdminContext
         $appName = (string) $this->app->config()->get('app.name', 'Prime CMS');
         $rawToasts = $this->session !== null ? $this->session->getFlash(self::FLASH_TOASTS_KEY, []) : [];
         $toasts = is_array($rawToasts) ? array_values($rawToasts) : [];
+        $baseNotices = $this->notices !== null ? $this->notices->forUser($user) : [];
+        $adminNotices = $this->normalizeNotices($baseNotices, $user);
+        $safeMode = (bool) $this->app->config()->get('plugins.safe_mode', false);
 
         return array_merge([
             'appName' => $appName,
@@ -96,6 +123,10 @@ final class AdminContext
             'createItems' => $createItems,
             'commandPaletteJson' => $this->encodeJson($paletteItems),
             'flashToastsJson' => $this->encodeJson($toasts),
+            'adminNotices' => $adminNotices,
+            'adminNoticesCount' => count($adminNotices),
+            'safeMode' => $safeMode,
+            'primaryCtaInContent' => false,
             'adminStyles' => $assets['css'],
             'adminScripts' => $assets['js'],
             'adminHeadExtra' => is_string($headExtra) ? $headExtra : '',
@@ -151,8 +182,32 @@ final class AdminContext
             ],
         ];
 
-        $filtered = $this->hooks->apply('admin.create.items', $defaults);
-        $items = is_array($filtered) ? array_values($filtered) : $defaults;
+        /** @var list<array{id: string, label: string, description: string, icon: string, accent: string, url: string, capability?: string}> $items */
+        $items = $this->hooks->applyValidated(
+            'admin.create.items',
+            $defaults,
+            function (mixed $candidate, mixed $previous, ?string $owner, string $hookName): array {
+                /** @var list<array{id: string, label: string, description: string, icon: string, accent: string, url: string, capability?: string}> $fallback */
+                $fallback = is_array($previous) ? array_values($previous) : [];
+                if (!is_array($candidate)) {
+                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste d\'éléments de création rapide.');
+
+                    return $fallback;
+                }
+
+                $valid = [];
+                foreach ($candidate as $index => $entry) {
+                    $normalized = CreateMenuItem::fromArray($entry);
+                    if ($normalized === null) {
+                        $this->logInvalidFilterData($hookName, $owner, sprintf('Élément du menu Créer invalide ignoré à l\'index %s.', (string) $index));
+                        continue;
+                    }
+                    $valid[] = $normalized->toArray();
+                }
+
+                return $valid;
+            },
+        );
 
         if ($user !== null) {
             $items = array_values(array_filter(
@@ -309,9 +364,34 @@ final class AdminContext
             'keywords' => ['site', 'accueil', 'public', 'front'],
         ];
 
-        $filtered = $this->hooks->apply('admin.command_palette', $entries);
+        /** @var list<array<string, mixed>> $normalized */
+        $normalized = $this->hooks->applyValidated(
+            'admin.command_palette',
+            $entries,
+            function (mixed $candidate, mixed $previous, ?string $owner, string $hookName): array {
+                /** @var list<array<string, mixed>> $fallback */
+                $fallback = is_array($previous) ? array_values($previous) : [];
+                if (!is_array($candidate)) {
+                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste d\'entrées de palette de commandes.');
 
-        return is_array($filtered) ? array_values($filtered) : $entries;
+                    return $fallback;
+                }
+
+                $valid = [];
+                foreach ($candidate as $index => $entry) {
+                    $item = CommandPaletteItem::fromArray($entry);
+                    if ($item === null) {
+                        $this->logInvalidFilterData($hookName, $owner, sprintf('Entrée de palette de commandes invalide ignorée à l\'index %s.', (string) $index));
+                        continue;
+                    }
+                    $valid[] = $item->toArray();
+                }
+
+                return $valid;
+            },
+        );
+
+        return $normalized;
     }
 
     /**
@@ -321,25 +401,80 @@ final class AdminContext
      */
     private function assets(): array
     {
-        $defaults = [
-            'css' => [asset('admin/css/admin.css')],
-            'js' => [asset('admin/js/admin.js')],
-        ];
+        $defaults = new AdminAssets(
+            css: [asset('admin/css/admin.css')],
+            js: [asset('admin/js/admin.js')],
+        );
 
-        $filtered = $this->hooks->apply('admin.assets', $defaults);
-        if (!is_array($filtered)) {
-            return $defaults;
-        }
+        /** @var array{css: list<string>, js: list<string>} $normalized */
+        $normalized = $this->hooks->applyValidated(
+            'admin.assets',
+            $defaults->toArray(),
+            function (mixed $candidate, mixed $previous, ?string $owner, string $hookName) use ($defaults): array {
+                $fallback = is_array($previous)
+                    ? AdminAssets::fromArray($previous, $defaults)
+                    : $defaults;
 
-        $css = isset($filtered['css']) && is_array($filtered['css'])
-            ? array_values(array_filter($filtered['css'], 'is_string'))
-            : $defaults['css'];
+                $assets = AdminAssets::fromArray(
+                    $candidate,
+                    $fallback,
+                    function (string $reason) use ($hookName, $owner): void {
+                        $this->logInvalidFilterData($hookName, $owner, $reason);
+                    },
+                );
 
-        $js = isset($filtered['js']) && is_array($filtered['js'])
-            ? array_values(array_filter($filtered['js'], 'is_string'))
-            : $defaults['js'];
+                return $assets->toArray();
+            },
+        );
 
-        return ['css' => $css, 'js' => $js];
+        return $normalized;
+    }
+
+    /**
+     * Allow filtering admin notices via `admin.notices` while strictly validating each entry.
+     *
+     * @param list<Notice> $notices
+     * @return list<Notice>
+     */
+    private function normalizeNotices(array $notices, ?User $user): array
+    {
+        /** @var list<Notice> $filtered */
+        $filtered = $this->hooks->applyValidated(
+            'admin.notices',
+            $notices,
+            function (mixed $candidate, mixed $previous, ?string $owner, string $hookName): array {
+                /** @var list<Notice> $fallback */
+                $fallback = is_array($previous) ? array_values($previous) : [];
+                if (!is_array($candidate)) {
+                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de notifications.');
+
+                    return $fallback;
+                }
+
+                $valid = [];
+                foreach ($candidate as $index => $entry) {
+                    $notice = Notice::fromArray($entry);
+                    if ($notice === null) {
+                        $this->logInvalidFilterData($hookName, $owner, sprintf('Notification invalide ignorée à l\'index %s.', (string) $index));
+                        continue;
+                    }
+                    $valid[] = $notice;
+                }
+
+                return $valid;
+            },
+            $user,
+        );
+
+        return $filtered;
+    }
+
+    private function logInvalidFilterData(string $hookName, ?string $owner, string $reason): void
+    {
+        $this->logger?->warning(sprintf('Filtre [%s] : %s', $hookName, $reason), [
+            'hook' => $hookName,
+            'plugin' => $owner ?? 'core',
+        ]);
     }
 
     /**

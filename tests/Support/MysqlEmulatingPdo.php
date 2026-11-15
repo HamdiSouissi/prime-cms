@@ -9,8 +9,9 @@ use PDOStatement;
 
 /**
  * Test-only in-memory SQLite PDO double that translates MySQL/MariaDB
- * `ON DUPLICATE KEY UPDATE` upsert syntax into SQLite's `ON CONFLICT(...) DO UPDATE SET`
- * so production code in `src/` remains 100% free of SQLite-specific branches.
+ * `ON DUPLICATE KEY UPDATE`, `information_schema` inspection queries, and Blueprint
+ * `CREATE TABLE` DDL into SQLite equivalents so production code in `src/` remains
+ * 100% free of SQLite-specific branches.
  */
 final class MysqlEmulatingPdo extends PDO
 {
@@ -33,6 +34,17 @@ final class MysqlEmulatingPdo extends PDO
                 $query,
                 1,
             );
+        } elseif (stripos($query, 'FROM information_schema.TABLES') !== false && stripos($query, 'COUNT(*)') !== false) {
+            $query = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?";
+        } elseif (stripos($query, 'FROM information_schema.COLUMNS') !== false && stripos($query, 'COUNT(*)') !== false) {
+            $query = 'SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?';
+        } elseif (stripos($query, 'CREATE TABLE') !== false) {
+            // Translate MySQL Blueprint DDL into SQLite DDL for in-memory unit tests
+            $query = (string) preg_replace('/\s+ENGINE\s*=\s*InnoDB.*$/is', '', $query);
+            $query = (string) preg_replace('/`id`\s+BIGINT\s+UNSIGNED\s+NOT\s+NULL\s+AUTO_INCREMENT(?:\s+PRIMARY\s+KEY)?/i', '`id` INTEGER PRIMARY KEY AUTOINCREMENT', $query);
+            $query = (string) preg_replace('/,\s*PRIMARY\s+KEY\s*\(`id`\)/i', '', $query);
+            $query = (string) preg_replace('/\bUNSIGNED\b/i', '', $query);
+            $query = (string) preg_replace('/,\s*INDEX\s+`[^`]+`\s*\([^)]+\)/i', '', $query);
         }
 
         return parent::prepare($query, $options);

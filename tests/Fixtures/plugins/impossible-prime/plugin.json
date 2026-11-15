@@ -1,0 +1,12 @@
+{
+  "slug": "impossible-prime",
+  "name": "Impossible Prime Version",
+  "description": "Fixture requiring Prime CMS >= 99.0.0.",
+  "version": "1.0.0",
+  "author": { "name": "Prime Tests" },
+  "namespace": "FixtureImpossiblePrime\\",
+  "main": "FixtureImpossiblePrime\\Plugin",
+  "requires": {
+    "prime": ">=99.0.0"
+  }
+}

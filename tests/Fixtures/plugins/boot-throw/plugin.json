@@ -1,0 +1,10 @@
+{
+  "slug": "boot-throw",
+  "name": "Boot Throw Fixture",
+  "description": "Fixture plugin that throws an exception during boot().",
+  "version": "1.0.0",
+  "author": { "name": "Prime Tests" },
+  "namespace": "FixtureBootThrow\\",
+  "main": "FixtureBootThrow\\Plugin",
+  "requires": { "prime": "^0.5", "php": "^8.2" }
+}

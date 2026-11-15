@@ -34,10 +34,19 @@ final class ErrorHandler
 
     private ?string $previousDisplayErrors = null;
 
+    private ?string $previousLogErrors = null;
+
+    private bool $cliExceptionHandled = false;
+
+    /**
+     * @param resource|null $cliErrorStream Optional STDERR stream override (primarily for tests)
+     */
     public function __construct(
         private readonly Logger $logger,
         private View $view,
         private bool $debug = false,
+        private readonly mixed $cliErrorStream = null,
+        private readonly bool $terminateOnCli = true,
     ) {
     }
 
@@ -74,6 +83,13 @@ final class ErrorHandler
         $previousDisplay = ini_set('display_errors', '0');
         $this->previousDisplayErrors = $previousDisplay === false ? null : $previousDisplay;
 
+        // In CLI, PHP writes native error messages to STDERR when log_errors=1 and error_log="".
+        // Disabling log_errors prevents duplicate output alongside our single formatted stderr message.
+        if (PHP_SAPI === 'cli') {
+            $previousLog = ini_set('log_errors', '0');
+            $this->previousLogErrors = $previousLog === false ? null : $previousLog;
+        }
+
         set_error_handler([$this, 'handlePhpError']);
         set_exception_handler([$this, 'handleUncaughtException']);
 
@@ -107,6 +123,11 @@ final class ErrorHandler
             $this->previousDisplayErrors = null;
         }
 
+        if ($this->previousLogErrors !== null) {
+            ini_set('log_errors', $this->previousLogErrors);
+            $this->previousLogErrors = null;
+        }
+
         $this->registered = false;
     }
 
@@ -125,19 +146,46 @@ final class ErrorHandler
     }
 
     /**
+     * Format a single clean CLI error block (with stack trace when `APP_DEBUG=true`).
+     */
+    public function formatCliException(Throwable $exception): string
+    {
+        $output = sprintf(
+            "[%s] %s\n  at %s:%d\n",
+            $exception::class,
+            $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine(),
+        );
+
+        if ($this->debug) {
+            $trace = trim($exception->getTraceAsString());
+            if ($trace !== '') {
+                $output .= "\nStack trace:\n" . $trace . "\n";
+            }
+        }
+
+        return $output;
+    }
+
+    /**
      * Handle uncaught exceptions reaching the top level.
      */
     public function handleUncaughtException(Throwable $exception): void
     {
         if (PHP_SAPI === 'cli') {
+            if ($this->cliExceptionHandled) {
+                return;
+            }
+            $this->cliExceptionHandled = true;
+
             $this->logException($exception, 500, null);
-            fwrite(STDERR, sprintf(
-                "[%s] %s in %s:%d\n",
-                $exception::class,
-                $exception->getMessage(),
-                $exception->getFile(),
-                $exception->getLine(),
-            ));
+            $stream = is_resource($this->cliErrorStream) ? $this->cliErrorStream : STDERR;
+            fwrite($stream, $this->formatCliException($exception));
+
+            if ($this->terminateOnCli) {
+                exit(1);
+            }
 
             return;
         }
@@ -155,7 +203,7 @@ final class ErrorHandler
      */
     public function handleShutdown(): void
     {
-        if (!$this->registered) {
+        if (!$this->registered || $this->cliExceptionHandled) {
             return;
         }
 

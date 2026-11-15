@@ -4,10 +4,18 @@ declare(strict_types=1);
 
 namespace Prime\Hooks;
 
+use Closure;
 use Prime\Hooks\Exception\InvalidHookNameException;
+use Throwable;
 
 /**
  * Event and filter hooks engine — the extensibility backbone of Prime CMS.
+ *
+ * Supports optional owner attribution (`withOwner()`) so listeners and filters registered
+ * by plugins are isolated: any Throwable thrown inside a plugin listener is caught,
+ * attributed to its owning plugin via the registered owner error handler, and never
+ * interrupts core or other plugins' listeners. Core listeners (`owner === null`) keep
+ * strict exception propagation.
  */
 final class Hooks
 {
@@ -16,14 +24,14 @@ final class Hooks
     /**
      * Event listeners indexed by hook name.
      *
-     * @var array<string, list<array{priority: int, seq: int, callback: callable}>>
+     * @var array<string, list<array{priority: int, seq: int, callback: callable, owner: ?string}>>
      */
     private array $listeners = [];
 
     /**
      * Filter callbacks indexed by hook name.
      *
-     * @var array<string, list<array{priority: int, seq: int, callback: callable}>>
+     * @var array<string, list<array{priority: int, seq: int, callback: callable, owner: ?string}>>
      */
     private array $filters = [];
 
@@ -41,12 +49,67 @@ final class Hooks
      */
     private array $executionStack = [];
 
+    /**
+     * Stack of active plugin owner slugs while registering callbacks.
+     *
+     * @var list<string>
+     */
+    private array $ownerStack = [];
+
+    /**
+     * Handler invoked when an owned (plugin) listener or filter throws a Throwable.
+     *
+     * @var (Closure(string, string, Throwable): void)|null
+     */
+    private ?Closure $ownerErrorHandler = null;
+
     private int $sequence = 0;
+
+    /**
+     * Execute a callable with an active plugin owner attribution context so any
+     * `on()` or `filter()` calls made inside are tagged with `$owner`.
+     *
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     */
+    public function withOwner(string $owner, callable $callback): mixed
+    {
+        $this->ownerStack[] = $owner;
+
+        try {
+            return $callback();
+        } finally {
+            array_pop($this->ownerStack);
+        }
+    }
+
+    /**
+     * Return the current registration owner slug, or null for core registrations.
+     */
+    public function currentOwner(): ?string
+    {
+        if ($this->ownerStack === []) {
+            return null;
+        }
+
+        return $this->ownerStack[array_key_last($this->ownerStack)];
+    }
+
+    /**
+     * Set the isolation handler invoked whenever an owned plugin hook throws.
+     *
+     * @param (callable(string, string, Throwable): void)|null $handler
+     */
+    public function setOwnerErrorHandler(?callable $handler): void
+    {
+        $this->ownerErrorHandler = $handler !== null ? Closure::fromCallable($handler) : null;
+    }
 
     /**
      * Register an event listener.
      */
-    public function on(string $event, callable $listener, int $priority = 10): void
+    public function on(string $event, callable $listener, int $priority = 10, ?string $owner = null): void
     {
         $this->assertValidName($event);
 
@@ -54,6 +117,7 @@ final class Hooks
             'priority' => $priority,
             'seq' => $this->sequence++,
             'callback' => $listener,
+            'owner' => $owner ?? $this->currentOwner(),
         ];
     }
 
@@ -77,7 +141,17 @@ final class Hooks
 
         try {
             foreach ($snapshot as $entry) {
-                ($entry['callback'])(...$args);
+                $owner = $entry['owner'];
+                if ($owner === null) {
+                    ($entry['callback'])(...$args);
+                    continue;
+                }
+
+                try {
+                    ($entry['callback'])(...$args);
+                } catch (Throwable $exception) {
+                    $this->handleOwnedFailure($owner, $event, $exception);
+                }
             }
         } finally {
             array_pop($this->executionStack);
@@ -87,7 +161,7 @@ final class Hooks
     /**
      * Register a filter callback.
      */
-    public function filter(string $name, callable $callback, int $priority = 10): void
+    public function filter(string $name, callable $callback, int $priority = 10, ?string $owner = null): void
     {
         $this->assertValidName($name);
 
@@ -95,6 +169,7 @@ final class Hooks
             'priority' => $priority,
             'seq' => $this->sequence++,
             'callback' => $callback,
+            'owner' => $owner ?? $this->currentOwner(),
         ];
     }
 
@@ -117,7 +192,68 @@ final class Hooks
 
         try {
             foreach ($snapshot as $entry) {
-                $value = ($entry['callback'])($value, ...$args);
+                $owner = $entry['owner'];
+                if ($owner === null) {
+                    $value = ($entry['callback'])($value, ...$args);
+                    continue;
+                }
+
+                $previousValue = $value;
+                try {
+                    $value = ($entry['callback'])($value, ...$args);
+                } catch (Throwable $exception) {
+                    $value = $previousValue;
+                    $this->handleOwnedFailure($owner, $name, $exception);
+                }
+            }
+        } finally {
+            array_pop($this->executionStack);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Apply all registered filters sequentially while validating/normalizing each filter's
+     * return value immediately with plugin-owner attribution.
+     *
+     * The `$validator` receives `($candidateValue, $previousValue, $owner, $hookName)` and
+     * must return the normalized safe value to pass to the next filter in the chain.
+     *
+     * @param callable(mixed, mixed, ?string, string): mixed $validator
+     */
+    public function applyValidated(string $name, mixed $value, callable $validator, mixed ...$args): mixed
+    {
+        $this->assertValidName($name);
+
+        $this->firedCounts[$name] = ($this->firedCounts[$name] ?? 0) + 1;
+
+        if (!isset($this->filters[$name]) || $this->filters[$name] === []) {
+            return $value;
+        }
+
+        $snapshot = $this->sortedSnapshot($this->filters[$name]);
+
+        $this->executionStack[] = $name;
+
+        try {
+            foreach ($snapshot as $entry) {
+                $owner = $entry['owner'];
+                $previousValue = $value;
+
+                if ($owner === null) {
+                    $candidate = ($entry['callback'])($value, ...$args);
+                } else {
+                    try {
+                        $candidate = ($entry['callback'])($value, ...$args);
+                    } catch (Throwable $exception) {
+                        $value = $previousValue;
+                        $this->handleOwnedFailure($owner, $name, $exception);
+                        continue;
+                    }
+                }
+
+                $value = $validator($candidate, $previousValue, $owner, $name);
             }
         } finally {
             array_pop($this->executionStack);
@@ -163,6 +299,77 @@ final class Hooks
     }
 
     /**
+     * Remove every event listener and filter attributed to a specific plugin owner.
+     */
+    public function removeByOwner(string $owner): int
+    {
+        $removed = 0;
+
+        foreach ($this->listeners as $name => $entries) {
+            $kept = [];
+            foreach ($entries as $entry) {
+                if ($entry['owner'] === $owner) {
+                    $removed++;
+                } else {
+                    $kept[] = $entry;
+                }
+            }
+            if ($kept === []) {
+                unset($this->listeners[$name]);
+            } else {
+                $this->listeners[$name] = $kept;
+            }
+        }
+
+        foreach ($this->filters as $name => $entries) {
+            $kept = [];
+            foreach ($entries as $entry) {
+                if ($entry['owner'] === $owner) {
+                    $removed++;
+                } else {
+                    $kept[] = $entry;
+                }
+            }
+            if ($kept === []) {
+                unset($this->filters[$name]);
+            } else {
+                $this->filters[$name] = $kept;
+            }
+        }
+
+        return $removed;
+    }
+
+    /**
+     * Inspect registered listener/filter owners for a hook name (diagnostics & tests).
+     *
+     * @return list<array{type: 'event'|'filter', priority: int, owner: ?string}>
+     */
+    public function inspect(string $name): array
+    {
+        $this->assertValidName($name);
+        $result = [];
+
+        foreach ($this->listeners[$name] ?? [] as $entry) {
+            $result[] = [
+                'type' => 'event',
+                'priority' => $entry['priority'],
+                'owner' => $entry['owner'],
+            ];
+        }
+
+        foreach ($this->filters[$name] ?? [] as $entry) {
+            $result[] = [
+                'type' => 'filter',
+                'priority' => $entry['priority'],
+                'owner' => $entry['owner'],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * Determine whether any listener or filter is registered for a hook name.
      */
     public function has(string $name): bool
@@ -195,11 +402,21 @@ final class Hooks
         return $this->executionStack[array_key_last($this->executionStack)];
     }
 
+    private function handleOwnedFailure(string $owner, string $hookName, Throwable $exception): void
+    {
+        // Detach the faulty plugin's remaining callbacks immediately to avoid cascading errors.
+        $this->removeByOwner($owner);
+
+        if ($this->ownerErrorHandler !== null) {
+            ($this->ownerErrorHandler)($owner, $hookName, $exception);
+        }
+    }
+
     /**
      * Sort hook entries by priority (lowest first), preserving insertion order on ties.
      *
-     * @param list<array{priority: int, seq: int, callback: callable}> $entries
-     * @return list<array{priority: int, seq: int, callback: callable}>
+     * @param list<array{priority: int, seq: int, callback: callable, owner: ?string}> $entries
+     * @return list<array{priority: int, seq: int, callback: callable, owner: ?string}>
      */
     private function sortedSnapshot(array $entries): array
     {

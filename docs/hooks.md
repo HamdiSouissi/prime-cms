@@ -32,6 +32,7 @@ Ce document recense l'ensemble des hooks (événements et filtres) déclenchés 
 | `admin.create.items` | Filtre | `list<array{id: string, label: string, description: string, icon: string, accent: string, url: string}> $items` | Lors de la génération du menu déroulant « Créer » de la barre supérieure. Permet aux plugins d'ajouter des raccourcis de création rapide. |
 | `admin.command_palette` | Filtre | `list<array<string, mixed>> $entries` | Lors de la construction du payload JSON de la palette de commandes (`Ctrl/⌘ + K`). Permet d'ajouter des pages, recherches ou actions rapides. |
 | `admin.assets` | Filtre | `array{css: list<string>, js: list<string>} $assets` | Lors de la préparation des feuilles de style et modules ES chargés dans le layout `admin::layouts/app`. |
+| `admin.notices` | Filtre | `list<Prime\Admin\Notice> $notices`, `?Prime\Auth\User $user` | Lors de la construction du contexte d'administration, juste après la résolution des notifications persistantes visibles pour l'utilisateur courant. |
 | `admin.head` | Filtre | `string $html` | Juste avant la fermeture de `<head>` dans `admin::layouts/app`. Permet d'injecter des balises `<meta>` ou `<link>` supplémentaires. |
 | `admin.footer` | Filtre | `string $html` | Juste avant la fermeture de `</body>` dans `admin::layouts/app`. Permet d'ajouter des panneaux ou conteneurs HTML additionnels. |
 
@@ -151,4 +152,49 @@ $hooks->on('auth.failed', static function (string $email, string $ip, string $re
     // Alerter un outil SIEM ou enregistrer un audit métier personnalisé.
 });
 ```
+
+---
+
+## Hooks du système de plugins (Phase 5)
+
+### Événements du cycle de vie des plugins
+
+| Hook | Type | Paramètres | Déclenchement |
+|------|------|------------|---------------|
+| `plugins.loaded` | Événement | `array<string, PluginContext> $contexts` | Une fois tous les plugins actifs enregistrés (`register()`) et démarrés (`boot()`) dans l'ordre topologique. |
+| `plugin.installed` | Événement | `PluginManifest $manifest, bool $replaced, ?string $previousVersion` | Après l'installation ou le remplacement d'un plugin depuis une archive ZIP. |
+| `plugin.activated` | Événement | `PluginManifest $manifest, PluginContext $context` | Après la réussite des 7 étapes d'activation d'un plugin. |
+| `plugin.deactivated` | Événement | `?PluginManifest $manifest, string $slug` | Après la désactivation d'un plugin (données conservées). |
+| `plugin.uninstalled` | Événement | `string $slug, bool $deleteFiles` | Après la désinstallation complète (migrations annulées, réglages/assets/notices/ligne DB nettoyés). |
+| `plugin.updated` | Événement | `PluginManifest $manifest, string $previousVersion` | Lorsqu'un plugin actif passe à une version SemVer supérieure (après exécution des nouvelles migrations et republication des assets). |
+| `plugin.failed` | Événement | `string $slug, string $phase, string $errorMessage, ?Throwable $exception` | Lorsqu'un plugin est isolé au statut `errored` (erreur dans `register`, `boot`, `activate`, un listener/filtre, dépendance circulaire ou crash fatal récupéré). |
+
+### Filtres du tableau de bord enrichis en Phase 5
+
+| Hook | Type | Valeur filtrée | Usage |
+|------|------|----------------|-------|
+| `admin.dashboard.shortcuts` | Filtre | `list<array{title: string, description: string, icon: string, accent: string, url: string}>` | Ajouter ou réorganiser les raccourcis affichés sur `/admin` (reçoit `?User` en second argument). |
+| `admin.dashboard.stats` | Filtre | `list<array{label: string, value: string, icon: string, accent: string, trend: string, trendDirection: 'up'\|'down'\|'flat', hint: string, url: string}>` | Ajouter ou modifier les tuiles statistiques du tableau de bord `/admin` (reçoit `?User` en second argument). |
+
+### Format exact et normalisation des filtres d'administration
+
+Chaque donnée structurée exposée à une vue du noyau après un filtre est validée et normalisée étape par étape via `Hooks::applyValidated()` et un objet valeur dédié. Une entrée invalide (clé manquante, mauvais type, URL dangereuse comme `javascript:`, accent inconnu ou valeur non tableau) est **ignorée**, journalisée au niveau `warning` avec le slug du plugin propriétaire lorsqu'il est connu, et **n'empêche jamais le rendu de la page**.
+
+| Filtre | Objet valeur | Clés requises | Clés optionnelles et valeurs autorisées |
+|---|---|---|---|
+| `admin.dashboard.shortcuts` | `Prime\Admin\Data\DashboardShortcut::fromArray()` | `title` (`string` non vide), `url` (`string` URL relative `/` ou `http(s)://`) | `description` (`string`, défaut `''`), `icon` (`string` `^[a-z0-9-]+$`, défaut `'sparkles'`), `accent` (`brand\|violet\|teal\|sky\|amber\|success\|neutral`, défaut `'brand'`) |
+| `admin.dashboard.stats` | `Prime\Admin\Data\DashboardStat::fromArray()` | `label` (`string` non vide), `value` (`string\|int\|float` non vide) | `icon` (`string`, défaut `'activity'`), `accent` (`brand\|violet\|teal\|sky\|amber\|success\|neutral`, défaut `'brand'`), `trend` (`string`, défaut `''`), `trendDirection` (`'up'\|'down'\|'flat'`, défaut `'flat'`), `hint` (`string`, défaut `''`), `url` (`string` vide ou URL sûre, défaut `''`) |
+| `admin.menu` | `Prime\Admin\Menu\AdminMenu` & `MenuItem::fromArray()` | Instance de `AdminMenu` ; chaque `MenuItem` requiert `id`, `label`, `icon` (`^[a-z0-9-]+$`), `url` (URL sûre) | `position` (`int`, défaut `50`), `accent` (`MenuItem::ALLOWED_ACCENTS`, défaut `'neutral'`), `badge` (`?string`), `group` (`?string`), `capability` (`?string`), `route` (`?string`). Les entrées au format d'URL ou d'icône invalide sont retirées par `AdminMenu::sanitize()`. |
+| `admin.create.items` | `Prime\Admin\Data\CreateMenuItem::fromArray()` | `id` (`string`), `label` (`string`), `url` (URL sûre) | `description` (`string`, défaut `''`), `icon` (`string`, défaut `'plus'`), `accent` (`MenuItem::ALLOWED_ACCENTS`, défaut `'brand'`), `capability` (`?string`, défaut `null`) |
+| `admin.command_palette` | `Prime\Admin\Data\CommandPaletteItem::fromArray()` | `id` (`string`), `label` (`string`), `url` (URL sûre) | `subtitle` (`string`, défaut `''`), `group` (`string`, défaut `'Raccourcis'`), `section` (`string`, défaut `'Navigation'`), `icon` (`string`, défaut `'arrow-right'`), `accent` (`MenuItem::ALLOWED_ACCENTS`, défaut `'brand'`), `keywords` (`list<string>`, défaut `[]`) |
+| `admin.assets` | `Prime\Admin\Data\AdminAssets::fromArray()` | Tableau associatif `['css' => list<string>, 'js' => list<string>]` | Chaque URL doit être une chaîne non vide sûre (`/` ou `http(s)://`) ; toute entrée non conforme est ignorée sans supprimer les feuilles/scripts valides. |
+| `admin.notices` | `Prime\Admin\Notice::fromArray()` | Instance `Notice` ou tableau avec `id` (`^[a-zA-Z0-9._-]{1,120}$`), `type` (`info\|success\|warning\|danger`), `title` (`string` non vide), `message` (`string` non vide) | `action_label` (`?string`), `action_url` (`?string` URL sûre), `action_method` (`'GET'\|'POST'`, défaut `'GET'`), `capability` (`?string`), `dismissible` (`bool`, défaut `true`), `source` (`?string`), `created_at` (`?string`) |
+
+### Attribution et isolation des erreurs de plugins (`Hooks::withOwner`)
+
+Tout écouteur ou filtre enregistré via `$context->hooks()` (ou pendant l'exécution de `register()`, `boot()`, `activate()`, `deactivate()`, `uninstall()`) est automatiquement attribué au slug du plugin propriétaire.
+
+- Si un callback appartenant à un **plugin** lève une `Throwable` (exception ou `Error`), `Hooks` intercepte l'erreur, détache les hooks du plugin fautif pour la suite de la requête, délègue à `PluginManager` (statut `errored`, log dans `plugin.{slug}`, notice persistante, événement `plugin.failed`) et **laisse les autres écouteurs et filtres poursuivre normalement** (pour un filtre, la valeur précédente reste intacte).
+- Les écouteurs du **noyau** (sans propriétaire plugin) conservent leur comportement standard : leurs exceptions continuent de se propager normalement.
+
 

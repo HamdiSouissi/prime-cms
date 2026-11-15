@@ -1,0 +1,153 @@
+/* Hello Prime — Reference Plugin Stylesheet (published to public/assets/plugins/hello-prime/) */
+
+.hp-banner {
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%);
+  border: 1px solid #ddd6fe;
+}
+
+.hp-banner__badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6d28d9;
+  background: #ede9fe;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.hp-banner__greeting {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.hp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 20px;
+}
+
+.hp-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hp-card__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.hp-card__subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Public standalone page */
+body.hp-public {
+  margin: 0;
+  min-height: 100vh;
+  background: #faf9f7;
+  color: #1f2937;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.hp-public__shell {
+  width: 100%;
+  max-width: 640px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 36px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.hp-public__badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6d28d9;
+  background: #f3e8ff;
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+.hp-public__title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  line-height: 1.25;
+  color: #111827;
+}
+
+.hp-public__subtitle {
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.hp-public__list {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 20px;
+  margin-bottom: 24px;
+}
+
+.hp-public__list h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #374151;
+}
+
+.hp-public__list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hp-public__list li {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.hp-public__list li p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+.hp-public__footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+  font-size: 14px;
+}
+
+.hp-public__footer a {
+  color: #7c3aed;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.hp-public__footer a:hover {
+  text-decoration: underline;
+}

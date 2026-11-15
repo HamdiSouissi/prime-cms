@@ -201,12 +201,13 @@ declare(strict_types=1);
                 </div>
 
                 <div class="pc-topbar__actions">
-                    <!-- Quick create dropdown (primary coral action) -->
+                    <!-- Quick create dropdown (switches to secondary when page header owns the single coral CTA) -->
                     <?php if ($createItems !== []): ?>
+                    <?php $createBtnClass = !empty($primaryCtaInContent) ? 'pc-btn pc-btn--secondary pc-btn--sm' : 'pc-btn pc-btn--primary pc-btn--sm'; ?>
                     <div class="pc-dropdown" data-prime-dropdown>
                         <button
                             type="button"
-                            class="pc-btn pc-btn--primary pc-btn--sm"
+                            class="<?= $this->e($createBtnClass) ?>"
                             data-prime-dropdown-trigger
                             aria-label="Créer un contenu"
                             aria-haspopup="menu"
@@ -239,35 +240,64 @@ declare(strict_types=1);
                     </div>
                     <?php endif; ?>
 
-                    <!-- Notifications dropdown -->
+                    <!-- Notifications dropdown (persistent dashboard notices) -->
+                    <?php
+                    /** @var list<\Prime\Admin\Notice> $noticesList */
+                    $noticesList = is_array($adminNotices ?? null) ? $adminNotices : [];
+                    $noticesCount = count($noticesList);
+                    ?>
                     <div class="pc-dropdown" data-prime-dropdown>
                         <button
                             type="button"
-                            class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm"
+                            class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm pc-notif-btn"
                             data-prime-dropdown-trigger
                             data-prime-tooltip="Notifications"
-                            aria-label="Notifications"
+                            aria-label="<?= $this->e($noticesCount > 0 ? sprintf('Notifications (%d non lue%s)', $noticesCount, $noticesCount > 1 ? 's' : '') : 'Notifications') ?>"
                             aria-haspopup="menu"
                             aria-expanded="false"
                             aria-controls="pc-topbar-notif-menu"
                         >
                             <?= $this->raw($this->icon('bell', 18)) ?>
+                            <?php if ($noticesCount > 0): ?>
+                                <span class="pc-notif-btn__badge" data-prime-notice-badge aria-hidden="true"><?= $this->e((string) min(99, $noticesCount)) ?></span>
+                            <?php endif; ?>
                         </button>
                         <div
                             id="pc-topbar-notif-menu"
-                            class="pc-dropdown__menu"
+                            class="pc-dropdown__menu pc-notif-menu"
                             role="menu"
                             aria-label="Notifications"
                             data-prime-dropdown-menu
                             hidden
                         >
                             <div class="pc-dropdown__header">
-                                <div class="pc-dropdown__title">Notifications</div>
-                                <div class="pc-dropdown__subtitle">Centre d’alertes</div>
+                                <div class="pc-dropdown__title">Notifications<?= $noticesCount > 0 ? ' (' . $this->e((string) $noticesCount) . ')' : '' ?></div>
+                                <div class="pc-dropdown__subtitle">Centre d’alertes persistantes</div>
                             </div>
-                            <div class="pc-dropdown__empty">
-                                Aucune notification pour le moment.
-                            </div>
+                            <?php if ($noticesList === []): ?>
+                                <div class="pc-dropdown__empty">
+                                    Aucune notification pour le moment.
+                                </div>
+                            <?php else: ?>
+                                <div class="pc-notif-menu__list">
+                                    <?php foreach ($noticesList as $noticeItem): ?>
+                                        <div class="pc-notif-menu__item pc-notif-menu__item--<?= $this->e($noticeItem->type) ?>" data-prime-notice-id="<?= $this->e($noticeItem->id) ?>">
+                                            <div class="pc-notif-menu__title"><?= $this->e($noticeItem->title) ?></div>
+                                            <p class="pc-notif-menu__text"><?= $this->e($noticeItem->message) ?></p>
+                                            <?php if ($noticeItem->actionUrl !== null && $noticeItem->actionLabel !== null): ?>
+                                                <?php if ($noticeItem->actionMethod === 'POST'): ?>
+                                                    <form method="post" action="<?= $this->e($noticeItem->actionUrl) ?>" class="pc-notif-menu__action">
+                                                        <?= $this->raw($this->csrfField()) ?>
+                                                        <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($noticeItem->actionLabel) ?></button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <a class="pc-notif-menu__link" href="<?= $this->e($noticeItem->actionUrl) ?>"><?= $this->e($noticeItem->actionLabel) ?> →</a>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -330,6 +360,84 @@ declare(strict_types=1);
             </header>
 
             <main id="content" class="pc-content" tabindex="-1">
+                <?php if (!empty($safeMode)): ?>
+                    <div class="pc-notices-stack">
+                        <div class="pc-alert pc-alert--warning pc-notice" role="alert">
+                            <span class="pc-alert__icon" aria-hidden="true">
+                                <?= $this->raw($this->icon('shield', 18)) ?>
+                            </span>
+                            <div class="pc-alert__body">
+                                <p class="pc-alert__title">Mode sans échec actif (PRIME_SAFE_MODE=true)</p>
+                                <p class="pc-alert__text">Tous les plugins sont temporairement ignorés au démarrage afin de sécuriser l’administration. Retirez <code>PRIME_SAFE_MODE=true</code> de votre fichier <code>.env</code> une fois le problème corrigé.</p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($noticesList !== []): ?>
+                    <?php
+                    $noticeIconMap = [
+                        'info' => 'info',
+                        'success' => 'check-circle',
+                        'warning' => 'alert-triangle',
+                        'danger' => 'alert-circle',
+                    ];
+                    ?>
+                    <div class="pc-notices-stack" data-prime-notices-stack>
+                        <?php foreach ($noticesList as $noticeItem): ?>
+                            <?php
+                            $noticeRole = $noticeItem->type === 'danger' ? 'alert' : 'status';
+                            $noticeIcon = $noticeIconMap[$noticeItem->type] ?? 'info';
+                            ?>
+                            <div
+                                class="pc-alert pc-alert--<?= $this->e($noticeItem->type) ?> pc-notice"
+                                role="<?= $this->e($noticeRole) ?>"
+                                data-prime-notice="<?= $this->e($noticeItem->id) ?>"
+                            >
+                                <span class="pc-alert__icon" aria-hidden="true">
+                                    <?= $this->raw($this->icon($noticeIcon, 18)) ?>
+                                </span>
+                                <div class="pc-alert__body">
+                                    <p class="pc-alert__title"><?= $this->e($noticeItem->title) ?></p>
+                                    <p class="pc-alert__text"><?= $this->e($noticeItem->message) ?></p>
+                                </div>
+                                <div class="pc-notice__actions">
+                                    <?php if ($noticeItem->actionUrl !== null && $noticeItem->actionLabel !== null): ?>
+                                        <?php if ($noticeItem->actionMethod === 'POST'): ?>
+                                            <form method="post" action="<?= $this->e($noticeItem->actionUrl) ?>">
+                                                <?= $this->raw($this->csrfField()) ?>
+                                                <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm">
+                                                    <?= $this->e($noticeItem->actionLabel) ?>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <a href="<?= $this->e($noticeItem->actionUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">
+                                                <?= $this->e($noticeItem->actionLabel) ?>
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    <?php if ($noticeItem->dismissible): ?>
+                                        <form
+                                            method="post"
+                                            action="/admin/notices/<?= $this->e(rawurlencode($noticeItem->id)) ?>/dismiss"
+                                            data-prime-notice-dismiss
+                                        >
+                                            <?= $this->raw($this->csrfField()) ?>
+                                            <button
+                                                type="submit"
+                                                class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm"
+                                                aria-label="Fermer la notification « <?= $this->e($noticeItem->title) ?> »"
+                                            >
+                                                <?= $this->raw($this->icon('x', 16)) ?>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
                 <?= $this->raw($this->section('content')) ?>
             </main>
         </div>

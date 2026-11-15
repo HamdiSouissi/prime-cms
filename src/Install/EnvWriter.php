@@ -121,7 +121,7 @@ final class EnvWriter
         }
 
         if ($remaining !== []) {
-            if ($outputLines[array_key_last($outputLines)] !== '') {
+            if (end($outputLines) !== '') {
                 $outputLines[] = '';
             }
             foreach ($remaining as $line) {

@@ -34,4 +34,5 @@ return [
     'components/styleguide.css',
     'components/install.css',
     'components/auth.css',
+    'components/plugins.css',
 ];

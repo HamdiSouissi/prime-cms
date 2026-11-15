@@ -18,9 +18,16 @@
 !/storage/sessions/
 /storage/sessions/*
 !/storage/sessions/.gitkeep
+!/storage/plugins/
+/storage/plugins/*
+!/storage/plugins/.gitkeep
 !/storage/tmp/
 /storage/tmp/*
 !/storage/tmp/.gitkeep
+
+# Published plugin static assets
+/public/assets/plugins/*
+!/public/assets/plugins/.gitkeep
 
 # User uploads
 /content/uploads/*

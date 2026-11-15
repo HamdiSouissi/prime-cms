@@ -1,0 +1,13 @@
+{
+  "slug": "dep-consumer",
+  "name": "Dependent Consumer",
+  "description": "Plugin depending on base-lib ^1.0.",
+  "version": "1.0.0",
+  "author": { "name": "Prime Tests" },
+  "namespace": "FixtureDepConsumer\\",
+  "main": "FixtureDepConsumer\\Plugin",
+  "requires": { "prime": "^0.5", "php": "^8.2" },
+  "dependencies": {
+    "base-lib": "^1.0"
+  }
+}

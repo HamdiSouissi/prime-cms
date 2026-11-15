@@ -1,0 +1,10 @@
+{
+  "slug": "syntax-error",
+  "name": "Syntax Error Fixture",
+  "description": "Fixture plugin with a deliberate PHP syntax error (ParseError).",
+  "version": "1.0.0",
+  "author": { "name": "Prime Tests" },
+  "namespace": "FixtureSyntaxError\\",
+  "main": "FixtureSyntaxError\\Plugin",
+  "requires": { "prime": "^0.5", "php": "^8.2" }
+}

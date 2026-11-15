@@ -1,0 +1,10 @@
+{
+  "slug": "base-lib",
+  "name": "Base Library",
+  "description": "Base dependency plugin loaded first in topological order.",
+  "version": "1.2.0",
+  "author": { "name": "Prime Tests" },
+  "namespace": "FixtureBaseLib\\",
+  "main": "FixtureBaseLib\\Plugin",
+  "requires": { "prime": "^0.5", "php": "^8.2" }
+}

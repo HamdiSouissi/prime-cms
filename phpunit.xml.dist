@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/bootstrap.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
          executionOrder="defects"
@@ -27,5 +27,15 @@
 
     <php>
         <ini name="error_reporting" value="-1"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_NAME" value="Prime CMS" force="true"/>
+        <env name="APP_DEBUG" value="false" force="true"/>
+        <env name="APP_URL" value="http://localhost:8080" force="true"/>
+        <env name="APP_TIMEZONE" value="UTC" force="true"/>
+        <env name="APP_LOCALE" value="fr" force="true"/>
+        <env name="PRIME_DISABLE_DOTENV" value="true" force="true"/>
+        <env name="PRIME_SAFE_MODE" value="false" force="true"/>
+        <env name="PLUGINS_ALLOW_UPLOAD" value="true" force="true"/>
+        <env name="PLUGINS_MAX_UPLOAD_MB" value="20" force="true"/>
     </php>
 </phpunit>

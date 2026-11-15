@@ -19,6 +19,7 @@ $finder = Finder::create()
         __DIR__ . '/bin/prime',
     ])
     ->name('*.php')
+    ->exclude('Fixtures')
     ->ignoreDotFiles(true)
     ->ignoreVCS(true);
 

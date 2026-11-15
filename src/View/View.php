@@ -218,9 +218,6 @@ final class View
         };
 
         $boundRenderer = $renderer->bindTo($context, TemplateContext::class);
-        if ($boundRenderer === null) {
-            throw new ViewException('Unable to bind template context.');
-        }
 
         try {
             return $boundRenderer($file, $data);
