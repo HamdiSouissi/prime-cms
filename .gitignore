@@ -1,0 +1,44 @@
+# Composer (dev tools only)
+/vendor/
+
+# Environment
+/.env
+/.env.local
+/.env.*.local
+
+# Runtime storage (preserve directory structure via .gitkeep)
+/storage/*
+!/storage/.gitkeep
+!/storage/cache/
+/storage/cache/*
+!/storage/cache/.gitkeep
+!/storage/logs/
+/storage/logs/*
+!/storage/logs/.gitkeep
+!/storage/sessions/
+/storage/sessions/*
+!/storage/sessions/.gitkeep
+!/storage/tmp/
+/storage/tmp/*
+!/storage/tmp/.gitkeep
+
+# User uploads
+/content/uploads/*
+!/content/uploads/.gitkeep
+
+# Quality tool caches
+/.phpunit.cache/
+/.php-cs-fixer.cache
+/.phpstan-cache/
+
+# IDEs & Editors
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
