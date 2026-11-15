@@ -1,0 +1,17 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Prime\Console\ConsoleApplication;
+use Prime\Kernel\Application;
+
+/** @var Application $app */
+$app = require dirname(__DIR__) . '/bootstrap/app.php';
+
+$console = new ConsoleApplication($app);
+
+/** @var list<string> $argv */
+$argv = $_SERVER['argv'] ?? ['bin/prime'];
+
+exit($console->run($argv));
