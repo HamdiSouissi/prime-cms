@@ -1,0 +1,560 @@
+/* ==========================================================================
+   Prime CMS — Installation Wizard (`install::layout` & step views)
+   All color values reference design system tokens exclusively.
+   ========================================================================== */
+
+.pc-install-page {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-8) var(--space-4) var(--space-12);
+}
+
+.pc-install__shell {
+  width: 100%;
+  max-width: 740px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.pc-install__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.pc-install__logo {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-brand);
+}
+
+.pc-install__brand-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-strong);
+  letter-spacing: -0.02em;
+}
+
+.pc-install__brand-sub {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Stepper */
+.pc-install__stepper {
+  width: 100%;
+}
+
+.pc-install__step-mobile {
+  display: none;
+}
+
+.pc-stepper {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.pc-stepper__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.pc-stepper__item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: calc(50% + 18px);
+  width: calc(100% - 28px);
+  height: 2px;
+  background-color: var(--color-border);
+  transition: background-color var(--duration-base) var(--ease-standard);
+}
+
+.pc-stepper__item--completed:not(:last-child)::after {
+  background-color: var(--success);
+}
+
+.pc-stepper__badge {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 2px solid var(--color-border);
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.pc-stepper__item--current .pc-stepper__badge {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-inverse);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+.pc-stepper__item--completed .pc-stepper__badge {
+  background-color: var(--success);
+  border-color: var(--success);
+  color: var(--color-text-inverse);
+}
+
+.pc-stepper__label {
+  font-size: var(--text-xs);
+  line-height: var(--leading-tight);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.pc-stepper__item--current .pc-stepper__label {
+  color: var(--color-text-strong);
+  font-weight: 600;
+}
+
+.pc-stepper__item--completed .pc-stepper__label {
+  color: var(--color-text);
+}
+
+/* Main wizard card */
+.pc-install__card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-8);
+}
+
+.pc-install__header {
+  margin-bottom: var(--space-6);
+}
+
+.pc-install__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text-strong);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+}
+
+.pc-install__lead {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+
+.pc-install__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.pc-install__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.pc-install__grid--host {
+  grid-template-columns: minmax(0, 1fr) 128px;
+}
+
+.pc-install__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.pc-install__actions--end {
+  justify-content: flex-end;
+}
+
+.pc-install__actions-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pc-install__alert-block {
+  margin-bottom: var(--space-5);
+}
+
+/* Requirements list */
+.pc-req-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+
+.pc-req-group__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.pc-req-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.pc-req-item {
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pc-req-item + .pc-req-item {
+  border-top: 1px solid var(--color-border);
+}
+
+.pc-req-item__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pc-req-item__name {
+  font-weight: 500;
+  color: var(--color-text-strong);
+  font-size: var(--text-base);
+}
+
+.pc-req-item__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.pc-req-item__fix {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  color: var(--color-text);
+  background-color: var(--surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Password strength meter */
+.pc-strength {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.pc-strength__bars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.pc-strength__bar {
+  height: 5px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.pc-strength[data-prime-level="1"] .pc-strength__bar:nth-child(-n+1) {
+  background-color: var(--danger);
+}
+
+.pc-strength[data-prime-level="2"] .pc-strength__bar:nth-child(-n+2) {
+  background-color: var(--amber);
+}
+
+.pc-strength[data-prime-level="3"] .pc-strength__bar:nth-child(-n+3) {
+  background-color: var(--sky);
+}
+
+.pc-strength[data-prime-level="4"] .pc-strength__bar:nth-child(-n+4) {
+  background-color: var(--success);
+}
+
+.pc-strength__text {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Summary definition list */
+.pc-install-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pc-install-summary__section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background-color: var(--surface-subtle);
+}
+
+.pc-install-summary__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.pc-install-summary__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.pc-install-summary__edit {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.pc-install-summary__edit:hover {
+  color: var(--color-primary);
+}
+
+.pc-install-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(130px, 180px) minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.pc-install-dl dt {
+  color: var(--color-text-muted);
+}
+
+.pc-install-dl dd {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+/* Manual .env copy panel */
+.pc-env-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px solid var(--amber-border);
+  background-color: var(--amber-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.pc-env-box__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pc-env-box__title {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--amber-ink);
+}
+
+.pc-env-box__textarea {
+  width: 100%;
+  min-height: 220px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
+  color: var(--color-text-strong);
+  resize: vertical;
+}
+
+.pc-env-box__status {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--success-ink);
+  min-height: 18px;
+}
+
+/* Completion panel */
+.pc-install-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-4);
+}
+
+.pc-install-done__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background-color: var(--success-soft);
+  color: var(--success-ink);
+  border: 1px solid var(--success-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-install-done__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+.pc-install__footer {
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Responsive: mobile 375px–767px */
+@media (max-width: 767px) {
+  .pc-install-page {
+    padding: var(--space-5) var(--space-4) var(--space-8);
+  }
+
+  .pc-stepper {
+    display: none;
+  }
+
+  .pc-install__step-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .pc-install__step-mobile-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
+  .pc-install__step-mobile-name {
+    font-weight: 600;
+    color: var(--color-text-strong);
+    font-size: var(--text-sm);
+  }
+
+  .pc-install__step-mobile-dots {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--space-1);
+  }
+
+  .pc-install__step-dot {
+    height: 4px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-border);
+  }
+
+  .pc-install__step-dot--completed {
+    background-color: var(--success);
+  }
+
+  .pc-install__step-dot--current {
+    background-color: var(--color-accent);
+  }
+
+  .pc-install__card {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .pc-install__grid,
+  .pc-install__grid--host {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pc-install-dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .pc-install-dl dd {
+    margin-bottom: var(--space-2);
+  }
+
+  .pc-install__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .pc-install__actions-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pc-install__actions .pc-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

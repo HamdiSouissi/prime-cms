@@ -32,4 +32,5 @@ return [
     'components/page-header.css',
     'components/command-palette.css',
     'components/styleguide.css',
+    'components/install.css',
 ];
