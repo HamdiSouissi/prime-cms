@@ -125,10 +125,9 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $entryRepo = new EntryRepository($this->connection);
         $revRepo = new RevisionRepository($this->connection);
         $lockRepo = new EntryLockRepository($this->connection, ttlSeconds: 120);
-        $fieldValidator = new FieldValidator($fields, $entryRepo);
+        $fieldValidator = new FieldValidator($fields, $sanitizer);
 
         $service = new EntryService(
-            db: $this->connection,
             entries: $entryRepo,
             terms: $termRepo,
             revisions: $revRepo,

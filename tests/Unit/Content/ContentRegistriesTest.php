@@ -13,7 +13,6 @@ use Prime\Content\Fields\Field;
 use Prime\Content\Fields\FieldGroup;
 use Prime\Content\Fields\FieldRegistry;
 use Prime\Content\Fields\FieldValidator;
-use Prime\Content\Taxonomy;
 use Prime\Content\TaxonomyRegistry;
 use Prime\Content\TermRepository;
 use Prime\Database\Connection;
