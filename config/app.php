@@ -14,10 +14,12 @@ use Prime\Kernel\Providers\HooksServiceProvider;
 use Prime\Kernel\Providers\HttpServiceProvider;
 use Prime\Kernel\Providers\LogServiceProvider;
 use Prime\Kernel\Providers\ViewServiceProvider;
+use Prime\Mail\MailServiceProvider;
 use Prime\Settings\SettingsServiceProvider;
 
 return [
     'name' => (string) Env::get('APP_NAME', 'Prime CMS'),
+    'key' => (string) Env::get('APP_KEY', ''),
     'env' => (string) Env::get('APP_ENV', 'production'),
     'debug' => (bool) Env::get('APP_DEBUG', false),
     'url' => rtrim((string) Env::get('APP_URL', 'http://localhost:8080'), '/'),
@@ -30,6 +32,7 @@ return [
         ViewServiceProvider::class,
         DatabaseServiceProvider::class,
         SettingsServiceProvider::class,
+        MailServiceProvider::class,
         HttpServiceProvider::class,
         InstallServiceProvider::class,
         AdminServiceProvider::class,

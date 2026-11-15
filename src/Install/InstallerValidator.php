@@ -5,42 +5,26 @@ declare(strict_types=1);
 namespace Prime\Install;
 
 use DateTimeZone;
+use Prime\Security\PasswordPolicy;
 
 /**
  * Pure validation rules shared by the web installation wizard and CLI `install` command.
  */
 final class InstallerValidator
 {
-    public const MIN_PASSWORD_LENGTH = 12;
+    public const MIN_PASSWORD_LENGTH = PasswordPolicy::MIN_LENGTH;
 
     /**
      * @var list<string>
      */
     public const SUPPORTED_LOCALES = ['fr', 'en', 'it'];
 
-    /**
-     * Common weak passwords rejected regardless of length.
-     *
-     * @var list<string>
-     */
-    private const FORBIDDEN_PASSWORDS = [
-        'password1234',
-        'password12345',
-        'password123456',
-        '123456789012',
-        '1234567890123',
-        '12345678901234',
-        'azerty123456',
-        'qwerty123456',
-        'admin1234567',
-        'admin12345678',
-        'administrator',
-        'primecms1234',
-        'primecms2026',
-        'motdepasse12',
-        'motdepasse123',
-        'iloveyou1234',
-    ];
+    private readonly PasswordPolicy $passwordPolicy;
+
+    public function __construct(?PasswordPolicy $passwordPolicy = null)
+    {
+        $this->passwordPolicy = $passwordPolicy ?? new PasswordPolicy();
+    }
 
     /**
      * Validate a table prefix: lowercase ASCII letters, digits, `_`, ending with `_` (2–20 chars).
@@ -177,7 +161,7 @@ final class InstallerValidator
     }
 
     /**
-     * Enforce minimum password length (12 chars) and reject obvious/personal passwords.
+     * Enforce the shared Prime CMS PasswordPolicy (length, dictionary, personal context).
      */
     public function validatePassword(
         string $password,
@@ -185,49 +169,11 @@ final class InstallerValidator
         string $displayName = '',
         string $siteName = '',
     ): ?string {
-        if (mb_strlen($password, 'UTF-8') < self::MIN_PASSWORD_LENGTH) {
-            return sprintf(
-                'Le mot de passe doit contenir au moins %d caractères (ajoutez des mots, chiffres ou symboles).',
-                self::MIN_PASSWORD_LENGTH,
-            );
-        }
-
-        $lower = mb_strtolower(trim($password), 'UTF-8');
-
-        // Reject single repeated character (e.g. "aaaaaaaaaaaa")
-        if (preg_match('/^(.)\1+$/u', $lower) === 1) {
-            return 'Choisissez un mot de passe plus varié plutôt qu\'un caractère répété.';
-        }
-
-        $compact = preg_replace('/[\s._-]+/', '', $lower) ?? $lower;
-        if (in_array($compact, self::FORBIDDEN_PASSWORDS, true)) {
-            return 'Ce mot de passe est trop courant. Combinez plusieurs mots inhabituels ou utilisez un gestionnaire de mots de passe.';
-        }
-
-        if ($email !== '') {
-            $lowerEmail = mb_strtolower(trim($email), 'UTF-8');
-            $localPart = strstr($lowerEmail, '@', true);
-
-            if (str_contains($lower, $lowerEmail)) {
-                return 'Le mot de passe ne doit pas contenir votre adresse e-mail.';
-            }
-
-            if (is_string($localPart) && mb_strlen($localPart, 'UTF-8') >= 4 && str_contains($lower, $localPart)) {
-                return 'Le mot de passe est trop proche de votre adresse e-mail. Choisissez une phrase secrète distincte.';
-            }
-        }
-
-        $normalizedSite = mb_strtolower(trim($siteName), 'UTF-8');
-        if (mb_strlen($normalizedSite, 'UTF-8') >= 4 && str_contains($lower, $normalizedSite)) {
-            return 'Le mot de passe ne doit pas reprendre le nom du site. Choisissez un mot de passe unique.';
-        }
-
-        $normalizedDisplay = mb_strtolower(trim($displayName), 'UTF-8');
-        if (mb_strlen($normalizedDisplay, 'UTF-8') >= 4 && str_contains($lower, $normalizedDisplay)) {
-            return 'Le mot de passe ne doit pas reprendre votre nom affiché. Choisissez une combinaison distincte.';
-        }
-
-        return null;
+        return $this->passwordPolicy->validate($password, [
+            'email' => $email,
+            'display_name' => $displayName,
+            'site_name' => $siteName,
+        ]);
     }
 
     /**
