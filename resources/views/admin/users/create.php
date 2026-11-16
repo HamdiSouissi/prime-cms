@@ -17,11 +17,11 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Ajouter un utilisateur',
-    'subtitle' => 'Créez un compte directement ou envoyez un lien d\'invitation valable 48 heures.',
+    'title' => $this->t('admin.view_users_create.ajouter_un_utilisateur'),
+    'subtitle' => $this->t('admin.view_users_create.creez_un_compte_directement_ou_envoyez_un_lien_d_invitation_'),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $this->insert('admin::components/button', [
-        'label' => 'Retour à la liste',
+        'label' => $this->t('admin.view_users_create.retour_a_la_liste'),
         'variant' => 'secondary',
         'href' => '/admin/users',
     ]),
@@ -37,7 +37,7 @@ $this->layout('admin::layouts/app');
                 <?= $this->raw($this->insert('admin::components/field', [
                     'id' => 'user-display-name',
                     'name' => 'display_name',
-                    'label' => 'Nom affiché',
+                    'label' => $this->t('admin.view_users_create.nom_affiche'),
                     'type' => 'text',
                     'value' => $old['display_name'],
                     'placeholder' => 'Ex. Camille Laurent',
@@ -70,7 +70,7 @@ $this->layout('admin::layouts/app');
                     <?= $this->raw($this->insert('admin::components/field', [
                         'id' => 'user-status',
                         'name' => 'status',
-                        'label' => 'Statut du compte',
+                        'label' => $this->t('admin.view_users_create.statut_du_compte'),
                         'type' => 'select',
                         'value' => $old['status'],
                         'options' => [
@@ -84,7 +84,7 @@ $this->layout('admin::layouts/app');
             <?php $identityBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Identité du compte',
+                'title' => $this->t('admin.view_users_create.identite_du_compte'),
                 'body' => $identityBody,
             ])) ?>
 
@@ -111,10 +111,10 @@ $this->layout('admin::layouts/app');
                     <?= $this->raw($this->insert('admin::components/field', [
                         'id' => 'user-password',
                         'name' => 'password',
-                        'label' => 'Mot de passe',
+                        'label' => $this->t('admin.view_users_create.mot_de_passe'),
                         'type' => 'password',
                         'value' => '',
-                        'placeholder' => 'Minimum 12 caractères',
+                        'placeholder' => $this->t('admin.view_users_create.minimum_12_caracteres'),
                         'autocomplete' => 'new-password',
                         'error' => $errors['password'] ?? null,
                     ])) ?>
@@ -134,10 +134,10 @@ $this->layout('admin::layouts/app');
                     <?= $this->raw($this->insert('admin::components/field', [
                         'id' => 'user-password-confirmation',
                         'name' => 'password_confirmation',
-                        'label' => 'Confirmer le mot de passe',
+                        'label' => $this->t('admin.view_users_create.confirmer_le_mot_de_passe'),
                         'type' => 'password',
                         'value' => '',
-                        'placeholder' => 'Ressaisissez le mot de passe',
+                        'placeholder' => $this->t('admin.view_users_create.ressaisissez_le_mot_de_passe'),
                         'autocomplete' => 'new-password',
                         'error' => $errors['password_confirmation'] ?? null,
                     ])) ?>
@@ -146,7 +146,7 @@ $this->layout('admin::layouts/app');
             <?php $pwdBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Mot de passe et activation',
+                'title' => $this->t('admin.view_users_create.mot_de_passe_et_activation'),
                 'body' => $pwdBody,
             ])) ?>
         </div>
@@ -179,8 +179,8 @@ $this->layout('admin::layouts/app');
             <?php $rolesBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Rôles attribués',
-                'subtitle' => 'Un utilisateur peut cumuler plusieurs rôles.',
+                'title' => $this->t('admin.view_users_create.roles_attribues'),
+                'subtitle' => $this->t('admin.view_users_create.un_utilisateur_peut_cumuler_plusieurs_roles'),
                 'body' => $rolesBody,
                 'footer' => '<button type="submit" class="pc-btn pc-btn--primary pc-auth-submit">Créer l\'utilisateur</button>',
             ])) ?>

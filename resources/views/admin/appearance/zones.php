@@ -21,7 +21,7 @@ $this->layout('admin::layouts/app');
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Zones de blocs',
-    'subtitle' => 'Composez la barre latérale et le pied de page avec Prime Editor et les blocs dynamiques.',
+    'subtitle' => $this->t('admin.view_appearance_zones.composez_la_barre_laterale_et_le_pied_de_page_avec_prime_edi'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
 

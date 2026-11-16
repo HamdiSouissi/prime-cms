@@ -18,11 +18,11 @@ $showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdm
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Bonjour, ' . $userName,
-    'subtitle' => 'Bienvenue sur votre tableau de bord ' . $appName . '.',
+    'title' => $this->t('admin.dashboard.index.greeting', ['name' => $userName]),
+    'subtitle' => $this->t('admin.dashboard.index.subtitle', ['site' => $appName]),
     'actions' => $showStyleguide
         ? $this->insert('admin::components/button', [
-            'label' => 'Explorer le Design System',
+            'label' => $this->t('admin.dashboard.index.explore_design_system'),
             'variant' => 'secondary',
             'icon' => 'sparkles',
             'href' => '/admin/styleguide',
@@ -79,13 +79,13 @@ $showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdm
         <?php $activityHtml = (string) ob_get_clean(); ?>
 
         <?= $this->raw($this->insert('admin::components/card', [
-            'title' => 'Activité récente',
-            'subtitle' => $liveMode ? 'Derniers contenus créés ou modifiés' : 'Dernières opérations sur votre espace éditorial',
+            'title' => $this->t('admin.view_dashboard_index.activite_recente'),
+            'subtitle' => $liveMode ? $this->t('admin.view_dashboard_index.derniers_contenus_crees_ou_modifies') : $this->t('admin.view_dashboard_index.dernieres_operations_sur_votre_espace_editorial'),
             'body' => $activityHtml,
             'flush' => true,
-            'footer' => '<span class="pc-text-xs pc-text-muted">Journal d’audit complet en Phase 9</span>'
+            'footer' => '<span class="pc-text-xs pc-text-muted">' . $this->e($this->t('admin.dashboard.index.audit_footer')) . '</span>'
                 . $this->insert('admin::components/button', [
-                    'label' => 'Voir les pages',
+                    'label' => $this->t('admin.view_dashboard_index.voir_les_pages'),
                     'variant' => 'ghost',
                     'size' => 'sm',
                     'href' => '/admin/content/page',
@@ -111,8 +111,8 @@ $showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdm
             <?php $shortcutsHtml = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Raccourcis',
-                'subtitle' => 'Accès direct aux modules et au styleguide',
+                'title' => $this->t('admin.dashboard.index.raccourcis'),
+                'subtitle' => $this->t('admin.view_dashboard_index.acces_direct_aux_modules_et_au_styleguide'),
                 'body' => $shortcutsHtml,
             ])) ?>
 
@@ -136,8 +136,8 @@ $showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdm
             <?php $statusHtml = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'État du système',
-                'subtitle' => 'Diagnostics temps réel du noyau Prime CMS',
+                'title' => $this->t('admin.view_dashboard_index.etat_du_systeme'),
+                'subtitle' => $this->t('admin.view_dashboard_index.diagnostics_temps_reel_du_noyau_prime_cms'),
                 'body' => $statusHtml,
             ])) ?>
         </div>

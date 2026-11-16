@@ -20,8 +20,8 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Référencement (SEO)',
-    'subtitle' => 'Modèle de titre, méta-description par défaut, image Open Graph, sitemap XML et robots.txt.',
+    'title' => $this->t('admin.view_settings_seo.referencement_seo'),
+    'subtitle' => $this->t('admin.view_settings_seo.modele_de_titre_meta_description_par_defaut_image_open_graph'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
 

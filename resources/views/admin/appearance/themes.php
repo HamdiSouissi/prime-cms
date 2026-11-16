@@ -28,7 +28,7 @@ if ($allowUpload) {
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Thèmes',
     'subtitle' => sprintf(
-        '%d thème%s installé%s · Actif : %s',
+        $this->t('admin.view_appearance_themes.d_theme_s_installe_s_actif_s'),
         count($themes),
         count($themes) > 1 ? 's' : '',
         count($themes) > 1 ? 's' : '',

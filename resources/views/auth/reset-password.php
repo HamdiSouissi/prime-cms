@@ -11,7 +11,7 @@ declare(strict_types=1);
  * @var string $siteName
  */
 $this->layout('auth::layout', [
-    'pageTitle' => 'Nouveau mot de passe',
+    'pageTitle' => $this->t('admin.auth_reset-password.nouveau_mot_de_passe'),
     'siteName' => $siteName,
 ]);
 ?>
@@ -36,10 +36,10 @@ $this->layout('auth::layout', [
     <?= $this->raw($this->insert('admin::components/field', [
         'id' => 'reset-password',
         'name' => 'password',
-        'label' => 'Nouveau mot de passe',
+        'label' => $this->t('admin.auth_reset-password.nouveau_mot_de_passe'),
         'type' => 'password',
         'value' => '',
-        'placeholder' => 'Minimum 12 caractères',
+        'placeholder' => $this->t('admin.auth_reset-password.minimum_12_caracteres'),
         'autocomplete' => 'new-password',
         'required' => true,
         'autofocus' => true,
@@ -61,10 +61,10 @@ $this->layout('auth::layout', [
     <?= $this->raw($this->insert('admin::components/field', [
         'id' => 'reset-password-confirmation',
         'name' => 'password_confirmation',
-        'label' => 'Confirmer le mot de passe',
+        'label' => $this->t('admin.auth_reset-password.confirmer_le_mot_de_passe'),
         'type' => 'password',
         'value' => '',
-        'placeholder' => 'Ressaisissez le mot de passe',
+        'placeholder' => $this->t('admin.auth_reset-password.ressaisissez_le_mot_de_passe'),
         'autocomplete' => 'new-password',
         'required' => true,
         'error' => $errors['password_confirmation'] ?? null,

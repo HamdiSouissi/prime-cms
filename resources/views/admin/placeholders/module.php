@@ -37,11 +37,11 @@ $this->layout('admin::layouts/app');
     <?= $this->raw($this->insert('admin::components/empty-state', [
         'icon' => $moduleMeta['icon'],
         'accent' => $moduleMeta['accent'],
-        'title' => 'Bientôt disponible',
+        'title' => $this->t('admin.view_placeholders_module.bientot_disponible'),
         'description' => $moduleMeta['description'],
-        'actionLabel' => 'Retour au tableau de bord',
+        'actionLabel' => $this->t('admin.view_placeholders_module.retour_au_tableau_de_bord'),
         'actionUrl' => '/admin',
-        'secondaryLabel' => 'Voir le Design System',
+        'secondaryLabel' => $this->t('admin.view_placeholders_module.voir_le_design_system'),
         'secondaryUrl' => '/admin/styleguide',
     ])) ?>
     <?php $emptyHtml = (string) ob_get_clean(); ?>
@@ -62,7 +62,7 @@ $this->layout('admin::layouts/app');
     <?php $plannedHtml = (string) ob_get_clean(); ?>
 
     <?= $this->raw($this->insert('admin::components/card', [
-        'title' => 'Fonctionnalités prévues',
+        'title' => $this->t('admin.view_placeholders_module.fonctionnalites_prevues'),
         'subtitle' => 'Feuille de route — ' . $moduleMeta['phase'],
         'body' => $plannedHtml,
     ])) ?>

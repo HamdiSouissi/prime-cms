@@ -14,11 +14,11 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Rôles et permissions',
-    'subtitle' => 'Définissez les groupes de permissions attribuables aux utilisateurs du site.',
+    'title' => $this->t('admin.view_roles_index.roles_et_permissions'),
+    'subtitle' => $this->t('admin.view_roles_index.definissez_les_groupes_de_permissions_attribuables_aux_utili'),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $this->insert('admin::components/button', [
-        'label' => 'Créer un rôle',
+        'label' => $this->t('admin.view_roles_index.creer_un_role'),
         'variant' => 'primary',
         'icon' => 'plus',
         'href' => '/admin/roles/create',
@@ -62,7 +62,7 @@ $this->layout('admin::layouts/app');
                         <td data-prime-label="Permissions">
                             <?php if ($role->isAdministrator()): ?>
                                 <?= $this->raw($this->insert('admin::components/badge', [
-                                    'label' => 'Toutes (*)',
+                                    'label' => $this->t('admin.view_roles_index.toutes'),
                                     'variant' => 'brand',
                                 ])) ?>
                             <?php else: ?>

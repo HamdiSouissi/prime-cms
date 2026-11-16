@@ -22,10 +22,10 @@ $editUrl = $entry->editUrl();
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Révisions — ' . $entry->title,
-    'subtitle' => 'Comparez une version antérieure avec la version actuelle ou restaurez-la en un clic.',
+    'subtitle' => $this->t('admin.view_content_revisions.comparez_une_version_anterieure_avec_la_version_actuelle_ou_'),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $this->insert('admin::components/button', [
-        'label' => 'Retour à l’éditeur',
+        'label' => $this->t('admin.view_content_revisions.retour_a_l_editeur'),
         'variant' => 'secondary',
         'icon' => 'chevron-left',
         'href' => $editUrl,
@@ -36,9 +36,9 @@ $editUrl = $entry->editUrl();
     <?= $this->raw($this->insert('admin::components/empty-state', [
         'icon' => 'history',
         'accent' => 'sky',
-        'title' => 'Aucune révision enregistrée',
-        'description' => 'Chaque sauvegarde manuelle ou automatique enregistre automatiquement un instantané consultable ici.',
-        'actionLabel' => 'Retour à l’éditeur',
+        'title' => $this->t('admin.view_content_revisions.aucune_revision_enregistree'),
+        'description' => $this->t('admin.view_content_revisions.chaque_sauvegarde_manuelle_ou_automatique_enregistre_automat'),
+        'actionLabel' => $this->t('admin.view_content_revisions.retour_a_l_editeur'),
         'actionUrl' => $editUrl,
     ])) ?>
 <?php else: ?>

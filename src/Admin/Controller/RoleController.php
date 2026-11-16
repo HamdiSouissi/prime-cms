@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Capabilities;
 use Prime\Auth\Exception\PolicyException;
 use Prime\Auth\Role;
@@ -22,6 +23,8 @@ use Prime\View\View;
  */
 final class RoleController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly View $view,
         private readonly AdminContext $context,
@@ -35,11 +38,11 @@ final class RoleController
     {
         $allRoles = $this->roles->all();
 
-        $data = $this->context->build($request, 'Rôles et permissions', [
+        $data = $this->context->build($request, $this->t('admin.ctrl_text_role.roles_et_permissions'), [
             'roles' => $allRoles,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Utilisateurs', 'url' => '/admin/users'],
+                ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => $this->t('admin.shared.utilisateurs'), 'url' => '/admin/users'],
                 ['label' => 'Rôles', 'url' => null],
             ],
         ]);
@@ -49,7 +52,7 @@ final class RoleController
 
     public function create(Request $request): Response
     {
-        $data = $this->context->build($request, 'Créer un rôle', [
+        $data = $this->context->build($request, $this->t('admin.ctrl_text_role.creer_un_role'), [
             'mode' => 'create',
             'role' => null,
             'isReadOnly' => false,
@@ -62,7 +65,7 @@ final class RoleController
             ],
             'errors' => [],
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => 'Rôles', 'url' => '/admin/roles'],
                 ['label' => 'Créer', 'url' => null],
             ],
@@ -92,10 +95,10 @@ final class RoleController
             ],
             messages: [
                 'slug.regex' => 'Le slug doit contenir uniquement des lettres minuscules, chiffres et tirets (ex. « moderateur »).',
-                'slug.unique' => 'Ce slug de rôle existe déjà.',
+                'slug.unique' => $this->t('admin.ctrl_text_role.ce_slug_de_role_existe_deja'),
             ],
             labels: [
-                'name' => 'Nom du rôle',
+                'name' => $this->t('admin.ctrl_text_role.nom_du_role'),
                 'slug' => 'Identifiant (slug)',
                 'description' => 'Description',
             ],
@@ -106,7 +109,7 @@ final class RoleController
         $validCaps = $this->capabilities->filterValid($selectedCaps);
 
         if ($errors !== []) {
-            $data = $this->context->build($request, 'Créer un rôle', [
+            $data = $this->context->build($request, $this->t('admin.ctrl_text_role.creer_un_role'), [
                 'mode' => 'create',
                 'role' => null,
                 'isReadOnly' => false,
@@ -119,7 +122,7 @@ final class RoleController
                 ],
                 'errors' => $errors,
                 'breadcrumbs' => [
-                    ['label' => 'Tableau de bord', 'url' => '/admin'],
+                    ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
                     ['label' => 'Rôles', 'url' => '/admin/roles'],
                     ['label' => 'Créer', 'url' => null],
                 ],
@@ -129,7 +132,7 @@ final class RoleController
         }
 
         $role = $this->roles->create($slug, $name, $description, $validCaps);
-        $this->context->flashToast(sprintf('Rôle « %s » créé avec succès.', $role->name), 'success');
+        $this->context->flashToast(sprintf($this->t('admin.ctrl_text_role.role_s_cree_avec_succes'), $role->name), 'success');
 
         return Response::redirect('/admin/roles', 302);
     }
@@ -152,7 +155,7 @@ final class RoleController
             ],
             'errors' => [],
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => 'Rôles', 'url' => '/admin/roles'],
                 ['label' => $role->name, 'url' => null],
             ],
@@ -166,7 +169,7 @@ final class RoleController
         $role = $this->findRoleOr404($id);
 
         if ($role->slug === Role::ADMINISTRATOR_SLUG) {
-            throw new ForbiddenException('Le rôle Administrateur est en lecture seule et ne peut pas être modifié.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_role.le_role_administrateur_est_en_lecture_seule_et_ne_peut_pas_e'));
         }
 
         $name = trim((string) $request->body('name', ''));
@@ -183,7 +186,7 @@ final class RoleController
                 'description' => 'nullable|string|max:500',
             ],
             labels: [
-                'name' => 'Nom du rôle',
+                'name' => $this->t('admin.ctrl_text_role.nom_du_role'),
                 'description' => 'Description',
             ],
         );
@@ -203,7 +206,7 @@ final class RoleController
                 ],
                 'errors' => $errors,
                 'breadcrumbs' => [
-                    ['label' => 'Tableau de bord', 'url' => '/admin'],
+                    ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
                     ['label' => 'Rôles', 'url' => '/admin/roles'],
                     ['label' => $role->name, 'url' => null],
                 ],
@@ -214,7 +217,7 @@ final class RoleController
 
         try {
             $updated = $this->roles->update($role->id, $name, $description, $selectedCaps);
-            $this->context->flashToast(sprintf('Rôle « %s » mis à jour.', $updated->name), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_role.role_s_mis_a_jour'), $updated->name), 'success');
         } catch (PolicyException $exception) {
             $this->context->flashToast($exception->getMessage(), 'danger');
         }
@@ -228,7 +231,7 @@ final class RoleController
 
         try {
             $this->roles->delete($role->id);
-            $this->context->flashToast(sprintf('Le rôle « %s » a été supprimé.', $role->name), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_role.le_role_s_a_ete_supprime'), $role->name), 'success');
         } catch (PolicyException $exception) {
             $this->context->flashToast($exception->getMessage(), 'danger');
         }
@@ -239,12 +242,12 @@ final class RoleController
     private function findRoleOr404(string $id): Role
     {
         if (!ctype_digit($id) || (int) $id < 1) {
-            throw new NotFoundException('Rôle introuvable.');
+            throw new NotFoundException($this->t('admin.ctrl_text_role.role_introuvable'));
         }
 
         $role = $this->roles->find((int) $id);
         if ($role === null) {
-            throw new NotFoundException('Rôle introuvable.');
+            throw new NotFoundException($this->t('admin.ctrl_text_role.role_introuvable'));
         }
 
         return $role;

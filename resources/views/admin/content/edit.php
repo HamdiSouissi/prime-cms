@@ -460,8 +460,8 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     <div class="pc-stack pc-stack--sm">
                         <div class="pc-serp-preview" aria-label="<?= t('admin.attr.apercu_moteur_de_recherche') ?>">
                             <span class="pc-serp-preview__url"><?= $this->e($entry !== null ? $entry->url() : '/' . ($form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu')) ?></span>
-                            <span class="pc-serp-preview__title" data-prime-serp-title><?= $this->e(($seoForm['title'] ?? '') !== '' ? $seoForm['title'] : ($form['title'] !== '' ? $form['title'] : 'Sans titre')) ?></span>
-                            <span class="pc-serp-preview__desc" data-prime-serp-description><?= $this->e(($seoForm['description'] ?? '') !== '' ? $seoForm['description'] : ($form['excerpt'] !== '' ? $form['excerpt'] : 'Aperçu de la méta-description dans les résultats de recherche.')) ?></span>
+                            <span class="pc-serp-preview__title" data-prime-serp-title><?= $this->e(($seoForm['title'] ?? '') !== '' ? $seoForm['title'] : ($form['title'] !== '' ? $form['title'] : $this->t('admin.view_content_edit.sans_titre'))) ?></span>
+                            <span class="pc-serp-preview__desc" data-prime-serp-description><?= $this->e(($seoForm['description'] ?? '') !== '' ? $seoForm['description'] : ($form['excerpt'] !== '' ? $form['excerpt'] : $this->t('admin.view_content_edit.apercu_de_la_meta_description_dans_les_resultats_de_recherch'))) ?></span>
                         </div>
 
                         <div class="pc-field">

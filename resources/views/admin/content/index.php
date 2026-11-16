@@ -54,7 +54,7 @@ if ($canCreate) {
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => $contentType->label('plural'),
-    'subtitle' => 'Gérez, rédigez, planifiez et publiez vos contenus.',
+    'subtitle' => $this->t('admin.view_content_index.gerez_redigez_planifiez_et_publiez_vos_contenus'),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $actionsHtml,
 ])) ?>
@@ -153,7 +153,7 @@ if ($canCreate) {
             'accent' => $contentType->accent,
             'title' => $isTrash ? 'La corbeille est vide' : $contentType->label('empty_title'),
             'description' => $isTrash
-                ? 'Les éléments placés dans la corbeille apparaîtront ici.'
+                ? $this->t('admin.view_content_index.les_elements_places_dans_la_corbeille_apparaitront_ici')
                 : $contentType->label('empty_description'),
             'actionLabel' => (!$isTrash && $canCreate) ? $contentType->label('add_new') : null,
             'actionUrl' => (!$isTrash && $canCreate) ? $contentType->adminCreateUrl() : null,

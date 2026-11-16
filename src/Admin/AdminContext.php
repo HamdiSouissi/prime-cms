@@ -31,6 +31,8 @@ use Throwable;
  */
 final class AdminContext
 {
+    use TranslatesAdminCopy;
+
     public const FLASH_TOASTS_KEY = '_admin.toasts';
 
     public function __construct(
@@ -133,7 +135,7 @@ final class AdminContext
                 /** @var AdminMenu $fallback */
                 $fallback = $previous instanceof AdminMenu ? $previous : clone $this->baseMenu;
                 if (!$candidate instanceof AdminMenu) {
-                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une instance de AdminMenu.');
+                    $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_admincontext.la_valeur_retournee_doit_etre_une_instance_de_adminmenu'));
 
                     return $fallback;
                 }
@@ -267,7 +269,7 @@ final class AdminContext
                 /** @var list<array{id: string, label: string, description: string, icon: string, accent: string, url: string, capability?: string}> $fallback */
                 $fallback = is_array($previous) ? array_values($previous) : [];
                 if (!is_array($candidate)) {
-                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste d\'éléments de création rapide.');
+                    $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_admincontext.la_valeur_retournee_doit_etre_une_liste_d_elements_de_creati'));
 
                     return $fallback;
                 }
@@ -276,7 +278,7 @@ final class AdminContext
                 foreach ($candidate as $index => $entry) {
                     $normalized = CreateMenuItem::fromArray($entry);
                     if ($normalized === null) {
-                        $this->logInvalidFilterData($hookName, $owner, sprintf('Élément du menu Créer invalide ignoré à l\'index %s.', (string) $index));
+                        $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_admincontext.element_du_menu_creer_invalide_ignore_a_l_index_s'), (string) $index));
                         continue;
                     }
                     $valid[] = $normalized->toArray();
@@ -405,7 +407,7 @@ final class AdminContext
             return [
                 'id' => null,
                 'name' => 'Invité',
-                'role' => 'Non connecté',
+                'role' => $this->t('admin.ctrl_admincontext.non_connecte'),
                 'email' => '',
                 'initials' => 'IN',
                 'accent' => 'brand',
@@ -539,19 +541,19 @@ final class AdminContext
 
         $entries[] = [
             'id' => 'action.profile',
-            'label' => 'Mon profil et sécurité',
-            'subtitle' => 'Mot de passe, 2FA et sessions',
+            'label' => $this->t('admin.ctrl_admincontext.mon_profil_et_securite'),
+            'subtitle' => $this->t('admin.ctrl_admincontext.mot_de_passe_2fa_et_sessions'),
             'group' => 'Raccourcis',
             'section' => 'Raccourcis',
             'icon' => 'user',
             'accent' => 'sky',
             'url' => '/admin/profile',
-            'keywords' => ['profil', 'compte', 'mot de passe', '2fa', 'totp', 'sécurité'],
+            'keywords' => ['profil', 'compte', $this->t('admin.ctrl_admincontext.mot_de_passe'), '2fa', 'totp', 'sécurité'],
         ];
 
         $entries[] = [
             'id' => 'action.view_site',
-            'label' => 'Voir le site public',
+            'label' => $this->t('admin.ctrl_admincontext.voir_le_site_public'),
             'subtitle' => 'Ouvrir la page d’accueil',
             'group' => 'Raccourcis',
             'section' => 'Raccourcis',
@@ -569,7 +571,7 @@ final class AdminContext
                 /** @var list<array<string, mixed>> $fallback */
                 $fallback = is_array($previous) ? array_values($previous) : [];
                 if (!is_array($candidate)) {
-                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste d\'entrées de palette de commandes.');
+                    $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_admincontext.la_valeur_retournee_doit_etre_une_liste_d_entrees_de_palette'));
 
                     return $fallback;
                 }
@@ -578,7 +580,7 @@ final class AdminContext
                 foreach ($candidate as $index => $entry) {
                     $item = CommandPaletteItem::fromArray($entry);
                     if ($item === null) {
-                        $this->logInvalidFilterData($hookName, $owner, sprintf('Entrée de palette de commandes invalide ignorée à l\'index %s.', (string) $index));
+                        $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_admincontext.entree_de_palette_de_commandes_invalide_ignoree_a_l_index_s'), (string) $index));
                         continue;
                     }
                     $valid[] = $item->toArray();
@@ -643,7 +645,7 @@ final class AdminContext
                 /** @var list<Notice> $fallback */
                 $fallback = is_array($previous) ? array_values($previous) : [];
                 if (!is_array($candidate)) {
-                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de notifications.');
+                    $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_admincontext.la_valeur_retournee_doit_etre_une_liste_de_notifications'));
 
                     return $fallback;
                 }
@@ -652,7 +654,7 @@ final class AdminContext
                 foreach ($candidate as $index => $entry) {
                     $notice = Notice::fromArray($entry);
                     if ($notice === null) {
-                        $this->logInvalidFilterData($hookName, $owner, sprintf('Notification invalide ignorée à l\'index %s.', (string) $index));
+                        $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_admincontext.notification_invalide_ignoree_a_l_index_s'), (string) $index));
                         continue;
                     }
                     $valid[] = $notice;

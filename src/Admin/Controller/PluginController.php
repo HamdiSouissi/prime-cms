@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Kernel\Application;
@@ -20,6 +21,8 @@ use Prime\View\View;
  */
 final class PluginController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly Application $app,
         private readonly View $view,
@@ -90,7 +93,7 @@ final class PluginController
             'maxUploadMb' => $maxUploadMb,
             'primaryCtaInContent' => $allowUpload,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_plugin.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => 'Plugins', 'url' => null],
             ],
         ]));
@@ -101,19 +104,19 @@ final class PluginController
     public function activate(Request $request, string $slug): Response
     {
         if ($this->manager->isSafeMode()) {
-            $message = 'Impossible d\'activer un plugin tant que PRIME_SAFE_MODE est activé.';
+            $message = $this->t('admin.ctrl_text_plugin.impossible_d_activer_un_plugin_tant_que_prime_safe_mode_est_');
             if ($this->wantsJson($request)) {
                 return Response::json(['ok' => false, 'message' => $message], 409);
             }
-            $this->context->flashToast($message, 'warning', 'Mode sans échec');
+            $this->context->flashToast($message, 'warning', $this->t('admin.ctrl_text_plugin.mode_sans_echec'));
 
             return Response::redirect('/admin/plugins');
         }
 
         try {
             $info = $this->manager->activate($slug);
-            $message = sprintf('Le plugin « %s » (v%s) a été activé.', $info->name(), $info->version());
-            $this->context->flashToast($message, 'success', 'Plugin activé');
+            $message = sprintf($this->t('admin.ctrl_text_plugin.le_plugin_s_v_s_a_ete_active'), $info->name(), $info->version());
+            $this->context->flashToast($message, 'success', $this->t('admin.ctrl_text_plugin.plugin_active'));
 
             if ($this->wantsJson($request)) {
                 return Response::json(['ok' => true, 'slug' => $slug, 'message' => $message]);
@@ -122,7 +125,7 @@ final class PluginController
             if ($this->wantsJson($request)) {
                 return Response::json(['ok' => false, 'slug' => $slug, 'message' => $exception->getMessage()], 422);
             }
-            $this->context->flashToast($exception->getMessage(), 'danger', 'Échec d\'activation');
+            $this->context->flashToast($exception->getMessage(), 'danger', $this->t('admin.ctrl_text_plugin.echec_d_activation'));
         }
 
         return Response::redirect('/admin/plugins');
@@ -132,8 +135,8 @@ final class PluginController
     {
         try {
             $info = $this->manager->deactivate($slug);
-            $message = sprintf('Le plugin « %s » a été désactivé. Ses données ont été conservées.', $info->name());
-            $this->context->flashToast($message, 'info', 'Plugin désactivé');
+            $message = sprintf($this->t('admin.ctrl_text_plugin.le_plugin_s_a_ete_desactive_ses_donnees_ont_ete_conservees'), $info->name());
+            $this->context->flashToast($message, 'info', $this->t('admin.ctrl_text_plugin.plugin_desactive'));
 
             if ($this->wantsJson($request)) {
                 return Response::json(['ok' => true, 'slug' => $slug, 'message' => $message]);
@@ -142,7 +145,7 @@ final class PluginController
             if ($this->wantsJson($request)) {
                 return Response::json(['ok' => false, 'slug' => $slug, 'message' => $exception->getMessage()], 422);
             }
-            $this->context->flashToast($exception->getMessage(), 'danger', 'Désactivation impossible');
+            $this->context->flashToast($exception->getMessage(), 'danger', $this->t('admin.ctrl_text_plugin.desactivation_impossible'));
         }
 
         return Response::redirect('/admin/plugins');
@@ -155,8 +158,8 @@ final class PluginController
 
         try {
             $this->manager->uninstall($slug, deleteFiles: true);
-            $message = sprintf('Le plugin « %s » ainsi que ses données ont été supprimés.', $displayName);
-            $this->context->flashToast($message, 'success', 'Plugin supprimé');
+            $message = sprintf($this->t('admin.ctrl_text_plugin.le_plugin_s_ainsi_que_ses_donnees_ont_ete_supprimes'), $displayName);
+            $this->context->flashToast($message, 'success', $this->t('admin.ctrl_text_plugin.plugin_supprime'));
 
             if ($this->wantsJson($request)) {
                 return Response::json(['ok' => true, 'slug' => $slug, 'message' => $message]);
@@ -176,11 +179,11 @@ final class PluginController
         $wantsJson = $this->wantsJson($request);
 
         if (!(bool) $this->app->config()->get('plugins.allow_upload', true)) {
-            $message = 'Le téléversement de plugins ZIP est désactivé dans la configuration (PLUGINS_ALLOW_UPLOAD=false).';
+            $message = $this->t('admin.ctrl_text_plugin.le_televersement_de_plugins_zip_est_desactive_dans_la_config');
             if ($wantsJson) {
                 return Response::json(['ok' => false, 'message' => $message], 403);
             }
-            $this->context->flashToast($message, 'warning', 'Téléversement désactivé');
+            $this->context->flashToast($message, 'warning', $this->t('admin.ctrl_text_plugin.televersement_desactive'));
 
             return Response::redirect('/admin/plugins');
         }
@@ -189,7 +192,7 @@ final class PluginController
         $file = $files['plugin_zip'] ?? null;
 
         if (!is_array($file) || !isset($file['error'])) {
-            $message = 'Veuillez sélectionner une archive ZIP de plugin à téléverser.';
+            $message = $this->t('admin.ctrl_text_plugin.veuillez_selectionner_une_archive_zip_de_plugin_a_televerser');
             if ($wantsJson) {
                 return Response::json(['ok' => false, 'message' => $message], 422);
             }
@@ -204,18 +207,18 @@ final class PluginController
             if ($wantsJson) {
                 return Response::json(['ok' => false, 'message' => $message], 422);
             }
-            $this->context->flashToast($message, 'danger', 'Erreur de téléversement');
+            $this->context->flashToast($message, 'danger', $this->t('admin.ctrl_text_plugin.erreur_de_televersement'));
 
             return Response::redirect('/admin/plugins');
         }
 
         $tmpPath = isset($file['tmp_name']) && is_string($file['tmp_name']) ? $file['tmp_name'] : '';
         if ($tmpPath === '' || !is_file($tmpPath)) {
-            $message = 'Fichier temporaire de téléversement introuvable.';
+            $message = $this->t('admin.ctrl_text_plugin.fichier_temporaire_de_televersement_introuvable');
             if ($wantsJson) {
                 return Response::json(['ok' => false, 'message' => $message], 422);
             }
-            $this->context->flashToast($message, 'danger', 'Erreur de téléversement');
+            $this->context->flashToast($message, 'danger', $this->t('admin.ctrl_text_plugin.erreur_de_televersement'));
 
             return Response::redirect('/admin/plugins');
         }
@@ -227,10 +230,10 @@ final class PluginController
             $result = $this->installer->installFromZip($tmpPath, $replaceExisting, $force);
             $manifest = $result['manifest'];
             $message = $result['replaced']
-                ? sprintf('Le plugin « %s » a été mis à jour vers la version %s.', $manifest->name, $manifest->version)
-                : sprintf('Le plugin « %s » (v%s) a été installé. Vous pouvez maintenant l\'activer.', $manifest->name, $manifest->version);
+                ? sprintf($this->t('admin.ctrl_text_plugin.le_plugin_s_a_ete_mis_a_jour_vers_la_version_s'), $manifest->name, $manifest->version)
+                : sprintf($this->t('admin.ctrl_text_plugin.le_plugin_s_v_s_a_ete_installe_vous_pouvez_maintenant_l_acti'), $manifest->name, $manifest->version);
 
-            $this->context->flashToast($message, 'success', $result['replaced'] ? 'Plugin remplacé' : 'Plugin installé');
+            $this->context->flashToast($message, 'success', $result['replaced'] ? $this->t('admin.ctrl_text_plugin.plugin_remplace') : $this->t('admin.ctrl_text_plugin.plugin_installe'));
 
             if ($wantsJson) {
                 return Response::json([
@@ -260,7 +263,7 @@ final class PluginController
                 return Response::json(['ok' => false, 'message' => $exception->getMessage()], 422);
             }
 
-            $this->context->flashToast($exception->getMessage(), 'danger', 'Installation refusée');
+            $this->context->flashToast($exception->getMessage(), 'danger', $this->t('admin.ctrl_text_plugin.installation_refusee'));
         }
 
         return Response::redirect('/admin/plugins');
@@ -270,12 +273,12 @@ final class PluginController
     {
         return match ($errorCode) {
             UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => sprintf(
-                'Le fichier dépasse la taille maximale autorisée (%d Mo).',
+                $this->t('admin.ctrl_text_plugin.le_fichier_depasse_la_taille_maximale_autorisee_d_mo'),
                 max(1, (int) $this->app->config()->get('plugins.max_upload_mb', 20)),
             ),
-            UPLOAD_ERR_PARTIAL => 'Le téléversement du fichier a été interrompu.',
-            UPLOAD_ERR_NO_FILE => 'Aucun fichier n\'a été envoyé.',
-            default => 'Une erreur serveur est survenue lors du téléversement de l\'archive.',
+            UPLOAD_ERR_PARTIAL => $this->t('admin.ctrl_text_plugin.le_televersement_du_fichier_a_ete_interrompu'),
+            UPLOAD_ERR_NO_FILE => $this->t('admin.ctrl_text_plugin.aucun_fichier_n_a_ete_envoye'),
+            default => $this->t('admin.ctrl_text_plugin.une_erreur_serveur_est_survenue_lors_du_televersement_de_l_a'),
         };
     }
 

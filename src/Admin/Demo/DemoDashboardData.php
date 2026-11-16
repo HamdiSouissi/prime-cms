@@ -14,6 +14,8 @@ use Prime\Kernel\Application;
  */
 final class DemoDashboardData
 {
+    use \Prime\Admin\TranslatesAdminCopy;
+
     /**
      * Four vibrant overview KPI tiles displayed on the dashboard home.
      *
@@ -52,7 +54,7 @@ final class DemoDashboardData
                 'url' => '/admin/content/post',
             ],
             [
-                'label' => 'Médias',
+                'label' => $this->t('admin.shared.medias'),
                 'value' => '264',
                 'icon' => 'image',
                 'accent' => 'sky',
@@ -62,7 +64,7 @@ final class DemoDashboardData
                 'url' => '/admin/media',
             ],
             [
-                'label' => 'Utilisateurs',
+                'label' => $this->t('admin.shared.utilisateurs'),
                 'value' => '6',
                 'icon' => 'users',
                 'accent' => 'amber',
@@ -95,7 +97,7 @@ final class DemoDashboardData
                 'meta' => 'Modifiée par Claire Moreau · il y a 18 minutes',
                 'author' => 'Claire Moreau',
                 'initials' => 'CM',
-                'status' => 'Publié',
+                'status' => $this->t('admin.shared.publie'),
                 'statusVariant' => 'success',
                 'accent' => 'teal',
             ],
@@ -104,7 +106,7 @@ final class DemoDashboardData
                 'meta' => 'Enregistré en brouillon par Lucas Bernard · il y a 1 heure',
                 'author' => 'Lucas Bernard',
                 'initials' => 'LB',
-                'status' => 'Brouillon',
+                'status' => $this->t('admin.shared.brouillon'),
                 'statusVariant' => 'amber',
                 'accent' => 'violet',
             ],
@@ -144,29 +146,29 @@ final class DemoDashboardData
     {
         return [
             [
-                'title' => 'Créer une page',
-                'description' => 'Nouveau contenu éditorial',
+                'title' => $this->t('admin.demo.shortcut_create_page'),
+                'description' => $this->t('admin.demo.shortcut_create_page_desc'),
                 'icon' => 'file-text',
                 'accent' => 'teal',
                 'url' => '/admin/content/page/create',
             ],
             [
-                'title' => 'Rédiger un article',
-                'description' => 'Actualité ou dossier blog',
+                'title' => $this->t('admin.demo.shortcut_write_post'),
+                'description' => $this->t('admin.demo.shortcut_write_post_desc'),
                 'icon' => 'newspaper',
                 'accent' => 'violet',
                 'url' => '/admin/content/post/create',
             ],
             [
-                'title' => 'Importer un média',
-                'description' => 'Images, PDF et documents',
+                'title' => $this->t('admin.demo.shortcut_import_media'),
+                'description' => $this->t('admin.demo.shortcut_import_media_desc'),
                 'icon' => 'upload',
                 'accent' => 'sky',
                 'url' => '/admin/media',
             ],
             [
-                'title' => 'Guide des composants',
-                'description' => 'Styleguide du design system',
+                'title' => $this->t('admin.demo.shortcut_guide'),
+                'description' => $this->t('admin.demo.shortcut_guide_desc'),
                 'icon' => 'sparkles',
                 'accent' => 'amber',
                 'url' => '/admin/styleguide',
@@ -183,19 +185,19 @@ final class DemoDashboardData
     {
         return [
             [
-                'label' => 'Version de Prime CMS',
+                'label' => $this->t('admin.shared.version_prime_cms'),
                 'value' => Application::VERSION,
                 'badge' => 'Phase 7',
                 'variant' => 'brand',
             ],
             [
-                'label' => 'Version de PHP',
+                'label' => $this->t('admin.shared.version_php'),
                 'value' => PHP_VERSION,
                 'badge' => 'OK',
                 'variant' => 'success',
             ],
             [
-                'label' => 'Environnement',
+                'label' => $this->t('admin.shared.environnement'),
                 'value' => $app->environment(),
                 'badge' => $app->isDebug() ? 'Debug actif' : 'Production',
                 'variant' => $app->isDebug() ? 'amber' : 'neutral',
@@ -260,7 +262,7 @@ final class DemoDashboardData
                 ],
             ],
             'media' => [
-                'title' => 'Médias',
+                'title' => $this->t('admin.shared.medias'),
                 'subtitle' => 'Centralisez et optimisez vos images, PDF et documents.',
                 'icon' => 'image',
                 'accent' => 'teal',

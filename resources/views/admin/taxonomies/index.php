@@ -112,7 +112,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                 'icon' => $taxonomy->icon,
                 'accent' => 'teal',
                 'title' => $taxonomy->label('empty_title'),
-                'description' => 'Utilisez le formulaire ci-contre pour créer votre premier terme.',
+                'description' => $this->t('admin.view_taxonomies_index.utilisez_le_formulaire_ci_contre_pour_creer_votre_premier_te'),
             ])) ?>
         <?php else: ?>
             <div class="pc-table-wrap">

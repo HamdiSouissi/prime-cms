@@ -8,6 +8,7 @@ use Prime\Admin\AdminContext;
 use Prime\Admin\Data\DashboardShortcut;
 use Prime\Admin\Data\DashboardStat;
 use Prime\Admin\Demo\DemoDashboardData;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Auth\User;
 use Prime\Auth\UserRepository;
@@ -33,6 +34,8 @@ use Throwable;
  */
 final class DashboardController
 {
+    use TranslatesAdminCopy;
+
     /**
      * Required capability per placeholder module key.
      *
@@ -124,7 +127,7 @@ final class DashboardController
                     /** @var list<array{title: string, description: string, icon: string, accent: string, url: string}> $fallback */
                     $fallback = is_array($previous) ? array_values($previous) : [];
                     if (!is_array($candidate)) {
-                        $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de raccourcis.');
+                        $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_text_dashboard.la_valeur_retournee_doit_etre_une_liste_de_raccourcis'));
 
                         return $fallback;
                     }
@@ -133,7 +136,7 @@ final class DashboardController
                     foreach ($candidate as $index => $entry) {
                         $normalized = DashboardShortcut::fromArray($entry);
                         if ($normalized === null) {
-                            $this->logInvalidFilterData($hookName, $owner, sprintf('Raccourci invalide ignoré à l\'index %s.', (string) $index));
+                            $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_text_dashboard.raccourci_invalide_ignore_a_l_index_s'), (string) $index));
                             continue;
                         }
                         $valid[] = $normalized->toArray();
@@ -153,7 +156,7 @@ final class DashboardController
                     /** @var list<array{label: string, value: string, icon: string, accent: string, trend: string, trendDirection: 'up'|'down'|'flat', hint: string, url: string}> $fallback */
                     $fallback = is_array($previous) ? array_values($previous) : [];
                     if (!is_array($candidate)) {
-                        $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de statistiques.');
+                        $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_text_dashboard.la_valeur_retournee_doit_etre_une_liste_de_statistiques'));
 
                         return $fallback;
                     }
@@ -162,7 +165,7 @@ final class DashboardController
                     foreach ($candidate as $index => $entry) {
                         $normalized = DashboardStat::fromArray($entry);
                         if ($normalized === null) {
-                            $this->logInvalidFilterData($hookName, $owner, sprintf('Statistique invalide ignorée à l\'index %s.', (string) $index));
+                            $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_text_dashboard.statistique_invalide_ignoree_a_l_index_s'), (string) $index));
                             continue;
                         }
                         $valid[] = $normalized->toArray();
@@ -176,7 +179,7 @@ final class DashboardController
         }
 
         $liveActivity = $this->buildLiveRecentActivity();
-        $data = $this->context->build($request, 'Tableau de bord', [
+        $data = $this->context->build($request, $this->t('admin.ctrl_text_dashboard.tableau_de_bord'), [
             'stats' => $stats,
             'recentActivity' => $liveActivity ?? $this->demo->recentActivity(),
             'isLiveActivity' => $liveActivity !== null,
@@ -221,41 +224,41 @@ final class DashboardController
 
         return [
             [
-                'label' => 'Pages publiées',
+                'label' => $this->t('admin.ctrl_text_dashboard.pages_publiees'),
                 'value' => (string) ($pageCounts[Entry::STATUS_PUBLISHED] ?? 0),
                 'icon' => 'file-text',
                 'accent' => 'teal',
-                'trend' => sprintf('%d total', ($pageCounts[Entry::STATUS_PUBLISHED] ?? 0) + ($pageCounts[Entry::STATUS_DRAFT] ?? 0)),
+                'trend' => sprintf($this->t('admin.ctrl_text_dashboard.d_total'), ($pageCounts[Entry::STATUS_PUBLISHED] ?? 0) + ($pageCounts[Entry::STATUS_DRAFT] ?? 0)),
                 'trendDirection' => 'flat',
-                'hint' => sprintf('%d brouillon(s)', $pageCounts[Entry::STATUS_DRAFT] ?? 0),
+                'hint' => sprintf($this->t('admin.ctrl_text_dashboard.d_brouillon_s'), $pageCounts[Entry::STATUS_DRAFT] ?? 0),
                 'url' => '/admin/content/page',
             ],
             [
-                'label' => 'Articles publiés',
+                'label' => $this->t('admin.ctrl_text_dashboard.articles_publies'),
                 'value' => (string) ($postCounts[Entry::STATUS_PUBLISHED] ?? 0),
                 'icon' => 'newspaper',
                 'accent' => 'violet',
-                'trend' => sprintf('%d brouillon(s)', $postCounts[Entry::STATUS_DRAFT] ?? 0),
+                'trend' => sprintf($this->t('admin.ctrl_text_dashboard.d_brouillon_s'), $postCounts[Entry::STATUS_DRAFT] ?? 0),
                 'trendDirection' => 'flat',
-                'hint' => sprintf('%d planifié(s)', $postCounts[Entry::STATUS_SCHEDULED] ?? 0),
+                'hint' => sprintf($this->t('admin.ctrl_text_dashboard.d_planifie_s'), $postCounts[Entry::STATUS_SCHEDULED] ?? 0),
                 'url' => '/admin/content/post',
             ],
             [
-                'label' => 'Médias',
+                'label' => $this->t('admin.shared.medias'),
                 'value' => (string) $mediaCount,
                 'icon' => 'image',
                 'accent' => 'sky',
                 'trend' => MediaHelper::formatBytes($mediaBytes),
                 'trendDirection' => $mediaCount > 0 ? 'up' : 'flat',
-                'hint' => sprintf('%d image%s · Médiathèque active', $mediaImages, $mediaImages > 1 ? 's' : ''),
+                'hint' => sprintf($this->t('admin.ctrl_text_dashboard.d_image_s_mediatheque_active'), $mediaImages, $mediaImages > 1 ? 's' : ''),
                 'url' => '/admin/media',
             ],
             [
-                'label' => 'Utilisateurs',
+                'label' => $this->t('admin.shared.utilisateurs'),
                 'value' => (string) $usersTotal,
                 'icon' => 'users',
                 'accent' => 'amber',
-                'trend' => 'Comptes actifs',
+                'trend' => $this->t('admin.ctrl_text_dashboard.comptes_actifs'),
                 'trendDirection' => 'up',
                 'hint' => 'RBAC + 2FA',
                 'url' => '/admin/users',
@@ -301,7 +304,7 @@ final class DashboardController
 
             $items[] = [
                 'title' => sprintf('%s « %s »', $typeLabel, $entry->title),
-                'meta' => sprintf('Mis à jour par %s · %s UTC', $authorName, $entry->updatedAt),
+                'meta' => sprintf($this->t('admin.ctrl_text_dashboard.mis_a_jour_par_s_s_utc'), $authorName, $entry->updatedAt),
                 'author' => $authorName,
                 'initials' => $initials,
                 'status' => $entry->statusLabel(),
@@ -345,12 +348,12 @@ final class DashboardController
 
         $requiredCap = self::MODULE_CAPABILITIES[$key] ?? null;
         if ($requiredCap !== null && !$this->auth->can($requiredCap, $request)) {
-            throw new ForbiddenException('Vous ne disposez pas des permissions nécessaires pour accéder à ce module.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_dashboard.vous_ne_disposez_pas_des_permissions_necessaires_pour_accede'));
         }
 
         $meta = $modules[$key];
         $breadcrumbs = [
-            ['label' => 'Tableau de bord', 'url' => '/admin'],
+            ['label' => $this->t('admin.ctrl_text_dashboard.tableau_de_bord'), 'url' => '/admin'],
         ];
 
         if (isset($meta['parentTitle'], $meta['parentUrl'])) {

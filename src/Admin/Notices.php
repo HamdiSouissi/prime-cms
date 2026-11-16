@@ -19,6 +19,8 @@ use Throwable;
  */
 final class Notices
 {
+    use TranslatesAdminCopy;
+
     public const SETTINGS_KEY = 'admin.notices';
     private const DISMISSED_PREFIX = 'admin.notices.dismissed.';
 
@@ -190,7 +192,7 @@ final class Notices
         foreach ($raw as $index => $item) {
             $notice = Notice::fromArray($item);
             if ($notice === null) {
-                $this->logger?->warning('Notification admin invalide ignorée lors du chargement.', [
+                $this->logger?->warning($this->t('admin.ctrl_notices.notification_admin_invalide_ignoree_lors_du_chargement'), [
                     'index' => $index,
                 ]);
                 continue;

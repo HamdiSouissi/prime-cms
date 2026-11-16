@@ -12,7 +12,7 @@ declare(strict_types=1);
  * @var string $siteName
  */
 $this->layout('auth::layout', [
-    'pageTitle' => 'Mot de passe oublié',
+    'pageTitle' => $this->t('admin.auth_forgot-password.mot_de_passe_oublie'),
     'siteName' => $siteName,
 ]);
 ?>

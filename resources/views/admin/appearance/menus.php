@@ -23,7 +23,7 @@ $this->layout('admin::layouts/app');
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Menus de navigation',
-    'subtitle' => 'Organisez les liens de votre site jusqu\'à 3 niveaux de profondeur et assignez-les aux emplacements du thème.',
+    'subtitle' => $this->t('admin.view_appearance_menus.organisez_les_liens_de_votre_site_jusqu_a_3_niveaux_de_profo'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
 

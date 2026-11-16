@@ -24,7 +24,7 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Mon profil',
+    'title' => $this->t('admin.view_profile_index.mon_profil'),
     'subtitle' => $profileUser->displayName . ' · ' . $profileUser->primaryRoleName(),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
@@ -73,7 +73,7 @@ ob_start();
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'profile-display-name',
             'name' => 'display_name',
-            'label' => 'Nom affiché',
+            'label' => $this->t('admin.view_profile_index.nom_affiche'),
             'type' => 'text',
             'value' => $oldInfo['display_name'],
             'required' => true,
@@ -86,7 +86,7 @@ ob_start();
             'label' => 'Identifiant public (URL d’auteur)',
             'type' => 'text',
             'value' => (string) ($oldInfo['username'] ?? ''),
-            'help' => 'Utilisé pour votre page auteur publique : /auteur/' . $profileUser->authorSlug(),
+            'help' => $this->t('admin.view_profile_index.utilise_pour_votre_page_auteur_publique_auteur') . $profileUser->authorSlug(),
             'error' => $infoErrors['username'] ?? null,
         ])) ?>
 
@@ -112,14 +112,14 @@ ob_start();
             'type' => 'email',
             'value' => $oldInfo['email'],
             'required' => true,
-            'help' => 'Pour changer votre adresse e-mail, confirmez avec votre mot de passe actuel ci-dessous.',
+            'help' => $this->t('admin.view_profile_index.pour_changer_votre_adresse_e_mail_confirmez_avec_votre_mot_d'),
             'error' => $infoErrors['email'] ?? null,
         ])) ?>
 
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'profile-current-password-email',
             'name' => 'current_password_email',
-            'label' => 'Mot de passe actuel (requis uniquement en cas de changement d\'e-mail)',
+            'label' => $this->t('admin.view_profile_index.mot_de_passe_actuel_requis_uniquement_en_cas_de_changement_d'),
             'type' => 'password',
             'value' => '',
             'autocomplete' => 'current-password',
@@ -129,7 +129,7 @@ ob_start();
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'profile-locale',
             'name' => 'locale',
-            'label' => 'Langue de l\'interface',
+            'label' => $this->t('admin.view_profile_index.langue_de_l_interface'),
             'type' => 'select',
             'value' => $oldInfo['locale'],
             'options' => $localeOptions,
@@ -152,7 +152,7 @@ ob_start();
 
     <?= $this->raw($this->insert('admin::components/card', [
         'title' => 'Informations personnelles',
-        'subtitle' => 'Gérez votre nom public, votre adresse de connexion et la langue du tableau de bord.',
+        'subtitle' => $this->t('admin.view_profile_index.gerez_votre_nom_public_votre_adresse_de_connexion_et_la_lang'),
         'body' => $infoCardBody,
         'footer' => '<button type="submit" class="pc-btn pc-btn--primary">Enregistrer</button>',
     ])) ?>
@@ -172,7 +172,7 @@ ob_start();
             <?= $this->raw($this->insert('admin::components/field', [
                 'id' => 'profile-current-password',
                 'name' => 'current_password',
-                'label' => 'Mot de passe actuel',
+                'label' => $this->t('admin.view_profile_index.mot_de_passe_actuel'),
                 'type' => 'password',
                 'value' => '',
                 'autocomplete' => 'current-password',
@@ -183,10 +183,10 @@ ob_start();
             <?= $this->raw($this->insert('admin::components/field', [
                 'id' => 'profile-new-password',
                 'name' => 'password',
-                'label' => 'Nouveau mot de passe',
+                'label' => $this->t('admin.view_profile_index.nouveau_mot_de_passe'),
                 'type' => 'password',
                 'value' => '',
-                'placeholder' => 'Minimum 12 caractères',
+                'placeholder' => $this->t('admin.view_profile_index.minimum_12_caracteres'),
                 'autocomplete' => 'new-password',
                 'required' => true,
                 'error' => $passwordErrors['password'] ?? null,
@@ -207,7 +207,7 @@ ob_start();
             <?= $this->raw($this->insert('admin::components/field', [
                 'id' => 'profile-new-password-confirmation',
                 'name' => 'password_confirmation',
-                'label' => 'Confirmer le nouveau mot de passe',
+                'label' => $this->t('admin.view_profile_index.confirmer_le_nouveau_mot_de_passe'),
                 'type' => 'password',
                 'value' => '',
                 'autocomplete' => 'new-password',
@@ -218,8 +218,8 @@ ob_start();
         <?php $pwdCardBody = (string) ob_get_clean(); ?>
 
         <?= $this->raw($this->insert('admin::components/card', [
-            'title' => 'Changer le mot de passe',
-            'subtitle' => 'La modification déconnecte automatiquement vos autres appareils tout en maintenant cette session active.',
+            'title' => $this->t('admin.view_profile_index.changer_le_mot_de_passe'),
+            'subtitle' => $this->t('admin.view_profile_index.la_modification_deconnecte_automatiquement_vos_autres_appare'),
             'body' => $pwdCardBody,
             'footer' => '<button type="submit" class="pc-btn pc-btn--primary">Mettre à jour le mot de passe</button>',
         ])) ?>
@@ -239,8 +239,8 @@ ob_start();
             <?php $recoveryText = implode("\n", $recoveryCodesOnce); ?>
             <?= $this->raw($this->insert('admin::components/alert', [
                 'variant' => 'warning',
-                'title' => 'Enregistrez vos codes de récupération maintenant',
-                'message' => 'Ces 8 codes à usage unique ne seront plus jamais affichés. Conservez-les dans un gestionnaire de mots de passe sécurisé.',
+                'title' => $this->t('admin.view_profile_index.enregistrez_vos_codes_de_recuperation_maintenant'),
+                'message' => $this->t('admin.view_profile_index.ces_8_codes_a_usage_unique_ne_seront_plus_jamais_affiches_co'),
             ])) ?>
 
             <ul class="pc-recovery-grid" aria-label="<?= t('admin.attr.codes_de_recuperation_2fa') ?>">
@@ -311,7 +311,7 @@ ob_start();
                     <?= $this->raw($this->insert('admin::components/field', [
                         'id' => 'profile-2fa-confirm-code',
                         'name' => 'code',
-                        'label' => 'Étape 2 : Saisissez le code à 6 chiffres affiché',
+                        'label' => $this->t('admin.view_profile_index.etape_2_saisissez_le_code_a_6_chiffres_affiche'),
                         'type' => 'text',
                         'value' => '',
                         'placeholder' => '000000',
@@ -347,7 +347,7 @@ ob_start();
                 <?= $this->raw($this->insert('admin::components/field', [
                     'id' => 'profile-2fa-regen-password',
                     'name' => 'current_password',
-                    'label' => 'Mot de passe actuel (pour régénérer les 8 codes de récupération)',
+                    'label' => $this->t('admin.view_profile_index.mot_de_passe_actuel_pour_regenerer_les_8_codes_de_recuperati'),
                     'type' => 'password',
                     'value' => '',
                     'autocomplete' => 'current-password',
@@ -371,7 +371,7 @@ ob_start();
                     <?= $this->raw($this->insert('admin::components/field', [
                         'id' => 'profile-2fa-disable-password',
                         'name' => 'current_password',
-                        'label' => 'Mot de passe actuel',
+                        'label' => $this->t('admin.view_profile_index.mot_de_passe_actuel'),
                         'type' => 'password',
                         'value' => '',
                         'autocomplete' => 'current-password',
@@ -380,7 +380,7 @@ ob_start();
                     <?= $this->raw($this->insert('admin::components/field', [
                         'id' => 'profile-2fa-disable-code',
                         'name' => 'code',
-                        'label' => 'Code TOTP ou code de récupération',
+                        'label' => $this->t('admin.view_profile_index.code_totp_ou_code_de_recuperation'),
                         'type' => 'text',
                         'value' => '',
                         'placeholder' => '000000 ou xxxx-xxxx',
@@ -397,8 +397,8 @@ ob_start();
     <?php $twoFactorCardBody = (string) ob_get_clean(); ?>
 
     <?= $this->raw($this->insert('admin::components/card', [
-        'title' => 'Authentification à deux facteurs (TOTP)',
-        'subtitle' => 'Double vérification via application d\'authentification standard RFC 6238.',
+        'title' => $this->t('admin.view_profile_index.authentification_a_deux_facteurs_totp'),
+        'subtitle' => $this->t('admin.view_profile_index.double_verification_via_application_d_authentification_stand'),
         'body' => $twoFactorCardBody,
     ])) ?>
 
@@ -416,7 +416,7 @@ ob_start();
             <?= $this->raw($this->insert('admin::components/field', [
                 'id' => 'profile-devices-password',
                 'name' => 'current_password',
-                'label' => 'Confirmez votre mot de passe actuel',
+                'label' => $this->t('admin.view_profile_index.confirmez_votre_mot_de_passe_actuel'),
                 'type' => 'password',
                 'value' => '',
                 'autocomplete' => 'current-password',
@@ -426,8 +426,8 @@ ob_start();
         <?php $devicesCardBody = (string) ob_get_clean(); ?>
 
         <?= $this->raw($this->insert('admin::components/card', [
-            'title' => 'Sessions et appareils connectés',
-            'subtitle' => 'Révoquez immédiatement toutes vos autres sessions actives et cookies « Rester connecté ».',
+            'title' => $this->t('admin.view_profile_index.sessions_et_appareils_connectes'),
+            'subtitle' => $this->t('admin.view_profile_index.revoquez_immediatement_toutes_vos_autres_sessions_actives_et'),
             'body' => $devicesCardBody,
             'footer' => '<button type="submit" class="pc-btn pc-btn--secondary">Déconnecter tous mes autres appareils</button>',
         ])) ?>
@@ -439,7 +439,7 @@ $securityTabHtml = (string) ob_get_clean();
 
 <?= $this->raw($this->insert('admin::components/tabs', [
     'id' => 'profile-tabs',
-    'label' => 'Sections du profil',
+    'label' => $this->t('admin.view_profile_index.sections_du_profil'),
     'activeTab' => $activeTab,
     'tabs' => [
         [

@@ -27,7 +27,7 @@ $this->layout('admin::layouts/app');
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Performance',
-    'subtitle' => 'Cache de pages, pilote du cache de données et statistiques en direct.',
+    'subtitle' => $this->t('admin.view_settings_performance.cache_de_pages_pilote_du_cache_de_donnees_et_statistiques_en'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
 

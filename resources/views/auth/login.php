@@ -55,10 +55,10 @@ $this->layout('auth::layout', [
     <?= $this->raw($this->insert('admin::components/field', [
         'id' => 'login-password',
         'name' => 'password',
-        'label' => 'Mot de passe',
+        'label' => $this->t('admin.auth_login.mot_de_passe'),
         'type' => 'password',
         'value' => '',
-        'placeholder' => 'Votre mot de passe',
+        'placeholder' => $this->t('admin.auth_login.votre_mot_de_passe'),
         'autocomplete' => 'current-password',
         'required' => true,
         'autofocus' => $email !== '',

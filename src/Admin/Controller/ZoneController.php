@@ -6,6 +6,7 @@ namespace Prime\Admin\Controller;
 
 use InvalidArgumentException;
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Editor\BlockRegistry;
 use Prime\Editor\Renderer;
@@ -21,6 +22,8 @@ use Prime\View\View;
  */
 final class ZoneController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly View $view,
         private readonly AdminContext $context,
@@ -77,7 +80,7 @@ final class ZoneController
             'dynamicCatalog' => $this->dynamicBlocks->catalog(),
             'primaryCtaInContent' => $selectedZone !== null,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_zone.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => 'Apparence', 'url' => '/admin/appearance/themes'],
                 ['label' => 'Zones', 'url' => null],
             ],
@@ -94,9 +97,9 @@ final class ZoneController
         $declaredZones = $this->themes->zones();
         if (!isset($declaredZones[$slug])) {
             if ($request->wantsJson()) {
-                return Response::json(['ok' => false, 'message' => 'Zone inconnue pour le thème actif.'], 404);
+                return Response::json(['ok' => false, 'message' => $this->t('admin.ctrl_text_zone.zone_inconnue_pour_le_theme_actif')], 404);
             }
-            $this->context->flashToast('Zone inconnue pour le thème actif.', 'danger');
+            $this->context->flashToast($this->t('admin.ctrl_text_zone.zone_inconnue_pour_le_theme_actif'), 'danger');
 
             return Response::redirect('/admin/appearance/zones');
         }
@@ -132,7 +135,7 @@ final class ZoneController
         if ($request->wantsJson()) {
             return Response::json([
                 'ok' => true,
-                'message' => 'Zone enregistrée avec succès.',
+                'message' => $this->t('admin.ctrl_text_zone.zone_enregistree_avec_succes'),
                 'block_count' => $saved['block_count'],
             ]);
         }

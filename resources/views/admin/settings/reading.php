@@ -19,7 +19,7 @@ $this->layout('admin::layouts/app');
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Lecture',
-    'subtitle' => 'Choisissez ce qu\'affiche la page d\'accueil et le nombre d\'articles par page.',
+    'subtitle' => $this->t('admin.view_settings_reading.choisissez_ce_qu_affiche_la_page_d_accueil_et_le_nombre_d_ar'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
 

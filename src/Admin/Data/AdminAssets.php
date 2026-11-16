@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Prime\Admin\Data;
 
+use Prime\I18n\Translator;
+
 /**
  * Immutable normalized value object for admin shell stylesheets and scripts (`admin.assets`).
  */
@@ -33,7 +35,7 @@ final readonly class AdminAssets
 
         if (!is_array($raw)) {
             if ($onInvalid !== null) {
-                $onInvalid('La valeur retournée pour admin.assets doit être un tableau associatif {css, js}.');
+                $onInvalid(Translator::fallback()->translate('admin.ctrl_data_adminassets.la_valeur_retournee_pour_admin_assets_doit_etre_un_tableau_a'));
             }
 
             return $fallback;
@@ -66,7 +68,7 @@ final readonly class AdminAssets
     {
         if (!array_key_exists($key, $raw) || !is_array($raw[$key])) {
             if ($onInvalid !== null) {
-                $onInvalid(sprintf('La clé "%s" de admin.assets est absente ou n\'est pas un tableau.', $key));
+                $onInvalid(sprintf(Translator::fallback()->translate('admin.ctrl_data_adminassets.la_cle_s_de_admin_assets_est_absente_ou_n_est_pas_un_tableau'), $key));
             }
 
             return $fallback;
@@ -76,7 +78,7 @@ final readonly class AdminAssets
         foreach ($raw[$key] as $index => $entry) {
             if (!is_string($entry) || !FilterValueHelper::isSafeUrl($entry)) {
                 if ($onInvalid !== null) {
-                    $onInvalid(sprintf('Entrée invalide ignorée dans admin.assets[%s][%s].', $key, (string) $index));
+                    $onInvalid(sprintf(Translator::fallback()->translate('admin.ctrl_data_adminassets.entree_invalide_ignoree_dans_admin_assets_s_s'), $key, (string) $index));
                 }
                 continue;
             }

@@ -95,7 +95,7 @@ declare(strict_types=1);
                         <div class="pc-media-field__buttons">
                             <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-choose>
                                 <?= $this->raw($this->icon('image', 14)) ?>
-                                <span data-prime-media-choose-label><?= $field->multiple ? 'Choisir des médias' : 'Choisir un média' ?></span>
+                                <span data-prime-media-choose-label><?= $field->multiple ? $this->t('admin.view_content_partials_field-group.choisir_des_medias') : $this->t('admin.view_content_partials_field-group.choisir_un_media') ?></span>
                             </button>
                             <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear hidden>Retirer</button>
                         </div>
@@ -117,7 +117,7 @@ declare(strict_types=1);
                             id="<?= $this->e($inputId) ?>"
                             type="text"
                             class="pc-input"
-                            placeholder="<?= $this->e($field->placeholder !== '' ? $field->placeholder : 'Rechercher un contenu…') ?>"
+                            placeholder="<?= $this->e($field->placeholder !== '' ? $field->placeholder : $this->t('admin.view_content_partials_field-group.rechercher_un_contenu')) ?>"
                             autocomplete="off"
                             data-prime-entry-search
                         >

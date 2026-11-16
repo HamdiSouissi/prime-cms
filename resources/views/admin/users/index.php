@@ -38,7 +38,7 @@ $sortUrl = static function (string $col) use ($filters, $buildQuery): string {
 $headerActions = '';
 if ($canManageRoles) {
     $headerActions .= $this->insert('admin::components/button', [
-        'label' => 'Gérer les rôles',
+        'label' => $this->t('admin.view_users_index.gerer_les_roles'),
         'variant' => 'secondary',
         'icon' => 'shield',
         'href' => '/admin/roles',
@@ -46,7 +46,7 @@ if ($canManageRoles) {
 }
 if ($canCreate) {
     $headerActions .= $this->insert('admin::components/button', [
-        'label' => 'Ajouter un utilisateur',
+        'label' => $this->t('admin.view_users_index.ajouter_un_utilisateur'),
         'variant' => 'primary',
         'icon' => 'plus',
         'href' => '/admin/users/create',
@@ -55,8 +55,8 @@ if ($canCreate) {
 ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Utilisateurs',
-    'subtitle' => sprintf('%d compte%s enregistré%s sur le site.', $pagination['total'], $pagination['total'] > 1 ? 's' : '', $pagination['total'] > 1 ? 's' : ''),
+    'title' => $this->t('admin.shared.utilisateurs'),
+    'subtitle' => sprintf($this->t('admin.view_users_index.d_compte_s_enregistre_s_sur_le_site'), $pagination['total'], $pagination['total'] > 1 ? 's' : '', $pagination['total'] > 1 ? 's' : ''),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $headerActions,
 ])) ?>
@@ -109,11 +109,11 @@ if ($canCreate) {
         <?= $this->raw($this->insert('admin::components/card', [
             'body' => $this->insert('admin::components/empty-state', [
                 'icon' => 'users',
-                'title' => $hasFilters ? 'Aucun utilisateur ne correspond à ces critères' : 'Aucun utilisateur',
+                'title' => $hasFilters ? $this->t('admin.view_users_index.aucun_utilisateur_ne_correspond_a_ces_criteres') : $this->t('admin.view_users_index.aucun_utilisateur'),
                 'description' => $hasFilters
-                    ? 'Essayez d\'élargir votre recherche ou de réinitialiser les filtres actifs.'
-                    : 'Commencez par créer un compte utilisateur pour votre équipe.',
-                'secondaryLabel' => $hasFilters ? 'Réinitialiser les filtres' : null,
+                    ? $this->t('admin.view_users_index.essayez_d_elargir_votre_recherche_ou_de_reinitialiser_les_fi')
+                    : $this->t('admin.view_users_index.commencez_par_creer_un_compte_utilisateur_pour_votre_equipe'),
+                'secondaryLabel' => $hasFilters ? $this->t('admin.view_users_index.reinitialiser_les_filtres') : null,
                 'secondaryUrl' => $hasFilters ? '/admin/users' : null,
             ]),
         ])) ?>
@@ -167,7 +167,7 @@ if ($canCreate) {
                         <?php foreach ($items as $user): ?>
                             <?php
                             $isSelf = $currentUser['id'] === $user->id;
-                            $rel = $relativeDates[$user->id] ?? ['label' => 'Jamais connecté', 'title' => ''];
+                            $rel = $relativeDates[$user->id] ?? ['label' => $this->t('admin.view_users_index.jamais_connecte'), 'title' => ''];
                             ?>
                             <tr>
                                 <?php if ($canEdit): ?>
@@ -213,7 +213,7 @@ if ($canCreate) {
                                 <td data-prime-label="Rôles">
                                     <div class="pc-badges-wrap">
                                         <?php if ($user->roles === []): ?>
-                                            <?= $this->raw($this->insert('admin::components/badge', ['label' => 'Sans rôle', 'variant' => 'neutral'])) ?>
+                                            <?= $this->raw($this->insert('admin::components/badge', ['label' => $this->t('admin.view_users_index.sans_role'), 'variant' => 'neutral'])) ?>
                                         <?php else: ?>
                                             <?php foreach ($user->roles as $role): ?>
                                                 <?= $this->raw($this->insert('admin::components/badge', [

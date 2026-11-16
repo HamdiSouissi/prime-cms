@@ -9,7 +9,7 @@ declare(strict_types=1);
  * @var string $siteName
  */
 $this->layout('auth::layout', [
-    'pageTitle' => 'Lien expiré',
+    'pageTitle' => $this->t('admin.auth_reset-expired.lien_expire'),
     'siteName' => $siteName,
 ]);
 ?>
@@ -23,7 +23,7 @@ $this->layout('auth::layout', [
 
 <?= $this->raw($this->insert('admin::components/alert', [
     'variant' => 'warning',
-    'message' => 'Pour définir un nouveau mot de passe, effectuez une nouvelle demande ci-dessous.',
+    'message' => $this->t('admin.auth_reset-expired.pour_definir_un_nouveau_mot_de_passe_effectuez_une_nouvelle_'),
 ])) ?>
 
 <a href="/admin/forgot-password" class="pc-btn pc-btn--primary pc-auth-submit">

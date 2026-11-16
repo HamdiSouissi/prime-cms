@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Cache\ApcuCache;
 use Prime\Cache\CacheManager;
 use Prime\Http\Request;
@@ -21,6 +22,8 @@ use Prime\View\View;
  */
 final class PerformanceController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly View $view,
         private readonly AdminContext $context,
@@ -42,7 +45,7 @@ final class PerformanceController
                 'apcuAvailable' => ApcuCache::isAvailable(),
                 'lastPurgedAt' => $this->lastPurgedAt(),
                 'breadcrumbs' => [
-                    ['label' => 'Tableau de bord', 'url' => '/admin'],
+                    ['label' => $this->t('admin.ctrl_text_performance.tableau_de_bord'), 'url' => '/admin'],
                     ['label' => 'Réglages', 'url' => '/admin/settings'],
                     ['label' => 'Performance', 'url' => null],
                 ],
@@ -60,7 +63,7 @@ final class PerformanceController
         $ttl = is_scalar($ttlRaw) ? (int) $ttlRaw : 600;
 
         if ($ttl < 60 || $ttl > 86400) {
-            $this->context->flashToast('La durée de vie du cache de pages doit être comprise entre 60 et 86 400 secondes.', 'danger');
+            $this->context->flashToast($this->t('admin.ctrl_text_performance.la_duree_de_vie_du_cache_de_pages_doit_etre_comprise_entre_6'), 'danger');
 
             return Response::redirect('/admin/settings/performance');
         }
@@ -73,8 +76,8 @@ final class PerformanceController
 
         $this->context->flashToast(
             $enabled
-                ? sprintf('Cache de pages activé (%d secondes) ; caches vidés.', $ttl)
-                : 'Cache de pages désactivé ; caches vidés.',
+                ? sprintf($this->t('admin.ctrl_text_performance.cache_de_pages_active_d_secondes_caches_vides'), $ttl)
+                : $this->t('admin.ctrl_text_performance.cache_de_pages_desactive_caches_vides'),
             'success',
         );
 
@@ -87,7 +90,7 @@ final class PerformanceController
     public function purge(Request $request): Response
     {
         $this->cache->clearAll();
-        $this->context->flashToast('Tout le cache a été vidé.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_performance.tout_le_cache_a_ete_vide'), 'success');
 
         return Response::redirect('/admin/settings/performance');
     }

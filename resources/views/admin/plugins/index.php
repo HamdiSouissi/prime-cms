@@ -18,10 +18,10 @@ declare(strict_types=1);
 $this->layout('admin::layouts/app');
 
 $statusTabs = [
-    'all' => ['label' => 'Tous', 'count' => $counts['all']],
-    'active' => ['label' => 'Actifs', 'count' => $counts['active']],
-    'inactive' => ['label' => 'Inactifs', 'count' => $counts['inactive']],
-    'errored' => ['label' => 'En erreur', 'count' => $counts['errored']],
+    'all' => ['label' => $this->t('admin.shared.tous'), 'count' => $counts['all']],
+    'active' => ['label' => $this->t('admin.shared.actifs'), 'count' => $counts['active']],
+    'inactive' => ['label' => $this->t('admin.shared.inactifs'), 'count' => $counts['inactive']],
+    'errored' => ['label' => $this->t('admin.shared.en_erreur'), 'count' => $counts['errored']],
 ];
 
 $buildTabUrl = static function (string $status) use ($filters): string {
@@ -40,7 +40,7 @@ $headerActions = '';
 if ($allowUpload) {
     $headerActions = '<button type="button" class="pc-btn pc-btn--primary" data-prime-drawer-open="prime-plugin-upload-drawer">'
         . $this->icon('upload', 16)
-        . '<span>Ajouter un plugin</span></button>';
+        . '<span>' . $this->e($this->t('admin.view_plugins_index.ajouter_un_plugin')) . '</span></button>';
 }
 ?>
 <?php $this->start('content'); ?>
@@ -48,7 +48,7 @@ if ($allowUpload) {
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Plugins',
     'subtitle' => sprintf(
-        '%d plugin%s installé%s · %d actif%s%s',
+        $this->t('admin.view_plugins_index.d_plugin_s_installe_s_d_actif_s_s'),
         $counts['all'],
         $counts['all'] > 1 ? 's' : '',
         $counts['all'] > 1 ? 's' : '',
@@ -106,8 +106,8 @@ if ($allowUpload) {
         <?php if ($counts['all'] === 0): ?>
             <?= $this->raw($this->insert('admin::components/empty-state', [
                 'icon' => 'plug',
-                'title' => 'Aucun plugin installé',
-                'description' => 'Étendez Prime CMS avec des plugins officiels ou sur-mesure en téléversant une archive ZIP ou en plaçant un dossier dans content/plugins/.',
+                'title' => $this->t('admin.view_plugins_index.aucun_plugin_installe'),
+                'description' => $this->t('admin.view_plugins_index.etendez_prime_cms_avec_des_plugins_officiels_ou_sur_mesure_e'),
                 'actionHtml' => $allowUpload
                     ? '<button type="button" class="pc-btn pc-btn--secondary" data-prime-drawer-open="prime-plugin-upload-drawer">' . $this->icon('upload', 16) . '<span>Téléverser une archive ZIP</span></button>'
                     : null,
@@ -115,8 +115,8 @@ if ($allowUpload) {
         <?php else: ?>
             <?= $this->raw($this->insert('admin::components/empty-state', [
                 'icon' => 'search',
-                'title' => 'Aucun plugin ne correspond à ce filtre',
-                'description' => 'Essayez un autre mot-clé ou réinitialisez les filtres de statut.',
+                'title' => $this->t('admin.view_plugins_index.aucun_plugin_ne_correspond_a_ce_filtre'),
+                'description' => $this->t('admin.view_plugins_index.essayez_un_autre_mot_cle_ou_reinitialisez_les_filtres_de_sta'),
                 'actionHtml' => '<a class="pc-btn pc-btn--secondary" href="/admin/plugins">Afficher tous les plugins</a>',
             ])) ?>
         <?php endif; ?>
@@ -132,8 +132,8 @@ if ($allowUpload) {
                     default => 'neutral',
                 };
                 $statusLabel = match ($plugin->status) {
-                    'active' => 'Actif',
-                    'errored' => 'En erreur',
+                    'active' => $this->t('admin.shared.actif'),
+                    'errored' => $this->t('admin.shared.en_erreur'),
                     default => 'Inactif',
                 };
                 ?>
@@ -183,7 +183,7 @@ if ($allowUpload) {
                             ])) ?>
                             <?php if ($plugin->needsUpdate && $plugin->installedVersion !== null): ?>
                                 <?= $this->raw($this->insert('admin::components/badge', [
-                                    'label' => 'Maj ' . $plugin->installedVersion . ' → ' . $plugin->version(),
+                                    'label' => $this->t('admin.shared.mise_a_jour') . ' ' . $plugin->installedVersion . ' → ' . $plugin->version(),
                                     'variant' => 'info',
                                 ])) ?>
                             <?php endif; ?>
@@ -291,7 +291,7 @@ if ($allowUpload) {
                                         <?= (!$plugin->canActivate() || $safeMode) ? 'disabled' : '' ?>
                                     >
                                         <?= $this->raw($this->icon('check', 15)) ?>
-                                        <span><?= $plugin->isErrored() ? 'Réessayer l’activation' : 'Activer' ?></span>
+                                        <span><?= $plugin->isErrored() ? $this->t('admin.view_plugins_index.reessayer_l_activation') : 'Activer' ?></span>
                                     </button>
                                 </form>
                             <?php endif; ?>
@@ -401,7 +401,7 @@ if ($allowUpload) {
 
     <?= $this->raw($this->insert('admin::components/drawer', [
         'id' => 'prime-plugin-upload-drawer',
-        'title' => 'Ajouter un plugin (.zip)',
+        'title' => $this->t('admin.view_plugins_index.ajouter_un_plugin_zip'),
         'body' => $drawerBody,
     ])) ?>
 <?php endif; ?>
@@ -443,7 +443,7 @@ $modalFooter = (string) ob_get_clean();
 
 <?= $this->raw($this->insert('admin::components/modal', [
     'id' => 'prime-plugin-delete-modal',
-    'title' => 'Supprimer le plugin',
+    'title' => $this->t('admin.view_plugins_index.supprimer_le_plugin'),
     'body' => $modalBody,
     'footer' => $modalFooter,
 ])) ?>

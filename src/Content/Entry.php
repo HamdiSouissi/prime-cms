@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Prime\Content;
 
+use Prime\I18n\Translator;
+
 /**
  * Immutable content entry value object representing a row in `pc_entries`
  * optionally hydrated with its metadata, taxonomy terms, and author info.
@@ -34,6 +36,20 @@ final readonly class Entry
      *
      * @var array<string, string>
      */
+    /**
+     * Catalogue keys for every status label.
+     *
+     * @var array<string, string>
+     */
+    public const STATUS_LABEL_KEYS = [
+        self::STATUS_DRAFT => 'core.statuses.draft',
+        self::STATUS_PENDING => 'core.statuses.pending_review',
+        self::STATUS_PUBLISHED => 'core.statuses.published',
+        self::STATUS_SCHEDULED => 'core.statuses.scheduled',
+        self::STATUS_PRIVATE => 'core.statuses.private',
+        self::STATUS_TRASH => 'core.statuses.trash',
+    ];
+
     public const STATUS_LABELS = [
         self::STATUS_DRAFT => 'Brouillon',
         self::STATUS_PENDING => 'En attente de relecture',
@@ -206,9 +222,19 @@ final readonly class Entry
         return $this->status === self::STATUS_TRASH;
     }
 
+    /**
+     * Localised status label (`core.statuses.*`), falling back to the raw status.
+     */
     public function statusLabel(): string
     {
-        return self::STATUS_LABELS[$this->status] ?? $this->status;
+        if (!isset(self::STATUS_LABELS[$this->status])) {
+            return $this->status;
+        }
+
+        $key = self::STATUS_LABEL_KEYS[$this->status];
+        $translated = Translator::fallback()->translate($key);
+
+        return $translated === $key ? self::STATUS_LABELS[$this->status] : $translated;
     }
 
     public function statusVariant(): string

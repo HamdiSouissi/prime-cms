@@ -18,7 +18,7 @@ $this->layout('admin::layouts/app');
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Permaliens',
-    'subtitle' => 'Configurez la structure des URLs publiques et gérez les redirections 301 automatiques ou manuelles.',
+    'subtitle' => $this->t('admin.view_settings_permalinks.configurez_la_structure_des_urls_publiques_et_gerez_les_redi'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
 
