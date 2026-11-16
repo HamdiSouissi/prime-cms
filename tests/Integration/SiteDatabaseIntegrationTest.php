@@ -453,10 +453,10 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $robotsNormal = $kernel->handle(Request::create('GET', '/robots.txt'));
         $this->assertSame(200, $robotsNormal->status());
         $this->assertStringContainsString('Sitemap: https://prime-db.test/sitemap.xml', $robotsNormal->body());
-        $seoSettings->save(['no_index' => true]);
+        $seoSettings->save(['global_noindex' => true]);
         $robotsNoindex = $kernel->handle(Request::create('GET', '/robots.txt'));
         $this->assertStringContainsString("Disallow: /\n", $robotsNoindex->body());
-        $seoSettings->save(['no_index' => false]);
+        $seoSettings->save(['global_noindex' => false]);
 
         // 7. Zero N+1 on real MySQL/MariaDB: constant SQL query count for 10 vs 30 posts!
         for ($i = 1; $i <= 10; $i++) {
