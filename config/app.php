@@ -12,6 +12,8 @@ use Prime\Http\Middleware\RedirectIfNotInstalled;
 use Prime\Http\Middleware\SecurityHeaders;
 use Prime\Http\Middleware\TrailingSlash;
 use Prime\Http\Middleware\VerifyCsrfToken;
+use Prime\I18n\Http\LocaleMiddleware;
+use Prime\I18n\I18nServiceProvider;
 use Prime\Install\InstallServiceProvider;
 use Prime\Kernel\Env;
 use Prime\Kernel\Providers\HooksServiceProvider;
@@ -41,6 +43,7 @@ return [
         DatabaseServiceProvider::class,
         SettingsServiceProvider::class,
         CacheServiceProvider::class,
+        I18nServiceProvider::class,
         MailServiceProvider::class,
         HttpServiceProvider::class,
         AuthServiceProvider::class,
@@ -57,6 +60,7 @@ return [
         SecurityHeaders::class,
         TrailingSlash::class,
         RedirectIfNotInstalled::class,
+        LocaleMiddleware::class,
         PageCacheMiddleware::class,
     ],
 

@@ -10,6 +10,7 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Http\Session;
+use Prime\I18n\Translator;
 
 /**
  * Full-page cache for anonymous public `GET`/`HEAD` responses (`storage/cache/pages/`).
@@ -444,8 +445,14 @@ final class PageCache
         $query = $request->query();
         $page = isset($query['page']) && is_scalar($query['page']) ? (string) $query['page'] : '';
         $host = strtolower(trim((string) ($request->header('host') ?? 'default')));
+        $locale = $request->attribute('locale');
+        $suffix = '';
 
-        return $host . '|' . $path . ($page !== '' ? '?page=' . $page : '');
+        if (is_string($locale) && $locale !== '' && $locale !== Translator::DEFAULT_LOCALE) {
+            $suffix = '|lang:' . $locale;
+        }
+
+        return $host . '|' . $path . ($page !== '' ? '?page=' . $page : '') . $suffix;
     }
 
     private function filePathFor(Request $request): string

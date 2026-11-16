@@ -6,10 +6,14 @@ namespace Prime\Validation;
 
 use InvalidArgumentException;
 use Prime\Database\Connection;
+use Prime\I18n\Translator;
 use Prime\Security\PasswordPolicy;
 
 /**
- * Lightweight, zero-dependency form and payload validator with French messages.
+ * Lightweight, zero-dependency form and payload validator with translatable messages.
+ *
+ * Default messages resolve `validation.*` translation keys when a translator is bound (see
+ * {@see self::setTranslator()}) and fall back to French literals otherwise.
  *
  * Supported rules:
  * `nullable`, `required`, `string`, `email`, `min:N`, `max:N`, `between:min,max`,
@@ -24,6 +28,12 @@ final class Validator
     private array $errors = [];
 
     private bool $evaluated = false;
+
+    /**
+     * Translations used to resolve default messages (`validation.*` keys) when set by the
+     * `I18nServiceProvider`; `null` keeps the built-in French literals.
+     */
+    private static ?Translator $translator = null;
 
     private readonly PasswordPolicy $passwordPolicy;
 
@@ -73,6 +83,19 @@ final class Validator
             passwordPolicy: $passwordPolicy,
             passwordContext: $passwordContext,
         );
+    }
+
+    /**
+     * Inject the translator used for default validation messages (test/CLI friendly).
+     */
+    public static function setTranslator(?Translator $translator): void
+    {
+        self::$translator = $translator;
+    }
+
+    public static function translator(): ?Translator
+    {
+        return self::$translator;
     }
 
     public function passes(): bool
@@ -281,7 +304,7 @@ final class Validator
 
         if (is_int($value) || (is_string($value) && $this->hasNumericRule($field) && is_numeric(trim($value)))) {
             if ((int) $value < $min) {
-                return $this->message($field, 'min', 'Le champ « :label » doit être supérieur ou égal à :min.', [':min' => (string) $min]);
+                return $this->message($field, 'min', 'Le champ « :label » doit être supérieur ou égal à :min.', [':min' => (string) $min], 'numeric');
             }
 
             return null;
@@ -289,7 +312,7 @@ final class Validator
 
         if (is_array($value)) {
             if (count($value) < $min) {
-                return $this->message($field, 'min', 'Sélectionnez au moins :min élément(s) pour « :label ».', [':min' => (string) $min]);
+                return $this->message($field, 'min', 'Sélectionnez au moins :min élément(s) pour « :label ».', [':min' => (string) $min], 'array');
             }
 
             return null;
@@ -297,7 +320,7 @@ final class Validator
 
         $str = (string) $value;
         if (mb_strlen($str, 'UTF-8') < $min) {
-            return $this->message($field, 'min', 'Le champ « :label » doit contenir au moins :min caractères.', [':min' => (string) $min]);
+            return $this->message($field, 'min', 'Le champ « :label » doit contenir au moins :min caractères.', [':min' => (string) $min], 'string');
         }
 
         return null;
@@ -313,7 +336,7 @@ final class Validator
 
         if (is_int($value) || (is_string($value) && $this->hasNumericRule($field) && is_numeric(trim($value)))) {
             if ((int) $value > $max) {
-                return $this->message($field, 'max', 'Le champ « :label » ne doit pas dépasser :max.', [':max' => (string) $max]);
+                return $this->message($field, 'max', 'Le champ « :label » ne doit pas dépasser :max.', [':max' => (string) $max], 'numeric');
             }
 
             return null;
@@ -321,7 +344,7 @@ final class Validator
 
         if (is_array($value)) {
             if (count($value) > $max) {
-                return $this->message($field, 'max', 'Le champ « :label » ne doit pas dépasser :max élément(s).', [':max' => (string) $max]);
+                return $this->message($field, 'max', 'Le champ « :label » ne doit pas dépasser :max élément(s).', [':max' => (string) $max], 'array');
             }
 
             return null;
@@ -329,7 +352,7 @@ final class Validator
 
         $str = (string) $value;
         if (mb_strlen($str, 'UTF-8') > $max) {
-            return $this->message($field, 'max', 'Le champ « :label » ne doit pas dépasser :max caractères.', [':max' => (string) $max]);
+            return $this->message($field, 'max', 'Le champ « :label » ne doit pas dépasser :max caractères.', [':max' => (string) $max], 'string');
         }
 
         return null;
@@ -351,7 +374,7 @@ final class Validator
                 return $this->message($field, 'between', 'Le champ « :label » doit être compris entre :min et :max.', [
                     ':min' => (string) $min,
                     ':max' => (string) $max,
-                ]);
+                ], 'numeric');
             }
 
             return null;
@@ -362,7 +385,7 @@ final class Validator
             return $this->message($field, 'between', 'Le champ « :label » doit contenir entre :min et :max caractères.', [
                 ':min' => (string) $min,
                 ':max' => (string) $max,
-            ]);
+            ], 'string');
         }
 
         return null;
@@ -502,14 +525,41 @@ final class Validator
     /**
      * @param array<string, string> $replacements
      */
-    private function message(string $field, string $rule, string $default, array $replacements = []): string
+    private function message(string $field, string $rule, string $default, array $replacements = [], ?string $variant = null): string
     {
         $template = $this->messages[$field . '.' . $rule]
             ?? $this->messages[$rule]
+            ?? $this->translation($rule, $variant)
             ?? $default;
 
         $replacements[':label'] = $this->labels[$field] ?? $field;
 
         return strtr($template, $replacements);
+    }
+
+    /**
+     * Resolve a translated default message (`validation.{rule}_{variant}` then `validation.{rule}`).
+     */
+    private function translation(string $rule, ?string $variant): ?string
+    {
+        $translator = self::$translator;
+        if ($translator === null) {
+            return null;
+        }
+
+        $keys = [];
+        if ($variant !== null && $variant !== '') {
+            $keys[] = 'validation.' . $rule . '_' . $variant;
+        }
+        $keys[] = 'validation.' . $rule;
+
+        foreach ($keys as $key) {
+            $line = $translator->translate($key);
+            if ($line !== $key) {
+                return $line;
+            }
+        }
+
+        return null;
     }
 }

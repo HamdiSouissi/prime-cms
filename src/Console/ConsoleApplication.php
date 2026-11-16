@@ -17,6 +17,7 @@ use Prime\Console\Commands\ContentRerenderCommand;
 use Prime\Console\Commands\ContentTypesCommand;
 use Prime\Console\Commands\DbCheckCommand;
 use Prime\Console\Commands\InstallCommand;
+use Prime\Console\Commands\LangCheckCommand;
 use Prime\Console\Commands\ListCommand;
 use Prime\Console\Commands\MakeMigrationCommand;
 use Prime\Console\Commands\MakePluginCommand;
@@ -152,6 +153,7 @@ final class ConsoleApplication
         $this->register(new AboutCommand($this->app));
         $this->register(new AssetsBuildCommand($this->app));
         $this->register(new RoutesCommand($router));
+        $this->register(new LangCheckCommand($this->app));
 
         if ($this->app->container()->has(Connection::class)) {
             /** @var Connection $connection */

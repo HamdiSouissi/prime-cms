@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Prime\View;
 
+use DateTimeInterface;
+use Prime\I18n\LocaleFormatter;
+use Prime\I18n\Translator;
 use Prime\Kernel\Application;
 use Prime\Media\Media;
 use Prime\Media\MediaHelper;
@@ -78,6 +81,115 @@ final class TemplateContext
         $content = ob_get_clean();
 
         $this->sections[$section] = $content === false ? '' : $content;
+    }
+
+    /**
+     * Translate a `group.key` string using the locale currently rendering this template.
+     *
+     * @param array<string|int, mixed> $replace
+     */
+    public function t(string $key, array $replace = [], ?string $locale = null): string
+    {
+        return $this->translator()->translate($key, $replace, $locale);
+    }
+
+    /**
+     * Translate a pluralized line (`singular|plural`) for a count.
+     *
+     * @param array<string|int, mixed> $replace
+     */
+    public function choice(string $key, int|float $number, array $replace = [], ?string $locale = null): string
+    {
+        return $this->translator()->choice($key, $number, $replace, $locale);
+    }
+
+    /**
+     * Determine whether a translation key exists (useful for optional theme strings).
+     */
+    public function hasTranslation(string $key, ?string $locale = null): bool
+    {
+        return $this->translator()->has($key, $locale);
+    }
+
+    public function locale(): string
+    {
+        return $this->translator()->locale();
+    }
+
+    /**
+     * Text direction of the active locale (`ltr` or `rtl`).
+     */
+    public function direction(): string
+    {
+        return $this->formatter()->direction();
+    }
+
+    /**
+     * Display name of a locale in the active language.
+     */
+    public function localeName(string $locale): string
+    {
+        return $this->formatter()->localeName($locale);
+    }
+
+    public function formatDate(DateTimeInterface|int|string $date, string $preset = 'medium'): string
+    {
+        return $this->formatter()->date($date, $preset);
+    }
+
+    public function formatTime(DateTimeInterface|int|string $date, string $preset = 'time'): string
+    {
+        return $this->formatter()->time($date, $preset);
+    }
+
+    public function formatDateTime(DateTimeInterface|int|string $date, string $preset = 'dateTime'): string
+    {
+        return $this->formatter()->dateTime($date, $preset);
+    }
+
+    /**
+     * Human readable distance to now ("il y a 3 heures").
+     */
+    public function formatRelative(DateTimeInterface|int|string $date): string
+    {
+        return $this->formatter()->relative($date);
+    }
+
+    public function formatNumber(int|float $value, ?int $decimals = null): string
+    {
+        return $this->formatter()->number($value, $decimals);
+    }
+
+    public function formatCurrency(int|float $value, ?string $currency = null): string
+    {
+        return $this->formatter()->currency($value, $currency);
+    }
+
+    /**
+     * Resolve the translator bound to the application (or a detached one in tests).
+     */
+    private function translator(): Translator
+    {
+        if (Application::hasInstance() && Application::getInstance()->container()->has(Translator::class)) {
+            /** @var Translator $translator */
+            $translator = Application::getInstance()->get(Translator::class);
+
+            return $translator;
+        }
+
+        return Translator::fallback();
+    }
+
+    private function formatter(): LocaleFormatter
+    {
+        if (Application::hasInstance() && Application::getInstance()->container()->has(LocaleFormatter::class)) {
+            /** @var LocaleFormatter $formatter */
+            $formatter = Application::getInstance()->get(LocaleFormatter::class);
+
+            return $formatter;
+        }
+
+        return new LocaleFormatter($this->translator());
     }
 
     /**
