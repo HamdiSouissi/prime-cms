@@ -28,12 +28,13 @@ import { tr } from '../i18n.js';
 
 registerCoreBlocks(defaultBlockRegistry);
 
-const BLOCK_CONVERT_LABELS = {
-  paragraph: 'Paragraphe',
-  heading: 'Titre',
-  quote: 'Citation',
-  list: 'Liste',
-};
+// Resolved lazily: this module is imported before `initTranslations()` fills the catalogue.
+const blockConvertLabels = () => ({
+  paragraph: tr('admin.js.editor.bloc_paragraphe', 'Paragraphe'),
+  heading: tr('admin.js.editor.bloc_titre', 'Titre'),
+  quote: tr('admin.js.editor.bloc_citation', 'Citation'),
+  list: tr('admin.js.editor.bloc_liste', 'Liste'),
+});
 
 function iconSvg(name, size = 15) {
   return `<svg class="pc-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/admin/icons/sprite.svg#${name}"></use></svg>`;
@@ -394,9 +395,9 @@ export class PrimeEditor {
       menu.appendChild(lbl);
 
       CONVERTIBLE_TYPES.filter((t) => t !== block.type).forEach((targetType) => {
-        addAction(BLOCK_CONVERT_LABELS[targetType] || targetType, 'sparkles', false, () => {
+        addAction(blockConvertLabels()[targetType] || targetType, 'sparkles', false, () => {
           this.blocks[index] = convertBlock(this.blocks[index], targetType);
-          this.afterMutation(index, `Bloc converti en ${BLOCK_CONVERT_LABELS[targetType] || targetType}.`);
+          this.afterMutation(index, tr('admin.js.editor.bloc_converti_en', { type: blockConvertLabels()[targetType] || targetType }));
         });
       });
     }

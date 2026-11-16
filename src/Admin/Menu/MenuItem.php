@@ -79,6 +79,14 @@ final readonly class MenuItem
     }
 
     /**
+     * Resolve the badge through the translator (same key convention as the label).
+     */
+    public function translatedBadge(): ?string
+    {
+        return $this->badge === null ? null : self::translate($this->badge);
+    }
+
+    /**
      * A label is a translation key when it is a dotted `admin.*` / `core.*` identifier.
      */
     private static function translate(string $value): string

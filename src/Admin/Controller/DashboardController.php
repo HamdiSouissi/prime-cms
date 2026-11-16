@@ -297,13 +297,13 @@ final class DashboardController
         $items = [];
         foreach ($recent as $entry) {
             $author = $entry->authorId !== null ? ($authors[$entry->authorId] ?? null) : null;
-            $authorName = $author instanceof User ? $author->displayName : ($entry->authorName ?? 'Système');
+            $authorName = $author instanceof User ? $author->displayName : ($entry->authorName ?? $this->t('admin.ctrl_text_dashboard.systeme'));
             $initials = $author instanceof User ? $author->initials() : 'SY';
             $ct = $this->types?->get($entry->type);
             $typeLabel = $ct !== null ? $ct->label('singular') : $entry->type;
 
             $items[] = [
-                'title' => sprintf('%s « %s »', $typeLabel, $entry->title),
+                'title' => sprintf($this->t('admin.ctrl_text_dashboard.titre_activite'), $typeLabel, $entry->title),
                 'meta' => sprintf($this->t('admin.ctrl_text_dashboard.mis_a_jour_par_s_s_utc'), $authorName, $entry->updatedAt),
                 'author' => $authorName,
                 'initials' => $initials,

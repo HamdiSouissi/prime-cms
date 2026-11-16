@@ -130,13 +130,14 @@ export function normalizeDepths(flat) {
   return out;
 }
 
-const TYPE_LABELS = {
-  entry: 'Contenu',
-  term: 'Taxonomie',
-  archive: 'Archive',
-  url: 'Lien',
-  custom: 'Lien',
-};
+// Resolved lazily: this module is imported before `initTranslations()` populates the catalogue.
+const typeLabels = () => ({
+  entry: tr('admin.js.menus-admin.type_contenu', 'Contenu'),
+  term: tr('admin.js.menus-admin.type_taxonomie', 'Taxonomie'),
+  archive: tr('admin.js.menus-admin.type_archive', 'Archive'),
+  url: tr('admin.js.menus-admin.lien', 'Lien'),
+  custom: tr('admin.js.menus-admin.lien', 'Lien'),
+});
 
 export function initMenusAdmin() {
   const form = document.querySelector('[data-prime-menu-editor]');
@@ -226,11 +227,12 @@ export function initMenusAdmin() {
       handle.textContent = '⋮⋮';
 
       const labelSpan = document.createElement('strong');
-      labelSpan.textContent = item.label || 'Lien';
+      labelSpan.textContent = item.label || tr('admin.js.menus-admin.lien', 'Lien');
 
       const badge = document.createElement('span');
       badge.className = 'pc-badge pc-badge--neutral';
-      badge.textContent = TYPE_LABELS[item.type] || item.type;
+      const labels = typeLabels();
+      badge.textContent = labels[item.type] || item.type;
 
       titleWrap.append(handle, labelSpan, badge);
 
@@ -305,7 +307,7 @@ export function initMenusAdmin() {
       labelIn.value = item.label;
       labelIn.addEventListener('input', () => {
         item.label = labelIn.value;
-        labelSpan.textContent = item.label || 'Lien';
+        labelSpan.textContent = item.label || tr('admin.js.menus-admin.lien', 'Lien');
         dirty = true;
         syncHidden();
       });

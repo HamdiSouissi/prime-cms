@@ -3,6 +3,7 @@
  */
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, test } from './run.mjs';
 import {
   choice,
@@ -107,6 +108,16 @@ describe('Prime i18n — front-end catalogue helpers', () => {
 
     assert.equal(t('core.actions.save'), 'core.actions.save');
     assert.deepEqual(messages(), {});
+  });
+
+  test('the admin bundle loads the catalogue before any module runs', async () => {
+    // Regression: `bootstrap()` once skipped `initTranslations()`, so every `tr()` call fell back
+    // to the shipped French literal and the English admin rendered French.
+    const bundle = readFileSync(new URL('../../public/assets/admin/js/admin.js', import.meta.url), 'utf8');
+    const bootstrap = bundle.slice(bundle.indexOf('function bootstrap()'));
+    const firstCall = bootstrap.match(/^\s*([a-zA-Z]+)\(/m);
+
+    assert.equal(firstCall?.[1], 'initTranslations');
   });
 
   test('initTranslations is idempotent and safe without a catalogue block', () => {

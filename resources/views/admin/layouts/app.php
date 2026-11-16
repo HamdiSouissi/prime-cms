@@ -108,7 +108,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                             </span>
                                             <span class="pc-sidebar__label"><?= $this->e($item->translatedLabel()) ?></span>
                                             <?php if ($item->badge !== null): ?>
-                                                <span class="pc-sidebar__badge"><?= $this->e($item->badge) ?></span>
+                                                <span class="pc-sidebar__badge"><?= $this->e($item->translatedBadge()) ?></span>
                                             <?php endif; ?>
                                         </a>
 
@@ -138,7 +138,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                                     >
                                                         <span><?= $this->e($child->translatedLabel()) ?></span>
                                                         <?php if ($child->badge !== null): ?>
-                                                            <span class="pc-sidebar__badge"><?= $this->e($child->badge) ?></span>
+                                                            <span class="pc-sidebar__badge"><?= $this->e($child->translatedBadge()) ?></span>
                                                         <?php endif; ?>
                                                     </a>
                                                 </li>

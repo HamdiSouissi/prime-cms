@@ -22,7 +22,7 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Menus de navigation',
+    'title' => $this->t('admin.view_appearance_menus.menus_de_navigation'),
     'subtitle' => $this->t('admin.view_appearance_menus.organisez_les_liens_de_votre_site_jusqu_a_3_niveaux_de_profo'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
@@ -42,7 +42,7 @@ $this->layout('admin::layouts/app');
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm">Ouvrir</button>
+                        <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($this->t('admin.shared.ouvrir')) ?></button>
                     </div>
                 </form>
             <?php endif; ?>
@@ -51,7 +51,7 @@ $this->layout('admin::layouts/app');
                 <?= $this->raw($this->csrfField()) ?>
                 <label class="pc-label" for="pc-menu-new-name"><?= $this->e($this->t('admin.appearance.menus.creer_nouveau_menu')) ?></label>
                 <div class="pc-menus-bar__inline">
-                    <input id="pc-menu-new-name" type="text" name="name" class="pc-input" placeholder="Ex. Navigation principale" required>
+                    <input id="pc-menu-new-name" type="text" name="name" class="pc-input" placeholder="<?= $this->e($this->t('admin.view_appearance_menus.ex_navigation_principale')) ?>" required>
                     <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($this->t('core.actions.create')) ?></button>
                 </div>
             </form>
@@ -150,7 +150,7 @@ $this->layout('admin::layouts/app');
                     <div class="pc-card__body pc-stack pc-stack--sm">
                         <div class="pc-field">
                             <label class="pc-label" for="pc-menu-custom-label"><?= $this->e($this->t('admin.appearance.menus.libelle')) ?></label>
-                            <input id="pc-menu-custom-label" type="text" class="pc-input" placeholder="Ex. Accueil" data-prime-custom-label>
+                            <input id="pc-menu-custom-label" type="text" class="pc-input" placeholder="<?= $this->e($this->t('admin.view_appearance_menus.ex_accueil')) ?>" data-prime-custom-label>
                         </div>
                         <div class="pc-field">
                             <label class="pc-label" for="pc-menu-custom-url">URL</label>

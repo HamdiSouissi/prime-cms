@@ -135,6 +135,8 @@ function initBulkTables() {
 }
 
 function bootstrap() {
+  // Load the server-rendered catalogue first: every module below calls tr()/t().
+  initTranslations(document);
   initSidebar();
   initDropdowns();
   initModals();
