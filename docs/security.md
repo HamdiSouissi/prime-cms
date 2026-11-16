@@ -101,3 +101,15 @@ Cette commande efface le secret TOTP et les codes de récupération, incrémente
 - **Redirection après connexion (`Authenticate::isSafeAdminRedirect()`)** : seules les URL internes relatives commençant strictement par `/admin` ou `/admin/` sont acceptées ; toute URL contenant un schéma (`http://`), double barre (`//`), antislash (`\`), séquence `..`, caractère de contrôle ou boucle vers `/admin/login`/`/admin/logout` est rejetée au profit de `/admin`.
 - **Déconnexion sécurisée** : uniquement via `POST /admin/logout` protégé par jeton CSRF (`_csrf_token`). Un appel `GET /admin/logout` retourne `405 Method Not Allowed`.
 - **CSP stricte** : zéro `<script>` inline exécutable ni attribut `on*=` sur l'ensemble des écrans d'authentification et d'administration (`script-src 'self'`).
+
+---
+
+## 9. Sécurité du moteur de thèmes et du site public (Phase 8)
+
+- **Content-Security-Policy publique dédiée (`Prime\Themes\PublicCsp`)** : `default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'` (extensible via le filtre `site.csp`). Les options de thème sont compilées dans un fichier CSS statique versionné (`options-{hash}.css`) : aucun `<style>` inline n'est injecté.
+- **Isolation des templates & échappement par défaut** : `TemplateResolver::isSafeRelativeTemplate()` bloque toute traversée de répertoire (`../`, octets nuls, chemins absolus) ; `SiteView` et `EntryView` échappent systématiquement les données textuelles en HTML.
+- **Installation de thèmes par ZIP (`ThemeInstaller`)** : validation stricte du type MIME ZIP, taille max (20 Mo), nombre de fichiers max (2 000), taille décompressée max (100 Mo), ratio anti-ZIP-bomb (≤ 100:1), refus des symlinks et traversées ZipSlip, validation complète de `theme.json` avant écriture atomique.
+- **Isolation des erreurs fatales & mode sans échec** : `FatalLoadGuard` intercepte toute erreur fatale ou exception du thème actif et bascule automatiquement sur Aurora ; `PRIME_SAFE_MODE=true` force Aurora immédiatement.
+- **Prévisualisations & Personnaliseur** : les brouillons/privés retournent `404` aux anonymes ; `/?preview=1` exige `EntryService::canEdit()`, émet `X-Robots-Tag: noindex, nofollow` et `Cache-Control: no-store` ; `/?customizer_preview=1` exige `themes.manage` et vérifie `event.origin === window.location.origin` côté client.
+- **Menus & redirections** : `MenuRepository::sanitizeUrl()` rejette `javascript:`, `data:` et `vbscript:` ; `RedirectRepository` refuse les boucles et raccourcit automatiquement les chaînes.
+

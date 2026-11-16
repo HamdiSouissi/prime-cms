@@ -6,7 +6,7 @@
 /* --- Themes gallery ----------------------------------------------------- */
 .pc-themes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
   gap: var(--space-5);
 }
 
@@ -559,10 +559,16 @@
   .pc-menus-layout,
   .pc-zones-layout,
   .pc-redirect-add-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .pc-customizer__sidebar {
     max-height: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .pc-theme-detail-meta {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

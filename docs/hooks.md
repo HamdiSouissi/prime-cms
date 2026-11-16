@@ -243,6 +243,42 @@ Tout écouteur ou filtre enregistré via `$context->hooks()` (ou pendant l'exéc
 | `media.updated` | Événement | `Prime\Media\Media $media`, `?Prime\Auth\User $actor` | Après mise à jour des métadonnées, changement de point focal, remplacement de fichier ou régénération des variantes. |
 | `media.deleted` | Événement | `Prime\Media\Media $media`, `?Prime\Auth\User $actor` | Après suppression en base et suppression des fichiers originaux et variantes sur disque. |
 
+---
+
+## Hooks de Thèmes et Rendu du site (Phase 8)
+
+### Événements du moteur de thèmes
+
+| Hook | Type | Paramètres | Déclenchement |
+|------|------|------------|---------------|
+| `theme.booted` | Événement | `string $slug`, `Prime\Themes\ThemeManifest $manifest`, `?Prime\Themes\ThemeManifest $parent` | Après le démarrage réussi du thème actif (et de son parent éventuel). |
+| `theme.activated` | Événement | `string $newSlug`, `?string $previousSlug`, `Prime\Themes\ThemeManifest $manifest` | Après activation et publication des assets d'un thème. |
+| `theme.installed` | Événement | `Prime\Themes\ThemeManifest $manifest`, `bool $replaced`, `?string $previousVersion` | Après installation ou mise à jour d'un thème depuis une archive ZIP. |
+| `theme.deleted` | Événement | `string $slug` | Après suppression d'un thème inactif et nettoyage de ses options/assets. |
+
+### Filtres de rendu, templates, menus, blocs dynamiques et SEO
+
+| Hook | Type | Valeur filtrée / Arguments | Usage |
+|------|------|----------------------------|-------|
+| `site.reserved_slugs` | Filtre | `list<string> $slugs` | Ajouter des segments d'URL racine réservés protégés par `ReservedSlugValidator`. |
+| `site.plugin_template_paths` | Filtre | `list<string> $directories` | Déclarer des répertoires de templates fournis par des plugins (repli après le thème actif et son parent, ex. `hello-prime`). |
+| `site.template_candidates` | Filtre | `list<string> $candidates`, `Prime\Site\PageContext $context` | Modifier la liste ordonnée des templates recherchés pour le contexte courant. |
+| `site.template` | Filtre | `?string $resolvedPath`, `Prime\Site\PageContext $context` | Remplacer le fichier template résolu (vérifié contre toute traversée de répertoire). |
+| `site.head` | Filtre | `string $html`, `Prime\Site\PageContext $context` | Injecter des balises dans `<head>` via `$site->head()`. |
+| `site.footer` | Filtre | `string $html`, `Prime\Site\PageContext $context` | Injecter du HTML avant `</body>` via `$site->footer()`. |
+| `site.menu_items` | Filtre | `list<array<string, mixed>> $items`, `string $location`, `array $menu`, `array $options` | Filtrer ou enrichir l'arbre d'éléments d'un menu avant rendu HTML. |
+| `site.dynamic_blocks` | Filtre | `array<string, array<string, mixed>> $blocks` | Enregistrer des blocs dynamiques utilisables dans les zones et contenus (ex. `hello_testimonial`). |
+| `site.seo_title` | Filtre | `string $title`, `Prime\Site\PageContext $context` | Personnaliser la balise `<title>` calculée. |
+| `site.seo_description` | Filtre | `string $description`, `Prime\Site\PageContext $context` | Personnaliser la meta description calculée. |
+| `site.seo_canonical` | Filtre | `string $url`, `Prime\Site\PageContext $context` | Modifier l'URL canonique calculée. |
+| `site.seo_robots` | Filtre | `string $directives`, `Prime\Site\PageContext $context` | Ajuster la directive `robots` (`index, follow` / `noindex, follow`). |
+| `site.seo_og` | Filtre | `array<string, string> $tags`, `Prime\Site\PageContext $context` | Enrichir les métadonnées Open Graph / Twitter Cards. |
+| `site.seo_schema` | Filtre | `list<array<string, mixed>> $schemas`, `Prime\Site\PageContext $context` | Modifier ou ajouter des objets JSON-LD (`WebSite`, `Article`, `BreadcrumbList`…). |
+| `site.sitemap_entries` | Filtre | `list<array{loc: string, lastmod?: string}> $urls`, `string $type` | Filtrer les URL incluses dans un sous-sitemap XML. |
+| `site.robots_txt` | Filtre | `string $content` | Personnaliser le contenu de `/robots.txt`. |
+| `site.csp` | Filtre | `array<string, string>|string $directives` | Ajuster les directives de la Content-Security-Policy publique (`PublicCsp`). |
+
+
 
 
 

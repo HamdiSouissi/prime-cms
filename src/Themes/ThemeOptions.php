@@ -362,11 +362,6 @@ final class ThemeOptions
 
         $srcW = imagesx($sourceImage);
         $srcH = imagesy($sourceImage);
-        if ($srcW <= 0 || $srcH <= 0) {
-            imagedestroy($sourceImage);
-
-            return [];
-        }
 
         $faviconDir = rtrim($this->publicRoot, DIRECTORY_SEPARATOR . '/') . '/assets/site/favicons';
         if (!is_dir($faviconDir)) {
@@ -633,9 +628,12 @@ final class ThemeOptions
 
         try {
             $raw = $this->settings->get($this->settingKey($slug), []);
+            if (!is_array($raw)) {
+                return [];
+            }
 
             /** @var array<string, mixed> $raw */
-            return is_array($raw) ? $raw : [];
+            return $raw;
         } catch (Throwable) {
             return [];
         }

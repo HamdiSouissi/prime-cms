@@ -534,7 +534,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Post Cards Grid */
 .aurora-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
   gap: 1.5rem;
 }
 
