@@ -16,12 +16,12 @@
       <h1 class="pc-title"><?= $this->e($appName) ?></h1>
       <span class="pc-badge pc-badge--brand pc-mono">v<?= $this->e($version) ?></span>
     </div>
-    <p class="pc-subtitle">Le noyau est en place</p>
+    <p class="pc-subtitle"><?= $this->e($this->t('site.home.noyau_place')) ?></p>
   </header>
 
   <?php if (!empty($debug)): ?>
     <section class="pc-card" aria-labelledby="status-heading">
-      <h2 id="status-heading" class="pc-card-title">État du système</h2>
+      <h2 id="status-heading" class="pc-card-title"><?= $this->e($this->t('site.home.etat_systeme')) ?></h2>
 
       <ul class="pc-list">
         <li class="pc-list-item">
@@ -39,12 +39,12 @@
           <?php if ($allWritable): ?>
             <span class="pc-badge pc-badge--success">
               <span class="pc-dot pc-dot--success" aria-hidden="true"></span>
-              Écriture prête
+              <?= $this->e($this->t('site.home.ecriture_prete')) ?>
             </span>
           <?php else: ?>
             <span class="pc-badge pc-badge--danger">
               <span class="pc-dot pc-dot--danger" aria-hidden="true"></span>
-              Permissions à vérifier
+              <?= $this->e($this->t('site.home.permissions_a_verifier')) ?>
             </span>
           <?php endif; ?>
         </li>
@@ -75,7 +75,7 @@
     <footer class="pc-footer">
       <span>Prime CMS · Phase 1</span>
       <span aria-hidden="true">·</span>
-      <a href="/health">État JSON (/health)</a>
+      <a href="/health"><?= $this->e($this->t('site.home.etat_json_health')) ?></a>
     </footer>
   <?php endif; ?>
 <?php $this->stop(); ?>

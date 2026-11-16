@@ -94,15 +94,15 @@ $this->layout('admin::layouts/app');
                     <label class="pc-checkbox-card">
                         <input type="radio" name="creation_mode" value="password" data-prime-creation-mode<?= $old['creation_mode'] !== 'invite' ? ' checked' : '' ?>>
                         <span>
-                            <span class="pc-checkbox-card__title">Définir un mot de passe maintenant</span>
-                            <span class="pc-checkbox-card__desc">Le compte est utilisable immédiatement avec le mot de passe choisi.</span>
+                            <span class="pc-checkbox-card__title"><?= $this->e($this->t('admin.users.create.definir_mot_passe_maintenant')) ?></span>
+                            <span class="pc-checkbox-card__desc"><?= $this->e($this->t('admin.users.create.compte_utilisable_immediatement_mot_passe')) ?></span>
                         </span>
                     </label>
                     <label class="pc-checkbox-card">
                         <input type="radio" name="creation_mode" value="invite" data-prime-creation-mode<?= $old['creation_mode'] === 'invite' ? ' checked' : '' ?>>
                         <span>
-                            <span class="pc-checkbox-card__title">Envoyer un lien d'invitation par e-mail (48 h)</span>
-                            <span class="pc-checkbox-card__desc">L'utilisateur choisira lui-même son mot de passe via un lien unique valable 48 heures.</span>
+                            <span class="pc-checkbox-card__title"><?= $this->e($this->t('admin.users.create.envoyer_lien_invitation_e_mail')) ?></span>
+                            <span class="pc-checkbox-card__desc"><?= $this->e($this->t('admin.users.create.utilisateur_choisira_lui_meme_mot')) ?></span>
                         </span>
                     </label>
                 </div>
@@ -127,7 +127,7 @@ $this->layout('admin::layouts/app');
                             <span class="pc-strength__bar"></span>
                         </div>
                         <span class="pc-strength__label" data-prime-strength-label>
-                            Minimum 12 caractères (majuscules, chiffres et symboles recommandés).
+                            <?= $this->e($this->t('admin.users.create.minimum_12_caracteres_majuscules_chiffres')) ?>
                         </span>
                     </div>
 

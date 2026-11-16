@@ -36,7 +36,7 @@ $siteName = $siteName ?? 'Prime CMS';
                     </tr>
                     <tr>
                         <td style="padding:18px 28px;background-color:#F9FAFB;border-top:1px solid #E5E7EB;color:#6B7280;font-size:12px;">
-                            Cet e-mail a été envoyé automatiquement par <?= $this->e($siteName) ?>. Si vous n'êtes pas à l'origine de cette action, vous pouvez ignorer ce message ou contacter votre administrateur.
+                            <?= $this->e($this->t('mail.layout.pied_de_page', ['site' => $siteName])) ?>
                         </td>
                     </tr>
                 </table>

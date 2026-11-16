@@ -559,6 +559,102 @@ final class Translator
     }
 
     /**
+     * Resolve `plugin::hello-prime.views.admin.title` against the `lang/` folder shipped by
+     * the `hello-prime` plugin (or `theme::aurora.…` for a theme).
+     *
+     * @return array<string, mixed>|string|null
+     */
+    private function lookupNamespaced(string $key, string $locale): array|string|null
+    {
+        $parts = explode('::', $key, 2);
+        $namespace = strtolower($parts[0]);
+        $rest = $parts[1] ?? '';
+
+        // `plugin::hello-prime.views.admin.title` => namespace `plugin`, slug `hello-prime`.
+        $cut = strpos($rest, '.');
+        if ($cut === false) {
+            return null;
+        }
+
+        $slug = substr($rest, 0, $cut);
+        $segments = explode('.', substr($rest, $cut + 1));
+        if ($namespace === '' || $slug === '' || $segments[0] === '') {
+            return null;
+        }
+
+        $directory = $this->namespaceDirectory($namespace, $slug);
+        if ($directory === null) {
+            return null;
+        }
+
+        foreach (['messages', ...$this->groupsOfPath($directory, $locale)] as $group) {
+            $file = $directory . '/' . $locale . '/' . $group . '.php';
+            if (!is_file($file)) {
+                continue;
+            }
+
+            $loaded = require $file;
+            if (!is_array($loaded)) {
+                continue;
+            }
+
+            /** @var array<string, mixed> $loaded */
+            $found = $this->walk($loaded, $segments);
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Locate the `lang/` root shipped by the plugin or theme named `$slug`.
+     */
+    private function namespaceDirectory(string $namespace, string $slug): ?string
+    {
+        $kind = match ($namespace) {
+            'plugin', 'plugins' => 'plugins',
+            'theme', 'themes' => 'themes',
+            default => null,
+        };
+
+        if ($kind === null) {
+            return null;
+        }
+
+        foreach ($this->paths as $path) {
+            $pluginDir = \dirname($path);
+            if (basename($pluginDir) !== $slug || basename(\dirname($pluginDir)) !== $kind) {
+                continue;
+            }
+
+            return $path;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function groupsOfPath(string $directory, string $locale): array
+    {
+        $files = @glob($directory . '/' . $locale . '/*.php') ?: [];
+        $groups = [];
+        foreach ($files as $file) {
+            $name = basename((string) $file, '.php');
+            if ($name !== '' && $name !== 'index' && $name !== 'messages') {
+                $groups[] = $name;
+            }
+        }
+
+        sort($groups);
+
+        return $groups;
+    }
+
+    /**
      * CLDR-style `one` / `other` split used by French and English.
      */
     private function pluralIndex(int|float $number): int
@@ -569,12 +665,18 @@ final class Translator
     }
 
     /**
+     * Resolve a key, honouring the `plugin::slug.key` / `theme::slug.key` namespaces.
+     *
      * @return array<string, mixed>|string|null
      */
     private function lookup(string $key, string $locale): array|string|null
     {
         if ($key === '' || $locale === '') {
             return null;
+        }
+
+        if (str_contains($key, '::')) {
+            return $this->lookupNamespaced($key, $locale);
         }
 
         $segments = explode('.', $key);
@@ -620,11 +722,21 @@ final class Translator
     {
         $current = $tree;
         foreach ($segments as $segment) {
-            if (!is_array($current) || !array_key_exists($segment, $current)) {
+            if (!is_array($current)) {
                 return null;
             }
 
-            $current = $current[$segment];
+            // `'404' => [...]` is stored under the integer key 404 by PHP, while the dotted key
+            // keeps the string segment, so numeric segments must be tried both ways.
+            $resolved = array_key_exists($segment, $current)
+                ? $segment
+                : (ctype_digit($segment) && array_key_exists((int) $segment, $current) ? (int) $segment : null);
+
+            if ($resolved === null) {
+                return null;
+            }
+
+            $current = $current[$resolved];
         }
 
         if (is_string($current)) {

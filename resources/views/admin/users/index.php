@@ -65,21 +65,21 @@ if ($canCreate) {
     <!-- Filter & search bar -->
     <form method="get" action="/admin/users" class="pc-filter-bar" role="search" aria-label="Filtrer les utilisateurs">
         <div class="pc-filter-bar__search">
-            <label class="pc-field__label" for="users-search">Rechercher</label>
+            <label class="pc-field__label" for="users-search"><?= $this->e($this->t('core.actions.search')) ?></label>
             <input
                 type="search"
                 id="users-search"
                 name="search"
                 class="pc-input"
                 value="<?= $this->e($filters['search']) ?>"
-                placeholder="Nom affiché ou adresse e-mail…"
+                placeholder="<?= $this->e($this->t('admin.users.index.nom_affiche_adresse_e_mail')) ?>"
             >
         </div>
 
         <div class="pc-filter-bar__select">
-            <label class="pc-field__label" for="users-filter-role">Rôle</label>
+            <label class="pc-field__label" for="users-filter-role"><?= $this->e($this->t('core.fields.role')) ?></label>
             <select id="users-filter-role" name="role" class="pc-select">
-                <option value="">Tous les rôles</option>
+                <option value=""><?= $this->e($this->t('admin.users.index.roles')) ?></option>
                 <?php foreach ($allRoles as $role): ?>
                     <option value="<?= $this->e($role->slug) ?>"<?= $filters['role'] === $role->slug ? ' selected' : '' ?>>
                         <?= $this->e($role->name) ?>
@@ -91,16 +91,16 @@ if ($canCreate) {
         <div class="pc-filter-bar__select">
             <label class="pc-field__label" for="users-filter-status">Statut</label>
             <select id="users-filter-status" name="status" class="pc-select">
-                <option value="">Tous les statuts</option>
+                <option value=""><?= $this->e($this->t('admin.users.index.statuts')) ?></option>
                 <option value="active"<?= $filters['status'] === 'active' ? ' selected' : '' ?>>Actif</option>
-                <option value="disabled"<?= $filters['status'] === 'disabled' ? ' selected' : '' ?>>Désactivé</option>
+                <option value="disabled"<?= $filters['status'] === 'disabled' ? ' selected' : '' ?>><?= $this->e($this->t('admin.users.index.desactive')) ?></option>
             </select>
         </div>
 
         <div class="pc-filter-bar__actions">
             <button type="submit" class="pc-btn pc-btn--secondary">Filtrer</button>
             <?php if ($hasFilters): ?>
-                <a href="/admin/users" class="pc-btn pc-btn--ghost">Réinitialiser</a>
+                <a href="/admin/users" class="pc-btn pc-btn--ghost"><?= $this->e($this->t('core.actions.reset')) ?></a>
             <?php endif; ?>
         </div>
     </form>
@@ -123,18 +123,18 @@ if ($canCreate) {
             <form method="post" action="/admin/users/bulk" id="pc-users-bulk-form">
                 <?= $this->raw($this->csrfField()) ?>
                 <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
-                    <span class="pc-table-bulk__count" data-prime-table-bulk-count>0 élément sélectionné</span>
+                    <span class="pc-table-bulk__count" data-prime-table-bulk-count><?= $this->e($this->t('admin.users.index.0_element_selectionne')) ?></span>
                     <div class="pc-row pc-row--sm">
                         <select name="bulk_action" class="pc-select" aria-label="Action groupée" data-prime-bulk-action-select>
-                            <option value="">Choisir une action…</option>
+                            <option value=""><?= $this->e($this->t('admin.users.index.choisir_action')) ?></option>
                             <option value="enable">Activer</option>
-                            <option value="disable">Désactiver</option>
+                            <option value="disable"><?= $this->e($this->t('admin.users.index.desactiver')) ?></option>
                             <?php if ($canDelete): ?>
-                                <option value="delete">Supprimer</option>
+                                <option value="delete"><?= $this->e($this->t('core.actions.delete')) ?></option>
                             <?php endif; ?>
                         </select>
                         <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-bulk-submit>Appliquer</button>
-                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-table-bulk-clear>Annuler</button>
+                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-table-bulk-clear><?= $this->e($this->t('core.actions.cancel')) ?></button>
                     </div>
                 </div>
             </form>
@@ -150,15 +150,15 @@ if ($canCreate) {
                             </th>
                             <?php endif; ?>
                             <th scope="col">
-                                <a href="<?= $this->e($sortUrl('display_name')) ?>" class="pc-table__sort">Utilisateur</a>
+                                <a href="<?= $this->e($sortUrl('display_name')) ?>" class="pc-table__sort"><?= $this->e($this->t('admin.users.index.utilisateur')) ?></a>
                             </th>
-                            <th scope="col">Rôles</th>
+                            <th scope="col"><?= $this->e($this->t('admin.users.index.roles')) ?></th>
                             <th scope="col">
                                 <a href="<?= $this->e($sortUrl('status')) ?>" class="pc-table__sort">Statut</a>
                             </th>
                             <th scope="col">2FA</th>
                             <th scope="col">
-                                <a href="<?= $this->e($sortUrl('last_login_at')) ?>" class="pc-table__sort">Dernière connexion</a>
+                                <a href="<?= $this->e($sortUrl('last_login_at')) ?>" class="pc-table__sort"><?= $this->e($this->t('admin.users.index.derniere_connexion')) ?></a>
                             </th>
                             <th scope="col" class="pc-table__actions">Actions</th>
                         </tr>
@@ -179,7 +179,7 @@ if ($canCreate) {
                                         form="pc-users-bulk-form"
                                         value="<?= $this->e((string) $user->id) ?>"
                                         data-prime-table-select-row
-                                        aria-label="Sélectionner <?= $this->e($user->displayName) ?>"
+                                        aria-label="<?= $this->e($this->t('admin.users.index.selectionner', ['name' => $user->displayName])) ?>"
                                         <?= $isSelf ? 'disabled' : '' ?>
                                     >
                                 </td>
@@ -267,11 +267,11 @@ if ($canCreate) {
                                                 method="post"
                                                 action="/admin/users/<?= $this->e((string) $user->id) ?>/delete"
                                                 class="pc-inline-form"
-                                                data-prime-confirm-form="Supprimer définitivement le compte de <?= $this->e($user->displayName) ?> ?"
+                                                data-prime-confirm-form="<?= $this->e($this->t('admin.users.index.confirmer_suppression_compte', ['name' => $user->displayName])) ?>"
                                             >
                                                 <?= $this->raw($this->csrfField()) ?>
                                                 <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm pc-text-danger">
-                                                    Supprimer
+                                                    <?= $this->e($this->t('core.actions.delete')) ?>
                                                 </button>
                                             </form>
                                         <?php endif; ?>
@@ -287,12 +287,12 @@ if ($canCreate) {
             <div class="pc-pagination">
                 <span>
                     Page <?= $this->e((string) $pagination['page']) ?> sur <?= $this->e((string) $pagination['totalPages']) ?>
-                    (<?= $this->e((string) $pagination['total']) ?> résultats)
+                    (<?= $this->e($this->choice('core.pagination.results', (int) $pagination['total'])) ?>)
                 </span>
                 <nav class="pc-pagination__nav" aria-label="Pagination des utilisateurs">
                     <?php if ($pagination['page'] > 1): ?>
                         <a href="<?= $this->e($buildQuery(['page' => $pagination['page'] - 1])) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">
-                            ← Précédent
+                            <?= $this->e($this->t('admin.users.index.precedent')) ?>
                         </a>
                     <?php endif; ?>
                     <?php if ($pagination['page'] < $pagination['totalPages']): ?>

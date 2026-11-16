@@ -16,9 +16,9 @@ declare(strict_types=1);
 
   <header class="aurora-page-header">
     <span class="aurora-page-header__eyebrow">Hello Prime</span>
-    <h1 class="aurora-page-header__title">Témoignages clients</h1>
+    <h1 class="aurora-page-header__title"><?= $site->e($site->t('plugin::hello-prime.archive.testimonial.temoignages_clients')) ?></h1>
     <p class="aurora-page-header__lead">
-      Retours vérifiés de nos utilisateurs et partenaires.
+      <?= $site->e($site->t('plugin::hello-prime.archive.testimonial.retours_verifies_utilisateurs_partenaires')) ?>
     </p>
   </header>
 
@@ -47,8 +47,8 @@ declare(strict_types=1);
     <?= $site->partial('pagination') ?>
   <?php else: ?>
     <section class="aurora-empty">
-      <h2>Aucun témoignage publié</h2>
-      <p>Ajoutez votre premier témoignage depuis l'administration Prime CMS.</p>
+      <h2><?= $site->e($site->t('plugin::hello-prime.archive.testimonial.aucun_temoignage_publie')) ?></h2>
+      <p><?= $site->e($site->t('plugin::hello-prime.archive.testimonial.ajoutez_premier_temoignage_depuis_administration')) ?></p>
     </section>
   <?php endif; ?>
 </div>

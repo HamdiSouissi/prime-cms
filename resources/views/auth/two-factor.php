@@ -16,9 +16,9 @@ $this->layout('auth::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-auth-card__header">
-    <h2 class="pc-auth-card__title">Vérification en deux étapes</h2>
+    <h2 class="pc-auth-card__title"><?= $this->e($this->t('admin.auth.two-factor.verification_deux_etapes')) ?></h2>
     <p class="pc-auth-card__subtitle">
-        Saisissez le code généré par votre application d'authentification pour finaliser votre connexion.
+        <?= $this->e($this->t('admin.auth.two-factor.saisissez_code_genere_application_authentification')) ?>
     </p>
 </div>
 
@@ -49,17 +49,17 @@ $this->layout('auth::layout', [
     ])) ?>
 
     <button type="submit" class="pc-btn pc-btn--primary pc-auth-submit">
-        <span>Vérifier et se connecter</span>
+        <span><?= $this->e($this->t('admin.auth.two-factor.verifier_connecter')) ?></span>
     </button>
 
     <div class="pc-auth-form__row">
         <button type="button" class="pc-auth-link-btn" data-prime-2fa-toggle>
-            Utiliser un code de récupération
+            <?= $this->e($this->t('admin.auth.two-factor.utiliser_code_recuperation')) ?>
         </button>
     </div>
 </form>
 
 <div class="pc-auth-card__footer">
-    <a href="/admin/login?cancel_2fa=1" class="pc-auth-link">← Retour à la connexion</a>
+    <a href="/admin/login?cancel_2fa=1" class="pc-auth-link"><?= $this->e($this->t('admin.auth.two-factor.retour_a_connexion')) ?></a>
 </div>
 <?php $this->stop(); ?>

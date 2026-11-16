@@ -20,23 +20,23 @@ declare(strict_types=1);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aperçu : <?= $this->e($previewTitle) ?> — <?= $this->e($appName) ?></title>
+    <title><?= $this->e($this->t('admin.content.preview.titre', ['title' => $previewTitle, 'site' => $appName])) ?></title>
     <link rel="stylesheet" href="<?= $this->e(asset('admin/css/admin.css')) ?>">
 </head>
 <body class="pc-preview-shell">
     <header class="pc-preview-banner">
         <div>
-            <strong>Mode prévisualisation</strong>
+            <strong><?= $this->e($this->t('admin.content.preview.mode_previsualisation')) ?></strong>
             · <?= $this->e($contentType->label('singular')) ?>
             · Statut : <?= $this->e($entry->statusLabel()) ?>
             <?php if ($previewRevision !== null): ?>
-                · Révision #<?= $this->e((string) $previewRevision->id) ?> (<?= $this->e($previewRevision->createdAt) ?>)
+                · <?= $this->e($this->t('admin.content.preview.revision', ['id' => $previewRevision->id, 'date' => $previewRevision->createdAt])) ?>
             <?php endif; ?>
         </div>
         <div class="pc-row pc-row--sm">
             <?php if ($canEdit): ?>
                 <a class="pc-btn pc-btn--secondary pc-btn--sm" href="<?= $this->e($entry->editUrl()) ?>">
-                    Retour à l’éditeur
+                    <?= $this->e($this->t('admin.content.preview.retour_a_editeur')) ?>
                 </a>
             <?php endif; ?>
         </div>

@@ -47,7 +47,7 @@ declare(strict_types=1);
 
                 <?php elseif ($field->type === 'select'): ?>
                     <select id="<?= $this->e($inputId) ?>" name="<?= $this->e($inputName) ?>" class="pc-select"<?= $field->required ? ' required' : '' ?>>
-                        <option value="">Sélectionner…</option>
+                        <option value=""><?= $this->e($this->t('admin.content.partials.field-group.selectionner')) ?></option>
                         <?php foreach ($field->options as $optKey => $optLabel): ?>
                             <option value="<?= $this->e((string) $optKey) ?>"<?= $strVal === (string) $optKey ? ' selected' : '' ?>>
                                 <?= $this->e($optLabel) ?>

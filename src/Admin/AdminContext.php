@@ -18,6 +18,8 @@ use Prime\Content\TaxonomyRegistry;
 use Prime\Hooks\Hooks;
 use Prime\Http\Request;
 use Prime\Http\Session;
+use Prime\I18n\LocaleFormatter;
+use Prime\I18n\Translator;
 use Prime\Kernel\Application;
 use Prime\Log\Logger;
 use Prime\Media\MediaRepository;
@@ -43,7 +45,50 @@ final class AdminContext
         private readonly ?TaxonomyRegistry $taxonomies = null,
         private readonly ?EntryRepository $entries = null,
         private readonly ?MediaRepository $media = null,
+        private readonly ?Translator $translator = null,
+        private readonly ?LocaleFormatter $formatter = null,
     ) {
+    }
+
+    /**
+     * Catalogue embedded for `Prime.t()`: the active locale plus the French fallback.
+     *
+     * Only the `core` and `admin` groups are shipped — the JS layer never renders site or
+     * e-mail strings — which keeps the payload well under 100 KB.
+     */
+    private function translationsJson(): string
+    {
+        if ($this->translator === null) {
+            return '{}';
+        }
+
+        $messages = [];
+        foreach ($this->translator->messages() as $key => $value) {
+            if (str_starts_with($key, 'core.') || str_starts_with($key, 'admin.')) {
+                $messages[$key] = $value;
+            }
+        }
+
+        $fallback = [];
+        $locale = $this->translator->locale();
+        if ($locale !== Translator::DEFAULT_LOCALE) {
+            foreach ($this->translator->messages(Translator::DEFAULT_LOCALE) as $key => $value) {
+                if (str_starts_with($key, 'core.') || str_starts_with($key, 'admin.')) {
+                    $fallback[$key] = $value;
+                }
+            }
+        }
+
+        $payload = [
+            'locale' => $locale,
+            'direction' => $this->formatter?->direction() ?? 'ltr',
+            'messages' => $messages,
+            'fallback' => $fallback,
+        ];
+
+        $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
+
+        return is_string($encoded) ? $encoded : '{}';
     }
 
     /**
@@ -147,6 +192,9 @@ final class AdminContext
             // The topbar "Vider le cache" action is only offered to users allowed to manage
             // settings; the same capability guards the POST route itself.
             'canPurgeCache' => $user !== null && $user->can('settings.manage'),
+            'htmlLang' => $this->translator?->locale() ?? 'fr',
+            'htmlDirection' => $this->formatter?->direction() ?? 'ltr',
+            'translationsJson' => $this->translationsJson(),
         ], $extra);
     }
 

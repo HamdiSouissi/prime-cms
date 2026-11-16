@@ -34,11 +34,11 @@ $this->layout('admin::layouts/app');
 <div class="pc-grid-2 pc-stack pc-stack--lg">
     <section class="pc-card" aria-labelledby="pc-perf-pages-title">
         <div class="pc-card__body pc-stack pc-stack--md">
-            <h2 id="pc-perf-pages-title" class="pc-card__title">Cache de pages</h2>
+            <h2 id="pc-perf-pages-title" class="pc-card__title"><?= $this->e($this->t('admin.settings.performance.cache_pages')) ?></h2>
             <p class="pc-text-xs pc-text-muted">
-                Le cache de pages conserve le HTML des visiteurs anonymes dans
-                <code>storage/cache/pages/</code>. Il est purgé automatiquement à chaque
-                publication, modification de menu ou changement de réglage.
+                <?= $this->e($this->t('admin.settings.performance.cache_pages_conserve_html_visiteurs')) ?>
+                <code>storage/cache/pages/</code>. <?= $this->e($this->t('admin.settings.performance.purge_automatique')) ?>
+                <?= $this->e($this->t('admin.settings.performance.publication_modification_menu_changement_reglage')) ?>
             </p>
 
             <form method="post" action="/admin/settings/performance" class="pc-stack pc-stack--md">
@@ -46,11 +46,11 @@ $this->layout('admin::layouts/app');
 
                 <label class="pc-switch">
                     <input class="pc-switch__input" type="checkbox" name="page_enabled" value="1"<?= $stats['page_enabled'] ? ' checked' : '' ?>>
-                    <span>Activer le cache de pages</span>
+                    <span><?= $this->e($this->t('admin.settings.performance.activer_cache_pages')) ?></span>
                 </label>
 
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-perf-ttl">Durée de vie (secondes)</label>
+                    <label class="pc-label" for="pc-perf-ttl"><?= $this->e($this->t('admin.settings.performance.duree_vie_secondes')) ?></label>
                     <input
                         id="pc-perf-ttl"
                         type="number"
@@ -62,17 +62,17 @@ $this->layout('admin::layouts/app');
                         class="pc-input pc-input--narrow"
                         required
                     >
-                    <p class="pc-text-xs pc-text-muted">Entre 60 secondes et 24 heures.</p>
+                    <p class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.settings.performance.entre_60_secondes_24_heures')) ?></p>
                 </div>
 
-                <button type="submit" class="pc-btn pc-btn--primary">Enregistrer</button>
+                <button type="submit" class="pc-btn pc-btn--primary"><?= $this->e($this->t('core.actions.save')) ?></button>
             </form>
         </div>
     </section>
 
     <section class="pc-card" aria-labelledby="pc-perf-data-title">
         <div class="pc-card__body pc-stack pc-stack--md">
-            <h2 id="pc-perf-data-title" class="pc-card__title">Cache de données</h2>
+            <h2 id="pc-perf-data-title" class="pc-card__title"><?= $this->e($this->t('admin.settings.performance.cache_donnees')) ?></h2>
 
             <div class="pc-grid-2">
                 <div class="pc-field">
@@ -86,7 +86,7 @@ $this->layout('admin::layouts/app');
                     </p>
                 </div>
                 <div class="pc-field">
-                    <span class="pc-label">Entrées de données</span>
+                    <span class="pc-label"><?= $this->e($this->t('admin.settings.performance.entrees_donnees')) ?></span>
                     <p class="pc-text-sm"><?= $this->formatNumber($stats['data']['entries']) ?></p>
                 </div>
                 <div class="pc-field">
@@ -109,7 +109,7 @@ $this->layout('admin::layouts/app');
 
             <form method="post" action="/admin/settings/performance/purge">
                 <?= $this->raw($this->csrfField()) ?>
-                <button type="submit" class="pc-btn pc-btn--secondary">Vider tout le cache</button>
+                <button type="submit" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('admin.settings.performance.vider_cache')) ?></button>
             </form>
         </div>
     </section>

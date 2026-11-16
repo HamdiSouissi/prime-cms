@@ -46,7 +46,7 @@ $showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdm
         <?php ob_start(); ?>
         <?php if ($recentActivity === []): ?>
             <div style="padding:24px;text-align:center;" class="pc-text-sm pc-text-muted">
-                Aucun contenu créé pour le moment. Commencez par créer une page ou un article !
+                <?= $this->e($this->t('admin.dashboard.index.aucun_contenu_cree_moment_commencez')) ?>
             </div>
         <?php else: ?>
             <ul class="pc-activity-list">

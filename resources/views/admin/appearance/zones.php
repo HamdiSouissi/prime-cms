@@ -27,14 +27,14 @@ $this->layout('admin::layouts/app');
 
 <?php if ($declaredZones === []): ?>
     <div class="pc-empty-state">
-        <p class="pc-empty-state__title">Aucune zone déclarée</p>
-        <p class="pc-empty-state__desc">Le thème actif ne déclare aucune zone de blocs dans son fichier <code>theme.json</code>.</p>
+        <p class="pc-empty-state__title"><?= $this->e($this->t('admin.appearance.zones.aucune_zone_declaree')) ?></p>
+        <p class="pc-empty-state__desc"><?= $this->raw($this->t('admin.appearance.zones.theme_actif_aucune_zone')) ?></p>
     </div>
 <?php else: ?>
     <div class="pc-zones-layout" data-prime-zones-page>
         <aside class="pc-card" aria-label="Liste des zones du thème">
             <div class="pc-card__header">
-                <h2 class="pc-card__title">Zones du thème</h2>
+                <h2 class="pc-card__title"><?= $this->e($this->t('admin.appearance.zones.zones_theme')) ?></h2>
             </div>
             <nav class="pc-zones-nav" aria-label="Choisir une zone à modifier">
                 <?php foreach ($declaredZones as $zSlug => $zMeta): ?>
@@ -90,14 +90,14 @@ $this->layout('admin::layouts/app');
                         <div class="pc-ed-add-bar">
                             <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-editor-add>
                                 <?= $this->raw($this->icon('plus', 16)) ?>
-                                <span>Ajouter un bloc</span>
+                                <span><?= $this->e($this->t('admin.appearance.zones.ajouter_bloc')) ?></span>
                             </button>
                         </div>
                         <div class="pc-sr-only" aria-live="polite" data-prime-editor-live></div>
                     </div>
 
                     <div class="pc-zones-footer">
-                        <button type="submit" class="pc-btn pc-btn--primary">Enregistrer la zone</button>
+                        <button type="submit" class="pc-btn pc-btn--primary"><?= $this->e($this->t('admin.appearance.zones.enregistrer_zone')) ?></button>
                     </div>
                 </form>
             <?php endif; ?>

@@ -29,8 +29,8 @@ $heading = $contentType !== null ? $contentType->label('plural') : 'Archives';
         </div>
       <?php else: ?>
         <section class="aurora-empty">
-          <h2>Aucun contenu publié</h2>
-          <p>Cette rubrique ne contient aucun élément pour le moment.</p>
+          <h2><?= $site->e($site->t('site.aurora.archive.default.aucun_contenu_publie')) ?></h2>
+          <p><?= $site->e($site->t('site.aurora.archive.default.rubrique_ne_contient_aucun_element')) ?></p>
         </section>
       <?php endif; ?>
 

@@ -31,8 +31,8 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
         </div>
       <?php else: ?>
         <section class="aurora-empty">
-          <h2>Aucun article dans cette rubrique</h2>
-          <p>Aucun contenu publié n'est encore associé à ce terme.</p>
+          <h2><?= $site->e($site->t('site.aurora.term.default.aucun_article_rubrique')) ?></h2>
+          <p><?= $site->e($site->t('site.aurora.term.default.aucun_contenu_publie_encore_associe')) ?></p>
         </section>
       <?php endif; ?>
 

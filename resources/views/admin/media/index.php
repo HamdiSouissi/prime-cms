@@ -30,20 +30,20 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
         <div class="pc-media-drop-overlay" data-prime-media-drop-overlay hidden aria-hidden="true">
             <div class="pc-media-drop-overlay__card">
                 <?= $this->raw($this->icon('upload', 36)) ?>
-                <p class="pc-media-drop-overlay__title">Déposez vos fichiers pour les téléverser</p>
-                <p class="pc-text-sm pc-text-muted">Jusqu’à <?= $this->e(number_format($limit['megabytes'], 0, ',', ' ')) ?> Mo par fichier · Téléversement parallèle</p>
+                <p class="pc-media-drop-overlay__title"><?= $this->e($this->t('admin.media.index.deposez_fichiers_televerser')) ?></p>
+                <p class="pc-text-sm pc-text-muted"><?= $this->e($this->t('admin.media.index.taille_max_par_fichier', ['size' => number_format($limit['megabytes'], 0, ',', ' ')])) ?></p>
             </div>
         </div>
     <?php endif; ?>
 
     <header class="pc-page-header">
         <div class="pc-page-header__left">
-            <h1 class="pc-page-header__title">Médiathèque</h1>
+            <h1 class="pc-page-header__title"><?= $this->e($this->t('admin.media.index.mediatheque')) ?></h1>
             <p class="pc-page-header__subtitle">
                 <span data-prime-media-total-label><?= $this->e($initialTotal > 1 ? $initialTotal . ' médias' : $initialTotal . ' média') ?></span>
                 · Max <?= $this->e(number_format($limit['megabytes'], 1, ',', ' ')) ?> Mo/fichier
                 <?php if ($limit['phpLimited']): ?>
-                    <span class="pc-text-muted">(limité par PHP)</span>
+                    <span class="pc-text-muted"><?= $this->e($this->t('admin.media.index.limite_php')) ?></span>
                 <?php endif; ?>
             </p>
         </div>
@@ -52,7 +52,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                 <input type="file" multiple accept="<?= $this->e($acceptAttr) ?>" hidden data-prime-media-upload-input>
                 <button type="button" class="pc-btn pc-btn--primary" data-prime-media-upload-trigger>
                     <?= $this->raw($this->icon('upload', 16)) ?>
-                    <span>Ajouter des fichiers</span>
+                    <span><?= $this->e($this->t('admin.media.index.ajouter_fichiers')) ?></span>
                 </button>
             <?php endif; ?>
         </div>
@@ -89,12 +89,12 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             <div class="pc-media-toolbar">
                 <div class="pc-media-toolbar__search">
                     <span class="pc-media-toolbar__search-icon" aria-hidden="true"><?= $this->raw($this->icon('search', 15)) ?></span>
-                    <label class="pc-sr-only" for="pc-media-search">Rechercher un média</label>
+                    <label class="pc-sr-only" for="pc-media-search"><?= $this->e($this->t('admin.media.index.rechercher_media')) ?></label>
                     <input
                         id="pc-media-search"
                         type="search"
                         class="pc-input pc-input--sm"
-                        placeholder="Rechercher par nom, titre, alt…"
+                        placeholder="<?= $this->e($this->t('admin.media.index.rechercher_nom_titre_alt')) ?>"
                         value="<?= $this->e((string) ($initialFilters['q'] ?? '')) ?>"
                         data-prime-media-search
                     >
@@ -102,16 +102,16 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
 
                 <div class="pc-media-toolbar__filters">
                     <select class="pc-select pc-select--sm" aria-label="Filtrer par type" data-prime-media-filter-kind>
-                        <option value="">Tous les types</option>
+                        <option value=""><?= $this->e($this->t('admin.media.index.types')) ?></option>
                         <option value="image"<?= ($initialFilters['kind'] ?? '') === 'image' ? ' selected' : '' ?>>Images</option>
                         <option value="document"<?= ($initialFilters['kind'] ?? '') === 'document' ? ' selected' : '' ?>>Documents</option>
                         <option value="audio"<?= ($initialFilters['kind'] ?? '') === 'audio' ? ' selected' : '' ?>>Audio</option>
-                        <option value="video"<?= ($initialFilters['kind'] ?? '') === 'video' ? ' selected' : '' ?>>Vidéos</option>
+                        <option value="video"<?= ($initialFilters['kind'] ?? '') === 'video' ? ' selected' : '' ?>><?= $this->e($this->t('admin.media.index.videos')) ?></option>
                         <option value="archive"<?= ($initialFilters['kind'] ?? '') === 'archive' ? ' selected' : '' ?>>Archives</option>
                     </select>
 
                     <select class="pc-select pc-select--sm" aria-label="Filtrer par date" data-prime-media-filter-month>
-                        <option value="">Toutes les dates</option>
+                        <option value=""><?= $this->e($this->t('admin.media.index.dates')) ?></option>
                     </select>
 
                     <button
@@ -126,17 +126,17 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                         class="pc-media-chip<?= !empty($initialFilters['unused']) ? ' is-active' : '' ?>"
                         aria-pressed="<?= !empty($initialFilters['unused']) ? 'true' : 'false' ?>"
                         data-prime-media-filter-unused
-                    >Non utilisés</button>
+                    <?= $this->e($this->t('core.actions.unused')) ?></button>
                 </div>
 
                 <div class="pc-media-toolbar__right">
                     <select class="pc-select pc-select--sm" aria-label="Trier les médias" data-prime-media-sort>
-                        <option value="created_at:desc">Plus récents</option>
+                        <option value="created_at:desc"><?= $this->e($this->t('admin.media.index.recents')) ?></option>
                         <option value="created_at:asc">Plus anciens</option>
                         <option value="name:asc">Nom (A → Z)</option>
                         <option value="name:desc">Nom (Z → A)</option>
                         <option value="size:desc">Plus lourds</option>
-                        <option value="size:asc">Plus légers</option>
+                        <option value="size:asc"><?= $this->e($this->t('admin.media.index.legers')) ?></option>
                     </select>
 
                     <div class="pc-media-view-toggle" role="group" aria-label="Mode d’affichage">
@@ -152,20 +152,20 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
 
             <!-- Bulk actions bar -->
             <div class="pc-media-bulk-bar" data-prime-media-bulk-bar hidden role="region" aria-label="Actions groupées">
-                <strong class="pc-text-sm" data-prime-media-bulk-count>0 média sélectionné</strong>
+                <strong class="pc-text-sm" data-prime-media-bulk-count><?= $this->e($this->t('admin.media.index.0_media_selectionne')) ?></strong>
                 <div class="pc-media-bulk-bar__actions">
                     <?php if ($canUpload || $canDeleteAny): ?>
                         <div class="pc-media-bulk-bar__move">
-                            <label class="pc-sr-only" for="pc-media-bulk-folder">Déplacer vers le dossier</label>
+                            <label class="pc-sr-only" for="pc-media-bulk-folder"><?= $this->e($this->t('admin.media.index.deplacer_vers_dossier')) ?></label>
                             <select id="pc-media-bulk-folder" class="pc-select pc-select--sm" data-prime-media-bulk-folder></select>
-                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-bulk-move>Déplacer</button>
+                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-bulk-move><?= $this->e($this->t('admin.media.index.deplacer')) ?></button>
                         </div>
                         <button type="button" class="pc-btn pc-btn--danger pc-btn--sm" data-prime-media-bulk-delete>
                             <?= $this->raw($this->icon('trash', 14)) ?>
-                            <span>Supprimer</span>
+                            <span><?= $this->e($this->t('core.actions.delete')) ?></span>
                         </button>
                     <?php endif; ?>
-                    <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-bulk-clear>Désélectionner</button>
+                    <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-bulk-clear><?= $this->e($this->t('admin.media.index.deselectionner')) ?></button>
                 </div>
             </div>
 
@@ -178,7 +178,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                     <table class="pc-table">
                         <thead>
                             <tr>
-                                <th class="pc-table__check" scope="col"><span class="pc-sr-only">Sélection</span></th>
+                                <th class="pc-table__check" scope="col"><span class="pc-sr-only"><?= $this->e($this->t('admin.media.index.selection')) ?></span></th>
                                 <th scope="col">Fichier</th>
                                 <th scope="col">Type</th>
                                 <th scope="col">Dimensions</th>
@@ -196,10 +196,10 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             <!-- Empty state -->
             <div class="pc-empty-state" data-prime-media-empty hidden>
                 <div class="pc-empty-state__icon"><?= $this->raw($this->icon('image', 28)) ?></div>
-                <h2 class="pc-empty-state__title" data-prime-media-empty-title>Votre médiathèque est vide</h2>
-                <p class="pc-empty-state__text" data-prime-media-empty-desc>Glissez-déposez des fichiers n’importe où sur cette page pour commencer.</p>
+                <h2 class="pc-empty-state__title" data-prime-media-empty-title><?= $this->e($this->t('admin.media.index.mediatheque_vide')) ?></h2>
+                <p class="pc-empty-state__text" data-prime-media-empty-desc><?= $this->e($this->t('admin.media.index.glissez_deposez_fichiers_importe_ou')) ?></p>
                 <div class="pc-empty-state__actions">
-                    <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-empty-reset hidden>Réinitialiser les filtres</button>
+                    <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-empty-reset hidden><?= $this->e($this->t('core.actions.reset_filters')) ?></button>
                     <?php if ($canUpload): ?>
                         <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-empty-upload>
                             <?= $this->raw($this->icon('upload', 15)) ?>
@@ -220,8 +220,8 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
     <!-- Floating parallel upload queue panel -->
     <aside class="pc-upload-queue" data-prime-media-queue-panel hidden aria-label="File de téléversement">
         <header class="pc-upload-queue__header">
-            <strong class="pc-text-sm" data-prime-media-queue-title>Téléversement</strong>
-            <button type="button" class="pc-btn pc-btn--ghost pc-btn--xs" data-prime-media-queue-clear>Effacer terminés</button>
+            <strong class="pc-text-sm" data-prime-media-queue-title><?= $this->e($this->t('admin.media.index.televersement')) ?></strong>
+            <button type="button" class="pc-btn pc-btn--ghost pc-btn--xs" data-prime-media-queue-clear><?= $this->e($this->t('admin.media.index.effacer_termines')) ?></button>
         </header>
         <ul class="pc-upload-queue__list" data-prime-media-queue-list></ul>
     </aside>
@@ -242,7 +242,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
     <div class="pc-drawer__backdrop" data-prime-drawer-close aria-hidden="true"></div>
     <div class="pc-drawer__panel pc-drawer__panel--wide" data-prime-drawer-panel>
         <header class="pc-drawer__header">
-            <h2 class="pc-drawer__title" id="pc-media-detail-drawer-title" data-prime-drawer-media-title>Détail du média</h2>
+            <h2 class="pc-drawer__title" id="pc-media-detail-drawer-title" data-prime-drawer-media-title><?= $this->e($this->t('admin.media.index.detail_media')) ?></h2>
             <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-drawer-close aria-label="Fermer le détail">
                 <?= $this->raw($this->icon('x', 18)) ?>
             </button>
@@ -251,7 +251,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             <div class="pc-media-drawer__preview" data-prime-drawer-preview></div>
             <p class="pc-text-xs pc-text-muted pc-media-drawer__focal-hint" data-prime-drawer-focal-hint hidden>
                 <?= $this->raw($this->icon('crosshair', 13)) ?>
-                <span>Cliquez ou utilisez les flèches sur l’image pour ajuster le point focal, puis enregistrez.</span>
+                <span><?= $this->e($this->t('admin.media.index.cliquez_utilisez_fleches_image_ajuster')) ?></span>
             </p>
 
             <div class="pc-media-drawer__section">
@@ -281,7 +281,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                     <input id="pc-drawer-title" type="text" class="pc-input pc-input--sm" maxlength="255" data-prime-drawer-title>
                 </div>
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-drawer-caption">Légende</label>
+                    <label class="pc-label" for="pc-drawer-caption"><?= $this->e($this->t('admin.media.index.legende')) ?></label>
                     <textarea id="pc-drawer-caption" class="pc-textarea" rows="2" data-prime-drawer-caption></textarea>
                 </div>
                 <div class="pc-field">
@@ -291,20 +291,20 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                 <div>
                     <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-drawer-save>
                         <?= $this->raw($this->icon('save', 15)) ?>
-                        <span>Enregistrer les métadonnées</span>
+                        <span><?= $this->e($this->t('admin.media.index.enregistrer_metadonnees')) ?></span>
                     </button>
                 </div>
             </form>
 
             <div class="pc-media-drawer__section">
-                <h3 class="pc-media-drawer__subtitle">Utilisé dans</h3>
+                <h3 class="pc-media-drawer__subtitle"><?= $this->e($this->t('admin.media.index.utilise')) ?></h3>
                 <ul class="pc-media-usage-list" data-prime-drawer-usages></ul>
             </div>
 
             <div class="pc-media-drawer__actions">
                 <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-drawer-regenerate>
                     <?= $this->raw($this->icon('rotate-ccw', 14)) ?>
-                    <span>Régénérer</span>
+                    <span><?= $this->e($this->t('admin.media.index.regenerer')) ?></span>
                 </button>
                 <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-drawer-replace-btn>
                     <?= $this->raw($this->icon('upload', 14)) ?>
@@ -313,11 +313,11 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                 <input type="file" accept="<?= $this->e($acceptAttr) ?>" hidden data-prime-drawer-replace-input>
                 <a href="#" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-drawer-download>
                     <?= $this->raw($this->icon('download', 14)) ?>
-                    <span>Télécharger</span>
+                    <span><?= $this->e($this->t('core.actions.download')) ?></span>
                 </a>
                 <button type="button" class="pc-btn pc-btn--danger pc-btn--sm" data-prime-drawer-delete>
                     <?= $this->raw($this->icon('trash', 14)) ?>
-                    <span>Supprimer</span>
+                    <span><?= $this->e($this->t('core.actions.delete')) ?></span>
                 </button>
             </div>
         </div>
@@ -335,7 +335,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
     <form data-prime-folder-modal-form>
         <div class="pc-modal__body pc-stack pc-stack--sm">
             <div class="pc-field">
-                <label class="pc-label" for="pc-folder-modal-name">Nom du dossier</label>
+                <label class="pc-label" for="pc-folder-modal-name"><?= $this->e($this->t('admin.media.index.nom_dossier')) ?></label>
                 <input id="pc-folder-modal-name" type="text" class="pc-input" maxlength="120" required data-prime-folder-modal-name placeholder="Ex. Produits, Équipe, Communiqués…">
             </div>
             <div class="pc-field">
@@ -344,8 +344,8 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             </div>
         </div>
         <footer class="pc-modal__footer">
-            <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-modal-close>Annuler</button>
-            <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm">Enregistrer</button>
+            <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-modal-close><?= $this->e($this->t('core.actions.cancel')) ?></button>
+            <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($this->t('core.actions.save')) ?></button>
         </footer>
     </form>
 </dialog>
@@ -353,17 +353,17 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
 <!-- Named confirmation modal (media delete, bulk delete, folder delete) -->
 <dialog id="pc-media-confirm-modal" class="pc-modal pc-modal--sm" aria-labelledby="pc-media-confirm-title">
     <header class="pc-modal__header">
-        <h2 class="pc-modal__title" id="pc-media-confirm-title" data-prime-confirm-title>Confirmer la suppression</h2>
+        <h2 class="pc-modal__title" id="pc-media-confirm-title" data-prime-confirm-title><?= $this->e($this->t('core.actions.delete_confirm')) ?></h2>
         <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="Fermer">
             <?= $this->raw($this->icon('x', 18)) ?>
         </button>
     </header>
     <div class="pc-modal__body pc-stack pc-stack--sm">
         <div class="pc-alert pc-alert--warning" role="alert" data-prime-confirm-warning hidden></div>
-        <p class="pc-text-sm" data-prime-confirm-message>Cette action est irréversible.</p>
+        <p class="pc-text-sm" data-prime-confirm-message><?= $this->e($this->t('admin.media.index.action_irreversible')) ?></p>
     </div>
     <footer class="pc-modal__footer">
-        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-modal-close>Annuler</button>
-        <button type="button" class="pc-btn pc-btn--danger pc-btn--sm" data-prime-confirm-submit>Supprimer</button>
+        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-modal-close><?= $this->e($this->t('core.actions.cancel')) ?></button>
+        <button type="button" class="pc-btn pc-btn--danger pc-btn--sm" data-prime-confirm-submit><?= $this->e($this->t('core.actions.delete')) ?></button>
     </footer>
 </dialog>

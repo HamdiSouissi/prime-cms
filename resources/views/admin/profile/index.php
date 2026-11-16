@@ -40,13 +40,13 @@ ob_start();
     <div class="pc-stack pc-stack--md">
         <?php if (!empty($canPickAvatar)): ?>
             <div class="pc-field">
-                <span class="pc-field__label">Photo de profil (avatar)</span>
+                <span class="pc-field__label"><?= $this->e($this->t('admin.profile.index.photo_profil_avatar')) ?></span>
                 <div
                     class="pc-media-field"
                     data-prime-media-field
                     data-prime-media-multiple="0"
                     data-prime-media-kinds="image"
-                    data-prime-media-title="Choisir un avatar"
+                    data-prime-media-title="<?= $this->e($this->t('admin.profile.index.choisir_avatar')) ?>"
                 >
                     <script type="application/json" data-prime-media-initial><?= $this->raw((string) ($avatarInitialJson ?? '[]')) ?></script>
                     <input
@@ -59,7 +59,7 @@ ob_start();
                     <div class="pc-media-field__buttons">
                         <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-choose>
                             <?= $this->raw($this->icon('image', 14)) ?>
-                            <span data-prime-media-choose-label>Choisir une photo</span>
+                            <span data-prime-media-choose-label><?= $this->e($this->t('admin.profile.index.choisir_photo')) ?></span>
                         </button>
                         <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear hidden>Retirer l’avatar</button>
                     </div>
@@ -98,7 +98,7 @@ ob_start();
                 rows="3"
                 maxlength="1000"
                 class="pc-textarea"
-                placeholder="Courte présentation affichée sur votre page auteur et sous vos articles…"
+                placeholder="<?= $this->e($this->t('admin.profile.bio_placeholder')) ?>"
             ><?= $this->e((string) ($oldInfo['bio'] ?? '')) ?></textarea>
             <?php if (isset($infoErrors['bio'])): ?>
                 <span class="pc-field__error"><?= $this->e($infoErrors['bio']) ?></span>
@@ -137,7 +137,7 @@ ob_start();
         ])) ?>
 
         <div>
-            <span class="pc-field__label">Rôles attribués</span>
+            <span class="pc-field__label"><?= $this->e($this->t('admin.profile.index.roles_attribues')) ?></span>
             <div class="pc-badges-wrap">
                 <?php foreach ($profileUser->roles as $role): ?>
                     <?= $this->raw($this->insert('admin::components/badge', [
@@ -200,7 +200,7 @@ ob_start();
                     <span class="pc-strength__bar"></span>
                 </div>
                 <span class="pc-strength__label" data-prime-strength-label>
-                    Minimum 12 caractères (majuscules, chiffres et symboles recommandés).
+                    <?= $this->e($this->t('admin.profile.index.minimum_12_caracteres_majuscules_chiffres')) ?>
                 </span>
             </div>
 
@@ -254,9 +254,9 @@ ob_start();
                     type="button"
                     class="pc-btn pc-btn--secondary pc-btn--sm"
                     data-prime-copy-text="<?= $this->e($recoveryText) ?>"
-                    data-prime-copy-feedback="Codes de récupération copiés !"
+                    data-prime-copy-feedback="<?= $this->e($this->t('admin.profile.index.codes_recuperation_copies')) ?>"
                 >
-                    Copier les codes
+                    <?= $this->e($this->t('admin.profile.index.copier_codes')) ?>
                 </button>
                 <button
                     type="button"
@@ -264,7 +264,7 @@ ob_start();
                     data-prime-download-text="<?= $this->e($recoveryText . "\n") ?>"
                     data-prime-download-filename="prime-cms-recovery-codes.txt"
                 >
-                    Télécharger (.txt)
+                    <?= $this->e($this->t('admin.profile.index.telecharger_txt')) ?>
                 </button>
             </div>
         <?php endif; ?>
@@ -272,14 +272,14 @@ ob_start();
         <?php if (!$profileUser->hasTwoFactor()): ?>
             <?php if ($pendingTwoFactor === null): ?>
                 <p class="pc-text-sm pc-text-muted">
-                    Protégez votre compte avec un code temporaire à 6 chiffres généré par votre application TOTP
+                    <?= $this->e($this->t('admin.profile.code_temporaire_application_totp')) ?>
                     (Aegis, 1Password, Bitwarden, Google Authenticator…).
                 </p>
                 <form method="post" action="/admin/profile/2fa/start">
                     <?= $this->raw($this->csrfField()) ?>
                     <button type="submit" class="pc-btn pc-btn--secondary">
                         <?= $this->raw($this->icon('shield', 16)) ?>
-                        <span>Activer la double authentification</span>
+                        <span><?= $this->e($this->t('admin.profile.index.activer_double_authentification')) ?></span>
                     </button>
                 </form>
             <?php else: ?>
@@ -293,9 +293,9 @@ ob_start();
                         type="button"
                         class="pc-btn pc-btn--secondary pc-btn--sm"
                         data-prime-copy-text="<?= $this->e($pendingTwoFactor['secret']) ?>"
-                        data-prime-copy-feedback="Clé secrète copiée !"
+                        data-prime-copy-feedback="<?= $this->e($this->t('admin.profile.index.cle_secrete_copiee')) ?>"
                     >
-                        Copier la clé
+                        <?= $this->e($this->t('admin.profile.index.copier_cle')) ?>
                     </button>
                 </div>
 
@@ -324,9 +324,9 @@ ob_start();
                     <div class="pc-row pc-row--sm">
                         <button type="submit" class="pc-btn pc-btn--secondary">
                             <?= $this->raw($this->icon('shield', 16)) ?>
-                            <span>Confirmer et activer</span>
+                            <span><?= $this->e($this->t('admin.profile.index.confirmer_activer')) ?></span>
                         </button>
-                        <button type="submit" formaction="/admin/profile/2fa/cancel" class="pc-btn pc-btn--ghost" formnovalidate>Annuler</button>
+                        <button type="submit" formaction="/admin/profile/2fa/cancel" class="pc-btn pc-btn--ghost" formnovalidate><?= $this->e($this->t('core.actions.cancel')) ?></button>
                     </div>
                 </form>
             <?php endif; ?>
@@ -338,7 +338,7 @@ ob_start();
                     'dot' => true,
                 ])) ?>
                 <span class="pc-text-sm pc-text-muted">
-                    <?= $this->e((string) $remainingRecoveryCount) ?> code<?= $remainingRecoveryCount > 1 ? 's' : '' ?> de récupération restant<?= $remainingRecoveryCount > 1 ? 's' : '' ?>.
+                    <?= $this->e($this->choice('admin.profile.codes_recuperation_restants', $remainingRecoveryCount)) ?>
                 </span>
             </div>
 
@@ -354,7 +354,7 @@ ob_start();
                     'required' => true,
                 ])) ?>
                 <div>
-                    <button type="submit" class="pc-btn pc-btn--secondary">Régénérer les codes de récupération</button>
+                    <button type="submit" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('admin.profile.index.regenerer_codes_recuperation')) ?></button>
                 </div>
             </form>
 
@@ -364,7 +364,7 @@ ob_start();
                 method="post"
                 action="/admin/profile/2fa/disable"
                 class="pc-stack pc-stack--sm"
-                data-prime-confirm-form="Désactiver l'authentification à deux facteurs sur votre compte ?"
+                data-prime-confirm-form="<?= $this->e($this->t('admin.profile.confirmer_desactivation_2fa')) ?>"
             >
                 <?= $this->raw($this->csrfField()) ?>
                 <div class="pc-stack pc-stack--md">
@@ -389,7 +389,7 @@ ob_start();
                     ])) ?>
                 </div>
                 <div>
-                    <button type="submit" class="pc-btn pc-btn--danger">Désactiver la 2FA</button>
+                    <button type="submit" class="pc-btn pc-btn--danger"><?= $this->e($this->t('admin.profile.index.desactiver_2fa')) ?></button>
                 </div>
             </form>
         <?php endif; ?>

@@ -25,12 +25,12 @@ declare(strict_types=1);
         <div class="hp-public__badge">Plugin Prime CMS · Hello Prime v<?= $this->e($pluginVersion) ?></div>
         <h1 class="hp-public__title"><?= $this->e($greeting) ?></h1>
         <p class="hp-public__subtitle">
-            Cette page publique est servie directement par le plugin de référence <strong>hello-prime</strong> via <code>PluginContext::router()</code> et <code>PluginContext::views()</code>.
+            <?= $this->raw($this->t('plugin::hello-prime.views.public.page_publique_servie_directement_plugin', ['router' => 'PluginContext::router()', 'views' => 'PluginContext::views()'])) ?>
         </p>
 
         <?php if ($entries !== []): ?>
             <section class="hp-public__list" aria-label="Messages">
-                <h2>Messages récents</h2>
+                <h2><?= $this->e($this->t('plugin::hello-prime.views.public.messages_recents')) ?></h2>
                 <ul>
                     <?php foreach ($entries as $entry): ?>
                         <li>
@@ -43,7 +43,7 @@ declare(strict_types=1);
         <?php endif; ?>
 
         <footer class="hp-public__footer">
-            <a href="/">← Retour à l’accueil</a>
+            <a href="/"><?= $this->e($this->t('plugin::hello-prime.views.public.retour_a_accueil')) ?></a>
             <a href="/admin/hello-prime">Administration Hello Prime →</a>
         </footer>
     </main>

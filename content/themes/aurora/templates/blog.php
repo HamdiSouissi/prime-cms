@@ -28,8 +28,8 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
         </div>
       <?php else: ?>
         <section class="aurora-empty">
-          <h2>Aucun article publié</h2>
-          <p>Les prochains articles apparaîtront ici dès leur publication.</p>
+          <h2><?= $site->e($site->t('site.aurora.blog.aucun_article_publie')) ?></h2>
+          <p><?= $site->e($site->t('site.aurora.blog.prochains_articles_apparaitront_ici_des')) ?></p>
         </section>
       <?php endif; ?>
 

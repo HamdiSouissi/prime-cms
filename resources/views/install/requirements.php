@@ -36,9 +36,9 @@ foreach ($report['checks'] as $item) {
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-install__header">
-    <h1 class="pc-install__title">Vérification des prérequis</h1>
+    <h1 class="pc-install__title"><?= $this->e($this->t('core.install.requirements.verification_prerequis')) ?></h1>
     <p class="pc-install__lead">
-        Assurons-nous que votre environnement dispose de la bonne version de PHP, des extensions indispensables et des droits d'écriture.
+        <?= $this->e($this->t('core.install.requirements.assurons_nous_environnement_dispose_bonne')) ?>
     </p>
 </div>
 
@@ -111,7 +111,7 @@ foreach ($report['checks'] as $item) {
     </a>
 
     <div class="pc-install__actions-group">
-        <a href="/install/requirements" class="pc-btn pc-btn--secondary">Revérifier</a>
+        <a href="/install/requirements" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('core.install.requirements.reverifier')) ?></a>
         <?php if ($report['passed']): ?>
             <a href="/install/database" class="pc-btn pc-btn--primary">
                 <span>Continuer</span>

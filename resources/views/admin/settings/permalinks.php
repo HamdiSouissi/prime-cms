@@ -26,16 +26,16 @@ $this->layout('admin::layouts/app');
     <form method="post" action="/admin/settings/permalinks" class="pc-card">
         <?= $this->raw($this->csrfField()) ?>
         <div class="pc-card__header">
-            <h2 class="pc-card__title">Structure des permaliens d'articles</h2>
+            <h2 class="pc-card__title"><?= $this->e($this->t('admin.settings.permalinks.structure_permaliens_articles')) ?></h2>
         </div>
         <div class="pc-card__body pc-stack pc-stack--md">
             <fieldset class="pc-fieldset pc-stack pc-stack--sm">
-                <legend class="pc-sr-only">Structure des articles</legend>
+                <legend class="pc-sr-only"><?= $this->e($this->t('admin.settings.permalinks.structure_articles')) ?></legend>
 
                 <label class="pc-radio-card">
                     <input type="radio" name="post_structure" value="/blog/{slug}"<?= $postStructure === '/blog/{slug}' ? ' checked' : '' ?>>
                     <span>
-                        <strong>Préfixe blog (recommandé)</strong>
+                        <strong><?= $this->e($this->t('admin.settings.permalinks.prefixe_blog_recommande')) ?></strong>
                         <small class="pc-text-xs pc-text-muted"><code>/blog/mon-article</code></small>
                     </span>
                 </label>
@@ -43,7 +43,7 @@ $this->layout('admin::layouts/app');
                 <label class="pc-radio-card">
                     <input type="radio" name="post_structure" value="/{annee}/{mois}/{slug}"<?= $postStructure === '/{annee}/{mois}/{slug}' ? ' checked' : '' ?>>
                     <span>
-                        <strong>Année et mois</strong>
+                        <strong><?= $this->e($this->t('admin.settings.permalinks.annee_mois')) ?></strong>
                         <small class="pc-text-xs pc-text-muted"><code>/2026/11/mon-article</code></small>
                     </span>
                 </label>
@@ -51,7 +51,7 @@ $this->layout('admin::layouts/app');
                 <label class="pc-radio-card">
                     <input type="radio" name="post_structure" value="/{slug}"<?= $postStructure === '/{slug}' ? ' checked' : '' ?>>
                     <span>
-                        <strong>Titre court à la racine</strong>
+                        <strong><?= $this->e($this->t('admin.settings.permalinks.titre_court_a_racine')) ?></strong>
                         <small class="pc-text-xs pc-text-muted"><code>/mon-article</code></small>
                     </span>
                 </label>
@@ -59,20 +59,20 @@ $this->layout('admin::layouts/app');
 
             <div class="pc-grid-2">
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-perm-cat-base">Préfixe des catégories</label>
+                    <label class="pc-label" for="pc-perm-cat-base"><?= $this->e($this->t('admin.settings.permalinks.prefixe_categories')) ?></label>
                     <input id="pc-perm-cat-base" type="text" name="category_base" value="<?= $this->e($categoryBase) ?>" class="pc-input" required>
                     <p class="pc-text-xs pc-text-muted">Exemple : <code>/<?= $this->e($categoryBase) ?>/actualites</code></p>
                 </div>
 
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-perm-tag-base">Préfixe des étiquettes</label>
+                    <label class="pc-label" for="pc-perm-tag-base"><?= $this->e($this->t('admin.settings.permalinks.prefixe_etiquettes')) ?></label>
                     <input id="pc-perm-tag-base" type="text" name="tag_base" value="<?= $this->e($tagBase) ?>" class="pc-input" required>
                     <p class="pc-text-xs pc-text-muted">Exemple : <code>/<?= $this->e($tagBase) ?>/prime-cms</code></p>
                 </div>
             </div>
         </div>
         <div class="pc-card__footer">
-            <button type="submit" class="pc-btn pc-btn--primary">Enregistrer les permaliens</button>
+            <button type="submit" class="pc-btn pc-btn--primary"><?= $this->e($this->t('admin.settings.permalinks.enregistrer_permaliens')) ?></button>
         </div>
     </form>
 
@@ -82,7 +82,7 @@ $this->layout('admin::layouts/app');
         </header>
         <div class="pc-card__body pc-stack pc-stack--md">
             <p class="pc-text-sm pc-text-muted">
-                Prime CMS crée automatiquement une redirection 301 lorsque le slug ou le parent d'un contenu publié est modifié, en raccourcissant automatiquement les chaînes (A → B → C devient A → C).
+                <?= $this->e($this->t('admin.settings.permalinks.prime_cms_cree_automatiquement_redirection')) ?>
             </p>
 
             <form method="post" action="/admin/settings/permalinks/redirects" class="pc-redirect-add-form">
@@ -95,11 +95,11 @@ $this->layout('admin::layouts/app');
                     <label class="pc-label" for="pc-redir-target">Nouveau chemin interne</label>
                     <input id="pc-redir-target" type="text" name="target_path" class="pc-input" placeholder="/nouveau-chemin" required>
                 </div>
-                <button type="submit" class="pc-btn pc-btn--secondary">Ajouter</button>
+                <button type="submit" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('core.actions.add')) ?></button>
             </form>
 
             <?php if ($redirects === []): ?>
-                <p class="pc-text-sm pc-text-muted">Aucune redirection enregistrée pour le moment.</p>
+                <p class="pc-text-sm pc-text-muted"><?= $this->e($this->t('admin.settings.permalinks.aucune_redirection_enregistree_moment')) ?></p>
             <?php else: ?>
                 <div class="pc-table-wrap">
                     <table class="pc-table">
@@ -122,7 +122,7 @@ $this->layout('admin::layouts/app');
                                     <td class="pc-table__actions-col">
                                         <form method="post" action="/admin/settings/permalinks/redirects/<?= $this->e((string) $rule['id']) ?>/delete">
                                             <?= $this->raw($this->csrfField()) ?>
-                                            <button type="submit" class="pc-btn pc-btn--danger-outline pc-btn--sm">Supprimer</button>
+                                            <button type="submit" class="pc-btn pc-btn--danger-outline pc-btn--sm"><?= $this->e($this->t('core.actions.delete')) ?></button>
                                         </form>
                                     </td>
                                 </tr>

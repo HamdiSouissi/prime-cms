@@ -28,7 +28,7 @@ foreach ($schema['fields'] as $key => $field) {
     <aside class="pc-customizer__sidebar" aria-label="Options de personnalisation">
         <header class="pc-customizer__head">
             <div>
-                <a href="/admin/appearance/themes" class="pc-text-xs pc-text-muted">&larr; Retour aux thèmes</a>
+                <a href="/admin/appearance/themes" class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.appearance.customizer.larr_retour_themes')) ?></a>
                 <h1 class="pc-customizer__title">Personnaliser <?= $this->e($activeTheme->name()) ?></h1>
             </div>
             <div class="pc-customizer__actions">
@@ -41,10 +41,10 @@ foreach ($schema['fields'] as $key => $field) {
 
             <!-- Section: Site Identity -->
             <details class="pc-customizer__section" open>
-                <summary class="pc-customizer__summary">Identité du site</summary>
+                <summary class="pc-customizer__summary"><?= $this->e($this->t('admin.appearance.customizer.identite_site')) ?></summary>
                 <div class="pc-customizer__fields pc-stack pc-stack--sm">
                     <div class="pc-field">
-                        <label class="pc-label" for="pc-cust-site-name">Nom du site</label>
+                        <label class="pc-label" for="pc-cust-site-name"><?= $this->e($this->t('admin.appearance.customizer.nom_site')) ?></label>
                         <input
                             id="pc-cust-site-name"
                             type="text"
@@ -66,7 +66,7 @@ foreach ($schema['fields'] as $key => $field) {
                         >
                     </div>
                     <div class="pc-field">
-                        <label class="pc-label" for="pc-cust-logo-id">Logo (ID média)</label>
+                        <label class="pc-label" for="pc-cust-logo-id"><?= $this->e($this->t('admin.appearance.customizer.logo_id_media')) ?></label>
                         <div class="pc-customizer__media-row">
                             <input
                                 id="pc-cust-logo-id"
@@ -75,7 +75,7 @@ foreach ($schema['fields'] as $key => $field) {
                                 name="identity[logo_id]"
                                 value="<?= $siteIdentity['logo_id'] !== null ? $this->e((string) $siteIdentity['logo_id']) : '' ?>"
                                 class="pc-input"
-                                placeholder="Aucun"
+                                placeholder="<?= $this->e($this->t('admin.appearance.customizer.aucun')) ?>"
                                 data-prime-identity-field="logo_id"
                             >
                             <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-pick-media="pc-cust-logo-id">Choisir</button>
@@ -85,7 +85,7 @@ foreach ($schema['fields'] as $key => $field) {
                         <?php endif; ?>
                     </div>
                     <div class="pc-field">
-                        <label class="pc-label" for="pc-cust-icon-id">Icône du site / Favicon (ID média, min. 512×512)</label>
+                        <label class="pc-label" for="pc-cust-icon-id"><?= $this->e($this->t('admin.appearance.customizer.icone_site_favicon_id_media')) ?></label>
                         <div class="pc-customizer__media-row">
                             <input
                                 id="pc-cust-icon-id"
@@ -94,12 +94,12 @@ foreach ($schema['fields'] as $key => $field) {
                                 name="identity[icon_id]"
                                 value="<?= $siteIdentity['icon_id'] !== null ? $this->e((string) $siteIdentity['icon_id']) : '' ?>"
                                 class="pc-input"
-                                placeholder="Aucun"
+                                placeholder="<?= $this->e($this->t('admin.appearance.customizer.aucun')) ?>"
                                 data-prime-identity-field="icon_id"
                             >
                             <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-pick-media="pc-cust-icon-id">Choisir</button>
                         </div>
-                        <p class="pc-text-xs pc-text-muted">Génère automatiquement les favicons 32, 180, 192 et 512 px.</p>
+                        <p class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.appearance.customizer.genere_automatiquement_favicons_32_180')) ?></p>
                     </div>
                 </div>
             </details>
@@ -230,7 +230,7 @@ foreach ($schema['fields'] as $key => $field) {
 
             <div class="pc-customizer__footer">
                 <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-customizer-reset>
-                    Réinitialiser par défaut
+                    <?= $this->e($this->t('admin.appearance.customizer.reinitialiser_defaut')) ?>
                 </button>
             </div>
         </form>
@@ -238,7 +238,7 @@ foreach ($schema['fields'] as $key => $field) {
 
     <section class="pc-customizer__stage" aria-label="Aperçu en direct">
         <div class="pc-customizer__toolbar">
-            <span class="pc-text-xs pc-text-muted">Aperçu en direct (brouillon privé)</span>
+            <span class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.appearance.customizer.apercu_direct_brouillon_prive')) ?></span>
             <div class="pc-customizer__devices" role="group" aria-label="Format d'affichage">
                 <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm is-active" data-prime-device="desktop" aria-pressed="true">Bureau</button>
                 <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-device="tablet" aria-pressed="false">Tablette</button>
@@ -248,7 +248,7 @@ foreach ($schema['fields'] as $key => $field) {
         <div class="pc-customizer__frame-wrap" data-prime-frame-wrap="desktop">
             <iframe
                 src="<?= $this->e($previewUrl) ?>"
-                title="Aperçu en direct du site"
+                title="<?= $this->e($this->t('admin.appearance.customizer.apercu_direct_site')) ?>"
                 class="pc-customizer__iframe"
                 data-prime-customizer-iframe
             ></iframe>

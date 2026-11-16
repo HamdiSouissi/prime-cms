@@ -52,7 +52,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
             <div class="pc-grid pc-grid--2">
                 <div class="pc-field<?= isset($errors['name']) ? ' pc-field--error' : '' ?>">
                     <label class="pc-field__label" for="role-name">
-                        <span>Nom du rôle</span>
+                        <span><?= $this->e($this->t('admin.roles.form.nom_role')) ?></span>
                         <span class="pc-field__required" aria-hidden="true">*</span>
                     </label>
                     <input
@@ -61,7 +61,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
                         name="name"
                         class="pc-input"
                         value="<?= $this->e($old['name']) ?>"
-                        placeholder="Ex. Modérateur"
+                        placeholder="<?= $this->e($this->t('admin.roles.form.ex_moderateur')) ?>"
                         <?= $isCreate ? 'data-prime-slug-source="role-slug"' : '' ?>
                         <?= $isReadOnly ? 'disabled' : 'required' ?>
                     >

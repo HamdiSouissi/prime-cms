@@ -45,8 +45,8 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
     <div class="pc-alert pc-alert--info" role="status" data-prime-pending-locked-banner style="margin-bottom:16px;">
         <span class="pc-alert__icon" aria-hidden="true"><?= $this->raw($this->icon('clock', 18)) ?></span>
         <div class="pc-alert__body">
-            <p class="pc-alert__title">Contenu soumis pour relecture — modification verrouillée</p>
-            <p class="pc-alert__text">Ce contenu est actuellement en attente de validation éditoriale. Vous ne pouvez plus le modifier tant qu’un éditeur ou un administrateur ne l’a pas examiné.</p>
+            <p class="pc-alert__title"><?= $this->e($this->t('admin.content.edit.contenu_soumis_relecture_modification_verrouillee')) ?></p>
+            <p class="pc-alert__text"><?= $this->e($this->t('admin.content.edit.contenu_actuellement_attente_validation_editoriale')) ?></p>
         </div>
     </div>
 
@@ -65,14 +65,14 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
         <div class="pc-editor-topbar__right">
             <a href="<?= $this->e($entry->previewUrl()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--primary pc-btn--sm">
                 <?= $this->raw($this->icon('eye', 16)) ?>
-                <span>Voir l’aperçu</span>
+                <span><?= $this->e($this->t('admin.content.edit.voir_apercu')) ?></span>
             </a>
         </div>
     </div>
 
     <div class="pc-editor-sheet">
         <h1 style="margin-bottom:12px;"><?= $this->e($entry->title) ?></h1>
-        <p class="pc-text-sm pc-text-muted" style="margin-bottom:18px;">Permalien : <code><?= $this->e($entry->url()) ?></code> · Mis à jour le <?= $this->e($entry->updatedAt) ?> UTC</p>
+        <p class="pc-text-sm pc-text-muted" style="margin-bottom:18px;"><?= $this->e($this->t('admin.content.edit.permalien_mis_a_jour', ['url' => $entry->url(), 'date' => $entry->updatedAt])) ?></p>
         <div class="pc-preview-body">
             <?= $this->raw($entry->contentHtml !== '' ? $entry->contentHtml : '<p class="pc-text-muted">Aucun contenu saisi.</p>') ?>
         </div>
@@ -85,8 +85,8 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
     <div class="pc-alert pc-alert--danger" role="alert" data-prime-lock-lost-banner hidden style="margin-bottom:14px;">
         <span class="pc-alert__icon" aria-hidden="true"><?= $this->raw($this->icon('lock', 18)) ?></span>
         <div class="pc-alert__body">
-            <p class="pc-alert__title">Verrou d’édition perdu</p>
-            <p class="pc-alert__text" data-prime-lock-lost-user>Un autre utilisateur a pris le contrôle de ce contenu.</p>
+            <p class="pc-alert__title"><?= $this->e($this->t('admin.content.edit.verrou_edition_perdu')) ?></p>
+            <p class="pc-alert__text" data-prime-lock-lost-user><?= $this->e($this->t('admin.content.edit.autre_utilisateur_pris_controle_contenu')) ?></p>
         </div>
     </div>
 
@@ -118,11 +118,11 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 <?php endif; ?>
                 <a href="<?= $this->e($entry->previewUrl()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--secondary pc-btn--sm">
                     <?= $this->raw($this->icon('eye', 16)) ?>
-                    <span>Aperçu</span>
+                    <span><?= $this->e($this->t('admin.content.edit.apercu')) ?></span>
                 </a>
                 <a href="<?= $this->e(sprintf('%s/%d/revisions', $baseUrl, $entry->id)) ?>" class="pc-btn pc-btn--ghost pc-btn--sm">
                     <?= $this->raw($this->icon('history', 16)) ?>
-                    <span>Révisions</span>
+                    <span><?= $this->e($this->t('admin.content.edit.revisions')) ?></span>
                 </a>
             <?php endif; ?>
 
@@ -133,7 +133,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 data-prime-submit-status="draft"
             >
                 <?= $this->raw($this->icon('save', 16)) ?>
-                <span>Enregistrer le brouillon</span>
+                <span><?= $this->e($this->t('admin.content.edit.enregistrer_brouillon')) ?></span>
             </button>
 
             <button
@@ -151,7 +151,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm"
                 data-prime-editor-sidebar-toggle
                 aria-expanded="true"
-                aria-label="Afficher ou masquer les paramètres"
+                aria-label="<?= $this->e($this->t('admin.content.edit.afficher_masquer_parametres')) ?>"
             >
                 <?= $this->raw($this->icon('settings', 16)) ?>
             </button>
@@ -162,7 +162,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
         <div class="pc-alert pc-alert--danger" role="alert" style="margin-bottom:16px;">
             <span class="pc-alert__icon" aria-hidden="true"><?= $this->raw($this->icon('alert-circle', 18)) ?></span>
             <div class="pc-alert__body">
-                <p class="pc-alert__title">Le formulaire contient des erreurs</p>
+                <p class="pc-alert__title"><?= $this->e($this->t('admin.content.edit.formulaire_contient_erreurs')) ?></p>
                 <ul style="margin:6px 0 0 18px;padding:0;">
                     <?php foreach ($errors as $fieldErr): ?>
                         <li><?= $this->e($fieldErr) ?></li>
@@ -184,7 +184,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     name="title"
                     value="<?= $this->e($form['title']) ?>"
                     class="pc-editor-title-input"
-                    placeholder="Titre de votre <?= $this->e(mb_strtolower($contentType->label('singular'))) ?>…"
+                    placeholder="<?= $this->e($this->t('admin.content.edit.titre_placeholder', ['type' => mb_strtolower($contentType->label('singular'))])) ?>"
                     required
                     data-prime-content-title
                 >
@@ -199,9 +199,9 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     <div class="pc-ed-add-bar">
                         <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-editor-add>
                             <?= $this->raw($this->icon('plus', 16)) ?>
-                            <span>Ajouter un bloc</span>
+                            <span><?= $this->e($this->t('admin.content.edit.ajouter_bloc')) ?></span>
                         </button>
-                        <span class="pc-text-xs pc-text-muted">Astuce : tapez <code>/</code> dans un paragraphe pour insérer un bloc rapidement.</span>
+                        <span class="pc-text-xs pc-text-muted"><?= $this->raw($this->t('admin.content.edit.astuce_tapez_paragraphe_inserer_bloc')) ?></span>
                     </div>
                     <div class="pc-sr-only" aria-live="polite" data-prime-editor-live></div>
                 </div>
@@ -230,21 +230,21 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                         <label class="pc-label" for="pc-entry-status">Statut</label>
                         <select id="pc-entry-status" name="status" class="pc-select" data-prime-status-select>
                             <option value="draft"<?= $form['status'] === 'draft' ? ' selected' : '' ?>>Brouillon</option>
-                            <option value="pending"<?= $form['status'] === 'pending' ? ' selected' : '' ?>>En attente de relecture</option>
+                            <option value="pending"<?= $form['status'] === 'pending' ? ' selected' : '' ?>><?= $this->e($this->t('admin.content.edit.attente_relecture')) ?></option>
                             <?php if ($canPublish || $form['status'] === 'published'): ?>
-                                <option value="published"<?= $form['status'] === 'published' ? ' selected' : '' ?>>Publié</option>
+                                <option value="published"<?= $form['status'] === 'published' ? ' selected' : '' ?>><?= $this->e($this->t('core.statuses.published')) ?></option>
                             <?php endif; ?>
                             <?php if ($canPublish || $form['status'] === 'scheduled'): ?>
-                                <option value="scheduled"<?= $form['status'] === 'scheduled' ? ' selected' : '' ?>>Planifié</option>
+                                <option value="scheduled"<?= $form['status'] === 'scheduled' ? ' selected' : '' ?>><?= $this->e($this->t('core.statuses.scheduled')) ?></option>
                             <?php endif; ?>
                             <?php if ($canPublish || $form['status'] === 'private'): ?>
-                                <option value="private"<?= $form['status'] === 'private' ? ' selected' : '' ?>>Privé</option>
+                                <option value="private"<?= $form['status'] === 'private' ? ' selected' : '' ?>><?= $this->e($this->t('core.statuses.private')) ?></option>
                             <?php endif; ?>
                         </select>
                     </div>
 
                     <div class="pc-field" data-prime-publish-date-wrap>
-                        <label class="pc-label" for="pc-entry-published-at">Date de publication (UTC)</label>
+                        <label class="pc-label" for="pc-entry-published-at"><?= $this->e($this->t('admin.content.edit.date_publication_utc')) ?></label>
                         <input
                             id="pc-entry-published-at"
                             type="datetime-local"
@@ -274,7 +274,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                                 ? $urlPreviewInitial
                                 : str_replace('__PRIME_SLUG__', $form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu', $previewPattern);
                         ?>
-                        <span class="pc-text-xs pc-text-muted">Aperçu : <code data-prime-slug-preview data-prime-url-pattern="<?= $this->e($previewPattern) ?>"><?= $this->e($previewInitial) ?></code></span>
+                        <span class="pc-text-xs pc-text-muted"><?= $this->e($this->t('core.actions.preview')) ?> <code data-prime-slug-preview data-prime-url-pattern="<?= $this->e($previewPattern) ?>"><?= $this->e($previewInitial) ?></code></span>
                         <?php if (isset($errors['slug'])): ?>
                             <span class="pc-field__error"><?= $this->e($errors['slug']) ?></span>
                         <?php endif; ?>
@@ -297,7 +297,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                         <div class="pc-field">
                             <label class="pc-label" for="pc-entry-parent">Parent</label>
                             <select id="pc-entry-parent" name="parent_id" class="pc-select">
-                                <option value="0">Aucun (racine)</option>
+                                <option value="0"><?= $this->e($this->t('admin.content.edit.aucun_racine')) ?></option>
                                 <?php foreach ($parentOptions as $parentOpt): ?>
                                     <option value="<?= $this->e((string) $parentOpt['entry']->id) ?>"<?= $form['parent_id'] === $parentOpt['entry']->id ? ' selected' : '' ?>>
                                         <?= $this->e(str_repeat('— ', $parentOpt['depth']) . $parentOpt['entry']->title) ?>
@@ -316,7 +316,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
             <?php if ($contentType->supports('thumbnail')): ?>
                 <section class="pc-inspector-card">
                     <h2 class="pc-inspector-card__title">
-                        <span>Image à la une</span>
+                        <span><?= $this->e($this->t('admin.content.edit.image_a')) ?></span>
                         <?= $this->raw($this->icon('image', 16)) ?>
                     </h2>
                     <div
@@ -324,7 +324,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                         data-prime-media-field
                         data-prime-media-multiple="0"
                         data-prime-media-kinds="image"
-                        data-prime-media-title="Choisir une image à la une"
+                        data-prime-media-title="<?= $this->e($this->t('admin.content.edit.choisir_image_a')) ?>"
                     >
                         <script type="application/json" data-prime-media-initial><?= $this->raw((string) ($featuredMediaJson ?? '[]')) ?></script>
                         <input
@@ -337,7 +337,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                         <div class="pc-media-field__buttons">
                             <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-choose>
                                 <?= $this->raw($this->icon('image', 14)) ?>
-                                <span data-prime-media-choose-label>Choisir une image</span>
+                                <span data-prime-media-choose-label><?= $this->e($this->t('admin.content.edit.choisir_image')) ?></span>
                             </button>
                             <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear hidden>Retirer</button>
                         </div>
@@ -358,7 +358,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                             name="excerpt"
                             rows="3"
                             class="pc-textarea"
-                            placeholder="Résumé court affiché dans les listes (optionnel)…"
+                            placeholder="<?= $this->e($this->t('admin.content.edit.resume_court_affiche_listes_optionnel')) ?>"
                         ><?= $this->e($form['excerpt']) ?></textarea>
                     </div>
                 </section>
@@ -374,13 +374,13 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 <section class="pc-inspector-card" data-prime-taxonomy-panel>
                     <h2 class="pc-inspector-card__title">
                         <span><?= $this->e($tax->label('plural')) ?></span>
-                        <a href="<?= $this->e($tax->adminUrl()) ?>" class="pc-text-xs">Gérer</a>
+                        <a href="<?= $this->e($tax->adminUrl()) ?>" class="pc-text-xs"><?= $this->e($this->t('admin.content.edit.gerer')) ?></a>
                     </h2>
 
                     <?php if ($tax->hierarchical): ?>
                         <div class="pc-term-checklist" data-prime-term-list>
                             <?php if ($taxTerms === []): ?>
-                                <p class="pc-text-xs pc-text-muted">Aucun terme créé pour le moment.</p>
+                                <p class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.content.edit.aucun_terme_cree_moment')) ?></p>
                             <?php else: ?>
                                 <?php foreach ($taxTerms as $term): ?>
                                     <label class="pc-term-check">
@@ -408,7 +408,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                                 placeholder="<?= $this->e($tax->label('add_new')) ?>"
                                 data-prime-quick-term-input
                             >
-                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-quick-term-submit>Ajouter</button>
+                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-quick-term-submit><?= $this->e($this->t('core.actions.add')) ?></button>
                         </div>
                     <?php else: ?>
                         <div class="pc-field">
@@ -419,9 +419,9 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                                 name="new_terms[<?= $this->e($tax->name) ?>]"
                                 value="<?= $this->e($panel['flatValue']) ?>"
                                 class="pc-input"
-                                placeholder="Séparez par des virgules (ex. php, cms, guide)"
+                                placeholder="<?= $this->e($this->t('admin.content.edit.separez_virgules_ex_php_cms')) ?>"
                             >
-                            <span class="pc-text-xs pc-text-muted">Les nouveaux termes sont créés automatiquement.</span>
+                            <span class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.content.edit.nouveaux_termes_sont_crees_automatiquement')) ?></span>
                         </div>
                     <?php endif; ?>
                 </section>
@@ -439,11 +439,11 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
             <?php if (!empty($themeTemplates)): ?>
                 <section class="pc-inspector-card">
-                    <h2 class="pc-inspector-card__title">Modèle de page</h2>
+                    <h2 class="pc-inspector-card__title"><?= $this->e($this->t('admin.content.edit.modele_page')) ?></h2>
                     <div class="pc-field">
-                        <label class="pc-sr-only" for="pc-entry-template">Modèle de thème</label>
+                        <label class="pc-sr-only" for="pc-entry-template"><?= $this->e($this->t('admin.content.edit.modele_theme')) ?></label>
                         <select id="pc-entry-template" name="template" class="pc-select">
-                            <option value="">Modèle par défaut du thème</option>
+                            <option value=""><?= $this->e($this->t('admin.content.edit.modele_defaut_theme')) ?></option>
                             <?php foreach ($themeTemplates as $tplSlug => $tplLabel): ?>
                                 <option value="<?= $this->e((string) $tplSlug) ?>"<?= ($form['template'] ?? '') === $tplSlug ? ' selected' : '' ?>>
                                     <?= $this->e((string) $tplLabel) ?>
@@ -456,7 +456,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
             <section class="pc-inspector-card" data-prime-seo-panel data-prime-site-name="<?= $this->e((string) ($siteName ?? '')) ?>" data-prime-seo-sep="<?= $this->e((string) ($seoSeparator ?? '—')) ?>">
                 <details>
-                    <summary class="pc-inspector-card__title">Référencement (SEO)</summary>
+                    <summary class="pc-inspector-card__title"><?= $this->e($this->t('admin.content.edit.referencement_seo')) ?></summary>
                     <div class="pc-stack pc-stack--sm">
                         <div class="pc-serp-preview" aria-label="Aperçu moteur de recherche">
                             <span class="pc-serp-preview__url"><?= $this->e($entry !== null ? $entry->url() : '/' . ($form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu')) ?></span>
@@ -475,14 +475,14 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                                 value="<?= $this->e((string) ($seoForm['title'] ?? '')) ?>"
                                 maxlength="180"
                                 class="pc-input"
-                                placeholder="Laisser vide pour le titre du contenu"
+                                placeholder="<?= $this->e($this->t('admin.content.edit.laisser_vide_titre_contenu')) ?>"
                                 data-prime-seo-title
                             >
                         </div>
 
                         <div class="pc-field">
                             <label class="pc-label" for="pc-seo-desc">
-                                Méta-description <span class="pc-seo-counter" data-prime-seo-desc-count>0 / 160</span>
+                                <?= $this->e($this->t('admin.content.edit.meta_description')) ?> <span class="pc-seo-counter" data-prime-seo-desc-count>0 / 160</span>
                             </label>
                             <textarea
                                 id="pc-seo-desc"
@@ -490,7 +490,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                                 rows="3"
                                 maxlength="320"
                                 class="pc-textarea"
-                                placeholder="Résumé affiché dans Google et sur les réseaux sociaux"
+                                placeholder="<?= $this->e($this->t('admin.content.edit.resume_affiche_google_reseaux_sociaux')) ?>"
                                 data-prime-seo-description
                             ><?= $this->e((string) ($seoForm['description'] ?? '')) ?></textarea>
                         </div>
@@ -511,7 +511,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                         </div>
 
                         <div class="pc-field">
-                            <label class="pc-label" for="pc-seo-image-id">Image de partage (ID média Open Graph)</label>
+                            <label class="pc-label" for="pc-seo-image-id"><?= $this->e($this->t('admin.content.edit.image_partage_id_media_open')) ?></label>
                             <input
                                 id="pc-seo-image-id"
                                 type="number"
@@ -519,13 +519,13 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                                 name="seo[image_id]"
                                 value="<?= $this->e((string) ($seoForm['image_id'] ?? '')) ?>"
                                 class="pc-input"
-                                placeholder="Par défaut : image mise en avant"
+                                placeholder="<?= $this->e($this->t('admin.content.edit.defaut_image_mise_avant')) ?>"
                             >
                         </div>
 
                         <label class="pc-checkbox">
                             <input type="checkbox" name="seo[noindex]" value="1"<?= !empty($seoForm['noindex']) ? ' checked' : '' ?>>
-                            <span>Exclure des moteurs de recherche (<code>noindex</code>)</span>
+                            <span><?= $this->raw($this->t('admin.content.edit.exclure_moteurs_recherche')) ?></span>
                         </label>
                     </div>
                 </details>
@@ -534,7 +534,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
             <?php if ($isEdit && $entry !== null && $recentRevisions !== []): ?>
                 <section class="pc-inspector-card">
                     <h2 class="pc-inspector-card__title">
-                        <span>Révisions récentes</span>
+                        <span><?= $this->e($this->t('admin.content.edit.revisions_recentes')) ?></span>
                         <a href="<?= $this->e(sprintf('%s/%d/revisions', $baseUrl, $entry->id)) ?>" class="pc-text-xs">Comparer</a>
                     </h2>
                     <ul class="pc-revisions-list">
@@ -553,7 +553,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     <h2 class="pc-inspector-card__title">Actions</h2>
                     <button type="submit" form="pc-editor-trash-form" class="pc-btn pc-btn--danger-outline pc-btn--sm" style="width:100%;">
                         <?= $this->raw($this->icon('trash', 16)) ?>
-                        <span>Mettre à la corbeille</span>
+                        <span><?= $this->e($this->t('core.actions.trash')) ?></span>
                     </button>
                 </section>
             <?php endif; ?>

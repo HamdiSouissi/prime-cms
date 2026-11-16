@@ -4,6 +4,7 @@
  */
 
 import { initAdminUsers } from './admin-users.js';
+import { choice, initTranslations, t } from './i18n.js';
 import { initAdminPlugins } from './plugins.js';
 import { initContentAdmin } from './content-admin.js';
 import { initCustomizer } from './customizer.js';
@@ -158,6 +159,9 @@ function bootstrap() {
 }
 
 window.Prime = Object.freeze({
+  t,
+  choice,
+  locale: () => initTranslations(document).locale,
   toast: showToast,
   openCommandPalette,
   openModal,

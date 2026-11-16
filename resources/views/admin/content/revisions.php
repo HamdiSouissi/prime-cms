@@ -78,8 +78,8 @@ $editUrl = $entry->editUrl();
                 <div class="pc-diff-card">
                     <div class="pc-diff-card__header">
                         <div>
-                            <strong>Comparaison : Révision #<?= $this->e((string) $selected->id) ?> → Version actuelle</strong>
-                            <div class="pc-text-xs pc-text-muted">Créée le <?= $this->e($selected->createdAt) ?> UTC</div>
+                            <strong><?= $this->e($this->t('admin.content.revisions.comparaison', ['id' => $selected->id])) ?></strong>
+                            <div class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.content.revisions.creee_le', ['date' => $selected->createdAt])) ?></div>
                         </div>
                         <div class="pc-row pc-row--sm">
                             <a
@@ -87,7 +87,7 @@ $editUrl = $entry->editUrl();
                                 target="_blank"
                                 rel="noopener"
                                 class="pc-btn pc-btn--secondary pc-btn--sm"
-                            >Aperçu</a>
+                            <?= $this->e($this->t('core.actions.preview')) ?></a>
                             <form method="post" action="<?= $this->e(sprintf('%s/%d/revisions/%d/restore', $baseUrl, $entry->id, $selected->id)) ?>">
                                 <?= $this->raw($this->csrfField()) ?>
                                 <button type="submit" class="pc-btn pc-btn--primary pc-btn--sm">

@@ -46,6 +46,8 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Response;
 use Prime\Http\Router;
 use Prime\Http\Session;
+use Prime\I18n\LocaleFormatter;
+use Prime\I18n\Translator;
 use Prime\Kernel\ServiceProvider;
 use Prime\Log\Logger;
 use Prime\Media\MediaConfig;
@@ -110,6 +112,12 @@ final class AdminServiceProvider extends ServiceProvider
             $media = $this->app->container()->has(MediaRepository::class)
                 ? $this->app->get(MediaRepository::class)
                 : null;
+            $translator = $this->app->container()->has(Translator::class)
+                ? $this->app->get(Translator::class)
+                : null;
+            $formatter = $this->app->container()->has(LocaleFormatter::class)
+                ? $this->app->get(LocaleFormatter::class)
+                : null;
 
             return new AdminContext(
                 $this->app,
@@ -123,6 +131,8 @@ final class AdminServiceProvider extends ServiceProvider
                 $taxonomies instanceof TaxonomyRegistry ? $taxonomies : null,
                 $entries instanceof EntryRepository ? $entries : null,
                 $media instanceof MediaRepository ? $media : null,
+                $translator instanceof Translator ? $translator : null,
+                $formatter instanceof LocaleFormatter ? $formatter : null,
             );
         });
 

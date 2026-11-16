@@ -103,7 +103,7 @@ $this->layout('admin::layouts/app');
             <?php ob_start(); ?>
             <div class="pc-stack pc-stack--sm">
                 <?php if (!$canManageRoles): ?>
-                    <p class="pc-text-sm pc-text-muted">Vous n'avez pas la permission de modifier les rôles de cet utilisateur.</p>
+                    <p class="pc-text-sm pc-text-muted"><?= $this->e($this->t('admin.users.edit.avez_pas_permission_modifier_roles')) ?></p>
                     <div class="pc-badges-wrap">
                         <?php foreach ($targetUser->roles as $role): ?>
                             <?= $this->raw($this->insert('admin::components/badge', [
@@ -157,7 +157,7 @@ $this->layout('admin::layouts/app');
                         <span class="pc-strength__bar"></span>
                     </div>
                     <span class="pc-strength__label" data-prime-strength-label>
-                        Laissez vide pour conserver le mot de passe actuel.
+                        <?= $this->e($this->t('admin.users.edit.laissez_vide_conserver_mot_passe')) ?>
                     </span>
                 </div>
 
@@ -205,11 +205,11 @@ $this->layout('admin::layouts/app');
                     </dd>
                 </div>
                 <div class="pc-kv-row">
-                    <dt>Dernière connexion</dt>
+                    <dt><?= $this->e($this->t('admin.users.edit.derniere_connexion')) ?></dt>
                     <dd title="<?= $this->e($lastLoginMeta['title']) ?>"><?= $this->e($lastLoginMeta['label']) ?></dd>
                 </div>
                 <div class="pc-kv-row">
-                    <dt>Version de session</dt>
+                    <dt><?= $this->e($this->t('admin.users.edit.version_session')) ?></dt>
                     <dd class="pc-mono">v<?= $this->e((string) $targetUser->sessionVersion) ?></dd>
                 </div>
             </dl>
@@ -225,14 +225,14 @@ $this->layout('admin::layouts/app');
                 <form method="post" action="/admin/users/<?= $this->e((string) $targetUser->id) ?>/reset-password">
                     <?= $this->raw($this->csrfField()) ?>
                     <button type="submit" class="pc-btn pc-btn--secondary pc-auth-submit">
-                        Envoyer un lien de réinitialisation
+                        <?= $this->e($this->t('admin.users.edit.envoyer_lien_reinitialisation')) ?>
                     </button>
                 </form>
 
                 <form method="post" action="/admin/users/<?= $this->e((string) $targetUser->id) ?>/logout-devices">
                     <?= $this->raw($this->csrfField()) ?>
                     <button type="submit" class="pc-btn pc-btn--secondary pc-auth-submit">
-                        Déconnecter tous les appareils
+                        <?= $this->e($this->t('admin.users.edit.deconnecter_appareils')) ?>
                     </button>
                 </form>
 
@@ -240,11 +240,11 @@ $this->layout('admin::layouts/app');
                     <form
                         method="post"
                         action="/admin/users/<?= $this->e((string) $targetUser->id) ?>/reset-2fa"
-                        data-prime-confirm-form="Réinitialiser la 2FA de <?= $this->e($targetUser->displayName) ?> ? L'utilisateur pourra se connecter sans second facteur jusqu'à réactivation."
+                        data-prime-confirm-form="<?= $this->e($this->t('admin.users.edit.confirmer_reinitialisation_2fa', ['name' => $targetUser->displayName])) ?>"
                     >
                         <?= $this->raw($this->csrfField()) ?>
                         <button type="submit" class="pc-btn pc-btn--secondary pc-auth-submit">
-                            Réinitialiser la 2FA
+                            <?= $this->e($this->t('admin.users.edit.reinitialiser_2fa')) ?>
                         </button>
                     </form>
                 <?php endif; ?>
@@ -253,11 +253,11 @@ $this->layout('admin::layouts/app');
                     <form
                         method="post"
                         action="/admin/users/<?= $this->e((string) $targetUser->id) ?>/delete"
-                        data-prime-confirm-form="Supprimer définitivement le compte de <?= $this->e($targetUser->displayName) ?> ? Cette action est irréversible."
+                        data-prime-confirm-form="<?= $this->e($this->t('admin.users.edit.confirmer_suppression_compte', ['name' => $targetUser->displayName])) ?>"
                     >
                         <?= $this->raw($this->csrfField()) ?>
                         <button type="submit" class="pc-btn pc-btn--danger pc-auth-submit">
-                            Supprimer ce compte
+                            <?= $this->e($this->t('admin.users.edit.supprimer_compte')) ?>
                         </button>
                     </form>
                 <?php endif; ?>

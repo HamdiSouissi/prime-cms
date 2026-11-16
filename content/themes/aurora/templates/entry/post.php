@@ -37,7 +37,7 @@ $related = $showRelated ? $entry->related(3) : [];
           <span>&middot;</span>
           <a href="<?= $author['url'] ?>"><?= $author['name'] ?></a>
           <span>&middot;</span>
-          <span><?= $entry->readingTime() ?> min de lecture</span>
+          <span><?= $entry->readingTime() ?> <?= $site->e($site->t('site.aurora.entry.post.min_lecture')) ?></span>
         </div>
       </header>
 
@@ -75,7 +75,7 @@ $related = $showRelated ? $entry->related(3) : [];
             <?php if ($author['bio'] !== ''): ?>
               <p class="aurora-author-box__bio"><?= $author['bio'] ?></p>
             <?php else: ?>
-              <p class="aurora-author-box__bio">Voir tous les articles publiés par <?= $author['name'] ?>.</p>
+              <p class="aurora-author-box__bio"><?= $site->e($site->t('site.aurora.entry.post.tous_articles_publies_par', ['name' => $author['name']])) ?></p>
             <?php endif; ?>
           </div>
         </section>
@@ -86,7 +86,7 @@ $related = $showRelated ? $entry->related(3) : [];
           <div>
             <?php if ($prev !== null): ?>
               <a class="aurora-post-nav__link" href="<?= $prev->url() ?>" rel="prev">
-                <span class="aurora-post-nav__label">&larr; Article précédent</span>
+                <span class="aurora-post-nav__label"><?= $site->e($site->t('site.aurora.entry.post.larr_article_precedent')) ?></span>
                 <span class="aurora-post-nav__title"><?= $prev->title() ?></span>
               </a>
             <?php endif; ?>

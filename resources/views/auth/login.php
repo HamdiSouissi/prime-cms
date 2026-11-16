@@ -20,7 +20,7 @@ $this->layout('auth::layout', [
 <?php $this->start('content'); ?>
 <div class="pc-auth-card__header">
     <h2 class="pc-auth-card__title">Connexion</h2>
-    <p class="pc-auth-card__subtitle">Accédez au tableau de bord de <?= $this->e($siteName) ?>.</p>
+    <p class="pc-auth-card__subtitle"><?= $this->e($this->t('admin.auth.login.sous_titre', ['site' => $siteName])) ?></p>
 </div>
 
 <?php if (!empty($status)): ?>
@@ -67,9 +67,9 @@ $this->layout('auth::layout', [
     <div class="pc-auth-form__row">
         <label class="pc-check">
             <input type="checkbox" name="remember" value="1"<?= $remember ? ' checked' : '' ?>>
-            <span>Rester connecté (30 jours)</span>
+            <span><?= $this->e($this->t('admin.auth.login.rester_connecte_30_jours')) ?></span>
         </label>
-        <a href="/admin/forgot-password" class="pc-auth-link">Mot de passe oublié ?</a>
+        <a href="/admin/forgot-password" class="pc-auth-link"><?= $this->e($this->t('core.auth.forgot_password')) ?></a>
     </div>
 
     <button type="submit" class="pc-btn pc-btn--primary pc-auth-submit">

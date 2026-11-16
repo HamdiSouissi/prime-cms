@@ -16,7 +16,7 @@ final class LanguageChecker
     /**
      * Functions/methods that resolve a translation key.
      */
-    private const CALL_PATTERN = '/(?<![A-Za-z0-9_$>])(?:\$this->|self::|static::|app\(\)\->get\(\s*Translator::class\s*\)->|\$translator->)?\s*(?:__|trans_choice|trans|translate|choice|t)\s*\(\s*([\'"])([a-z0-9][a-z0-9_.-]*\.[a-z0-9_.-]+)\1\s*[,)]/i';
+    private const CALL_PATTERN = '/(?<![A-Za-z0-9_$>])(?:\$this->|self::|static::|app\(\)\->get\(\s*Translator::class\s*\)->|\$translator->)?\s*(?:__|trans_choice|trans|translate|choice|t)\s*\(\s*([\'"])([a-z0-9][a-z0-9_.:-]*\.[a-z0-9_.:-]+)\1\s*[,)]/i';
 
     /**
      * Common French words used to spot untranslatable literals in templates.
@@ -268,6 +268,12 @@ final class LanguageChecker
             $this->collect($tree, $group, $flat);
         }
 
+        // Plugins and themes ship their own `lang/{locale}/messages.php`, addressed as
+        // `plugin::slug.key` / `theme::slug.key` by the Translator.
+        foreach ($this->namespaceCatalogues($locale) as $prefix => $tree) {
+            $this->collect($tree, $prefix, $flat);
+        }
+
         ksort($flat);
 
         return $flat;
@@ -320,6 +326,38 @@ final class LanguageChecker
         sort($groups);
 
         return array_map(static fn (int|string $g): string => (string) $g, $groups);
+    }
+
+    /**
+     * Catalogues contributed by installed plugins and themes.
+     *
+     * @return array<string, array<string, mixed>> `plugin::slug` / `theme::slug` => messages tree
+     */
+    private function namespaceCatalogues(string $locale): array
+    {
+        $catalogues = [];
+
+        foreach (['plugins' => 'plugin', 'themes' => 'theme'] as $kind => $namespace) {
+            foreach ($this->scanPaths as $path) {
+                $base = is_dir($path) ? rtrim($path, '/\\') : dirname($path);
+                if (basename($base) !== $kind) {
+                    continue;
+                }
+
+                foreach (@glob($base . '/*/lang/' . $locale . '/messages.php') ?: [] as $file) {
+                    $slug = basename(dirname((string) $file, 3));
+                    $loaded = require $file;
+                    if ($slug !== '' && is_array($loaded)) {
+                        /** @var array<string, mixed> $loaded */
+                        $catalogues[$namespace . '::' . $slug] = $loaded;
+                    }
+                }
+            }
+        }
+
+        ksort($catalogues);
+
+        return $catalogues;
     }
 
     /**

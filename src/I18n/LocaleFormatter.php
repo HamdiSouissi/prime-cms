@@ -48,6 +48,28 @@ final class LocaleFormatter
     ) {
     }
 
+    /**
+     * Process-wide instance used by the global `format_*()` helpers and by themes rendered
+     * outside a booted container; replaced by the bound service on boot.
+     */
+    private static ?self $fallbackInstance = null;
+
+    /**
+     * Bind the container-resolved formatter so helpers and theme templates share it.
+     */
+    public static function setInstance(?self $formatter): void
+    {
+        self::$fallbackInstance = $formatter;
+    }
+
+    /**
+     * Return the bound formatter, or a detached one reading `resources/lang` directly.
+     */
+    public static function fallback(): self
+    {
+        return self::$fallbackInstance ??= new self(Translator::fallback());
+    }
+
     public function timezone(): string
     {
         return $this->timezone;

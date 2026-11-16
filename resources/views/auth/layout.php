@@ -43,29 +43,29 @@ $brandName = (string) ($siteName ?? 'Prime CMS');
         </div>
 
         <div class="pc-auth-brand__body">
-            <h1 class="pc-auth-brand__headline">Espace d'administration sécurisé.</h1>
+            <h1 class="pc-auth-brand__headline"><?= $this->e($this->t('admin.auth.layout.espace_administration_securise')) ?></h1>
             <p class="pc-auth-brand__lead">
-                Connectez-vous pour gérer vos contenus, vos équipes et les réglages de votre site en toute sérénité.
+                <?= $this->e($this->t('admin.auth.layout.connectez_gerer_contenus_equipes_reglages')) ?>
             </p>
             <ul class="pc-auth-brand__pillars">
                 <li class="pc-auth-brand__pillar">
                     <span class="pc-auth-brand__pillar-dot" aria-hidden="true"></span>
-                    <span>Sessions durcies, protection CSRF et limitation anti-force brute</span>
+                    <span><?= $this->e($this->t('admin.auth.layout.sessions_durcies_protection_csrf_limitation')) ?></span>
                 </li>
                 <li class="pc-auth-brand__pillar">
                     <span class="pc-auth-brand__pillar-dot" aria-hidden="true"></span>
-                    <span>Authentification à deux facteurs (TOTP) et codes de récupération</span>
+                    <span><?= $this->e($this->t('admin.auth.layout.authentification_a_deux_facteurs_totp')) ?></span>
                 </li>
                 <li class="pc-auth-brand__pillar">
                     <span class="pc-auth-brand__pillar-dot" aria-hidden="true"></span>
-                    <span>Contrôle d'accès granulaire par rôles et permissions</span>
+                    <span><?= $this->e($this->t('admin.auth.layout.controle_acces_granulaire_roles_permissions')) ?></span>
                 </li>
             </ul>
         </div>
 
         <div class="pc-auth-brand__footer">
             <span>Prime CMS</span>
-            <span>Noyau PHP natif · Sécurité par défaut</span>
+            <span><?= $this->e($this->t('admin.auth.layout.noyau_php_natif_securite_defaut')) ?></span>
         </div>
     </aside>
 

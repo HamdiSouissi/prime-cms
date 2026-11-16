@@ -15,9 +15,9 @@ $this->layout('auth::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-auth-card__header">
-    <h2 class="pc-auth-card__title">Lien invalide ou expiré</h2>
+    <h2 class="pc-auth-card__title"><?= $this->e($this->t('admin.auth.reset-expired.lien_invalide_expire')) ?></h2>
     <p class="pc-auth-card__subtitle">
-        Ce lien de réinitialisation n'est plus valable. Les liens sont à usage unique et expirent automatiquement après 60 minutes.
+        <?= $this->e($this->t('admin.auth.reset-expired.lien_reinitialisation_valable_liens_sont')) ?>
     </p>
 </div>
 
@@ -27,10 +27,10 @@ $this->layout('auth::layout', [
 ])) ?>
 
 <a href="/admin/forgot-password" class="pc-btn pc-btn--primary pc-auth-submit">
-    <span>Demander un nouveau lien</span>
+    <span><?= $this->e($this->t('admin.auth.reset-expired.demander_nouveau_lien')) ?></span>
 </a>
 
 <div class="pc-auth-card__footer">
-    <a href="/admin/login" class="pc-auth-link">← Retour à la connexion</a>
+    <a href="/admin/login" class="pc-auth-link"><?= $this->e($this->t('admin.auth.reset-expired.retour_a_connexion')) ?></a>
 </div>
 <?php $this->stop(); ?>

@@ -28,21 +28,21 @@ $this->layout('admin::layouts/app');
         <?= $this->raw($this->csrfField()) ?>
         <div class="pc-card__body pc-stack pc-stack--lg">
             <fieldset class="pc-fieldset pc-stack pc-stack--sm">
-                <legend class="pc-label">Affichage de la page d'accueil</legend>
+                <legend class="pc-label"><?= $this->e($this->t('admin.settings.reading.affichage_page_accueil')) ?></legend>
 
                 <label class="pc-radio-card">
                     <input type="radio" name="front_mode" value="posts"<?= $frontMode === 'posts' ? ' checked' : '' ?>>
                     <span>
-                        <strong>Les derniers articles</strong>
-                        <small class="pc-text-xs pc-text-muted">Affiche le flux éditorial des derniers articles publiés directement sur <code>/</code>.</small>
+                        <strong><?= $this->e($this->t('admin.settings.reading.derniers_articles')) ?></strong>
+                        <small class="pc-text-xs pc-text-muted"><?= $this->raw($this->t('admin.settings.reading.derniers_articles_aide')) ?></small>
                     </span>
                 </label>
 
                 <label class="pc-radio-card">
                     <input type="radio" name="front_mode" value="page"<?= $frontMode === 'page' ? ' checked' : '' ?>>
                     <span>
-                        <strong>Une page statique</strong>
-                        <small class="pc-text-xs pc-text-muted">Affiche une page précise sur <code>/</code> et optionnellement une autre page pour la liste des articles.</small>
+                        <strong><?= $this->e($this->t('admin.settings.reading.page_statique')) ?></strong>
+                        <small class="pc-text-xs pc-text-muted"><?= $this->raw($this->t('admin.settings.reading.page_statique_aide')) ?></small>
                     </span>
                 </label>
             </fieldset>
@@ -51,7 +51,7 @@ $this->layout('admin::layouts/app');
                 <div class="pc-field">
                     <label class="pc-label" for="pc-reading-front-page">Page d'accueil statique</label>
                     <select id="pc-reading-front-page" name="front_page_id" class="pc-select">
-                        <option value="">— Sélectionner une page —</option>
+                        <option value=""><?= $this->e($this->t('admin.settings.reading.selectionner_page')) ?></option>
                         <?php foreach ($pages as $page): ?>
                             <option value="<?= $this->e((string) $page->id) ?>"<?= $frontPageId === $page->id ? ' selected' : '' ?>>
                                 <?= $this->e($page->title) ?>
@@ -61,9 +61,9 @@ $this->layout('admin::layouts/app');
                 </div>
 
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-reading-posts-page">Page des articles (blog)</label>
+                    <label class="pc-label" for="pc-reading-posts-page"><?= $this->e($this->t('admin.settings.reading.page_articles_blog')) ?></label>
                     <select id="pc-reading-posts-page" name="posts_page_id" class="pc-select">
-                        <option value="">— Par défaut (/blog) —</option>
+                        <option value=""><?= $this->e($this->t('admin.settings.reading.defaut_blog')) ?></option>
                         <?php foreach ($pages as $page): ?>
                             <option value="<?= $this->e((string) $page->id) ?>"<?= $postsPageId === $page->id ? ' selected' : '' ?>>
                                 <?= $this->e($page->title) ?>
@@ -85,12 +85,12 @@ $this->layout('admin::layouts/app');
                     class="pc-input pc-input--narrow"
                     required
                 >
-                <p class="pc-text-xs pc-text-muted">Appliqué au blog, aux archives de catégories, d'étiquettes, d'auteurs et aux résultats de recherche.</p>
+                <p class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.settings.reading.applique_blog_archives_categories_etiquettes')) ?></p>
             </div>
         </div>
 
         <div class="pc-card__footer">
-            <button type="submit" class="pc-btn pc-btn--primary">Enregistrer les réglages</button>
+            <button type="submit" class="pc-btn pc-btn--primary"><?= $this->e($this->t('admin.settings.reading.enregistrer_reglages')) ?></button>
         </div>
     </form>
 </div>

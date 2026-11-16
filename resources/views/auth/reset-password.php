@@ -17,9 +17,9 @@ $this->layout('auth::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-auth-card__header">
-    <h2 class="pc-auth-card__title">Choisir un nouveau mot de passe</h2>
+    <h2 class="pc-auth-card__title"><?= $this->e($this->t('admin.auth.reset-password.choisir_nouveau_mot_passe')) ?></h2>
     <p class="pc-auth-card__subtitle">
-        Saisissez un mot de passe robuste d'au moins 12 caractères pour sécuriser votre compte.
+        <?= $this->e($this->t('admin.auth.reset-password.saisissez_mot_passe_robuste_moins')) ?>
     </p>
 </div>
 
@@ -54,7 +54,7 @@ $this->layout('auth::layout', [
             <span class="pc-strength__bar"></span>
         </div>
         <span class="pc-strength__label" data-prime-strength-label>
-            Minimum 12 caractères (phrase secrète, majuscules, chiffres et symboles).
+            <?= $this->e($this->t('admin.auth.reset-password.minimum_12_caracteres_phrase_secrete')) ?>
         </span>
     </div>
 
@@ -71,11 +71,11 @@ $this->layout('auth::layout', [
     ])) ?>
 
     <button type="submit" class="pc-btn pc-btn--primary pc-auth-submit">
-        <span>Enregistrer le nouveau mot de passe</span>
+        <span><?= $this->e($this->t('admin.auth.reset-password.enregistrer_nouveau_mot_passe')) ?></span>
     </button>
 </form>
 
 <div class="pc-auth-card__footer">
-    <a href="/admin/login" class="pc-auth-link">← Retour à la connexion</a>
+    <a href="/admin/login" class="pc-auth-link"><?= $this->e($this->t('admin.auth.reset-password.retour_a_connexion')) ?></a>
 </div>
 <?php $this->stop(); ?>

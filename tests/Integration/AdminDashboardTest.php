@@ -166,7 +166,7 @@ final class AdminDashboardTest extends TestCase
         $body = $response->body();
 
         $this->assertSame(200, $response->status());
-        $this->assertStringContainsString('<html lang="fr">', $body);
+        $this->assertStringContainsString('<html lang="fr" dir="ltr">', $body);
         $this->assertStringContainsString('href="#content">Aller au contenu</a>', $body);
         $this->assertStringContainsString('aria-label="Navigation principale"', $body);
         $this->assertStringContainsString('<header class="pc-topbar">', $body);
@@ -177,6 +177,10 @@ final class AdminDashboardTest extends TestCase
         $this->assertStringContainsString('id="prime-command-palette"', $body);
         $this->assertStringContainsString('Bonjour, Camille Admin', $body);
         $this->assertStringContainsString('action="/admin/logout"', $body);
+        // The JS translation catalogue is embedded as inert JSON (strict CSP, no extra request).
+        $this->assertStringContainsString('type="application/json" data-prime-translations', $body);
+        $this->assertStringContainsString('"core.actions.save"', $body);
+        $this->assertStringContainsString('"locale":"fr"', $body);
 
         // Zero external HTTP(S) asset requests (no CDN fonts/scripts/stylesheets)
         $this->assertSame(

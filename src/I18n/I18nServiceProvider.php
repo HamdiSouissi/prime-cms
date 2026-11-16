@@ -75,8 +75,14 @@ final class I18nServiceProvider extends ServiceProvider
         /** @var Translator $translator */
         $translator = $c->get(Translator::class);
 
-        // Global `t()`/`tc()` helpers and CLI output share this instance.
+        // Global `t()`/`tc()` helpers, theme templates and CLI output share this instance.
         Translator::setInstance($translator);
+
+        if ($c->has(LocaleFormatter::class)) {
+            /** @var LocaleFormatter $formatter */
+            $formatter = $c->get(LocaleFormatter::class);
+            LocaleFormatter::setInstance($formatter);
+        }
 
         // Validation messages are translated unless a caller provides its own message overrides.
         Validator::setTranslator($translator);

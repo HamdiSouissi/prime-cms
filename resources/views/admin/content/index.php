@@ -95,12 +95,12 @@ if ($canCreate) {
             value="<?= $this->e($filters['q']) ?>"
             class="pc-input pc-content-filters__search"
             placeholder="<?= $this->e($contentType->label('search_placeholder')) ?>"
-            aria-label="Rechercher"
+            aria-label="<?= $this->e($this->t('core.actions.search')) ?>"
         >
 
         <?php if ($authorsMap !== []): ?>
             <select name="author" class="pc-select" aria-label="Filtrer par auteur">
-                <option value="">Tous les auteurs</option>
+                <option value=""><?= $this->e($this->t('admin.content.filters.all_authors')) ?></option>
                 <?php foreach ($authorsMap as $uid => $author): ?>
                     <option value="<?= $this->e((string) $uid) ?>"<?= $filters['author'] === $uid ? ' selected' : '' ?>>
                         <?= $this->e($author->displayName) ?>
@@ -111,7 +111,7 @@ if ($canCreate) {
 
         <?php if ($filterTerms !== []): ?>
             <select name="term" class="pc-select" aria-label="Filtrer par terme">
-                <option value="">Toutes les taxonomies</option>
+                <option value=""><?= $this->e($this->t('admin.content.index.taxonomies')) ?></option>
                 <?php foreach ($filterTerms as $ft): ?>
                     <option value="<?= $this->e($ft['value']) ?>"<?= $filters['term'] === $ft['value'] ? ' selected' : '' ?>>
                         <?= $this->e($ft['label']) ?>
@@ -122,7 +122,7 @@ if ($canCreate) {
 
         <?php if ($availableMonths !== []): ?>
             <select name="month" class="pc-select" aria-label="Filtrer par mois">
-                <option value="">Tous les mois</option>
+                <option value=""><?= $this->e($this->t('admin.content.index.mois')) ?></option>
                 <?php foreach ($availableMonths as $ym): ?>
                     <option value="<?= $this->e($ym) ?>"<?= $filters['month'] === $ym ? ' selected' : '' ?>>
                         <?= $this->e($ym) ?>
@@ -132,18 +132,18 @@ if ($canCreate) {
         <?php endif; ?>
 
         <select name="sort" class="pc-select" aria-label="Trier par">
-            <option value="updated_at"<?= $filters['sort'] === 'updated_at' ? ' selected' : '' ?>>Dernière modification</option>
-            <option value="published_at"<?= $filters['sort'] === 'published_at' ? ' selected' : '' ?>>Date de publication</option>
+            <option value="updated_at"<?= $filters['sort'] === 'updated_at' ? ' selected' : '' ?>><?= $this->e($this->t('core.fields.updated_at')) ?></option>
+            <option value="published_at"<?= $filters['sort'] === 'published_at' ? ' selected' : '' ?>><?= $this->e($this->t('admin.content.index.date_publication')) ?></option>
             <option value="title"<?= $filters['sort'] === 'title' ? ' selected' : '' ?>>Titre</option>
             <?php if ($contentType->hierarchical): ?>
-                <option value="menu_order"<?= $filters['sort'] === 'menu_order' ? ' selected' : '' ?>>Ordre du menu</option>
+                <option value="menu_order"<?= $filters['sort'] === 'menu_order' ? ' selected' : '' ?>><?= $this->e($this->t('admin.content.index.ordre_menu')) ?></option>
             <?php endif; ?>
         </select>
 
         <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm">Filtrer</button>
 
         <?php if ($filters['q'] !== '' || $filters['author'] !== null || $filters['term'] !== '' || $filters['month'] !== ''): ?>
-            <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm">Réinitialiser</a>
+            <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm"><?= $this->e($this->t('core.actions.reset')) ?></a>
         <?php endif; ?>
     </form>
 
@@ -163,13 +163,13 @@ if ($canCreate) {
             <?= $this->raw($this->csrfField()) ?>
 
             <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
-                <span class="pc-text-sm" data-prime-table-bulk-count>0 sélectionné(s)</span>
+                <span class="pc-text-sm" data-prime-table-bulk-count><?= $this->e($this->t('admin.content.index.0_selectionne')) ?></span>
                 <select name="bulk_action" class="pc-select pc-select--sm" aria-label="Action groupée">
-                    <option value="">Choisir une action…</option>
+                    <option value=""><?= $this->e($this->t('admin.content.index.choisir_action')) ?></option>
                     <?php if ($isTrash): ?>
                         <option value="restore">Restaurer</option>
                         <?php if ($canDelete): ?>
-                            <option value="delete">Supprimer définitivement</option>
+                            <option value="delete"><?= $this->e($this->t('admin.content.index.supprimer_definitivement')) ?></option>
                         <?php endif; ?>
                     <?php else: ?>
                         <?php if ($canPublish): ?>
@@ -177,7 +177,7 @@ if ($canCreate) {
                         <?php endif; ?>
                         <option value="draft">Passer en brouillon</option>
                         <?php if ($canDelete): ?>
-                            <option value="trash">Mettre à la corbeille</option>
+                            <option value="trash"><?= $this->e($this->t('core.actions.trash')) ?></option>
                         <?php endif; ?>
                     <?php endif; ?>
                 </select>
@@ -194,7 +194,7 @@ if ($canCreate) {
                             <th>Titre</th>
                             <th>Statut</th>
                             <th>Auteur</th>
-                            <th>Mise à jour</th>
+                            <th><?= $this->e($this->t('admin.content.index.mise_a_jour')) ?></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -218,7 +218,7 @@ if ($canCreate) {
                                         name="ids[]"
                                         value="<?= $this->e((string) $entry->id) ?>"
                                         data-prime-table-select-row
-                                        aria-label="Sélectionner <?= $this->e($entry->title) ?>"
+                                        aria-label="<?= $this->e($this->t('admin.content.index.selectionner', ['title' => $entry->title])) ?>"
                                     >
                                 </td>
                                 <td data-prime-label="Titre">
@@ -257,7 +257,7 @@ if ($canCreate) {
                                         <?php if ($lock !== null): ?>
                                             <span class="pc-entry-lock-pill">
                                                 <?= $this->raw($this->icon('lock', 12)) ?>
-                                                <span>En édition par <?= $this->e($lockHolder !== null ? $lockHolder->displayName : ($lock->userName !== '' ? $lock->userName : 'un utilisateur')) ?></span>
+                                                <span><?= $this->e($this->t('admin.content.index.edition')) ?> <?= $this->e($lockHolder !== null ? $lockHolder->displayName : ($lock->userName !== '' ? $lock->userName : 'un utilisateur')) ?></span>
                                             </span>
                                         <?php endif; ?>
                                         </div>
@@ -294,8 +294,8 @@ if ($canCreate) {
                                                     data-prime-confirm-delete
                                                     data-prime-action="<?= $this->e(sprintf('%s/%d/delete', $baseUrl, $entry->id)) ?>"
                                                     data-prime-item-name="« <?= $this->e($entry->title) ?> »"
-                                                    data-prime-warning="Ce contenu, ses révisions et ses métadonnées seront définitivement supprimés."
-                                                >Supprimer</button>
+                                                    data-prime-warning="<?= $this->e($this->t('admin.content.index.contenu_revisions_metadonnees_supprimes')) ?>"
+                                                <?= $this->e($this->t('core.actions.delete')) ?></button>
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <?php if ($canEditRow): ?>
@@ -306,7 +306,7 @@ if ($canCreate) {
                                             <?php if ($entry->status === \Prime\Content\Entry::STATUS_PUBLISHED): ?>
                                                 <a href="<?= $this->e($entry->url()) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener">Voir</a>
                                             <?php endif; ?>
-                                            <a href="<?= $this->e($previewUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener">Aperçu</a>
+                                            <a href="<?= $this->e($previewUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener"><?= $this->e($this->t('admin.content.index.apercu')) ?></a>
                                             <?php if ($canCreate): ?>
                                                 <button
                                                     type="submit"
@@ -353,10 +353,10 @@ if ($canCreate) {
 
         <?php if ($totalPages > 1): ?>
             <div class="pc-card__footer" style="display:flex;justify-content:space-between;align-items:center;">
-                <span class="pc-text-xs pc-text-muted">Page <?= $this->e((string) $page) ?> / <?= $this->e((string) $totalPages) ?> (<?= $this->e((string) $total) ?> résultats)</span>
+                <span class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.content.index.page_sur', ['page' => $page, 'total' => $totalPages, 'results' => $total])) ?></span>
                 <div class="pc-row pc-row--sm">
                     <?php if ($page > 1): ?>
-                        <a class="pc-btn pc-btn--secondary pc-btn--sm" href="<?= $this->e($baseUrl . '?' . http_build_query(array_filter(['status' => $filters['status'] !== 'all' ? $filters['status'] : null, 'q' => $filters['q'] !== '' ? $filters['q'] : null, 'page' => $page - 1]))) ?>">Précédent</a>
+                        <a class="pc-btn pc-btn--secondary pc-btn--sm" href="<?= $this->e($baseUrl . '?' . http_build_query(array_filter(['status' => $filters['status'] !== 'all' ? $filters['status'] : null, 'q' => $filters['q'] !== '' ? $filters['q'] : null, 'page' => $page - 1]))) ?>"><?= $this->e($this->t('core.actions.previous')) ?></a>
                     <?php endif; ?>
                     <?php if ($page < $totalPages): ?>
                         <a class="pc-btn pc-btn--secondary pc-btn--sm" href="<?= $this->e($baseUrl . '?' . http_build_query(array_filter(['status' => $filters['status'] !== 'all' ? $filters['status'] : null, 'q' => $filters['q'] !== '' ? $filters['q'] : null, 'page' => $page + 1]))) ?>">Suivant</a>
@@ -369,19 +369,19 @@ if ($canCreate) {
 
 <dialog id="pc-content-confirm-modal" class="pc-modal" data-prime-confirm-modal aria-label="Confirmation de suppression">
     <div class="pc-modal__header">
-        <h2 class="pc-modal__title" data-prime-confirm-heading>Confirmer la suppression</h2>
+        <h2 class="pc-modal__title" data-prime-confirm-heading><?= $this->e($this->t('core.actions.delete_confirm')) ?></h2>
         <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="Fermer">
             <?= $this->raw($this->icon('x', 16)) ?>
         </button>
     </div>
     <div class="pc-modal__body">
-        <p data-prime-confirm-body>Cette action est définitive et irréversible.</p>
+        <p data-prime-confirm-body><?= $this->e($this->t('admin.content.index.action_definitive_irreversible')) ?></p>
     </div>
     <div class="pc-modal__footer">
-        <button type="button" class="pc-btn pc-btn--secondary" data-prime-modal-close>Annuler</button>
+        <button type="button" class="pc-btn pc-btn--secondary" data-prime-modal-close><?= $this->e($this->t('core.actions.cancel')) ?></button>
         <form method="post" action="" data-prime-confirm-form>
             <?= $this->raw($this->csrfField()) ?>
-            <button type="submit" class="pc-btn pc-btn--danger">Supprimer définitivement</button>
+            <button type="submit" class="pc-btn pc-btn--danger"><?= $this->e($this->t('admin.content.index.supprimer_definitivement')) ?></button>
         </form>
     </div>
 </dialog>

@@ -43,8 +43,8 @@ $authorInitials = ($entries !== []) ? $entries[0]->author()['initials'] : strtou
         </div>
       <?php else: ?>
         <section class="aurora-empty">
-          <h2>Aucun article publié</h2>
-          <p><?= $site->e($authorName) ?> n'a pas encore publié d'article.</p>
+          <h2><?= $site->e($site->t('site.aurora.author.aucun_article_publie')) ?></h2>
+          <p><?= $site->e($authorName) ?> <?= $site->e($site->t('site.aurora.author.pas_encore_publie_article')) ?></p>
         </section>
       <?php endif; ?>
 
