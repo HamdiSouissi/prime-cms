@@ -39,8 +39,9 @@ final class MenuRenderer
         if ($this->hooks !== null) {
             $filtered = $this->hooks->apply('site.menu_items', $items, $location, $menu, $options);
             if (is_array($filtered)) {
-                /** @var list<array<string, mixed>> $filtered */
-                $items = array_values($filtered);
+                /** @var list<array<string, mixed>> $normalized */
+                $normalized = array_values(array_filter($filtered, 'is_array'));
+                $items = $normalized;
             }
         }
 
@@ -97,9 +98,6 @@ final class MenuRenderer
         $html = '<ul' . $classAttr . '>';
 
         foreach ($items as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
             $label = is_string($item['label'] ?? null) ? trim($item['label']) : '';
             $url = is_string($item['url'] ?? null) ? $item['url'] : '';
             $safeUrl = MenuRepository::sanitizeUrl($url);

@@ -105,7 +105,7 @@ final class ZoneRepository
     /**
      * Decode a zone's Prime Editor JSON document (or empty document when absent).
      *
-     * @return array{version: int, blocks: list<array<string, mixed>>}
+     * @return array{version: int, blocks: list<array{id: string, type: string, data: array<string, mixed>}>}
      */
     public function document(string $slug, ?string $theme = null): array
     {
@@ -119,9 +119,24 @@ final class ZoneRepository
             return Renderer::emptyDocument();
         }
 
+        $blocks = [];
+        foreach ($decoded['blocks'] as $idx => $block) {
+            if (!is_array($block) || !is_string($block['type'] ?? null) || trim($block['type']) === '') {
+                continue;
+            }
+            $id = is_string($block['id'] ?? null) && $block['id'] !== '' ? $block['id'] : 'blk_' . $idx;
+            /** @var array<string, mixed> $data */
+            $data = is_array($block['data'] ?? null) ? $block['data'] : [];
+            $blocks[] = [
+                'id' => $id,
+                'type' => $block['type'],
+                'data' => $data,
+            ];
+        }
+
         return [
             'version' => (int) ($decoded['version'] ?? 1),
-            'blocks' => array_values(array_filter($decoded['blocks'], 'is_array')),
+            'blocks' => $blocks,
         ];
     }
 

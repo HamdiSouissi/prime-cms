@@ -31,11 +31,11 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
 {
     public function testPhase8MigrationsSchemaMenusZonesRedirectsAndRollback(): void
     {
-        $migrator = new Migrator($this->connection, dirname(__DIR__, 2) . '/database/migrations');
+        $schema = new Schema($this->connection);
+        $migrator = new Migrator($this->connection, $schema, dirname(__DIR__, 2) . '/database/migrations');
         $ran = $migrator->run();
         $this->assertCount(23, $ran);
 
-        $schema = new Schema($this->connection);
         $this->assertTrue($schema->hasTable('menus'));
         $this->assertTrue($schema->hasTable('menu_items'));
         $this->assertTrue($schema->hasTable('zones'));

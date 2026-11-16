@@ -41,11 +41,11 @@ final class SeoManager
 
         $rawTitle = match ($context->type) {
             PageContext::TYPE_FRONT => $this->frontTitle($context, $siteName, $tagline, $sep),
-            PageContext::TYPE_BLOG => $this->formatTitle($context->entry?->title ?? 'Blog', $siteName, $sep),
+            PageContext::TYPE_BLOG => $this->formatTitle($context->entry !== null ? $context->entry->title : 'Blog', $siteName, $sep),
             PageContext::TYPE_ENTRY => $this->entryTitle($context->entry, $siteName, $sep),
-            PageContext::TYPE_ARCHIVE => $this->formatTitle($context->contentType?->label('plural') ?? 'Archives', $siteName, $sep),
-            PageContext::TYPE_TERM => $this->formatTitle($context->term?->name ?? 'Archive', $siteName, $sep),
-            PageContext::TYPE_AUTHOR => $this->formatTitle($context->author?->displayName ?? 'Auteur', $siteName, $sep),
+            PageContext::TYPE_ARCHIVE => $this->formatTitle($context->contentType !== null ? $context->contentType->label('plural') : 'Archives', $siteName, $sep),
+            PageContext::TYPE_TERM => $this->formatTitle($context->term !== null ? $context->term->name : 'Archive', $siteName, $sep),
+            PageContext::TYPE_AUTHOR => $this->formatTitle($context->author !== null ? $context->author->displayName : 'Auteur', $siteName, $sep),
             PageContext::TYPE_SEARCH => $this->formatTitle(
                 $context->searchQuery !== null && $context->searchQuery !== ''
                     ? sprintf('Recherche : %s', $context->searchQuery)
@@ -313,7 +313,7 @@ final class SeoManager
         ];
 
         if ($context->isBlog()) {
-            $crumbs[] = ['label' => $context->entry?->title ?? 'Blog', 'url' => $context->path];
+            $crumbs[] = ['label' => $context->entry !== null ? $context->entry->title : 'Blog', 'url' => $context->path];
         } elseif ($context->isEntry() && $context->entry !== null) {
             if ($context->entry->type === 'post') {
                 $crumbs[] = ['label' => 'Blog', 'url' => $this->urls->blogUrl()];

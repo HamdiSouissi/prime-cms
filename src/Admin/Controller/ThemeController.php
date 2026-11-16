@@ -239,7 +239,7 @@ final class ThemeController
             if ($iconId !== null) {
                 $this->options->generateFaviconsFromMedia($iconId);
             } else {
-                $this->settings->forget('site.favicons');
+                $this->settings->delete('site.favicons');
             }
         }
 

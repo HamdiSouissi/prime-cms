@@ -311,9 +311,6 @@ final class MenuRepository
 
         $pos = 0;
         foreach ($nodes as $node) {
-            if (!is_array($node)) {
-                continue;
-            }
             $type = is_string($node['type'] ?? null) ? trim($node['type']) : self::TYPE_URL;
             if ($type === 'custom') {
                 $type = self::TYPE_URL;

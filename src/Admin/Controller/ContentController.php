@@ -1205,7 +1205,7 @@ final class ContentController
                 'description' => trim((string) ($rawSeo['description'] ?? '')),
                 'canonical' => trim((string) ($rawSeo['canonical'] ?? '')),
                 'image_id' => $this->optionalInt($rawSeo['image_id'] ?? null),
-                'noindex' => !empty($rawSeo['noindex']) && (string) $rawSeo['noindex'] !== '0',
+                'noindex' => in_array($rawSeo['noindex'] ?? null, [true, 1, '1', 'true', 'on'], true),
             ];
         } elseif ($request->body('seo_title') !== null || $request->body('seo_description') !== null) {
             $payload['seo'] = [
