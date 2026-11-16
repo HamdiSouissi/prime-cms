@@ -29,9 +29,10 @@
 /public/assets/plugins/*
 !/public/assets/plugins/.gitkeep
 
-# User uploads
+# User uploads & public symlink
 /content/uploads/*
 !/content/uploads/.gitkeep
+/public/uploads
 
 # Quality tool caches
 /.phpunit.cache/

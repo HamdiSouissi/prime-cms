@@ -26,6 +26,30 @@ server {
         try_files $uri =404;
     }
 
+    # Médiathèque (/uploads/) — service statique direct depuis content/uploads/ sans jamais exécuter PHP
+    # (`php bin/prime media:link` crée le lien symbolique public/uploads -> ../content/uploads)
+    location ^~ /uploads/ {
+        # Interdire tout fichier exécutable, script ou HTML/SVG dans /uploads/
+        location ~* \.(php|php[3-8]|phtml|phar|phps|pht|shtml|cgi|pl|py|rb|sh|exe|svg|svgz|html|htm|xhtml)$ {
+            return 403;
+        }
+
+        # Forcer le téléchargement (attachment) pour les documents bureautiques, archives et textes
+        location ~* \.(zip|docx|xlsx|pptx|odt|ods|txt|csv)$ {
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox" always;
+            add_header Cache-Control "public, max-age=31536000, immutable" always;
+            add_header Content-Disposition "attachment" always;
+            try_files $uri /index.php?$query_string;
+        }
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox" always;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        expires 1y;
+        try_files $uri /index.php?$query_string;
+    }
+
     # Front controller unique
     location / {
         try_files $uri /index.php?$query_string;

@@ -17,6 +17,7 @@ use Prime\Kernel\Providers\HttpServiceProvider;
 use Prime\Kernel\Providers\LogServiceProvider;
 use Prime\Kernel\Providers\ViewServiceProvider;
 use Prime\Mail\MailServiceProvider;
+use Prime\Media\MediaServiceProvider;
 use Prime\Plugins\PluginServiceProvider;
 use Prime\Settings\SettingsServiceProvider;
 
@@ -39,6 +40,7 @@ return [
         HttpServiceProvider::class,
         AuthServiceProvider::class,
         InstallServiceProvider::class,
+        MediaServiceProvider::class,
         ContentServiceProvider::class,
         AdminServiceProvider::class,
         PluginServiceProvider::class,

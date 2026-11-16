@@ -1,4 +1,4 @@
-Options -Indexes
+Options -Indexes +FollowSymLinks
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
@@ -6,11 +6,22 @@ Options -Indexes
     # Block direct access to hidden files and directories (e.g. .env, .htaccess, .git)
     RewriteRule (^|/)\. - [F,L]
 
+    # Never execute scripts inside /uploads/ even if Apache serves the symlink directly
+    RewriteRule ^uploads/.*\.(?:php|php[3-8]|phtml|phar|phps|pht|shtml|cgi|pl|py|rb|sh|exe|svg|svgz|html|htm|xhtml)$ - [F,NC,L]
+
     # Forward Authorization header to PHP
     RewriteCond %{HTTP:Authorization} .
     RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Route all non-existing files through the single front controller
+    # Serve existing files directly (including symlinked public/uploads/*); route everything else to front controller
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    <If "%{REQUEST_URI} =~ m#^/uploads/#">
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox"
+        Header always set Cache-Control "public, max-age=31536000, immutable"
+    </If>
 </IfModule>

@@ -14,6 +14,8 @@ use Prime\Hooks\Hooks;
 use Prime\Install\Exception\InstallException;
 use Prime\Kernel\Application;
 use Prime\Kernel\Env;
+use Prime\Media\MediaConfig;
+use Prime\Media\UploadsGuard;
 use Prime\Security\Hasher;
 use Prime\Settings\Settings;
 use Throwable;
@@ -166,6 +168,14 @@ final class Installer
                 'Impossible d\'enregistrer les réglages initiaux du site.',
                 $exception,
             );
+        }
+
+        // Step 7b: Prepare hardened `content/uploads/.htaccess` and best-effort `public/uploads` symlink.
+        try {
+            $uploadsGuard = new UploadsGuard(MediaConfig::fromApplication($this->app));
+            $uploadsGuard->createPublicSymlink();
+        } catch (Throwable) {
+            // Non-fatal: PHP fallback `GET /uploads/{path}` remains available if symlinks are unsupported.
         }
 
         // Step 8: Write `storage/installed.lock` strictly as the final operation (zero secrets!).
