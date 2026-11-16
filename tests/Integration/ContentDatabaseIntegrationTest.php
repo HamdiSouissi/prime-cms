@@ -328,11 +328,11 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame(1, $adminCounts[Entry::STATUS_PRIVATE]);
         $this->assertSame(1, $adminCounts[Entry::STATUS_TRASH]);
 
-        $allRows = $query->newQuery()->type('post')->withoutTrash()->visibleInAdminFor($admin)->get();
+        $allRows = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($admin)->get();
         $this->assertCount($adminCounts['all'], $allRows);
 
         foreach (Entry::ALL_STATUSES as $st) {
-            $tabRows = $query->newQuery()->type('post')->status($st)->visibleInAdminFor($admin)->get();
+            $tabRows = $query->newQuery()->type('post')->includeFuture(true)->status($st)->visibleInAdminFor($admin)->get();
             $this->assertCount($adminCounts[$st], $tabRows, "Row count mismatch for admin tab [{$st}]");
         }
 
@@ -345,7 +345,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame(0, $contribCounts[Entry::STATUS_PRIVATE]);
         $this->assertSame(0, $contribCounts[Entry::STATUS_TRASH]);
 
-        $contribAll = $query->newQuery()->type('post')->withoutTrash()->visibleInAdminFor($contributor)->get();
+        $contribAll = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($contributor)->get();
         $this->assertCount($contribCounts['all'], $contribAll);
         $contribIds = array_map(static fn (Entry $e): int => $e->id, $contribAll);
         sort($contribIds);
@@ -356,22 +356,22 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         // Author visibility: sees own draft + published entry (not admin's draft/private or contributor's pending)
         $authorCounts = $entryRepo->countByStatus('post', $author->id);
         $this->assertSame(2, $authorCounts['all']);
-        $authorAll = $query->newQuery()->type('post')->withoutTrash()->visibleInAdminFor($author)->get();
+        $authorAll = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($author)->get();
         $this->assertCount($authorCounts['all'], $authorAll);
 
         // 3. Search, taxonomy, author, and month filters narrow list results accurately
-        $searchHits = $query->newQuery()->type('post')->withoutTrash()->search('Phare')->get();
+        $searchHits = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->search('Phare')->get();
         $this->assertCount(1, $searchHits);
         $this->assertSame($ePubAdmin->id, $searchHits[0]->id);
 
-        $catHits = $query->newQuery()->type('post')->withoutTrash()->whereTerm('category', 'guides')->get();
+        $catHits = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->whereTerm('category', 'guides')->get();
         $this->assertCount(2, $catHits);
 
-        $authorHits = $query->newQuery()->type('post')->withoutTrash()->author($contributor->id)->get();
+        $authorHits = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->author($contributor->id)->get();
         $this->assertCount(1, $authorHits);
         $this->assertSame($ePendingContrib->id, $authorHits[0]->id);
 
-        $monthHits = $query->newQuery()->type('post')->withoutTrash()->month('2026-09')->get();
+        $monthHits = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->month('2026-09')->get();
         $this->assertCount(1, $monthHits);
         $this->assertSame($eDraftAdmin->id, $monthHits[0]->id);
 
@@ -400,7 +400,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertNull($lockRepo->lockedByOther($entry->id, $admin->id));
 
         $hbAdmin = $lockRepo->heartbeat($entry->id, $admin->id);
-        $this->assertTrue($hbAdmin['ok']);
+        $this->assertSame('ok', $hbAdmin['status']);
         $this->assertSame($admin->id, $hbAdmin['lock']->userId);
 
         // 2. Editor sees lock held by Admin -> heartbeat fails -> save refused with ContentLockedException
@@ -409,7 +409,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame($admin->id, $otherLock->userId);
 
         $hbEditor = $lockRepo->heartbeat($entry->id, $editor->id);
-        $this->assertFalse($hbEditor['ok']);
+        $this->assertSame('lost', $hbEditor['status']);
 
         $lockedThrown = false;
         try {
@@ -794,7 +794,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
 
         $this->assertTrue($types->has('testimonial'));
         $this->assertTrue($taxonomies->has('testimonial_source'));
-        $this->assertNotEmpty($fields->groupsFor('testimonial'));
+        $this->assertNotEmpty($fields->forContentType('testimonial'));
         $this->assertTrue($blocks->has('hello-prime/highlight'));
 
         $now = '2026-11-15 12:00:00';
