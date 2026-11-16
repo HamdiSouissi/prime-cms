@@ -170,7 +170,7 @@ final class ThemeManifestValidator
 
         // 4. Parent theme (optional single-level inheritance)
         $parent = null;
-        if (isset($data['parent']) && $data['parent'] !== null && $data['parent'] !== '') {
+        if (isset($data['parent']) && $data['parent'] !== '') {
             if (!is_string($data['parent'])) {
                 $errors[] = 'Le champ "parent" doit être le slug d\'un thème parent.';
             } else {

@@ -225,7 +225,7 @@ final class ThemeAssetRegistry
             $diskFile = rtrim($this->publicRoot, DIRECTORY_SEPARATOR . '/') . $pathOnly;
             if (is_file($diskFile) && is_readable($diskFile)) {
                 $rawHash = sha1_file($diskFile);
-                if (is_string($rawHash) && $rawHash !== '') {
+                if (is_string($rawHash)) {
                     $hash = substr($rawHash, 0, 10);
                     $sep = str_contains($trimmed, '?') ? '&' : '?';
 

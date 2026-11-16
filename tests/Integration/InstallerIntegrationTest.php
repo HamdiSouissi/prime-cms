@@ -292,8 +292,10 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         mkdir($dir . '/storage/sessions', 0755, true);
         mkdir($dir . '/storage/tmp', 0755, true);
         mkdir($dir . '/content/uploads', 0755, true);
+        symlink($repoRoot . '/content/themes', $dir . '/content/themes');
+        symlink($repoRoot . '/content/plugins', $dir . '/content/plugins');
 
-        foreach (['config', 'database', 'resources', 'public', 'content'] as $link) {
+        foreach (['config', 'database', 'resources', 'public'] as $link) {
             symlink($repoRoot . '/' . $link, $dir . '/' . $link);
         }
 

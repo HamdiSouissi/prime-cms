@@ -145,7 +145,7 @@ final class ThemeManager
                 // Single-level parent theme validation
                 if ($manifest->parent !== null) {
                     $pSlug = $manifest->parent;
-                    if (!isset($rawManifests[$pSlug]) || $rawManifests[$pSlug] === null) {
+                    if (!isset($rawManifests[$pSlug])) {
                         $compatible = false;
                         $errors[] = sprintf('Le thème parent « %s » est manquant ou invalide.', $pSlug);
                     } elseif ($rawManifests[$pSlug]->parent !== null) {
@@ -338,7 +338,7 @@ final class ThemeManager
 
         if ($this->settings !== null) {
             $this->settings->set(self::SETTING_ACTIVE, $theme->slug, autoload: true);
-            $this->settings->forget(self::SETTING_FALLBACK_ERROR);
+            $this->settings->delete(self::SETTING_FALLBACK_ERROR);
         }
 
         $this->discoveredCache = null;
@@ -387,8 +387,8 @@ final class ThemeManager
         ThemeAssetPublisher::removeDirectory($theme->path);
 
         if ($this->settings !== null) {
-            $this->settings->forget('theme_options.' . $theme->slug);
-            $this->settings->forget('theme_options_css.' . $theme->slug);
+            $this->settings->delete('theme_options.' . $theme->slug);
+            $this->settings->delete('theme_options_css.' . $theme->slug);
         }
 
         $this->discoveredCache = null;

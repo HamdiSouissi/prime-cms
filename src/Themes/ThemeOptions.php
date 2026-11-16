@@ -200,7 +200,7 @@ final class ThemeOptions
         }
 
         if ($this->settings !== null) {
-            $this->settings->forget($this->settingKey($theme->slug));
+            $this->settings->delete($this->settingKey($theme->slug));
         }
 
         $cssUrl = $this->writeOptionsCss($theme, $defaults, $parent);
@@ -270,7 +270,7 @@ final class ThemeOptions
 
         if ($css === '') {
             if ($this->settings !== null) {
-                $this->settings->forget($this->cssSettingKey($theme->slug));
+                $this->settings->delete($this->cssSettingKey($theme->slug));
             }
 
             return null;
@@ -345,7 +345,7 @@ final class ThemeOptions
             return [];
         }
 
-        $sourcePath = $this->resolveMediaDiskPath($item->path);
+        $sourcePath = $this->resolveMediaDiskPath($item->diskPath);
         if ($sourcePath === null || !is_file($sourcePath)) {
             return [];
         }
@@ -395,7 +395,7 @@ final class ThemeOptions
             $dest = $faviconDir . DIRECTORY_SEPARATOR . $filename;
             if (@imagepng($canvas, $dest, 6)) {
                 $rawHash = sha1_file($dest);
-                $hash = is_string($rawHash) && $rawHash !== '' ? substr($rawHash, 0, 8) : '';
+                $hash = is_string($rawHash) ? substr($rawHash, 0, 8) : '';
                 $generated[$size] = '/assets/site/favicons/' . $filename . ($hash !== '' ? '?v=' . $hash : '');
             }
             imagedestroy($canvas);

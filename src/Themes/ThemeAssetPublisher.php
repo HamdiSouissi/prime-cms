@@ -76,7 +76,7 @@ final class ThemeAssetPublisher
      */
     public function unpublish(string $slug): void
     {
-        $this->publisher->unpublish($slug);
+        $this->publisher->remove($slug);
     }
 
     /**
