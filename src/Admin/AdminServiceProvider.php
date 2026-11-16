@@ -7,12 +7,16 @@ namespace Prime\Admin;
 use Prime\Admin\Controller\ContentController;
 use Prime\Admin\Controller\DashboardController;
 use Prime\Admin\Controller\MediaController;
+use Prime\Admin\Controller\MenuController;
 use Prime\Admin\Controller\NoticeController;
 use Prime\Admin\Controller\PluginController;
 use Prime\Admin\Controller\ProfileController;
 use Prime\Admin\Controller\RoleController;
+use Prime\Admin\Controller\SiteSettingsController;
 use Prime\Admin\Controller\TaxonomyController;
+use Prime\Admin\Controller\ThemeController;
 use Prime\Admin\Controller\UserController;
+use Prime\Admin\Controller\ZoneController;
 use Prime\Admin\Demo\DemoDashboardData;
 use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Menu\MenuItem;
@@ -51,6 +55,17 @@ use Prime\Plugins\PluginInstaller;
 use Prime\Plugins\PluginManager;
 use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
+use Prime\Settings\Settings;
+use Prime\Site\Http\SiteController;
+use Prime\Site\Menu\MenuRepository;
+use Prime\Site\PermalinkSettings;
+use Prime\Site\RedirectRepository;
+use Prime\Site\Seo\SeoSettings;
+use Prime\Site\Zone\DynamicBlockRegistry;
+use Prime\Site\Zone\ZoneRepository;
+use Prime\Themes\ThemeInstaller;
+use Prime\Themes\ThemeManager;
+use Prime\Themes\ThemeOptions;
 use Prime\View\View;
 
 /**
@@ -112,6 +127,15 @@ final class AdminServiceProvider extends ServiceProvider
             $media = $this->app->container()->has(MediaRepository::class)
                 ? $this->app->get(MediaRepository::class)
                 : null;
+            $themes = $this->app->container()->has(ThemeManager::class)
+                ? $this->app->get(ThemeManager::class)
+                : null;
+            $seoSettings = $this->app->container()->has(SeoSettings::class)
+                ? $this->app->get(SeoSettings::class)
+                : null;
+            $siteController = $this->app->container()->has(SiteController::class)
+                ? $this->app->get(SiteController::class)
+                : null;
 
             return new ContentController(
                 app: $this->app,
@@ -130,6 +154,67 @@ final class AdminServiceProvider extends ServiceProvider
                 revisions: $this->app->get(RevisionRepository::class),
                 locks: $this->app->get(EntryLockRepository::class),
                 users: $this->app->get(UserRepository::class),
+                media: $media instanceof MediaRepository ? $media : null,
+                themes: $themes instanceof ThemeManager ? $themes : null,
+                seoSettings: $seoSettings instanceof SeoSettings ? $seoSettings : null,
+                siteController: $siteController instanceof SiteController ? $siteController : null,
+            );
+        });
+
+        $container->singleton(ThemeController::class, function (): ThemeController {
+            $media = $this->app->container()->has(MediaRepository::class)
+                ? $this->app->get(MediaRepository::class)
+                : null;
+
+            return new ThemeController(
+                app: $this->app,
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                themes: $this->app->get(ThemeManager::class),
+                options: $this->app->get(ThemeOptions::class),
+                installer: $this->app->get(ThemeInstaller::class),
+                settings: $this->app->get(Settings::class),
+                media: $media instanceof MediaRepository ? $media : null,
+            );
+        });
+
+        $container->singleton(MenuController::class, function (): MenuController {
+            return new MenuController(
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                menus: $this->app->get(MenuRepository::class),
+                themes: $this->app->get(ThemeManager::class),
+                query: $this->app->get(EntryQuery::class),
+                terms: $this->app->get(TermRepository::class),
+                types: $this->app->get(ContentTypeRegistry::class),
+            );
+        });
+
+        $container->singleton(ZoneController::class, function (): ZoneController {
+            return new ZoneController(
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                auth: $this->app->get(Auth::class),
+                themes: $this->app->get(ThemeManager::class),
+                zones: $this->app->get(ZoneRepository::class),
+                dynamicBlocks: $this->app->get(DynamicBlockRegistry::class),
+                blocks: $this->app->get(BlockRegistry::class),
+                renderer: $this->app->get(Renderer::class),
+            );
+        });
+
+        $container->singleton(SiteSettingsController::class, function (): SiteSettingsController {
+            $media = $this->app->container()->has(MediaRepository::class)
+                ? $this->app->get(MediaRepository::class)
+                : null;
+
+            return new SiteSettingsController(
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                permalinks: $this->app->get(PermalinkSettings::class),
+                redirects: $this->app->get(RedirectRepository::class),
+                seoSettings: $this->app->get(SeoSettings::class),
+                query: $this->app->get(EntryQuery::class),
                 media: $media instanceof MediaRepository ? $media : null,
             );
         });
@@ -503,6 +588,79 @@ final class AdminServiceProvider extends ServiceProvider
                     ->middleware('can:media.upload')
                     ->name('media.api.folders.delete');
 
+                // Appearance: Themes, Customizer, Menus, Zones (Phase 8)
+                $r->get('/appearance', [ThemeController::class, 'index'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.index');
+                $r->get('/appearance/themes', [ThemeController::class, 'index'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.themes');
+                $r->post('/appearance/themes/upload', [ThemeController::class, 'upload'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.themes.upload');
+                $r->post('/appearance/themes/{slug:[a-z0-9-]+}/activate', [ThemeController::class, 'activate'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.themes.activate');
+                $r->post('/appearance/themes/{slug:[a-z0-9-]+}/delete', [ThemeController::class, 'delete'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.themes.delete');
+                $r->get('/appearance/customizer', [ThemeController::class, 'customizer'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.customizer');
+                $r->post('/appearance/customizer/save', [ThemeController::class, 'saveCustomizer'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.customizer.save');
+                $r->post('/appearance/customizer/reset', [ThemeController::class, 'resetCustomizer'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.customizer.reset');
+                $r->get('/appearance/menus', [MenuController::class, 'index'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.menus');
+                $r->post('/appearance/menus/create', [MenuController::class, 'create'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.menus.create');
+                $r->post('/appearance/menus/{id:\d+}/save', [MenuController::class, 'save'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.menus.save');
+                $r->post('/appearance/menus/{id:\d+}/delete', [MenuController::class, 'delete'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.menus.delete');
+                $r->get('/appearance/zones', [ZoneController::class, 'index'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.zones');
+                $r->post('/appearance/zones/{slug:[a-z0-9_-]+}/save', [ZoneController::class, 'save'])
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.zones.save');
+                $r->get('/appearance/widgets', static fn (): Response => Response::redirect('/admin/appearance/zones'))
+                    ->middleware('can:themes.manage')
+                    ->name('appearance.widgets.legacy');
+
+                // Site Settings: Reading, Permalinks + 301 redirects, SEO (Phase 8)
+                $r->get('/settings/reading', [SiteSettingsController::class, 'reading'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.reading');
+                $r->post('/settings/reading', [SiteSettingsController::class, 'saveReading'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.reading.save');
+                $r->get('/settings/permalinks', [SiteSettingsController::class, 'permalinks'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.permalinks');
+                $r->post('/settings/permalinks', [SiteSettingsController::class, 'savePermalinks'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.permalinks.save');
+                $r->post('/settings/permalinks/redirects', [SiteSettingsController::class, 'addRedirect'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.permalinks.redirects.add');
+                $r->post('/settings/permalinks/redirects/{id:\d+}/delete', [SiteSettingsController::class, 'deleteRedirect'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.permalinks.redirects.delete');
+                $r->get('/settings/seo', [SiteSettingsController::class, 'seo'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.seo');
+                $r->post('/settings/seo', [SiteSettingsController::class, 'saveSeo'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.seo.save');
+
                 // Backwards-compatible redirects from Phase 2 placeholder content routes
                 $r->get('/pages', static fn (): Response => Response::redirect('/admin/content/page'))
                     ->middleware('can:content.view')
@@ -511,10 +669,10 @@ final class AdminServiceProvider extends ServiceProvider
                     ->middleware('can:content.view')
                     ->name('legacy.articles');
 
-                // Upcoming CMS module placeholders (capability verified in DashboardController::module)
-                $r->get('/{module:appearance|settings}', [DashboardController::class, 'module'])
+                // Remaining Phase 9 settings placeholders (capability verified in DashboardController::module)
+                $r->get('/{module:settings}', [DashboardController::class, 'module'])
                     ->name('module');
-                $r->get('/{module:appearance|settings}/{section:[a-z0-9-]+}', [DashboardController::class, 'module'])
+                $r->get('/{module:settings}/{section:[a-z0-9-]+}', [DashboardController::class, 'module'])
                     ->name('module.section');
             },
         );
@@ -553,10 +711,10 @@ final class AdminServiceProvider extends ServiceProvider
             id: 'appearance',
             label: 'Apparence',
             icon: 'palette',
-            url: '/admin/appearance',
+            url: '/admin/appearance/themes',
             position: 50,
             accent: 'violet',
-            capability: 'appearance.manage',
+            capability: 'themes.manage',
             group: 'Système',
         ));
 
@@ -567,7 +725,17 @@ final class AdminServiceProvider extends ServiceProvider
             url: '/admin/appearance/themes',
             position: 10,
             accent: 'violet',
-            capability: 'appearance.manage',
+            capability: 'themes.manage',
+        ));
+
+        $menu->addChild('appearance', new MenuItem(
+            id: 'appearance.customizer',
+            label: 'Personnaliser',
+            icon: 'sparkles',
+            url: '/admin/appearance/customizer',
+            position: 15,
+            accent: 'violet',
+            capability: 'themes.manage',
         ));
 
         $menu->addChild('appearance', new MenuItem(
@@ -577,17 +745,17 @@ final class AdminServiceProvider extends ServiceProvider
             url: '/admin/appearance/menus',
             position: 20,
             accent: 'violet',
-            capability: 'appearance.manage',
+            capability: 'themes.manage',
         ));
 
         $menu->addChild('appearance', new MenuItem(
-            id: 'appearance.widgets',
-            label: 'Widgets',
-            icon: 'layers',
-            url: '/admin/appearance/widgets',
+            id: 'appearance.zones',
+            label: 'Zones',
+            icon: 'layout-dashboard',
+            url: '/admin/appearance/zones',
             position: 30,
             accent: 'violet',
-            capability: 'appearance.manage',
+            capability: 'themes.manage',
         ));
 
         $menu->add(new MenuItem(
@@ -664,11 +832,31 @@ final class AdminServiceProvider extends ServiceProvider
         ));
 
         $menu->addChild('settings', new MenuItem(
+            id: 'settings.reading',
+            label: 'Lecture',
+            icon: 'file-text',
+            url: '/admin/settings/reading',
+            position: 15,
+            accent: 'neutral',
+            capability: 'settings.manage',
+        ));
+
+        $menu->addChild('settings', new MenuItem(
             id: 'settings.permalinks',
             label: 'Permaliens',
-            icon: 'settings',
+            icon: 'link',
             url: '/admin/settings/permalinks',
             position: 20,
+            accent: 'neutral',
+            capability: 'settings.manage',
+        ));
+
+        $menu->addChild('settings', new MenuItem(
+            id: 'settings.seo',
+            label: 'Référencement',
+            icon: 'globe',
+            url: '/admin/settings/seo',
+            position: 25,
             accent: 'neutral',
             capability: 'settings.manage',
         ));

@@ -38,4 +38,5 @@ return [
     'components/content.css',
     'components/editor.css',
     'components/media.css',
+    'components/appearance.css',
 ];
