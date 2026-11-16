@@ -48,10 +48,6 @@ final class DashboardController
         'appearance/widgets' => 'appearance.manage',
         'plugins' => 'plugins.manage',
         'settings' => 'settings.manage',
-        'settings/general' => 'settings.manage',
-        'settings/permalinks' => 'settings.manage',
-        'settings/security' => 'settings.manage',
-        'settings/emails' => 'settings.manage',
     ];
 
     public function __construct(

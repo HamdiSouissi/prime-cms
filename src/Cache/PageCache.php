@@ -34,6 +34,11 @@ final class PageCache
     private const ALLOWED_QUERY_PARAMS = ['page'];
 
     /**
+     * Marker file holding the timestamp of the last full purge (shown on « Performance »).
+     */
+    private const PURGE_MARKER = '.last-purge';
+
+    /**
      * Cookie names indicating an authenticated or stateful admin session.
      *
      * @var list<string>
@@ -358,6 +363,7 @@ final class PageCache
         }
 
         if ($purged > 0) {
+            $this->recordPurge();
             $this->hooks?->emit('cache.purged', [
                 'scope' => 'targeted',
                 'paths' => array_keys($exactSet),
@@ -374,6 +380,8 @@ final class PageCache
      */
     public function purgeAll(): int
     {
+        $this->recordPurge();
+
         if (!is_dir($this->directory)) {
             $this->hooks?->emit('cache.purged', ['scope' => 'pages', 'count' => 0]);
 
@@ -419,14 +427,17 @@ final class PageCache
     }
 
     /**
-     * Return active cached page count and total disk bytes.
+     * Return active cached page count, total disk bytes, and the last purge timestamp.
      *
-     * @return array{entries: int, bytes: int}
+     * `last_purged_at` is `null` when the cache was never emptied since the marker file
+     * was introduced; the marker lives next to the entries so it survives a restart.
+     *
+     * @return array{entries: int, bytes: int, last_purged_at: int|null}
      */
     public function stats(): array
     {
         if (!is_dir($this->directory)) {
-            return ['entries' => 0, 'bytes' => 0];
+            return ['entries' => 0, 'bytes' => 0, 'last_purged_at' => null];
         }
 
         $now = ($this->clock)();
@@ -446,7 +457,52 @@ final class PageCache
             }
         }
 
-        return ['entries' => $entries, 'bytes' => $bytes];
+        return [
+            'entries' => $entries,
+            'bytes' => $bytes,
+            'last_purged_at' => $this->lastPurgedAt(),
+        ];
+    }
+
+    /**
+     * Timestamp recorded by the last full purge, or `null` when the cache was never flushed.
+     */
+    public function lastPurgedAt(): ?int
+    {
+        $marker = $this->directory . '/' . self::PURGE_MARKER;
+
+        if (!is_file($marker)) {
+            return null;
+        }
+
+        $raw = @file_get_contents($marker);
+        if (!is_string($raw) || trim($raw) === '') {
+            return null;
+        }
+
+        return (int) trim($raw);
+    }
+
+    /**
+     * Record the timestamp of a flush. Written atomically so a concurrent reader never
+     * sees a half-written marker.
+     */
+    private function recordPurge(): void
+    {
+        if (!is_dir($this->directory) && !@mkdir($this->directory, 0750, true) && !is_dir($this->directory)) {
+            return;
+        }
+
+        $marker = $this->directory . '/' . self::PURGE_MARKER;
+        $temp = $marker . '.' . bin2hex(random_bytes(4));
+
+        if (@file_put_contents($temp, (string) ($this->clock)()) !== false) {
+            @rename($temp, $marker);
+        }
+
+        if (is_file($temp)) {
+            @unlink($temp);
+        }
     }
 
     /**

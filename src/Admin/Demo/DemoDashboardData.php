@@ -353,62 +353,6 @@ final class DemoDashboardData
                     'Journal d’audit complet des actions d’administration',
                 ],
             ],
-            'settings/general' => [
-                'title' => 'Réglages généraux',
-                'subtitle' => 'Nom du site, description, langue et fuseau horaire.',
-                'icon' => 'settings',
-                'accent' => 'neutral',
-                'phase' => 'Phase 9 — Réglages, langues, cache, mails, tâches',
-                'parentTitle' => 'Réglages',
-                'parentUrl' => '/admin/settings',
-                'description' => 'Les paramètres généraux du site et le choix des langues (FR, EN, IT) seront disponibles en Phase 9.',
-                'planned' => [
-                    'Titre, slogan et identité de marque',
-                    'Formats de date, d’heure et internationalisation (i18n)',
-                ],
-            ],
-            'settings/permalinks' => [
-                'title' => 'Permaliens',
-                'subtitle' => 'Personnalisez la structure des URL publiques.',
-                'icon' => 'settings',
-                'accent' => 'neutral',
-                'phase' => 'Phase 9 — Réglages, langues, cache, mails, tâches',
-                'parentTitle' => 'Réglages',
-                'parentUrl' => '/admin/settings',
-                'description' => 'Les réglages avancés de permaliens seront consolidés en Phase 9 (base des permaliens posée en Phase 8).',
-                'planned' => [
-                    'Modèles d’URL pour pages, articles et archives',
-                    'Redirections automatiques 301 en cas de changement de slug',
-                ],
-            ],
-            'settings/security' => [
-                'title' => 'Sécurité',
-                'subtitle' => 'Renforcez les accès, sessions et en-têtes HTTP.',
-                'icon' => 'shield',
-                'accent' => 'neutral',
-                'phase' => 'Phase 9 — Réglages, langues, cache, mails, tâches',
-                'parentTitle' => 'Réglages',
-                'parentUrl' => '/admin/settings',
-                'description' => 'Le panneau de réglages de sécurité et le journal d’audit arriveront en Phase 9.',
-                'planned' => [
-                    'Politique de sécurité configurable et limitation de débit',
-                    'Journal d’audit détaillé des actions d’administration',
-                ],
-            ],
-            'settings/emails' => [
-                'title' => 'E-mails',
-                'subtitle' => 'Configurez l’envoi des notifications transactionnelles.',
-                'icon' => 'inbox',
-                'accent' => 'neutral',
-                'phase' => 'Phase 9 — Réglages, langues, cache, mails, tâches',
-                'parentTitle' => 'Réglages',
-                'parentUrl' => '/admin/settings',
-                'description' => 'Le client SMTP natif et les modèles d’e-mails arriveront en Phase 9.',
-                'planned' => [
-                    'Transport SMTP authentifié avec envoi de test',
-                    'Expéditeur par défaut et modèles personnalisables',
-                ],
-            ],
         ];
     }
 }

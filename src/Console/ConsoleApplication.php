@@ -7,8 +7,10 @@ namespace Prime\Console;
 use Prime\Auth\RoleRepository;
 use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
+use Prime\Cache\CacheManager;
 use Prime\Console\Commands\AboutCommand;
 use Prime\Console\Commands\AssetsBuildCommand;
+use Prime\Console\Commands\CacheClearCommand;
 use Prime\Console\Commands\ContentCreateCommand;
 use Prime\Console\Commands\ContentListCommand;
 use Prime\Console\Commands\ContentPublishScheduledCommand;
@@ -154,6 +156,13 @@ final class ConsoleApplication
         $this->register(new AssetsBuildCommand($this->app));
         $this->register(new RoutesCommand($router));
         $this->register(new LangCheckCommand($this->app));
+
+        if ($this->app->container()->has(CacheManager::class)) {
+            /** @var CacheManager $cacheManager */
+            $cacheManager = $this->app->get(CacheManager::class);
+
+            $this->register(new CacheClearCommand($cacheManager));
+        }
 
         if ($this->app->container()->has(Connection::class)) {
             /** @var Connection $connection */

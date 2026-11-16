@@ -9,6 +9,7 @@ use Prime\Admin\Controller\DashboardController;
 use Prime\Admin\Controller\MediaController;
 use Prime\Admin\Controller\MenuController;
 use Prime\Admin\Controller\NoticeController;
+use Prime\Admin\Controller\PerformanceController;
 use Prime\Admin\Controller\PluginController;
 use Prime\Admin\Controller\ProfileController;
 use Prime\Admin\Controller\RoleController;
@@ -28,6 +29,7 @@ use Prime\Auth\RoleRepository;
 use Prime\Auth\TwoFactorService;
 use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
+use Prime\Cache\CacheManager;
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\EntryLockRepository;
 use Prime\Content\EntryQuery;
@@ -225,6 +227,14 @@ final class AdminServiceProvider extends ServiceProvider
                 seoSettings: $this->app->get(SeoSettings::class),
                 query: $this->app->get(EntryQuery::class),
                 media: $media instanceof MediaRepository ? $media : null,
+            );
+        });
+
+        $container->singleton(PerformanceController::class, function (): PerformanceController {
+            return new PerformanceController(
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                cache: $this->app->get(CacheManager::class),
             );
         });
 
@@ -674,6 +684,15 @@ final class AdminServiceProvider extends ServiceProvider
                 $r->post('/settings/seo', [SiteSettingsController::class, 'saveSeo'])
                     ->middleware('can:settings.manage')
                     ->name('settings.seo.save');
+                $r->get('/settings/performance', [PerformanceController::class, 'index'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.performance');
+                $r->post('/settings/performance', [PerformanceController::class, 'save'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.performance.save');
+                $r->post('/settings/performance/purge', [PerformanceController::class, 'purge'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.performance.purge');
 
                 // Backwards-compatible redirects from Phase 2 placeholder content routes
                 $r->get('/pages', static fn (): Response => Response::redirect('/admin/content/page'))
@@ -891,6 +910,16 @@ final class AdminServiceProvider extends ServiceProvider
             icon: 'inbox',
             url: '/admin/settings/emails',
             position: 40,
+            accent: 'neutral',
+            capability: 'settings.manage',
+        ));
+
+        $menu->addChild('settings', new MenuItem(
+            id: 'settings.performance',
+            label: 'Performance',
+            icon: 'activity',
+            url: '/admin/settings/performance',
+            position: 50,
             accent: 'neutral',
             capability: 'settings.manage',
         ));

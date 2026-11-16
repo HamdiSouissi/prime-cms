@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Tests\Unit\I18n;
 
 use PHPUnit\Framework\TestCase;
+use Prime\Cache\ArrayCache;
 use Prime\Hooks\Hooks;
 use Prime\I18n\Translator;
 
@@ -165,6 +166,20 @@ final class TranslatorTest extends TestCase
         $this->assertGreaterThan(500, count($messages));
         $this->assertSame('Enregistrer', $messages['core.actions.save']);
         $this->assertSame($messages, $translator->messages('fr'));
+    }
+
+    public function testMergedTreesAreStoredInTheDataCacheAndServedFromIt(): void
+    {
+        $cache = new ArrayCache();
+        $messages = (new Translator('fr', Translator::FALLBACK_LOCALE, [$this->langPath], null, $cache))->messages('fr');
+        $this->assertGreaterThan(500, count($messages));
+
+        // A single merged tree is stored, and a second translator sharing that cache returns
+        // the very same flattened catalogue instead of re-parsing every language file.
+        $this->assertSame(1, $cache->stats()['entries'], 'Exactly one merged tree must be cached.');
+
+        $second = new Translator('fr', Translator::FALLBACK_LOCALE, [$this->langPath], null, $cache);
+        $this->assertSame($messages, $second->messages('fr'));
     }
 
     public function testHelpersUseTheBoundTranslatorInstance(): void

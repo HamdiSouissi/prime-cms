@@ -144,6 +144,9 @@ final class AdminContext
             'adminFooterExtra' => is_string($footerExtra) ? $footerExtra : '',
             'authUser' => $user,
             'currentUser' => $this->formatCurrentUser($user),
+            // The topbar "Vider le cache" action is only offered to users allowed to manage
+            // settings; the same capability guards the POST route itself.
+            'canPurgeCache' => $user !== null && $user->can('settings.manage'),
         ], $extra);
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\I18n;
 
+use Prime\Cache\CacheInterface;
 use Prime\Hooks\Hooks;
 use Prime\Kernel\Application;
 use Prime\Log\Logger;
@@ -96,12 +97,17 @@ final class Translator
 
     /**
      * @param list<string> $paths Directories containing `{locale}/{group}.php` language files
+     * @param ?CacheInterface $cache Optional persistent cache for the merged language trees;
+     *                               the key embeds a fingerprint of the catalogue files, so
+     *                               editing one (or installing a theme/plugin) invalidates
+     *                               the entry without any manual flush.
      */
     public function __construct(
         private string $locale = self::DEFAULT_LOCALE,
         private string $fallbackLocale = self::FALLBACK_LOCALE,
         array $paths = [],
         private readonly ?Hooks $hooks = null,
+        private readonly ?CacheInterface $cache = null,
     ) {
         $this->paths = array_values(array_filter(
             array_map(static fn (string $path): string => rtrim($path, '/\\'), $paths),
@@ -261,6 +267,12 @@ final class Translator
             return $this->treeCache[$locale];
         }
 
+        $cached = $this->cache?->get($this->cacheKey($locale));
+        if (is_array($cached)) {
+            /** @var array<string, mixed> $cached */
+            return $this->treeCache[$locale] = $cached;
+        }
+
         $tree = [];
         foreach ($this->groupFiles($locale) as $group) {
             $tree[$group] = $this->loadGroup($locale, $group);
@@ -273,7 +285,30 @@ final class Translator
 
         $this->treeCache[$locale] = $tree;
 
+        if ($this->cache !== null) {
+            $this->cache->set($this->cacheKey($locale), $tree, 86400);
+        }
+
         return $tree;
+    }
+
+    /**
+     * Persistent cache key for a locale's merged tree, invalidated by any catalogue change.
+     */
+    private function cacheKey(string $locale): string
+    {
+        $fingerprint = [];
+
+        foreach ($this->paths as $path) {
+            foreach ($this->groupFiles($locale) as $group) {
+                $file = $path . '/' . $locale . '/' . $group . '.php';
+                if (is_file($file)) {
+                    $fingerprint[] = $file . ':' . (string) (@filemtime($file) ?: 0);
+                }
+            }
+        }
+
+        return 'translations.' . $locale . '.' . sha1(implode('|', $fingerprint));
     }
 
     /**

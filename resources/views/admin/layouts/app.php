@@ -241,6 +241,21 @@ declare(strict_types=1);
                     </div>
                     <?php endif; ?>
 
+                    <?php if (!empty($canPurgeCache)): ?>
+                    <!-- Clear every cache without leaving the current screen -->
+                    <form method="post" action="/admin/settings/performance/purge" class="pc-topbar__purge">
+                        <?= $this->raw($this->csrfField()) ?>
+                        <button
+                            type="submit"
+                            class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm"
+                            data-prime-tooltip="Vider le cache"
+                            aria-label="Vider le cache"
+                        >
+                            <?= $this->raw($this->icon('rotate-ccw', 18)) ?>
+                        </button>
+                    </form>
+                    <?php endif; ?>
+
                     <!-- Notifications dropdown (persistent dashboard notices) -->
                     <?php
                     /** @var list<\Prime\Admin\Notice> $noticesList */
