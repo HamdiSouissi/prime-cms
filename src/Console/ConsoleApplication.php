@@ -38,6 +38,9 @@ use Prime\Console\Commands\RoleListCommand;
 use Prime\Console\Commands\RoutesCommand;
 use Prime\Console\Commands\SettingsGetCommand;
 use Prime\Console\Commands\SettingsSetCommand;
+use Prime\Console\Commands\ThemeActivateCommand;
+use Prime\Console\Commands\ThemeListCommand;
+use Prime\Console\Commands\ThemePublishCommand;
 use Prime\Console\Commands\UserCreateCommand;
 use Prime\Console\Commands\UserDisableCommand;
 use Prime\Console\Commands\UserEnableCommand;
@@ -63,6 +66,7 @@ use Prime\Plugins\PluginInstaller;
 use Prime\Plugins\PluginManager;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
+use Prime\Themes\ThemeManager;
 
 /**
  * Extensible CLI runner for Prime CMS (`bin/prime`).
@@ -246,6 +250,15 @@ final class ConsoleApplication
             $this->register(new MediaRegenerateCommand($mediaRepo, $uploadService, $mediaConfig));
             $this->register(new MediaLinkCommand($uploadsGuard));
             $this->register(new MediaCleanupCommand($mediaRepo, $mediaConfig));
+        }
+
+        if ($this->app->container()->has(ThemeManager::class)) {
+            /** @var ThemeManager $themeManager */
+            $themeManager = $this->app->get(ThemeManager::class);
+
+            $this->register(new ThemeListCommand($themeManager));
+            $this->register(new ThemeActivateCommand($themeManager));
+            $this->register(new ThemePublishCommand($themeManager));
         }
 
         $this->register(new MakePluginCommand($this->app));

@@ -20,6 +20,7 @@ use Prime\Mail\MailServiceProvider;
 use Prime\Media\MediaServiceProvider;
 use Prime\Plugins\PluginServiceProvider;
 use Prime\Settings\SettingsServiceProvider;
+use Prime\Themes\ThemeServiceProvider;
 
 return [
     'name' => (string) Env::get('APP_NAME', 'Prime CMS'),
@@ -44,6 +45,7 @@ return [
         ContentServiceProvider::class,
         AdminServiceProvider::class,
         PluginServiceProvider::class,
+        ThemeServiceProvider::class,
     ],
 
     'middleware' => [
