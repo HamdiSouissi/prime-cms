@@ -71,7 +71,10 @@ return [
         'invalid_credentials' => 'Identifiant ou mot de passe incorrect.',
         'logged_in' => 'Bienvenue, :name !',
         'logged_out' => 'Vous êtes déconnecté.',
-        'login' => 'Connexion',
+        'login' => [
+            'back_to_site' => '← Retour au site public',
+            'submit' => 'Se connecter',
+        ],
         'login_title' => 'Se connecter',
         'logout' => 'Déconnexion',
         'new_password' => 'Nouveau mot de passe',
@@ -123,25 +126,31 @@ return [
         '403' => [
             'acces_refuse' => 'Accès refusé',
             'retour_tableau_bord' => 'Retour au tableau de bord',
+            'title' => 'Erreur 403',
         ],
         '404' => [
+            'heading' => 'Page introuvable',
             'ressource_demandee_existe_pas_ete' => 'La ressource demandée n\'existe pas ou a été déplacée.',
             'retourner_a_accueil' => 'Retourner à l\'accueil',
+            'title' => 'Erreur 404',
         ],
         '405' => [
             'methode_http_utilisee_pas_acceptee' => 'La méthode HTTP utilisée n\'est pas acceptée pour cette adresse.',
             'methode_non_autorisee' => 'Méthode non autorisée',
             'methodes_autorisees' => 'Méthodes autorisées :',
             'retourner_a_accueil' => 'Retourner à l\'accueil',
+            'title' => 'Erreur 405',
         ],
         '409' => [
             'action_impossible_cet_etat' => 'Action impossible dans cet état',
             'retour_tableau_bord' => 'Retour au tableau de bord',
+            'title' => 'Erreur 409',
         ],
         '419' => [
             'jeton_securite_invalide' => 'Le jeton de sécurité de ce formulaire est manquant, invalide ou a expiré.',
             'revenez_a_page_precedente_rechargez' => 'Revenez à la page précédente, rechargez-la puis soumettez à nouveau votre demande.',
             'session_expiree' => 'Session expirée',
+            'title' => 'Erreur 419',
         ],
         '500' => [
             'erreur_survenue' => 'Une erreur est survenue',
@@ -209,14 +218,22 @@ return [
         'username' => 'Identifiant',
         'website' => 'Site web',
     ],
+    'home' => [
+        'footer' => 'Prime CMS · Phase 1',
+        'php_version' => 'Version PHP',
+        'storage_not_writable' => 'Non inscriptible',
+        'storage_folders' => 'Dossiers :path',
+    ],
     'install' => [
         'account' => 'Compte administrateur',
         'admin' => [
+            'account' => 'Compte administrateur',
             'afficher_confirmation_mot_passe' => 'Afficher la confirmation du mot de passe',
             'afficher_mot_passe' => 'Afficher le mot de passe',
             'choisissez_phrase_secrete_unique_moins' => 'Choisissez une phrase secrète unique d\'au moins 12 caractères (stockée de façon irréversible en Argon2id).',
             'compte_principal' => 'Créez le compte principal qui administrera votre site.',
             'confirmer_mot_passe' => 'Confirmer le mot de passe',
+            'email' => 'Adresse e-mail',
             'minimum_12_caracteres_recommandes_phrase' => 'Minimum 12 caractères recommandés (phrase secrète, majuscules, chiffres et symboles).',
             'moins_12_caracteres' => 'Au moins 12 caractères',
             'obligatoire' => '(obligatoire)',
@@ -248,6 +265,8 @@ return [
         'layout' => [
             'etape_sur' => 'Étape :current sur :total',
             'installation_securisee_locale' => 'Installation sécurisée locale',
+            'skip_to_content' => 'Aller au contenu',
+            'wizard' => 'Assistant d\'installation',
         ],
         'next' => 'Étape suivante',
         'plugins' => 'Extensions',
@@ -261,11 +280,14 @@ return [
         'run' => [
             'contenu_exact_fichier_env' => 'Contenu exact du fichier .env',
             'creer_fichier_env' => 'Créez manuellement le fichier <code>.env</code> à la racine du projet',
+            'email' => 'Adresse e-mail',
             'masque_stocke_argon2id' => 'Masqué (stocké en Argon2id)',
             'nom_site' => 'Nom du site',
             'prefixe_tables' => 'Préfixe des tables',
             'pret_installation' => 'Prêt pour l\'installation',
             'prime_cms_ecrira_configuration_creera' => 'Prime CMS écrira la configuration, créera les tables et enregistrera votre compte administrateur.',
+            'public_url' => 'URL publique',
+            'timezone' => 'Fuseau horaire',
             'utilisateur' => 'Utilisateur',
             'verifiez_recapitulatif' => 'Vérifiez votre récapitulatif ci-dessous (aucun mot de passe n’est affiché), puis lancez l’installation.',
         ],
@@ -283,6 +305,8 @@ return [
         'welcome' => [
             'cet_assistant_va_verifier_serveur' => 'Cet assistant va vérifier votre serveur, configurer votre base de données et créer votre compte administrateur en quelques minutes.',
             'prime_cms_systeme_gestion_contenu' => 'Prime CMS est un système de gestion de contenu moderne, rapide et extensible conçu en PHP natif.',
+            'start' => 'Commencer l\'installation',
+            'title' => 'Bienvenue dans Prime CMS',
         ],
     ],
     'labels' => [
@@ -328,6 +352,10 @@ return [
         'it' => 'italien',
         'nl' => 'néerlandais',
         'pt' => 'portugais',
+    ],
+    'mail' => [
+        'direct_link' => 'Lien direct :',
+        'greeting' => 'Bonjour :name,',
     ],
     'name' => 'Prime CMS',
     'never' => 'Jamais',

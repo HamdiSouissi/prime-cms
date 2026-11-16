@@ -196,7 +196,7 @@ $this->layout('admin::layouts/app');
                     </dd>
                 </div>
                 <div class="pc-kv-row">
-                    <dt>2FA (TOTP)</dt>
+                    <dt><?= t('admin.users.edit.two_factor') ?></dt>
                     <dd>
                         <?= $this->raw($this->insert('admin::components/badge', [
                             'label' => $targetUser->hasTwoFactor() ? 'Activée' : 'Non activée',

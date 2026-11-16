@@ -61,7 +61,7 @@ ob_start();
                             <?= $this->raw($this->icon('image', 14)) ?>
                             <span data-prime-media-choose-label><?= $this->e($this->t('admin.profile.index.choisir_photo')) ?></span>
                         </button>
-                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear hidden>Retirer l’avatar</button>
+                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear hidden><?= t('admin.profile.remove_avatar') ?></button>
                     </div>
                 </div>
                 <?php if (isset($infoErrors['avatar_media_id'])): ?>
@@ -91,7 +91,7 @@ ob_start();
         ])) ?>
 
         <div class="pc-field">
-            <label class="pc-label" for="profile-bio">Biographie publique</label>
+            <label class="pc-label" for="profile-bio"><?= t('admin.profile.public_bio') ?></label>
             <textarea
                 id="profile-bio"
                 name="bio"
@@ -243,7 +243,7 @@ ob_start();
                 'message' => 'Ces 8 codes à usage unique ne seront plus jamais affichés. Conservez-les dans un gestionnaire de mots de passe sécurisé.',
             ])) ?>
 
-            <ul class="pc-recovery-grid" aria-label="Codes de récupération 2FA">
+            <ul class="pc-recovery-grid" aria-label="<?= t('admin.attr.codes_de_recuperation_2fa') ?>">
                 <?php foreach ($recoveryCodesOnce as $rc): ?>
                     <li class="pc-recovery-grid__item"><?= $this->e($rc) ?></li>
                 <?php endforeach; ?>
@@ -273,7 +273,7 @@ ob_start();
             <?php if ($pendingTwoFactor === null): ?>
                 <p class="pc-text-sm pc-text-muted">
                     <?= $this->e($this->t('admin.profile.code_temporaire_application_totp')) ?>
-                    (Aegis, 1Password, Bitwarden, Google Authenticator…).
+                    <?= t('admin.profile.authenticator_hint') ?>
                 </p>
                 <form method="post" action="/admin/profile/2fa/start">
                     <?= $this->raw($this->csrfField()) ?>
@@ -300,7 +300,7 @@ ob_start();
                 </div>
 
                 <p class="pc-text-xs pc-text-muted">
-                    Lien direct :
+                    <?= t('admin.profile.direct_link') ?>
                     <a href="<?= $this->e($pendingTwoFactor['uri']) ?>" class="pc-auth-link">
                         Ouvrir dans l'application d'authentification (otpauth://)
                     </a>

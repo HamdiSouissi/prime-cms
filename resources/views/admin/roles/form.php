@@ -119,7 +119,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
                                 class="pc-auth-link-btn"
                                 data-prime-cap-group-toggle="<?= $this->e($groupId) ?>"
                             >
-                                Tout cocher
+                                <?= t('admin.roles.select_all') ?>
                             </button>
                         <?php endif; ?>
                     </header>

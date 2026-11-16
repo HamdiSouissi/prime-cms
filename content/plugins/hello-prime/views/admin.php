@@ -29,14 +29,14 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
 <div class="pc-stack pc-stack--lg hp-layout">
     <!-- Live preview banner -->
     <div class="pc-card hp-banner">
-        <div class="hp-banner__badge">Hello Prime · v<?= $this->e($pluginVersion) ?></div>
+        <div class="hp-banner__badge"><?= $this->e($this->t('plugin::hello-prime.views.admin.version', ['version' => $pluginVersion])) ?></div>
         <p class="hp-banner__greeting"><?= $this->e($greeting) ?></p>
     </div>
 
     <div class="hp-grid">
         <!-- Settings card -->
         <section class="pc-card hp-card" aria-labelledby="hp-settings-title">
-            <h2 id="hp-settings-title" class="hp-card__title">Message d’accueil</h2>
+            <h2 id="hp-settings-title" class="hp-card__title"><?= $this->e($this->t('plugin::hello-prime.views.admin.greeting_label')) ?></h2>
             <p class="hp-card__subtitle"><?= $this->raw($this->t('plugin::hello-prime.views.admin.enregistre_cle_prefixee', ['key' => 'plugin.hello-prime.greeting'])) ?></p>
 
             <form method="post" action="/admin/hello-prime/settings" class="pc-stack pc-stack--md">
@@ -107,10 +107,10 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
                 <table class="pc-table">
                     <thead>
                         <tr>
-                            <th>Auteur</th>
-                            <th>Message</th>
-                            <th>Date (UTC)</th>
-                            <th>Action</th>
+                            <th><?= $this->e($this->t('plugin::hello-prime.views.admin.author')) ?></th>
+                            <th><?= $this->e($this->t('plugin::hello-prime.views.admin.message')) ?></th>
+                            <th><?= $this->e($this->t('plugin::hello-prime.views.admin.date_utc')) ?></th>
+                            <th><?= $this->e($this->t('plugin::hello-prime.views.admin.action')) ?></th>
                         </tr>
                     </thead>
                     <tbody>

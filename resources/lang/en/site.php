@@ -17,6 +17,13 @@ return [
         'title' => 'Archives',
         'year' => 'Yearly archive: :year',
     ],
+    'attr' => [
+        'a_propos_de_l_auteur' => 'About the author',
+        'barre_laterale' => 'Sidebar',
+        'etiquettes' => 'Tags',
+        'rechercher_un_article_une_page' => 'Search for a post, a page…',
+        'rechercher_un_contenu' => 'Search for content…',
+    ],
     'aurora' => [
         '404' => [
             'articles_recents' => 'Recent posts',
@@ -104,6 +111,11 @@ return [
         'website' => 'Website',
     ],
     'continue_reading' => 'Continue reading',
+    'errors' => [
+        '404' => [
+            'heading' => 'Page not found',
+        ],
+    ],
     'footer' => [
         'back_to_top' => 'Back to top',
         'copyright' => '© :year :site. All rights reserved.',
@@ -123,6 +135,9 @@ return [
         'sending' => 'Sending…',
         'sent' => 'Message sent. Thank you!',
         'submit' => 'Send',
+    ],
+    'front' => [
+        'welcome' => 'Welcome to :name',
     ],
     'home' => [
         'ecriture_prete' => 'Writable',
@@ -151,6 +166,10 @@ return [
     'password_protected' => 'Protected content',
     'password_protected_help' => 'Enter the password to view this content.',
     'password_submit' => 'View',
+    'post' => [
+        'next_post' => 'Next post →',
+        'related' => 'Related posts',
+    ],
     'post_nav' => [
         'back_to_blog' => 'Back to the blog',
         'next' => 'Next',
@@ -175,6 +194,7 @@ return [
         'try_again' => 'Try other keywords.',
     ],
     'skip_content' => 'Skip to content',
+    'skip_to_content' => 'Skip to main content',
     'sticky' => 'Sticky',
     'tagged' => 'Tags',
     'updated_on' => 'Updated on :date',

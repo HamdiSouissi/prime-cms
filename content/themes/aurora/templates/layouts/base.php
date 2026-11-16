@@ -15,7 +15,7 @@ declare(strict_types=1);
   <?= $site->head() ?>
 </head>
 <body class="<?= $site->bodyClass() ?>">
-  <a class="skip-link" href="#main-content">Aller au contenu principal</a>
+  <a class="skip-link" href="#main-content"><?= $site->t('site.skip_to_content') ?></a>
 
   <?= $site->partial('header') ?>
 

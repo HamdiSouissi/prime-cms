@@ -28,7 +28,7 @@ if ($pag['total'] <= 1) {
 
     <?php if ($pag['next_url'] !== null): ?>
       <li>
-        <a class="aurora-pagination__link" href="<?= $pag['next_url'] ?>" rel="next">Suivant &rarr;</a>
+        <a class="aurora-pagination__link" href="<?= $pag['next_url'] ?>" rel="next"><?= $site->t('site.pagination.next') ?></a>
       </li>
     <?php endif; ?>
   </ul>

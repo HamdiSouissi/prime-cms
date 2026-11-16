@@ -6,6 +6,7 @@
 
 import { SelectionState } from './selection.js';
 import { UploadQueue } from './upload-queue.js';
+import { tr } from '../i18n.js';
 
 const KIND_ICONS = {
   image: 'image',
@@ -60,7 +61,7 @@ function ensurePickerModal() {
         </button>
       </div>
 
-      <div class="pc-media-picker__tabs" role="tablist" aria-label="Source du média">
+      <div class="pc-media-picker__tabs" role="tablist" aria-label="${escapeHtml(tr('admin.js.media.picker.source_du_media', 'Source du média'))}">
         <button type="button" class="pc-media-picker__tab is-active" role="tab" aria-selected="true" data-prime-picker-tab="library">
           ${iconSvg('grid', 15)}
           <span>Médiathèque</span>
@@ -217,10 +218,10 @@ export function openMediaPicker(options = {}) {
   const panels = Array.from(root.querySelectorAll('[data-prime-picker-panel]'));
 
   if (titleEl) {
-    titleEl.textContent = options.title || (multiple ? 'Sélectionner des médias' : 'Sélectionner un média');
+    titleEl.textContent = options.title || (multiple ? tr('admin.js.media.picker.selectionner_des_medias', 'Sélectionner des médias') : tr('admin.js.media.picker.selectionner_un_media', 'Sélectionner un média'));
   }
   if (confirmLabelEl) {
-    confirmLabelEl.textContent = options.confirmLabel || (multiple ? 'Insérer la sélection' : 'Choisir ce média');
+    confirmLabelEl.textContent = options.confirmLabel || (multiple ? tr('admin.js.media.picker.inserer_la_selection', 'Insérer la sélection') : tr('admin.js.media.picker.choisir_ce_media', 'Choisir ce média'));
   }
 
   if (kindSelect instanceof HTMLSelectElement) {
@@ -270,7 +271,7 @@ export function openMediaPicker(options = {}) {
         summaryEl.textContent = 'Aucun média sélectionné';
       } else if (count === 1) {
         const one = itemsById.get(ids[0]);
-        summaryEl.textContent = one ? `1 média sélectionné : ${one.display_title}` : '1 média sélectionné';
+        summaryEl.textContent = one ? `1 média sélectionné : ${one.display_title}` : tr('admin.js.media.picker.1_media_selectionne', '1 média sélectionné');
       } else {
         summaryEl.textContent = `${count} médias sélectionnés`;
       }
@@ -340,8 +341,8 @@ export function openMediaPicker(options = {}) {
       emptyEl.hidden = visibleItems.length > 0;
       if (emptyTextEl) {
         emptyTextEl.textContent = searchInput?.value.trim()
-          ? 'Aucun média ne correspond à cette recherche.'
-          : 'Aucun média disponible. Utilisez l’onglet « Téléverser » pour en ajouter.';
+          ? tr('admin.js.media.picker.aucun_media_ne_correspond_a', 'Aucun média ne correspond à cette recherche.')
+          : tr('admin.js.media.picker.aucun_media_disponible_utilisez_l', 'Aucun média disponible. Utilisez l’onglet « Téléverser » pour en ajouter.');
       }
     }
     if (moreWrap) {
@@ -429,11 +430,11 @@ export function openMediaPicker(options = {}) {
       row.className = `pc-upload-row pc-upload-row--${entry.status}`;
       const statusText =
         entry.status === 'done'
-          ? entry.warning || 'Téléversé et sélectionné'
+          ? entry.warning || tr('admin.js.media.picker.televerse_et_selectionne', 'Téléversé et sélectionné')
           : entry.status === 'error'
-            ? entry.error || 'Échec'
+            ? entry.error || tr('admin.js.media.picker.echec', 'Échec')
             : entry.status === 'cancelled'
-              ? 'Annulé'
+              ? tr('admin.js.media.picker.annule', 'Annulé')
               : `${entry.progress}%`;
 
       row.innerHTML = `
@@ -575,7 +576,7 @@ export function initMediaFields(scope = document) {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    const title = container.dataset.primeMediaTitle || (multiple ? 'Sélectionner des médias' : 'Choisir un média');
+    const title = container.dataset.primeMediaTitle || (multiple ? tr('admin.js.media.picker.selectionner_des_medias', 'Sélectionner des médias') : tr('admin.js.media.picker.choisir_un_media', 'Choisir un média'));
 
     /** @type {Array<object>} */
     let selectedItems = [];
@@ -619,9 +620,9 @@ export function initMediaFields(scope = document) {
           label.textContent =
             selectedItems.length > 0
               ? multiple
-                ? 'Modifier la sélection'
+                ? tr('admin.js.media.picker.modifier_la_selection', 'Modifier la sélection')
                 : 'Remplacer'
-              : 'Choisir dans la médiathèque';
+              : tr('admin.js.media.picker.choisir_dans_la_mediatheque', 'Choisir dans la médiathèque');
         }
       }
 

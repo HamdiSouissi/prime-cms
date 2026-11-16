@@ -78,7 +78,7 @@ $this->layout('admin::layouts/app');
 
     <section class="pc-card" aria-labelledby="pc-redirects-heading">
         <header class="pc-card__header">
-            <h2 id="pc-redirects-heading" class="pc-card__title">Redirections 301 internes (<?= count($redirects) ?>)</h2>
+            <h2 id="pc-redirects-heading" class="pc-card__title"><?= t('admin.settings.permalinks.redirects', ['count' => count($redirects)]) ?></h2>
         </header>
         <div class="pc-card__body pc-stack pc-stack--md">
             <p class="pc-text-sm pc-text-muted">
@@ -88,11 +88,11 @@ $this->layout('admin::layouts/app');
             <form method="post" action="/admin/settings/permalinks/redirects" class="pc-redirect-add-form">
                 <?= $this->raw($this->csrfField()) ?>
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-redir-source">Ancien chemin</label>
+                    <label class="pc-label" for="pc-redir-source"><?= t('admin.settings.permalinks.old_path') ?></label>
                     <input id="pc-redir-source" type="text" name="source_path" class="pc-input" placeholder="/ancien-chemin" required>
                 </div>
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-redir-target">Nouveau chemin interne</label>
+                    <label class="pc-label" for="pc-redir-target"><?= t('admin.settings.permalinks.new_path') ?></label>
                     <input id="pc-redir-target" type="text" name="target_path" class="pc-input" placeholder="/nouveau-chemin" required>
                 </div>
                 <button type="submit" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('core.actions.add')) ?></button>

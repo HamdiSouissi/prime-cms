@@ -25,7 +25,7 @@ foreach ($schema['fields'] as $key => $field) {
 <?php $this->start('content'); ?>
 
 <div class="pc-customizer" data-prime-customizer data-prime-save-url="/admin/appearance/customizer/save" data-prime-reset-url="/admin/appearance/customizer/reset">
-    <aside class="pc-customizer__sidebar" aria-label="Options de personnalisation">
+    <aside class="pc-customizer__sidebar" aria-label="<?= t('admin.attr.options_de_personnalisation') ?>">
         <header class="pc-customizer__head">
             <div>
                 <a href="/admin/appearance/themes" class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.appearance.customizer.larr_retour_themes')) ?></a>
@@ -236,7 +236,7 @@ foreach ($schema['fields'] as $key => $field) {
         </form>
     </aside>
 
-    <section class="pc-customizer__stage" aria-label="Aperçu en direct">
+    <section class="pc-customizer__stage" aria-label="<?= t('admin.attr.apercu_en_direct') ?>">
         <div class="pc-customizer__toolbar">
             <span class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.appearance.customizer.apercu_direct_brouillon_prive')) ?></span>
             <div class="pc-customizer__devices" role="group" aria-label="Format d'affichage">

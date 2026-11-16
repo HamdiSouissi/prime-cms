@@ -54,6 +54,15 @@ jobs:
       - name: Run unit and HTTP test suite (PHPUnit 11)
         run: vendor/bin/phpunit --exclude-group database
 
+      - name: Check translation catalogues (no missing key, no hard-coded copy)
+        run: |-
+          set -o pipefail
+          if ! php bin/prime lang:check --strict 2>&1 | tee /tmp/lang.log; then
+            SUMMARY=$(tail -n 40 /tmp/lang.log | tr '\n' ' ' | cut -c1-1200)
+            echo "::error title=lang:check::$SUMMARY"
+            exit 1
+          fi
+
   js-tests:
     name: JavaScript (Node 22 Syntax & Prime Editor Unit Tests)
     runs-on: ubuntu-latest

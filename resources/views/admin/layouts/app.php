@@ -42,7 +42,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
     <?= $this->raw($adminHeadExtra) ?>
 </head>
 <body>
-    <a class="pc-skip-link" href="#content">Aller au contenu</a>
+    <a class="pc-skip-link" href="#content"><?= t('admin.layouts.skip_to_content') ?></a>
 
     <div class="pc-admin" data-prime-admin-shell>
         <div class="pc-sidebar__backdrop" data-prime-sidebar-backdrop aria-hidden="true"></div>
@@ -100,13 +100,13 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                             href="<?= $this->e($item->url) ?>"
                                             class="pc-sidebar__link<?= ($isCurrent || $node->hasActiveChild) ? ' pc-sidebar__link--active' : '' ?>"
                                             <?= $isCurrent ? 'aria-current="page"' : '' ?>
-                                            data-prime-tooltip-collapsed="<?= $this->e($item->label) ?>"
+                                            data-prime-tooltip-collapsed="<?= $this->e($item->translatedLabel()) ?>"
                                             data-prime-tooltip-placement="right"
                                         >
                                             <span class="pc-sidebar__icon pc-sidebar__icon--<?= $this->e($item->accent) ?>" aria-hidden="true">
                                                 <?= $this->raw($this->icon($item->icon, 20)) ?>
                                             </span>
-                                            <span class="pc-sidebar__label"><?= $this->e($item->label) ?></span>
+                                            <span class="pc-sidebar__label"><?= $this->e($item->translatedLabel()) ?></span>
                                             <?php if ($item->badge !== null): ?>
                                                 <span class="pc-sidebar__badge"><?= $this->e($item->badge) ?></span>
                                             <?php endif; ?>
@@ -119,7 +119,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                                 data-prime-submenu-toggle
                                                 aria-expanded="<?= $isExpanded ? 'true' : 'false' ?>"
                                                 aria-controls="<?= $this->e($submenuId) ?>"
-                                                aria-label="<?= $this->e($this->t('admin.layouts.app.afficher_sous_menus', ['label' => $item->label])) ?>"
+                                                aria-label="<?= $this->e($this->t('admin.layouts.app.afficher_sous_menus', ['label' => $item->translatedLabel()])) ?>"
                                             >
                                                 <?= $this->raw($this->icon('chevron-right', 16)) ?>
                                             </button>
@@ -136,7 +136,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                                         class="pc-sidebar__sublink<?= $childNode->active ? ' pc-sidebar__sublink--active' : '' ?>"
                                                         <?= $childNode->active ? 'aria-current="page"' : '' ?>
                                                     >
-                                                        <span><?= $this->e($child->label) ?></span>
+                                                        <span><?= $this->e($child->translatedLabel()) ?></span>
                                                         <?php if ($child->badge !== null): ?>
                                                             <span class="pc-sidebar__badge"><?= $this->e($child->badge) ?></span>
                                                         <?php endif; ?>
@@ -293,7 +293,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                         >
                             <div class="pc-dropdown__header">
                                 <div class="pc-dropdown__title">Notifications<?= $noticesCount > 0 ? ' (' . $this->e((string) $noticesCount) . ')' : '' ?></div>
-                                <div class="pc-dropdown__subtitle">Centre d’alertes persistantes</div>
+                                <div class="pc-dropdown__subtitle"><?= t('admin.layouts.alert_centre') ?></div>
                             </div>
                             <?php if ($noticesList === []): ?>
                                 <div class="pc-dropdown__empty">
@@ -357,7 +357,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                             </div>
                             <a class="pc-dropdown__item" role="menuitem" href="/admin/profile">
                                 <?= $this->raw($this->icon('user', 16)) ?>
-                                <span>Mon profil</span>
+                                <span><?= t('admin.layouts.my_profile') ?></span>
                             </a>
                             <?php if (!empty($currentUser['canSettings'])): ?>
                                 <a class="pc-dropdown__item" role="menuitem" href="/admin/settings">
@@ -498,7 +498,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
             </button>
         </div>
 
-        <div id="prime-cmd-results" class="pc-cmd__results" role="listbox" aria-label="Résultats de recherche" data-prime-cmd-results></div>
+        <div id="prime-cmd-results" class="pc-cmd__results" role="listbox" aria-label="<?= t('admin.attr.resultats_de_recherche') ?>" data-prime-cmd-results></div>
 
         <footer class="pc-cmd__footer">
             <div class="pc-cmd__hints">

@@ -84,6 +84,40 @@ export function t(key, replace = {}) {
 }
 
 /**
+ * Translate a key, falling back to the French source literal when the catalogue has no entry.
+ *
+ * This is what admin components use: the shipped markup stays the reference text and a
+ * missing translation degrades to French rather than leaking a raw key into the UI.
+ *
+ * @param {string} key
+ * @param {string} fallback
+ * @param {Record<string, string|number>} [replace]
+ * @returns {string}
+ */
+export function tr(key, fallback, replace = {}) {
+  const line = catalogue[key] ?? fallbackCatalogue[key];
+  if (typeof line !== 'string' || line === '') {
+    return replacePlaceholders(fallback, replace);
+  }
+
+  return replacePlaceholders(line, replace);
+}
+
+/**
+ * Merge raw messages into the active catalogue without a DOM payload.
+ *
+ * The admin modules are unit-tested in Node, where `initTranslations()` has no
+ * `<script data-prime-translations>` block to read, so tests inject a locale directly.
+ *
+ * @param {Record<string, string>} messages
+ */
+export function setTranslations(messages) {
+  if (messages && typeof messages === 'object') {
+    catalogue = { ...catalogue, ...messages };
+  }
+}
+
+/**
  * Translate a plural key: `t('key', { count })` semantics with an explicit count.
  *
  * @param {string} key

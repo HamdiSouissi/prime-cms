@@ -41,7 +41,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             <h1 class="pc-page-header__title"><?= $this->e($this->t('admin.media.index.mediatheque')) ?></h1>
             <p class="pc-page-header__subtitle">
                 <span data-prime-media-total-label><?= $this->e($initialTotal > 1 ? $initialTotal . ' médias' : $initialTotal . ' média') ?></span>
-                · Max <?= $this->e(number_format($limit['megabytes'], 1, ',', ' ')) ?> Mo/fichier
+                · <?= t('admin.media.max_per_file', ['size' => $this->e(number_format($limit['megabytes'], 1, ',', ' '))]) ?>
                 <?php if ($limit['phpLimited']): ?>
                     <span class="pc-text-muted"><?= $this->e($this->t('admin.media.index.limite_php')) ?></span>
                 <?php endif; ?>
@@ -60,11 +60,11 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
 
     <div class="pc-media-layout">
         <!-- Folder tree sidebar (desktop) -->
-        <aside class="pc-media-sidebar" aria-label="Dossiers de la médiathèque">
+        <aside class="pc-media-sidebar" aria-label="<?= t('admin.attr.dossiers_de_la_mediatheque') ?>">
             <div class="pc-media-sidebar__head">
                 <h2 class="pc-media-sidebar__title">Dossiers</h2>
                 <?php if ($canUpload): ?>
-                    <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-media-folder-create aria-label="Créer un dossier" title="Nouveau dossier">
+                    <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-media-folder-create aria-label="<?= t('admin.attr.creer_un_dossier') ?>" title="Nouveau dossier">
                         <?= $this->raw($this->icon('folder-plus', 16)) ?>
                     </button>
                 <?php endif; ?>
@@ -73,13 +73,13 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
         </aside>
 
         <!-- Main content area -->
-        <section class="pc-media-main" aria-label="Liste des médias">
+        <section class="pc-media-main" aria-label="<?= t('admin.attr.liste_des_medias') ?>">
             <!-- Mobile folder dropdown (< 960px) -->
             <div class="pc-media-mobile-folder">
                 <label class="pc-sr-only" for="pc-media-folder-mobile">Dossier</label>
                 <select id="pc-media-folder-mobile" class="pc-select pc-select--sm" data-prime-media-folder-mobile></select>
                 <?php if ($canUpload): ?>
-                    <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-folder-create aria-label="Créer un dossier">
+                    <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-folder-create aria-label="<?= t('admin.attr.creer_un_dossier') ?>">
                         <?= $this->raw($this->icon('folder-plus', 15)) ?>
                     </button>
                 <?php endif; ?>
@@ -119,7 +119,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                         class="pc-media-chip<?= !empty($initialFilters['mine']) ? ' is-active' : '' ?>"
                         aria-pressed="<?= !empty($initialFilters['mine']) ? 'true' : 'false' ?>"
                         data-prime-media-filter-mine
-                    >Mes fichiers</button>
+                    ><?= t('admin.media.my_files') ?></button>
 
                     <button
                         type="button"
@@ -130,12 +130,12 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                 </div>
 
                 <div class="pc-media-toolbar__right">
-                    <select class="pc-select pc-select--sm" aria-label="Trier les médias" data-prime-media-sort>
+                    <select class="pc-select pc-select--sm" aria-label="<?= t('admin.attr.trier_les_medias') ?>" data-prime-media-sort>
                         <option value="created_at:desc"><?= $this->e($this->t('admin.media.index.recents')) ?></option>
-                        <option value="created_at:asc">Plus anciens</option>
-                        <option value="name:asc">Nom (A → Z)</option>
-                        <option value="name:desc">Nom (Z → A)</option>
-                        <option value="size:desc">Plus lourds</option>
+                        <option value="created_at:asc"><?= t('admin.media.sort_oldest') ?></option>
+                        <option value="name:asc"><?= t('admin.media.sort_name_asc') ?></option>
+                        <option value="name:desc"><?= t('admin.media.sort_name_desc') ?></option>
+                        <option value="size:desc"><?= t('admin.media.sort_heaviest') ?></option>
                         <option value="size:asc"><?= $this->e($this->t('admin.media.index.legers')) ?></option>
                     </select>
 
@@ -151,7 +151,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             </div>
 
             <!-- Bulk actions bar -->
-            <div class="pc-media-bulk-bar" data-prime-media-bulk-bar hidden role="region" aria-label="Actions groupées">
+            <div class="pc-media-bulk-bar" data-prime-media-bulk-bar hidden role="region" aria-label="<?= t('admin.attr.actions_groupees') ?>">
                 <strong class="pc-text-sm" data-prime-media-bulk-count><?= $this->e($this->t('admin.media.index.0_media_selectionne')) ?></strong>
                 <div class="pc-media-bulk-bar__actions">
                     <?php if ($canUpload || $canDeleteAny): ?>
@@ -170,7 +170,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             </div>
 
             <!-- Grid view -->
-            <div class="pc-media-grid" role="grid" aria-label="Grille des médias" data-prime-media-grid></div>
+            <div class="pc-media-grid" role="grid" aria-label="<?= t('admin.attr.grille_des_medias') ?>" data-prime-media-grid></div>
 
             <!-- List view -->
             <div class="pc-card pc-media-list" data-prime-media-list hidden>
@@ -203,7 +203,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                     <?php if ($canUpload): ?>
                         <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-empty-upload>
                             <?= $this->raw($this->icon('upload', 15)) ?>
-                            <span>Parcourir l’ordinateur</span>
+                            <span><?= t('admin.media.browse_computer') ?></span>
                         </button>
                     <?php endif; ?>
                 </div>
@@ -211,14 +211,14 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
 
             <!-- Progressive pagination ("Charger plus" + IntersectionObserver sentinel) -->
             <div class="pc-media-more" data-prime-media-more-wrap hidden>
-                <button type="button" class="pc-btn pc-btn--secondary" data-prime-media-more-btn>Charger plus</button>
+                <button type="button" class="pc-btn pc-btn--secondary" data-prime-media-more-btn><?= t('admin.media.load_more') ?></button>
             </div>
             <div class="pc-media-sentinel" data-prime-media-sentinel aria-hidden="true"></div>
         </section>
     </div>
 
     <!-- Floating parallel upload queue panel -->
-    <aside class="pc-upload-queue" data-prime-media-queue-panel hidden aria-label="File de téléversement">
+    <aside class="pc-upload-queue" data-prime-media-queue-panel hidden aria-label="<?= t('admin.attr.file_de_televersement') ?>">
         <header class="pc-upload-queue__header">
             <strong class="pc-text-sm" data-prime-media-queue-title><?= $this->e($this->t('admin.media.index.televersement')) ?></strong>
             <button type="button" class="pc-btn pc-btn--ghost pc-btn--xs" data-prime-media-queue-clear><?= $this->e($this->t('admin.media.index.effacer_termines')) ?></button>
@@ -243,7 +243,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
     <div class="pc-drawer__panel pc-drawer__panel--wide" data-prime-drawer-panel>
         <header class="pc-drawer__header">
             <h2 class="pc-drawer__title" id="pc-media-detail-drawer-title" data-prime-drawer-media-title><?= $this->e($this->t('admin.media.index.detail_media')) ?></h2>
-            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-drawer-close aria-label="Fermer le détail">
+            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-drawer-close aria-label="<?= t('admin.attr.fermer_le_detail') ?>">
                 <?= $this->raw($this->icon('x', 18)) ?>
             </button>
         </header>
@@ -255,7 +255,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             </p>
 
             <div class="pc-media-drawer__section">
-                <label class="pc-label" for="pc-drawer-url">URL publique</label>
+                <label class="pc-label" for="pc-drawer-url"><?= t('admin.media.public_url') ?></label>
                 <div class="pc-input-group">
                     <input id="pc-drawer-url" type="text" class="pc-input pc-input--sm pc-mono" readonly data-prime-drawer-url>
                     <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-drawer-copy-url>
@@ -273,8 +273,8 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                     <select id="pc-drawer-folder" class="pc-select pc-select--sm" data-prime-drawer-folder></select>
                 </div>
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-drawer-alt">Texte alternatif (alt)</label>
-                    <input id="pc-drawer-alt" type="text" class="pc-input pc-input--sm" maxlength="255" placeholder="Décrivez brièvement l’image pour l’accessibilité…" data-prime-drawer-alt>
+                    <label class="pc-label" for="pc-drawer-alt"><?= t('admin.media.alt_text') ?></label>
+                    <input id="pc-drawer-alt" type="text" class="pc-input pc-input--sm" maxlength="255" placeholder="<?= t('admin.attr.decrivez_brievement_l_image_pour_l_accessibilite') ?>" data-prime-drawer-alt>
                 </div>
                 <div class="pc-field">
                     <label class="pc-label" for="pc-drawer-title">Titre</label>
@@ -327,8 +327,8 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
 <!-- Folder create/rename/move modal -->
 <dialog id="pc-media-folder-modal" class="pc-modal pc-modal--sm" aria-labelledby="pc-media-folder-modal-title">
     <header class="pc-modal__header">
-        <h2 class="pc-modal__title" id="pc-media-folder-modal-title" data-prime-folder-modal-title>Nouveau dossier</h2>
-        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="Fermer">
+        <h2 class="pc-modal__title" id="pc-media-folder-modal-title" data-prime-folder-modal-title><?= t('admin.media.new_folder') ?></h2>
+        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="<?= t('admin.attr.fermer') ?>">
             <?= $this->raw($this->icon('x', 18)) ?>
         </button>
     </header>
@@ -336,10 +336,10 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
         <div class="pc-modal__body pc-stack pc-stack--sm">
             <div class="pc-field">
                 <label class="pc-label" for="pc-folder-modal-name"><?= $this->e($this->t('admin.media.index.nom_dossier')) ?></label>
-                <input id="pc-folder-modal-name" type="text" class="pc-input" maxlength="120" required data-prime-folder-modal-name placeholder="Ex. Produits, Équipe, Communiqués…">
+                <input id="pc-folder-modal-name" type="text" class="pc-input" maxlength="120" required data-prime-folder-modal-name placeholder="<?= t('admin.attr.ex_produits_equipe_communiques') ?>">
             </div>
             <div class="pc-field">
-                <label class="pc-label" for="pc-folder-modal-parent">Dossier parent</label>
+                <label class="pc-label" for="pc-folder-modal-parent"><?= t('admin.media.parent_folder') ?></label>
                 <select id="pc-folder-modal-parent" class="pc-select" data-prime-folder-modal-parent></select>
             </div>
         </div>
@@ -354,7 +354,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
 <dialog id="pc-media-confirm-modal" class="pc-modal pc-modal--sm" aria-labelledby="pc-media-confirm-title">
     <header class="pc-modal__header">
         <h2 class="pc-modal__title" id="pc-media-confirm-title" data-prime-confirm-title><?= $this->e($this->t('core.actions.delete_confirm')) ?></h2>
-        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="Fermer">
+        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="<?= t('admin.attr.fermer') ?>">
             <?= $this->raw($this->icon('x', 18)) ?>
         </button>
     </header>

@@ -66,7 +66,7 @@ $this->layout('admin::layouts/app');
     <?php else: ?>
         <div class="pc-menus-layout">
             <!-- Left column: Source pickers -->
-            <aside class="pc-stack pc-stack--md" aria-label="Ajouter des éléments au menu">
+            <aside class="pc-stack pc-stack--md" aria-label="<?= t('admin.attr.ajouter_des_elements_au_menu') ?>">
                 <details class="pc-card" open>
                     <summary class="pc-card__header pc-menus-accordion">Pages</summary>
                     <div class="pc-card__body pc-stack pc-stack--sm">
@@ -162,7 +162,7 @@ $this->layout('admin::layouts/app');
             </aside>
 
             <!-- Right column: Menu structure editor -->
-            <section class="pc-card" aria-label="Structure du menu">
+            <section class="pc-card" aria-label="<?= t('admin.attr.structure_du_menu') ?>">
                 <form
                     method="post"
                     action="/admin/appearance/menus/<?= $this->e((string) $currentMenu['id']) ?>/save"

@@ -59,6 +59,7 @@ final class I18nServiceProvider extends ServiceProvider
                     $app->basePath('src'),
                     $app->contentPath('themes'),
                     $app->contentPath('plugins'),
+                    $app->basePath('public/assets/admin/js'),
                 ],
             );
         });

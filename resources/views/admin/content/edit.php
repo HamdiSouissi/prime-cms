@@ -32,8 +32,8 @@ $isPendingLocked = !empty($isPendingLocked);
 $baseUrl = $contentType->adminListUrl();
 $formAction = $isEdit && $entry !== null ? sprintf('%s/%d', $baseUrl, $entry->id) : $baseUrl;
 $primaryLabel = !$canPublish
-    ? 'Soumettre pour relecture'
-    : ($isEdit ? 'Mettre à jour' : 'Publier');
+    ? $this->t('admin.content.edit.submit_for_review')
+    : ($isEdit ? $this->t('admin.content.edit.update') : $this->t('admin.content.edit.publish'));
 $primaryTargetStatus = !$canPublish
     ? 'pending'
     : (!$isEdit ? 'published' : '');
@@ -97,10 +97,10 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 <span><?= $this->e($contentType->label('plural')) ?></span>
             </a>
 
-            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-editor-undo aria-label="Annuler (Ctrl+Z)" disabled>
+            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-editor-undo aria-label="<?= t('admin.attr.annuler_ctrl_z') ?>" disabled>
                 <?= $this->raw($this->icon('undo', 16)) ?>
             </button>
-            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-editor-redo aria-label="Rétablir (Ctrl+Shift+Z)" disabled>
+            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-editor-redo aria-label="<?= t('admin.attr.retablir_ctrl_shift_z') ?>" disabled>
                 <?= $this->raw($this->icon('redo', 16)) ?>
             </button>
 
@@ -113,12 +113,12 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 <?php if ($entry->status === \Prime\Content\Entry::STATUS_PUBLISHED): ?>
                     <a href="<?= $this->e($entry->url()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-view-public>
                         <?= $this->raw($this->icon('external-link', 16)) ?>
-                        <span>Voir</span>
+                        <span><?= $this->e($this->t('admin.content.edit.view')) ?></span>
                     </a>
                 <?php endif; ?>
                 <a href="<?= $this->e($entry->previewUrl()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--secondary pc-btn--sm">
                     <?= $this->raw($this->icon('eye', 16)) ?>
-                    <span><?= $this->e($this->t('admin.content.edit.apercu')) ?></span>
+                    <span><?= $this->e($this->t('admin.content.edit.preview_button')) ?></span>
                 </a>
                 <a href="<?= $this->e(sprintf('%s/%d/revisions', $baseUrl, $entry->id)) ?>" class="pc-btn pc-btn--ghost pc-btn--sm">
                     <?= $this->raw($this->icon('history', 16)) ?>
@@ -218,7 +218,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
             <?php endforeach; ?>
         </div>
 
-        <aside class="pc-editor-sidebar" aria-label="Paramètres du contenu">
+        <aside class="pc-editor-sidebar" aria-label="<?= t('admin.attr.parametres_du_contenu') ?>">
             <section class="pc-inspector-card">
                 <h2 class="pc-inspector-card__title">
                     <span>Publication</span>
@@ -258,7 +258,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     </div>
 
                     <div class="pc-field">
-                        <label class="pc-label" for="pc-entry-slug">Permalien (slug)</label>
+                        <label class="pc-label" for="pc-entry-slug"><?= t('admin.content.edit.permalink') ?></label>
                         <input
                             id="pc-entry-slug"
                             type="text"
@@ -282,7 +282,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
                     <?php if ($canEditOthers && $authorsMap !== []): ?>
                         <div class="pc-field">
-                            <label class="pc-label" for="pc-entry-author">Auteur</label>
+                            <label class="pc-label" for="pc-entry-author"><?= $this->e($this->t('admin.content.edit.author')) ?></label>
                             <select id="pc-entry-author" name="author_id" class="pc-select">
                                 <?php foreach ($authorsMap as $uid => $author): ?>
                                     <option value="<?= $this->e((string) $uid) ?>"<?= $form['author_id'] === $uid ? ' selected' : '' ?>>
@@ -350,9 +350,9 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
             <?php if ($contentType->supports('excerpt')): ?>
                 <section class="pc-inspector-card">
-                    <h2 class="pc-inspector-card__title">Extrait</h2>
+                    <h2 class="pc-inspector-card__title"><?= $this->e($this->t('admin.content.edit.excerpt')) ?></h2>
                     <div class="pc-field">
-                        <label class="pc-sr-only" for="pc-entry-excerpt">Extrait</label>
+                        <label class="pc-sr-only" for="pc-entry-excerpt"><?= $this->e($this->t('admin.content.edit.excerpt')) ?></label>
                         <textarea
                             id="pc-entry-excerpt"
                             name="excerpt"
@@ -458,7 +458,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 <details>
                     <summary class="pc-inspector-card__title"><?= $this->e($this->t('admin.content.edit.referencement_seo')) ?></summary>
                     <div class="pc-stack pc-stack--sm">
-                        <div class="pc-serp-preview" aria-label="Aperçu moteur de recherche">
+                        <div class="pc-serp-preview" aria-label="<?= t('admin.attr.apercu_moteur_de_recherche') ?>">
                             <span class="pc-serp-preview__url"><?= $this->e($entry !== null ? $entry->url() : '/' . ($form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu')) ?></span>
                             <span class="pc-serp-preview__title" data-prime-serp-title><?= $this->e(($seoForm['title'] ?? '') !== '' ? $seoForm['title'] : ($form['title'] !== '' ? $form['title'] : 'Sans titre')) ?></span>
                             <span class="pc-serp-preview__desc" data-prime-serp-description><?= $this->e(($seoForm['description'] ?? '') !== '' ? $seoForm['description'] : ($form['excerpt'] !== '' ? $form['excerpt'] : 'Aperçu de la méta-description dans les résultats de recherche.')) ?></span>
@@ -466,7 +466,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
                         <div class="pc-field">
                             <label class="pc-label" for="pc-seo-title">
-                                Titre SEO <span class="pc-seo-counter" data-prime-seo-title-count>0 / 60</span>
+                                <?= t('admin.content.edit.seo_title') ?> <span class="pc-seo-counter" data-prime-seo-title-count>0 / 60</span>
                             </label>
                             <input
                                 id="pc-seo-title"
@@ -496,7 +496,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                         </div>
 
                         <div class="pc-field">
-                            <label class="pc-label" for="pc-seo-canonical">URL canonique (optionnelle)</label>
+                            <label class="pc-label" for="pc-seo-canonical"><?= t('admin.content.edit.canonical_url') ?></label>
                             <input
                                 id="pc-seo-canonical"
                                 type="text"

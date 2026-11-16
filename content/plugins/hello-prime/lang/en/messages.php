@@ -8,6 +8,7 @@ declare(strict_types=1);
 return [
     'archive' => [
         'testimonial' => [
+            'eyebrow' => 'Hello Prime',
             'ajoutez_premier_temoignage_depuis_administration' => 'Add your first testimonial from the Prime CMS admin.',
             'aucun_temoignage_publie' => 'No testimonial published',
             'retours_verifies_utilisateurs_partenaires' => 'Verified feedback from our users and partners.',
@@ -27,11 +28,20 @@ return [
             'messages_enregistres' => '{0} No message saved|{1} 1 message saved|[2,*] :count messages saved',
             'nom' => 'Your name',
             'texte_message' => 'Message text',
+            'action' => 'Action',
+            'author' => 'Author',
+            'date_utc' => 'Date (UTC)',
+            'greeting_label' => 'Welcome message',
+            'message' => 'Message',
+            'version' => 'Hello Prime · v:version',
         ],
         'public' => [
             'messages_recents' => 'Recent messages',
             'page_publique_servie_directement_plugin' => 'This public page is served directly by the reference plugin <strong>hello-prime</strong> via <code>:router</code> and <code>:views</code>.',
             'retour_a_accueil' => '← Back to home',
+            'admin_link' => 'Hello Prime administration →',
+            'tagline' => 'Prime CMS plugin · Hello Prime v:version',
+            'title_suffix' => 'Hello Prime — :site',
         ],
     ],
 ];

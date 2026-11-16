@@ -52,7 +52,7 @@ $related = $showRelated ? $entry->related(3) : [];
       </div>
 
       <?php if ($tags !== []): ?>
-        <footer class="aurora-terms aurora-article__tags" aria-label="Étiquettes">
+        <footer class="aurora-terms aurora-article__tags" aria-label="<?= t('site.attr.etiquettes') ?>">
           <?php foreach ($tags as $tag): ?>
             <a class="aurora-chip" href="<?= $tag['url'] ?>">#<?= $tag['name'] ?></a>
           <?php endforeach; ?>
@@ -60,7 +60,7 @@ $related = $showRelated ? $entry->related(3) : [];
       <?php endif; ?>
 
       <?php if ($showAuthor): ?>
-        <section class="aurora-author-box" aria-label="À propos de l'auteur">
+        <section class="aurora-author-box" aria-label="<?= t('site.attr.a_propos_de_l_auteur') ?>">
           <div class="site-avatar">
             <?php if ($author['avatar'] !== ''): ?>
               <?= $author['avatar'] ?>
@@ -94,7 +94,7 @@ $related = $showRelated ? $entry->related(3) : [];
           <div>
             <?php if ($next !== null): ?>
               <a class="aurora-post-nav__link aurora-post-nav__link--next" href="<?= $next->url() ?>" rel="next">
-                <span class="aurora-post-nav__label">Article suivant &rarr;</span>
+                <span class="aurora-post-nav__label"><?= $site->t('site.post.next_post') ?></span>
                 <span class="aurora-post-nav__title"><?= $next->title() ?></span>
               </a>
             <?php endif; ?>
@@ -104,7 +104,7 @@ $related = $showRelated ? $entry->related(3) : [];
     </article>
 
     <?php if ($showSidebar): ?>
-      <aside class="aurora-sidebar" aria-label="Barre latérale">
+      <aside class="aurora-sidebar" aria-label="<?= t('site.attr.barre_laterale') ?>">
         <?= $site->zone('sidebar') ?>
       </aside>
     <?php endif; ?>
@@ -112,7 +112,7 @@ $related = $showRelated ? $entry->related(3) : [];
 
   <?php if ($related !== []): ?>
     <section class="aurora-related" aria-labelledby="aurora-related-title">
-      <h2 id="aurora-related-title" class="aurora-related__heading">Articles similaires</h2>
+      <h2 id="aurora-related-title" class="aurora-related__heading"><?= $site->t('site.post.related') ?></h2>
       <div class="aurora-grid">
         <?php foreach ($related as $rel): ?>
           <?= $site->partial('card', ['item' => $rel]) ?>

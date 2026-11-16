@@ -15,7 +15,7 @@ $this->layout('mail::layout');
 ?>
 <?php $this->start('content'); ?>
 <h1 style="margin:0 0 16px;font-size:20px;font-weight:700;color:#111827;"><?= $this->e($this->t('mail.password-reset.reinitialisation_mot_passe')) ?></h1>
-<p style="margin:0 0 14px;">Bonjour <?= $this->e($displayName) ?>,</p>
+<p style="margin:0 0 14px;"><?= $this->e($this->t('core.mail.greeting', ['name' => $displayName])) ?></p>
 <p style="margin:0 0 20px;"><?= $this->e($this->t('mail.password-reset.demande_reinitialisation_mot_passe_ete')) ?> <strong><?= $this->e($siteName) ?></strong>.</p>
 <p style="margin:0 0 22px;">
     <a href="<?= $this->e($resetUrl) ?>" style="display:inline-block;padding:12px 22px;background-color:#F97316;color:#FFFFFF;text-decoration:none;font-weight:600;border-radius:8px;">

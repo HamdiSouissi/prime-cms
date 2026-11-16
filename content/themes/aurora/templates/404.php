@@ -8,12 +8,12 @@ $recent = $site->entries(['type' => 'post', 'limit' => 3]);
 <div class="site-container">
   <section class="aurora-empty">
     <div class="aurora-empty__code" aria-hidden="true">404</div>
-    <h1>Page introuvable</h1>
+    <h1><?= $site->t('site.errors.404.heading') ?></h1>
     <p><?= $site->e($site->t('site.aurora.404.page_recherchez_peut_etre_ete')) ?></p>
 
     <form class="site-search-form aurora-empty__search" role="search" method="get" action="<?= $site->searchUrl() ?>">
       <label class="sr-only" for="aurora-404-search"><?= $site->e($site->t('site.aurora.404.rechercher_site')) ?></label>
-      <input id="aurora-404-search" class="site-search-form__input" type="search" name="q" placeholder="Rechercher un contenu…" required>
+      <input id="aurora-404-search" class="site-search-form__input" type="search" name="q" placeholder="<?= t('site.attr.rechercher_un_contenu') ?>" required>
       <button class="site-search-form__btn" type="submit"><?= $site->e($site->t('site.search.submit')) ?></button>
     </form>
 

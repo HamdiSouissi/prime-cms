@@ -63,7 +63,7 @@ if ($allowUpload) {
 <div class="pc-stack pc-stack--lg" data-prime-plugins-page>
     <!-- Status filter tabs & search bar -->
     <div class="pc-plugins-toolbar">
-        <nav class="pc-plugins-tabs" aria-label="Filtrer les plugins par statut">
+        <nav class="pc-plugins-tabs" aria-label="<?= t('admin.attr.filtrer_les_plugins_par_statut') ?>">
             <?php foreach ($statusTabs as $tabKey => $tabMeta): ?>
                 <?php $isActiveTab = $filters['status'] === $tabKey; ?>
                 <a
@@ -77,7 +77,7 @@ if ($allowUpload) {
             <?php endforeach; ?>
         </nav>
 
-        <form method="get" action="/admin/plugins" class="pc-plugins-search" role="search" aria-label="Rechercher un plugin">
+        <form method="get" action="/admin/plugins" class="pc-plugins-search" role="search" aria-label="<?= t('admin.attr.rechercher_un_plugin') ?>">
             <?php if ($filters['status'] !== 'all'): ?>
                 <input type="hidden" name="status" value="<?= $this->e($filters['status']) ?>">
             <?php endif; ?>
@@ -217,7 +217,7 @@ if ($allowUpload) {
 
                                 <?php if ($plugin->requiredBy !== []): ?>
                                     <div class="pc-plugin-card__dep-row">
-                                        <span class="pc-plugin-card__dep-label">Requis par :</span>
+                                        <span class="pc-plugin-card__dep-label"><?= t('admin.plugins.required_by') ?></span>
                                         <?php foreach ($plugin->requiredBy as $reqBySlug): ?>
                                             <?php $reqInfo = $allPlugins[$reqBySlug] ?? null; ?>
                                             <span class="pc-plugin-dep-chip">
@@ -270,7 +270,7 @@ if ($allowUpload) {
                                     <button
                                         type="submit"
                                         class="pc-btn pc-btn--secondary pc-btn--sm"
-                                        <?= !$plugin->canDeactivate() ? 'disabled title="Désactivez d\'abord les plugins qui dépendent de celui-ci."' : '' ?>
+                                        <?= !$plugin->canDeactivate() ? 'disabled title="' . $this->e($this->t('admin.attr.desactivez_d_abord_les_plugins_qui_dependent_de_celui_ci')) . '"' : '' ?>
                                     >
                                         <span><?= $this->e($this->t('admin.plugins.index.desactiver')) ?></span>
                                     </button>
@@ -304,7 +304,7 @@ if ($allowUpload) {
                                 data-prime-plugin-delete
                                 data-prime-plugin-slug="<?= $this->e($plugin->slug) ?>"
                                 data-prime-plugin-name="<?= $this->e($plugin->name()) ?>"
-                                <?= !$plugin->canUninstall() ? 'disabled title="D\'autres plugins installés dépendent de ce plugin."' : '' ?>
+                                <?= !$plugin->canUninstall() ? 'disabled title="' . $this->e($this->t('admin.attr.d_autres_plugins_installes_dependent_de_ce_plugin')) . '"' : '' ?>
                             >
                                 <?= $this->raw($this->icon('trash', 15)) ?>
                                 <span><?= $this->e($this->t('core.actions.delete')) ?></span>
@@ -339,7 +339,7 @@ if ($allowUpload) {
             <?= $this->e($this->t('admin.plugins.index.plugin_sera_installe_a_etat')) ?>
         </p>
 
-        <div class="pc-dropzone" data-prime-dropzone tabindex="0" role="button" aria-label="Déposer une archive ZIP ou cliquer pour choisir un fichier">
+        <div class="pc-dropzone" data-prime-dropzone tabindex="0" role="button" aria-label="<?= t('admin.attr.deposer_une_archive_zip_ou_cliquer_pour_choisir_un_fichier') ?>">
             <input
                 type="file"
                 id="prime-plugin-zip-input"
@@ -353,7 +353,7 @@ if ($allowUpload) {
                 <?= $this->raw($this->icon('upload', 28)) ?>
             </div>
             <p class="pc-dropzone__title" data-prime-dropzone-title><?= $this->e($this->t('admin.plugins.index.deposez_archive_zip_ici')) ?></p>
-            <p class="pc-dropzone__hint" data-prime-dropzone-hint>ou cliquez pour parcourir · Format .zip · Maximum <?= $this->e((string) $maxUploadMb) ?> Mo</p>
+            <p class="pc-dropzone__hint" data-prime-dropzone-hint><?= t('admin.plugins.dropzone_hint', ['size' => $this->e((string) $maxUploadMb)]) ?></p>
         </div>
 
         <div class="pc-upload-progress" data-prime-upload-progress hidden>
@@ -391,7 +391,7 @@ if ($allowUpload) {
             <button type="button" class="pc-btn pc-btn--ghost" data-prime-drawer-close><?= $this->e($this->t('core.actions.cancel')) ?></button>
             <button type="submit" class="pc-btn pc-btn--secondary" data-prime-upload-submit>
                 <?= $this->raw($this->icon('upload', 16)) ?>
-                <span>Installer l’archive</span>
+                <span><?= t('admin.plugins.install_archive') ?></span>
             </button>
         </div>
     </form>

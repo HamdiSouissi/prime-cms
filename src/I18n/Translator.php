@@ -698,6 +698,12 @@ final class Translator
             }
 
             $tree = $this->loadGroup($locale, $group);
+            // A key may be both a leaf and a group (`menu.settings` label vs `menu.settings.*`
+            // pages). PHP cannot hold both, so a leaf declared through `leaves` always wins.
+            $leaf = $this->walkLeaf($tree, $path);
+            if ($leaf !== null) {
+                return $leaf;
+            }
             $found = $this->walk($tree, $path);
             if ($found !== null) {
                 return $found;
@@ -713,10 +719,33 @@ final class Translator
     }
 
     /**
-     * @param array<string, mixed> $tree
-     * @param list<string>         $segments
+     * @param array<array-key, mixed> $tree
+     * @param list<string>            $segments
+     */
+    private function walkLeaf(array $tree, array $segments): ?string
+    {
+        $current = $tree;
+        foreach ($segments as $segment) {
+            if (!is_array($current)) {
+                return null;
+            }
+            $resolved = array_key_exists($segment, $current)
+                ? $segment
+                : (ctype_digit($segment) && array_key_exists((int) $segment, $current) ? (int) $segment : null);
+            if ($resolved === null) {
+                return null;
+            }
+            $current = $current[$resolved];
+        }
+
+        return is_string($current) ? $current : null;
+    }
+
+    /**
+     * @param array<array-key, mixed> $tree
+     * @param list<string>            $segments
      *
-     * @return array<string, mixed>|string|null
+     * @return array<array-key, mixed>|string|null
      */
     private function walk(array $tree, array $segments): array|string|null
     {

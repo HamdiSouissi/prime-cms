@@ -12,7 +12,7 @@
         class="pc-logo"
       >
     </picture>
-    <span class="pc-badge pc-badge--brand">Erreur 403</span>
+    <span class="pc-badge pc-badge--brand"><?= t('core.errors.403.title') ?></span>
     <h1 id="error-403-title" class="pc-error-heading"><?= $this->e($this->t('core.errors.403.acces_refuse')) ?></h1>
     <p class="pc-error-text">
       <?= $this->e(!empty($message) && is_string($message) ? $message : 'Vous ne disposez pas des permissions nécessaires pour accéder à cette page.') ?>

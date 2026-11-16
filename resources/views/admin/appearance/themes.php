@@ -140,7 +140,7 @@ if ($allowUpload) {
                     <div class="pc-drawer__panel">
                         <header class="pc-drawer__header">
                             <h2 class="pc-drawer__title" id="<?= $this->e($detailId) ?>-title"><?= $this->e($theme->name()) ?></h2>
-                            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon" aria-label="Fermer" data-prime-drawer-close>
+                            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon" aria-label="<?= t('admin.attr.fermer') ?>" data-prime-drawer-close>
                                 <?= $this->raw($this->icon('x', 18)) ?>
                             </button>
                         </header>
@@ -156,7 +156,7 @@ if ($allowUpload) {
                                     <div><dt>Auteur</dt><dd><?= $this->e($manifest->author) ?></dd></div>
                                 <?php endif; ?>
                                 <?php if ($manifest !== null && $manifest->authorUrl !== null && $manifest->authorUrl !== ''): ?>
-                                    <div><dt>Site auteur</dt><dd><a href="<?= $this->e($manifest->authorUrl) ?>" target="_blank" rel="noopener"><?= $this->e($manifest->authorUrl) ?></a></dd></div>
+                                    <div><dt><?= t('admin.appearance.themes.site_author') ?></dt><dd><a href="<?= $this->e($manifest->authorUrl) ?>" target="_blank" rel="noopener"><?= $this->e($manifest->authorUrl) ?></a></dd></div>
                                 <?php endif; ?>
                                 <?php if ($manifest !== null): ?>
                                     <div><dt><?= $this->e($this->t('admin.appearance.themes.emplacements_menus')) ?></dt><dd><?= $manifest->menus !== [] ? $this->e(implode(', ', array_values($manifest->menus))) : 'Aucun' ?></dd></div>
@@ -177,7 +177,7 @@ if ($allowUpload) {
         <div class="pc-drawer__panel">
             <header class="pc-drawer__header">
                 <h2 class="pc-drawer__title" id="prime-theme-upload-title"><?= $this->e($this->t('admin.appearance.themes.installer_theme_zip')) ?></h2>
-                <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon" aria-label="Fermer" data-prime-drawer-close>
+                <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon" aria-label="<?= t('admin.attr.fermer') ?>" data-prime-drawer-close>
                     <?= $this->raw($this->icon('x', 18)) ?>
                 </button>
             </header>

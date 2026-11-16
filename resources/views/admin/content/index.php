@@ -164,7 +164,7 @@ if ($canCreate) {
 
             <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
                 <span class="pc-text-sm" data-prime-table-bulk-count><?= $this->e($this->t('admin.content.index.0_selectionne')) ?></span>
-                <select name="bulk_action" class="pc-select pc-select--sm" aria-label="Action groupée">
+                <select name="bulk_action" class="pc-select pc-select--sm" aria-label="<?= t('admin.attr.action_groupee') ?>">
                     <option value=""><?= $this->e($this->t('admin.content.index.choisir_action')) ?></option>
                     <?php if ($isTrash): ?>
                         <option value="restore">Restaurer</option>
@@ -175,7 +175,7 @@ if ($canCreate) {
                         <?php if ($canPublish): ?>
                             <option value="publish">Publier</option>
                         <?php endif; ?>
-                        <option value="draft">Passer en brouillon</option>
+                        <option value="draft"><?= t('admin.content.list.to_draft') ?></option>
                         <?php if ($canDelete): ?>
                             <option value="trash"><?= $this->e($this->t('core.actions.trash')) ?></option>
                         <?php endif; ?>
@@ -189,7 +189,7 @@ if ($canCreate) {
                     <thead>
                         <tr>
                             <th style="width: 36px;">
-                                <input type="checkbox" data-prime-table-select-all aria-label="Tout sélectionner">
+                                <input type="checkbox" data-prime-table-select-all aria-label="<?= t('admin.attr.tout_selectionner') ?>">
                             </th>
                             <th>Titre</th>
                             <th>Statut</th>
@@ -252,7 +252,7 @@ if ($canCreate) {
                                         <?php endif; ?>
                                         <span class="pc-entry-slug">/<?= $this->e($entry->slug) ?></span>
                                         <?php if ($isPendingReadOnly): ?>
-                                            <span class="pc-text-xs pc-text-muted">Soumis pour relecture (non modifiable tant qu’en attente)</span>
+                                            <span class="pc-text-xs pc-text-muted"><?= t('admin.content.list.pending_notice') ?></span>
                                         <?php endif; ?>
                                         <?php if ($lock !== null): ?>
                                             <span class="pc-entry-lock-pill">
@@ -287,7 +287,7 @@ if ($canCreate) {
                                                     type="submit"
                                                     form="pc-restore-<?= $this->e((string) $entry->id) ?>"
                                                     class="pc-btn pc-btn--secondary pc-btn--sm"
-                                                >Restaurer</button>
+                                                ><?= t('admin.content.list.restore') ?></button>
                                                 <button
                                                     type="button"
                                                     class="pc-btn pc-btn--danger pc-btn--sm"
@@ -312,14 +312,14 @@ if ($canCreate) {
                                                     type="submit"
                                                     form="pc-duplicate-<?= $this->e((string) $entry->id) ?>"
                                                     class="pc-btn pc-btn--ghost pc-btn--sm"
-                                                >Dupliquer</button>
+                                                ><?= t('admin.content.list.duplicate') ?></button>
                                             <?php endif; ?>
                                             <?php if ($canDeleteRow): ?>
                                                 <button
                                                     type="submit"
                                                     form="pc-trash-<?= $this->e((string) $entry->id) ?>"
                                                     class="pc-btn pc-btn--ghost pc-btn--sm"
-                                                >Corbeille</button>
+                                                ><?= t('admin.content.list.trash') ?></button>
                                             <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
@@ -367,10 +367,10 @@ if ($canCreate) {
     <?php endif; ?>
 </section>
 
-<dialog id="pc-content-confirm-modal" class="pc-modal" data-prime-confirm-modal aria-label="Confirmation de suppression">
+<dialog id="pc-content-confirm-modal" class="pc-modal" data-prime-confirm-modal aria-label="<?= t('admin.attr.confirmation_de_suppression') ?>">
     <div class="pc-modal__header">
         <h2 class="pc-modal__title" data-prime-confirm-heading><?= $this->e($this->t('core.actions.delete_confirm')) ?></h2>
-        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="Fermer">
+        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-modal-close aria-label="<?= t('admin.attr.fermer') ?>">
             <?= $this->raw($this->icon('x', 16)) ?>
         </button>
     </div>

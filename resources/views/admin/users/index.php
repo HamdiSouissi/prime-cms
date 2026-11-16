@@ -63,7 +63,7 @@ if ($canCreate) {
 
 <div class="pc-stack pc-stack--lg">
     <!-- Filter & search bar -->
-    <form method="get" action="/admin/users" class="pc-filter-bar" role="search" aria-label="Filtrer les utilisateurs">
+    <form method="get" action="/admin/users" class="pc-filter-bar" role="search" aria-label="<?= t('admin.attr.filtrer_les_utilisateurs') ?>">
         <div class="pc-filter-bar__search">
             <label class="pc-field__label" for="users-search"><?= $this->e($this->t('core.actions.search')) ?></label>
             <input
@@ -125,7 +125,7 @@ if ($canCreate) {
                 <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
                     <span class="pc-table-bulk__count" data-prime-table-bulk-count><?= $this->e($this->t('admin.users.index.0_element_selectionne')) ?></span>
                     <div class="pc-row pc-row--sm">
-                        <select name="bulk_action" class="pc-select" aria-label="Action groupée" data-prime-bulk-action-select>
+                        <select name="bulk_action" class="pc-select" aria-label="<?= t('admin.attr.action_groupee') ?>" data-prime-bulk-action-select>
                             <option value=""><?= $this->e($this->t('admin.users.index.choisir_action')) ?></option>
                             <option value="enable">Activer</option>
                             <option value="disable"><?= $this->e($this->t('admin.users.index.desactiver')) ?></option>
@@ -146,7 +146,7 @@ if ($canCreate) {
                         <tr>
                             <?php if ($canEdit): ?>
                             <th scope="col" class="pc-table__check">
-                                <input type="checkbox" class="pc-checkbox" data-prime-table-select-all aria-label="Tout sélectionner">
+                                <input type="checkbox" class="pc-checkbox" data-prime-table-select-all aria-label="<?= t('admin.attr.tout_selectionner') ?>">
                             </th>
                             <?php endif; ?>
                             <th scope="col">
@@ -286,10 +286,10 @@ if ($canCreate) {
             <?php if ($pagination['totalPages'] > 1): ?>
             <div class="pc-pagination">
                 <span>
-                    Page <?= $this->e((string) $pagination['page']) ?> sur <?= $this->e((string) $pagination['totalPages']) ?>
+                    <?= t('admin.users.list.page_of', ['page' => $this->e((string) $pagination['page']), 'total' => $this->e((string) $pagination['totalPages'])]) ?>
                     (<?= $this->e($this->choice('core.pagination.results', (int) $pagination['total'])) ?>)
                 </span>
-                <nav class="pc-pagination__nav" aria-label="Pagination des utilisateurs">
+                <nav class="pc-pagination__nav" aria-label="<?= t('admin.attr.pagination_des_utilisateurs') ?>">
                     <?php if ($pagination['page'] > 1): ?>
                         <a href="<?= $this->e($buildQuery(['page' => $pagination['page'] - 1])) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">
                             <?= $this->e($this->t('admin.users.index.precedent')) ?>
@@ -297,7 +297,7 @@ if ($canCreate) {
                     <?php endif; ?>
                     <?php if ($pagination['page'] < $pagination['totalPages']): ?>
                         <a href="<?= $this->e($buildQuery(['page' => $pagination['page'] + 1])) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">
-                            Suivant →
+                            <?= t('admin.users.list.next') ?>
                         </a>
                     <?php endif; ?>
                 </nav>

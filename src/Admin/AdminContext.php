@@ -155,7 +155,7 @@ final class AdminContext
 
         $menu->setActive($request);
 
-        $menuGroups = $menu->groupedTree();
+        $menuGroups = $this->translateMenuGroups($menu->groupedTree());
         $createItems = $this->createItems($user);
         $paletteItems = $this->commandPaletteItems($menu->tree(), $createItems, $user);
         $assets = $this->assets();
@@ -212,7 +212,7 @@ final class AdminContext
                 $defaults[] = [
                     'id' => 'create.' . $ct->name,
                     'label' => $ct->label('add_new'),
-                    'description' => 'Créer un élément (' . mb_strtolower($ct->label('singular')) . ')',
+                    'description' => t('admin.create.item_description', ['type' => mb_strtolower($ct->label('singular'))]),
                     'icon' => $ct->icon,
                     'accent' => $ct->accent,
                     'url' => $ct->adminCreateUrl(),
@@ -222,8 +222,8 @@ final class AdminContext
         } else {
             $defaults[] = [
                 'id' => 'create.page',
-                'label' => 'Nouvelle page',
-                'description' => 'Créer une page statique',
+                'label' => t('admin.create.new_page'),
+                'description' => t('admin.create.new_page_description'),
                 'icon' => 'file-text',
                 'accent' => 'teal',
                 'url' => '/admin/content/page/create',
@@ -231,8 +231,8 @@ final class AdminContext
             ];
             $defaults[] = [
                 'id' => 'create.post',
-                'label' => 'Nouvel article',
-                'description' => 'Rédiger une actualité',
+                'label' => t('admin.create.new_post'),
+                'description' => t('admin.create.new_post_description'),
                 'icon' => 'newspaper',
                 'accent' => 'teal',
                 'url' => '/admin/content/post/create',
@@ -242,8 +242,8 @@ final class AdminContext
 
         $defaults[] = [
             'id' => 'create.media',
-            'label' => 'Téléverser un média',
-            'description' => 'Ajouter image ou document',
+            'label' => t('admin.create.upload_media'),
+            'description' => t('admin.create.upload_media_description'),
             'icon' => 'upload',
             'accent' => 'sky',
             'url' => '/admin/media',
@@ -251,8 +251,8 @@ final class AdminContext
         ];
         $defaults[] = [
             'id' => 'create.user',
-            'label' => 'Nouvel utilisateur',
-            'description' => 'Créer ou inviter un membre',
+            'label' => t('admin.create.new_user'),
+            'description' => t('admin.create.new_user_description'),
             'icon' => 'users',
             'accent' => 'amber',
             'url' => '/admin/users/create',
@@ -353,12 +353,12 @@ final class AdminContext
                 position: $ct->menuPosition > 0 ? $ct->menuPosition : $position,
                 accent: $ct->accent,
                 capability: $ct->capability('view'),
-                group: 'Contenu',
+                group: 'admin.menu.groups.content',
             ));
 
             $menu->addChild($parentId, new MenuItem(
                 id: $parentId . '.all',
-                label: 'Tous : ' . $ct->label('plural'),
+                label: t('admin.menu.all_of', ['type' => $ct->label('plural')]),
                 icon: $ct->icon,
                 url: $baseUrl,
                 position: 10,
@@ -368,7 +368,7 @@ final class AdminContext
 
             $menu->addChild($parentId, new MenuItem(
                 id: $parentId . '.create',
-                label: 'Ajouter',
+                label: 'admin.menu.add',
                 icon: 'plus',
                 url: $ct->adminCreateUrl(),
                 position: 20,
@@ -441,6 +441,26 @@ final class AdminContext
     }
 
     /**
+     * Resolve the sidebar section labels (`Contenu`, `Système`, …) for the active locale.
+     *
+     * @param list<array{label: ?string, items: list<MenuNode>}> $groups
+     * @return list<array{label: ?string, items: list<MenuNode>}>
+     */
+    private function translateMenuGroups(array $groups): array
+    {
+        foreach ($groups as $index => $group) {
+            $label = $group['label'];
+            if ($label === null || preg_match('/^(?:admin|core)\.[a-z0-9_.]+$/', $label) !== 1) {
+                continue;
+            }
+
+            $groups[$index]['label'] = t($label);
+        }
+
+        return $groups;
+    }
+
+    /**
      * Command palette entries built from capability-filtered menu, quick actions, and recent entries.
      *
      * @param list<MenuNode> $tree
@@ -453,13 +473,13 @@ final class AdminContext
 
         foreach ($tree as $node) {
             $item = $node->item;
-            $groupLabel = $item->group ?? 'Général';
+            $groupLabel = $item->translatedGroup() ?? t('admin.palette.group_general');
             $entries[] = [
                 'id' => 'nav.' . $item->id,
-                'label' => $item->label,
-                'subtitle' => $item->group ?? 'Accueil',
+                'label' => $item->translatedLabel(),
+                'subtitle' => $item->translatedGroup() ?? t('admin.palette.group_home'),
                 'group' => $groupLabel,
-                'section' => 'Navigation',
+                'section' => t('admin.palette.section_navigation'),
                 'icon' => $item->icon,
                 'accent' => $item->accent,
                 'url' => $item->url,
@@ -470,10 +490,10 @@ final class AdminContext
                 $child = $childNode->item;
                 $entries[] = [
                     'id' => 'nav.' . $child->id,
-                    'label' => $item->label . ' → ' . $child->label,
-                    'subtitle' => $item->group ?? $item->label,
+                    'label' => $item->translatedLabel() . ' → ' . $child->translatedLabel(),
+                    'subtitle' => $item->translatedGroup() ?? $item->translatedLabel(),
                     'group' => $groupLabel,
-                    'section' => 'Navigation',
+                    'section' => t('admin.palette.section_navigation'),
                     'icon' => $child->icon,
                     'accent' => $child->accent,
                     'url' => $child->url,
@@ -487,8 +507,8 @@ final class AdminContext
                 'id' => $create['id'],
                 'label' => $create['label'],
                 'subtitle' => $create['description'],
-                'group' => 'Actions rapides',
-                'section' => 'Actions rapides',
+                'group' => t('admin.palette.section_quick_actions'),
+                'section' => t('admin.palette.section_quick_actions'),
                 'icon' => $create['icon'],
                 'accent' => $create['accent'],
                 'url' => $create['url'],
@@ -504,8 +524,8 @@ final class AdminContext
                         'id' => 'entry.' . $recentEntry->id,
                         'label' => $recentEntry->title,
                         'subtitle' => ($ct !== null ? $ct->label('singular') : $recentEntry->type) . ' · ' . $recentEntry->statusLabel(),
-                        'group' => 'Contenus récents',
-                        'section' => 'Contenus récents',
+                        'group' => t('admin.palette.section_recent'),
+                        'section' => t('admin.palette.section_recent'),
                         'icon' => $ct !== null ? $ct->icon : 'file-text',
                         'accent' => $ct !== null ? $ct->accent : 'teal',
                         'url' => $recentEntry->editUrl(),

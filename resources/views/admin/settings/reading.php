@@ -49,7 +49,7 @@ $this->layout('admin::layouts/app');
 
             <div class="pc-grid-2">
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-reading-front-page">Page d'accueil statique</label>
+                    <label class="pc-label" for="pc-reading-front-page"><?= t('admin.settings.reading.static_home') ?></label>
                     <select id="pc-reading-front-page" name="front_page_id" class="pc-select">
                         <option value=""><?= $this->e($this->t('admin.settings.reading.selectionner_page')) ?></option>
                         <?php foreach ($pages as $page): ?>
@@ -74,7 +74,7 @@ $this->layout('admin::layouts/app');
             </div>
 
             <div class="pc-field">
-                <label class="pc-label" for="pc-reading-per-page">Nombre d'articles par page</label>
+                <label class="pc-label" for="pc-reading-per-page"><?= t('admin.settings.reading.posts_per_page') ?></label>
                 <input
                     id="pc-reading-per-page"
                     type="number"

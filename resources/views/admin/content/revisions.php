@@ -45,7 +45,7 @@ $editUrl = $entry->editUrl();
     <div class="pc-taxonomy-grid">
         <section class="pc-card">
             <div class="pc-card__header">
-                <h2 class="pc-card__title">Historique (<?= $this->e((string) count($revisions)) ?>)</h2>
+                <h2 class="pc-card__title"><?= t('admin.content.revisions.title') ?> (<?= $this->e((string) count($revisions)) ?>)</h2>
             </div>
             <div class="pc-card__body" style="padding:12px;">
                 <div class="pc-stack pc-stack--xs">

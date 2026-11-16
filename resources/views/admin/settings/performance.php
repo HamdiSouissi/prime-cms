@@ -76,7 +76,7 @@ $this->layout('admin::layouts/app');
 
             <div class="pc-grid-2">
                 <div class="pc-field">
-                    <span class="pc-label">Pilote actif</span>
+                    <span class="pc-label"><?= t('admin.settings.performance.driver') ?></span>
                     <p class="pc-text-sm"><code><?= $this->e($driver) ?></code></p>
                 </div>
                 <div class="pc-field">
@@ -90,15 +90,15 @@ $this->layout('admin::layouts/app');
                     <p class="pc-text-sm"><?= $this->formatNumber($stats['data']['entries']) ?></p>
                 </div>
                 <div class="pc-field">
-                    <span class="pc-label">Pages en cache</span>
+                    <span class="pc-label"><?= t('admin.settings.performance.cached_pages') ?></span>
                     <p class="pc-text-sm"><?= $this->formatNumber($stats['pages']['entries']) ?></p>
                 </div>
                 <div class="pc-field">
-                    <span class="pc-label">Taille sur disque</span>
+                    <span class="pc-label"><?= t('admin.settings.performance.disk_size') ?></span>
                     <p class="pc-text-sm"><?= $this->e(\Prime\Media\MediaHelper::formatBytes($stats['total_bytes'])) ?></p>
                 </div>
                 <div class="pc-field">
-                    <span class="pc-label">Dernier vidage</span>
+                    <span class="pc-label"><?= t('admin.settings.performance.last_purge') ?></span>
                     <p class="pc-text-sm">
                         <?= $lastPurgedAt === null
                             ? 'Jamais'

@@ -32,11 +32,11 @@ $this->layout('admin::layouts/app');
     </div>
 <?php else: ?>
     <div class="pc-zones-layout" data-prime-zones-page>
-        <aside class="pc-card" aria-label="Liste des zones du thème">
+        <aside class="pc-card" aria-label="<?= t('admin.attr.liste_des_zones_du_theme') ?>">
             <div class="pc-card__header">
                 <h2 class="pc-card__title"><?= $this->e($this->t('admin.appearance.zones.zones_theme')) ?></h2>
             </div>
-            <nav class="pc-zones-nav" aria-label="Choisir une zone à modifier">
+            <nav class="pc-zones-nav" aria-label="<?= t('admin.attr.choisir_une_zone_a_modifier') ?>">
                 <?php foreach ($declaredZones as $zSlug => $zMeta): ?>
                     <?php $active = $zSlug === $selectedSlug; ?>
                     <a
@@ -52,7 +52,7 @@ $this->layout('admin::layouts/app');
 
             <?php if ($dynamicCatalog !== []): ?>
                 <div class="pc-card__body pc-zones-dyn-panel">
-                    <h3 class="pc-text-xs pc-font-semibold pc-text-muted">Blocs dynamiques disponibles</h3>
+                    <h3 class="pc-text-xs pc-font-semibold pc-text-muted"><?= t('admin.appearance.zones.dynamic_blocks') ?></h3>
                     <div class="pc-stack pc-stack--xs">
                         <?php foreach ($dynamicCatalog as $dyn): ?>
                             <button

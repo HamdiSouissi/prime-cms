@@ -26,7 +26,7 @@ $footerHtml = isset($footer) && is_string($footer) && $footer !== '' ? $footer :
     <div class="pc-drawer__panel" data-prime-drawer-panel>
         <header class="pc-drawer__header">
             <h2 class="pc-drawer__title" id="<?= $this->e($id) ?>-title"><?= $this->e($title) ?></h2>
-            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-drawer-close aria-label="Fermer le panneau">
+            <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-drawer-close aria-label="<?= t('admin.attr.fermer_le_panneau') ?>">
                 <?= $this->raw($this->icon('x', 18)) ?>
             </button>
         </header>

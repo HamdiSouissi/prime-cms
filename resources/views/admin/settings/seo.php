@@ -33,7 +33,7 @@ $this->layout('admin::layouts/app');
                 <div class="pc-field">
                     <label class="pc-label" for="pc-seo-template"><?= $this->e($this->t('admin.settings.seo.modele_balise_lt_title_gt')) ?></label>
                     <input id="pc-seo-template" type="text" name="title_template" value="<?= $this->e($titleTemplate) ?>" class="pc-input" required>
-                    <p class="pc-text-xs pc-text-muted">Variables disponibles : <code>{title}</code>, <code>{sep}</code>, <code>{site_name}</code>.</p>
+                    <p class="pc-text-xs pc-text-muted"><?= t('admin.settings.seo.variables') ?></p>
                 </div>
 
                 <div class="pc-field">
@@ -60,7 +60,7 @@ $this->layout('admin::layouts/app');
                     placeholder="<?= $this->e($this->t('admin.settings.seo.aucun')) ?>"
                 >
                 <?php if ($defaultImageUrl !== null): ?>
-                    <img src="<?= $this->e($defaultImageUrl) ?>" alt="Image de partage par défaut" class="pc-customizer__thumb">
+                    <img src="<?= $this->e($defaultImageUrl) ?>" alt="<?= t('admin.attr.image_de_partage_par_defaut') ?>" class="pc-customizer__thumb">
                 <?php endif; ?>
             </div>
 
@@ -71,7 +71,7 @@ $this->layout('admin::layouts/app');
 
             <div class="pc-field">
                 <label class="pc-label" for="pc-seo-robots"><?= $this->raw($this->t('admin.settings.seo.contenu_personnalise_robots')) ?></label>
-                <textarea id="pc-seo-robots" name="robots_custom" rows="5" class="pc-textarea pc-text-mono" placeholder="Laissez vide pour utiliser les règles recommandées par Prime CMS."><?= $this->e($robotsCustom) ?></textarea>
+                <textarea id="pc-seo-robots" name="robots_custom" rows="5" class="pc-textarea pc-text-mono" placeholder="<?= t('admin.attr.laissez_vide_pour_utiliser_les_regles_recommandees_par_prime') ?>"><?= $this->e($robotsCustom) ?></textarea>
                 <p class="pc-text-xs pc-text-muted">
                     <?= $this->e($this->t('admin.settings.seo.liens_generes_dynamiquement')) ?>
                     <a href="/sitemap.xml" target="_blank" rel="noopener">/sitemap.xml</a> ·

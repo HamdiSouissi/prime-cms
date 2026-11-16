@@ -12,7 +12,7 @@
         class="pc-logo"
       >
     </picture>
-    <span class="pc-badge pc-badge--brand">Erreur 405</span>
+    <span class="pc-badge pc-badge--brand"><?= t('core.errors.405.title') ?></span>
     <h1 id="error-405-title" class="pc-error-heading"><?= $this->e($this->t('core.errors.405.methode_non_autorisee')) ?></h1>
     <p class="pc-error-text">
       <?= $this->e($this->t('core.errors.405.methode_http_utilisee_pas_acceptee')) ?>

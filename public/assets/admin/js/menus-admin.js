@@ -6,6 +6,7 @@
  */
 
 import { showToast } from './toast.js';
+import { tr } from './i18n.js';
 
 export const MAX_MENU_DEPTH = 2; // 0 = root, 1 = child, 2 = grandchild (3 levels max)
 
@@ -262,19 +263,19 @@ export function initMenusAdmin() {
           dirty = true;
           render();
         }),
-        mkBtn('←', 'Désindenter', !canOutdent, () => {
+        mkBtn('←', tr('admin.js.menus-admin.desindenter', 'Désindenter'), !canOutdent, () => {
           items = outdentMenuItem(items, idx);
           dirty = true;
           render();
         }),
-        mkBtn('→', 'Indenter (sous-menu)', !canIndent, () => {
+        mkBtn('→', tr('admin.js.menus-admin.indenter_sous_menu', 'Indenter (sous-menu)'), !canIndent, () => {
           items = indentMenuItem(items, idx);
           dirty = true;
           render();
         }),
       );
 
-      const toggleBtn = mkBtn('Éditer', 'Modifier les détails', false, () => {
+      const toggleBtn = mkBtn(tr('admin.js.menus-admin.editer', 'Éditer'), tr('admin.js.menus-admin.modifier_les_details', 'Modifier les détails'), false, () => {
         details.hidden = !details.hidden;
       });
       const delBtn = mkBtn('×', 'Retirer du menu', false, () => {
@@ -297,7 +298,7 @@ export function initMenusAdmin() {
       labelField.className = 'pc-field';
       const labelL = document.createElement('label');
       labelL.className = 'pc-label';
-      labelL.textContent = 'Libellé affiché';
+      labelL.textContent = tr('admin.js.menus-admin.libelle_affiche', 'Libellé affiché');
       const labelIn = document.createElement('input');
       labelIn.type = 'text';
       labelIn.className = 'pc-input';
@@ -422,7 +423,7 @@ export function initMenusAdmin() {
       const label = labelEl instanceof HTMLInputElement ? labelEl.value.trim() : '';
       const url = urlEl instanceof HTMLInputElement ? urlEl.value.trim() : '';
       if (!label || !url) {
-        showToast('Veuillez saisir un libellé et une URL.', 'warning');
+        showToast(tr('admin.js.menus-admin.veuillez_saisir_un_libelle_et', 'Veuillez saisir un libellé et une URL.'), 'warning');
         return;
       }
       items.push({

@@ -71,7 +71,10 @@ return [
         'invalid_credentials' => 'Incorrect username or password.',
         'logged_in' => 'Welcome, :name!',
         'logged_out' => 'You have been logged out.',
-        'login' => 'Log in',
+        'login' => [
+            'back_to_site' => '← Back to the public site',
+            'submit' => 'Sign in',
+        ],
         'login_title' => 'Sign in',
         'logout' => 'Log out',
         'new_password' => 'New password',
@@ -123,25 +126,31 @@ return [
         '403' => [
             'acces_refuse' => 'Access denied',
             'retour_tableau_bord' => 'Back to the dashboard',
+            'title' => 'Error 403',
         ],
         '404' => [
+            'heading' => 'Page not found',
             'ressource_demandee_existe_pas_ete' => 'The requested resource does not exist or has been moved.',
             'retourner_a_accueil' => 'Back to home',
+            'title' => 'Error 404',
         ],
         '405' => [
             'methode_http_utilisee_pas_acceptee' => 'The HTTP method used is not accepted for this address.',
             'methode_non_autorisee' => 'Method not allowed',
             'methodes_autorisees' => 'Allowed methods:',
             'retourner_a_accueil' => 'Back to home',
+            'title' => 'Error 405',
         ],
         '409' => [
             'action_impossible_cet_etat' => 'Action not possible in this state',
             'retour_tableau_bord' => 'Back to the dashboard',
+            'title' => 'Error 409',
         ],
         '419' => [
             'jeton_securite_invalide' => 'The security token of this form is missing, invalid or expired.',
             'revenez_a_page_precedente_rechargez' => 'Go back to the previous page, reload it and submit your request again.',
             'session_expiree' => 'Session expired',
+            'title' => 'Error 419',
         ],
         '500' => [
             'erreur_survenue' => 'An error occurred',
@@ -209,14 +218,22 @@ return [
         'username' => 'Username',
         'website' => 'Website',
     ],
+    'home' => [
+        'footer' => 'Prime CMS · Phase 1',
+        'php_version' => 'PHP version',
+        'storage_not_writable' => 'Not writable',
+        'storage_folders' => 'Folders :path',
+    ],
     'install' => [
         'account' => 'Administrator account',
         'admin' => [
+            'account' => 'Administrator account',
             'afficher_confirmation_mot_passe' => 'Show the password confirmation',
             'afficher_mot_passe' => 'Show the password',
             'choisissez_phrase_secrete_unique_moins' => 'Choose a unique passphrase of at least 12 characters (stored irreversibly with Argon2id).',
             'compte_principal' => 'Create the main account that will administer your site.',
             'confirmer_mot_passe' => 'Confirm the password',
+            'email' => 'E-mail address',
             'minimum_12_caracteres_recommandes_phrase' => 'At least 12 characters recommended (passphrase, uppercase, digits and symbols).',
             'moins_12_caracteres' => 'At least 12 characters',
             'obligatoire' => '(required)',
@@ -248,6 +265,8 @@ return [
         'layout' => [
             'etape_sur' => 'Step :current of :total',
             'installation_securisee_locale' => 'Secure local installation',
+            'skip_to_content' => 'Skip to content',
+            'wizard' => 'Installation wizard',
         ],
         'next' => 'Next step',
         'plugins' => 'Plugins',
@@ -261,11 +280,14 @@ return [
         'run' => [
             'contenu_exact_fichier_env' => 'Exact content of the .env file',
             'creer_fichier_env' => 'Create the <code>.env</code> file manually at the project root',
+            'email' => 'E-mail address',
             'masque_stocke_argon2id' => 'Hidden (stored with Argon2id)',
             'nom_site' => 'Site name',
             'prefixe_tables' => 'Table prefix',
             'pret_installation' => 'Ready to install',
             'prime_cms_ecrira_configuration_creera' => 'Prime CMS will write the configuration, create the tables and register your administrator account.',
+            'public_url' => 'Public URL',
+            'timezone' => 'Time zone',
             'utilisateur' => 'User',
             'verifiez_recapitulatif' => 'Check your summary below (no password is displayed), then start the installation.',
         ],
@@ -283,6 +305,8 @@ return [
         'welcome' => [
             'cet_assistant_va_verifier_serveur' => 'This wizard will check your server, configure your database and create your administrator account in a few minutes.',
             'prime_cms_systeme_gestion_contenu' => 'Prime CMS is a modern, fast and extensible content management system built in native PHP.',
+            'start' => 'Start the installation',
+            'title' => 'Welcome to Prime CMS',
         ],
     ],
     'labels' => [
@@ -328,6 +352,10 @@ return [
         'it' => 'Italian',
         'nl' => 'Dutch',
         'pt' => 'Portuguese',
+    ],
+    'mail' => [
+        'direct_link' => 'Direct link:',
+        'greeting' => 'Hello :name,',
     ],
     'name' => 'Prime CMS',
     'never' => 'Never',

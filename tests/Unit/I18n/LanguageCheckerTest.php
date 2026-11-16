@@ -79,9 +79,12 @@ final class LanguageCheckerTest extends TestCase
         $this->assertSame([], $report['catalogue']['en']['missing']);
         $this->assertArrayHasKey('core.typo_key', $report['unknown']);
         $this->assertStringContainsString('page.php:', $report['unknown']['core.typo_key'][0]);
-        $this->assertNotEmpty($report['hardcoded']);
-        $this->assertStringContainsString('Texte en français', $report['hardcoded'][0]['text']);
-        $this->assertNotEmpty($report['warnings']);
+        $hardcodedTexts = array_column($report['hardcoded'], 'text');
+        $this->assertNotEmpty($hardcodedTexts, 'Le texte en dur doit être signalé.');
+        $this->assertStringContainsString('Texte en français', implode(' | ', $hardcodedTexts));
+        // Hard-coded copy is an error, not a warning: it fails the build on its own.
+        $this->assertNotEmpty($report['errors']);
+        $this->assertStringContainsString('texte en dur', implode(' | ', $report['errors']));
     }
 
     public function testIgnoresUnrelatedCallsAndReportsUnusedKeysOnlyWhenUsageIsDetected(): void

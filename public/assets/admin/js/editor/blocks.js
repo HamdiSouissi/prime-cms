@@ -5,6 +5,7 @@
 import { resolveListItemKeyAction } from './navigation.js';
 import { defaultBlockRegistry } from './registry.js';
 import { escapeHtml, parseEmbedUrl, sanitizeInlineHtml, slugify, stripHtml } from './utils.js';
+import { tr } from '../i18n.js';
 
 /**
  * Open the reusable Prime Media Picker modal via the single public API `Prime.media.open(...)`.
@@ -16,8 +17,8 @@ import { escapeHtml, parseEmbedUrl, sanitizeInlineHtml, slugify, stripHtml } fro
 function openBlockMediaPicker(options, onPicked) {
   const openFn = window.Prime?.media?.open;
   if (typeof openFn !== 'function') {
-    console.error('[Prime Editor] Prime.media.open est indisponible : le sélecteur de médias ne peut pas être ouvert.');
-    window.Prime?.toast?.("Le sélecteur de médias n'a pas pu s'ouvrir.", 'danger');
+    console.error(tr('admin.js.editor.blocks.prime_editor_prime_media_open', '[Prime Editor] Prime.media.open est indisponible : le sélecteur de médias ne peut pas être ouvert.'));
+    window.Prime?.toast?.(tr('admin.js.editor.blocks.le_selecteur_de_medias_n', "Le sélecteur de médias n'a pas pu s'ouvrir."), 'danger');
     return;
   }
 
@@ -25,7 +26,7 @@ function openBlockMediaPicker(options, onPicked) {
     multiple: Boolean(options.multiple),
     kinds: Array.isArray(options.kinds) ? options.kinds : [],
     selected: Array.isArray(options.selected) ? options.selected : [],
-    title: options.title || 'Sélectionner un média',
+    title: options.title || tr('admin.js.editor.blocks.selectionner_un_media', 'Sélectionner un média'),
     onSelect: (selection) => {
       const items = Array.isArray(selection) ? selection : selection ? [selection] : [];
       if (items.length === 0) return;
@@ -102,7 +103,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         tag: 'p',
         className: 'pc-ed-p-input',
         html: ctx.data.text || '',
-        placeholder: 'Écrivez du texte ou tapez « / » pour insérer un bloc…',
+        placeholder: tr('admin.js.editor.blocks.ecrivez_du_texte_ou_tapez', 'Écrivez du texte ou tapez « / » pour insérer un bloc…'),
         ariaLabel: 'Paragraphe',
         onChange: (html, el) => {
           ctx.updateData({ text: html });
@@ -121,7 +122,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'heading',
     title: 'Titre',
-    description: 'Sous-titre H2, H3 ou H4 avec ancre automatique.',
+    description: tr('admin.js.editor.blocks.sous_titre_h2_h3_ou', 'Sous-titre H2, H3 ou H4 avec ancre automatique.'),
     icon: 'heading',
     category: 'text',
     keywords: ['h2', 'h3', 'h4', 'titre', 'section'],
@@ -183,10 +184,10 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'list',
     title: 'Liste',
-    description: 'Liste à puces ou numérotée (avec sous-éléments).',
+    description: tr('admin.js.editor.blocks.liste_a_puces_ou_numerotee', 'Liste à puces ou numérotée (avec sous-éléments).'),
     icon: 'list',
     category: 'text',
-    keywords: ['liste', 'puces', 'numéros', 'ul', 'ol'],
+    keywords: ['liste', 'puces', tr('admin.js.editor.blocks.numeros', 'numéros'), 'ul', 'ol'],
     defaultData: () => ({ style: 'unordered', items: [{ text: '', children: [] }] }),
     render: (ctx) => {
       const wrap = document.createElement('div');
@@ -206,7 +207,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       styleGroup.className = 'pc-ed-segmented';
       [
         { key: 'unordered', label: 'Puces', icon: 'list' },
-        { key: 'ordered', label: 'Numéros', icon: 'list-ordered' },
+        { key: 'ordered', label: tr('admin.js.editor.blocks.numeros', 'Numéros'), icon: 'list-ordered' },
       ].forEach((opt) => {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -245,7 +246,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
           tag: 'div',
           className: 'pc-ed-list-input',
           html: item.text,
-          placeholder: 'Élément de liste…',
+          placeholder: tr('admin.js.editor.blocks.element_de_liste', 'Élément de liste…'),
           ariaLabel: `Élément ${idx + 1}`,
           onChange: (html) => {
             items[idx].text = html;
@@ -332,7 +333,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
         delBtn.className = 'pc-ed-icon-btn';
-        delBtn.setAttribute('aria-label', 'Supprimer l\'élément');
+        delBtn.setAttribute('aria-label', tr('admin.js.editor.blocks.supprimer_l_element', 'Supprimer l\'élément'));
         delBtn.appendChild(createIconSvg('x', 14));
         delBtn.addEventListener('click', () => {
           if (items.length === 1) {
@@ -356,7 +357,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
               tag: 'div',
               className: 'pc-ed-list-input',
               html: childText,
-              placeholder: 'Sous-élément…',
+              placeholder: tr('admin.js.editor.blocks.sous_element', 'Sous-élément…'),
               ariaLabel: `Sous-élément ${idx + 1}.${cIdx + 1}`,
               onChange: (html) => {
                 items[idx].children[cIdx] = html;
@@ -366,7 +367,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
             const subDel = document.createElement('button');
             subDel.type = 'button';
             subDel.className = 'pc-ed-icon-btn';
-            subDel.setAttribute('aria-label', 'Supprimer le sous-élément');
+            subDel.setAttribute('aria-label', tr('admin.js.editor.blocks.supprimer_le_sous_element', 'Supprimer le sous-élément'));
             subDel.appendChild(createIconSvg('x', 13));
             subDel.addEventListener('click', () => {
               items[idx].children.splice(cIdx, 1);
@@ -390,7 +391,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'quote',
     title: 'Citation',
-    description: 'Citation mise en valeur avec auteur optionnel.',
+    description: tr('admin.js.editor.blocks.citation_mise_en_valeur_avec', 'Citation mise en valeur avec auteur optionnel.'),
     icon: 'quote',
     category: 'text',
     keywords: ['citation', 'quote', 'auteur'],
@@ -403,7 +404,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         tag: 'p',
         className: 'pc-ed-quote-text',
         html: ctx.data.text || '',
-        placeholder: 'Écrivez la citation…',
+        placeholder: tr('admin.js.editor.blocks.ecrivez_la_citation', 'Écrivez la citation…'),
         ariaLabel: 'Texte de la citation',
         onChange: (html) => ctx.updateData({ text: html }),
         onKeyDown: (e, el) => ctx.handleRichKeyDown(e, el, { allowSplit: false }),
@@ -428,7 +429,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'image',
     title: 'Image',
-    description: 'Image issue de la médiathèque ou via URL, avec texte alternatif et légende.',
+    description: tr('admin.js.editor.blocks.image_issue_de_la_mediatheque', 'Image issue de la médiathèque ou via URL, avec texte alternatif et légende.'),
     icon: 'image',
     category: 'media',
     keywords: ['image', 'photo', 'img', 'visuel', 'media'],
@@ -443,12 +444,12 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const pickBtn = document.createElement('button');
       pickBtn.type = 'button';
       pickBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
-      pickBtn.append(createIconSvg('image', 14), document.createTextNode(' Choisir dans la médiathèque'));
+      pickBtn.append(createIconSvg('image', 14), document.createTextNode(tr('admin.js.editor.blocks.choisir_dans_la_mediatheque', ' Choisir dans la médiathèque')));
 
       const mediaBadge = document.createElement('span');
       mediaBadge.className = 'pc-badge pc-badge--neutral';
       mediaBadge.hidden = !ctx.data.mediaId;
-      mediaBadge.textContent = ctx.data.mediaId ? `Média #${ctx.data.mediaId}` : '';
+      mediaBadge.textContent = ctx.data.mediaId ? tr('admin.js.editor.blocks.media_numero', 'Média #:id', { id: ctx.data.mediaId }) : '';
 
       pickerRow.append(pickBtn, mediaBadge);
 
@@ -478,29 +479,29 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       urlInput.className = 'pc-input';
       urlInput.value = ctx.data.url || '';
       urlInput.placeholder = 'https://exemple.com/image.jpg ou /uploads/photo.webp';
-      urlInput.setAttribute('aria-label', 'URL de l\'image');
+      urlInput.setAttribute('aria-label', tr('admin.js.editor.blocks.url_de_l_image', 'URL de l\'image'));
 
       const altInput = document.createElement('input');
       altInput.type = 'text';
       altInput.className = 'pc-input';
       altInput.value = ctx.data.alt || '';
-      altInput.placeholder = 'Texte alternatif décrivant l\'image (obligatoire pour l\'accessibilité)';
+      altInput.placeholder = tr('admin.js.editor.blocks.texte_alternatif_obligatoire', 'Texte alternatif décrivant l\'image (obligatoire pour l\'accessibilité)');
       altInput.disabled = Boolean(ctx.data.decorative);
-      altInput.setAttribute('aria-label', 'Texte alternatif de l\'image');
+      altInput.setAttribute('aria-label', tr('admin.js.editor.blocks.texte_alternatif_de_l_image', 'Texte alternatif de l\'image'));
 
       const decWrap = document.createElement('label');
       decWrap.className = 'pc-ed-checkbox';
       const decCheck = document.createElement('input');
       decCheck.type = 'checkbox';
       decCheck.checked = Boolean(ctx.data.decorative);
-      decWrap.append(decCheck, document.createTextNode(' Image purement décorative (alt vide)'));
+      decWrap.append(decCheck, document.createTextNode(tr('admin.js.editor.blocks.image_purement_decorative_alt_vide', ' Image purement décorative (alt vide)')));
 
       const captionInput = document.createElement('input');
       captionInput.type = 'text';
       captionInput.className = 'pc-input';
       captionInput.value = stripHtml(ctx.data.caption || '');
       captionInput.placeholder = 'Légende optionnelle…';
-      captionInput.setAttribute('aria-label', 'Légende de l\'image');
+      captionInput.setAttribute('aria-label', tr('admin.js.editor.blocks.legende_de_l_image', 'Légende de l\'image'));
 
       const alignGroup = document.createElement('div');
       alignGroup.className = 'pc-ed-segmented';
@@ -570,7 +571,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'code',
     title: 'Code',
-    description: 'Bloc de code source avec langage optionnel.',
+    description: tr('admin.js.editor.blocks.bloc_de_code_source_avec', 'Bloc de code source avec langage optionnel.'),
     icon: 'code',
     category: 'formatting',
     keywords: ['code', 'pre', 'php', 'js', 'css', 'sql'],
@@ -610,8 +611,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 7. Separator
   registry.registerBlock({
     type: 'separator',
-    title: 'Séparateur',
-    description: 'Ligne horizontale de séparation.',
+    title: tr('admin.js.editor.blocks.separateur', 'Séparateur'),
+    description: tr('admin.js.editor.blocks.ligne_horizontale_de_separation', 'Ligne horizontale de séparation.'),
     icon: 'minus',
     category: 'layout',
     keywords: ['separateur', 'hr', 'ligne'],
@@ -628,8 +629,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 8. Embed (YouTube / Vimeo only)
   registry.registerBlock({
     type: 'embed',
-    title: 'Vidéo (YouTube / Vimeo)',
-    description: 'Intégration sécurisée YouTube ou Vimeo.',
+    title: tr('admin.js.editor.blocks.video_youtube_vimeo', 'Vidéo (YouTube / Vimeo)'),
+    description: tr('admin.js.editor.blocks.integration_securisee_youtube_ou_vimeo', 'Intégration sécurisée YouTube ou Vimeo.'),
     icon: 'video',
     category: 'media',
     keywords: ['video', 'youtube', 'vimeo', 'embed'],
@@ -653,7 +654,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       titleInput.className = 'pc-input';
       titleInput.value = ctx.data.title || '';
       titleInput.placeholder = 'Titre accessible de la vidéo (ex. Présentation Prime CMS)';
-      titleInput.setAttribute('aria-label', 'Titre accessible de la vidéo');
+      titleInput.setAttribute('aria-label', tr('admin.js.editor.blocks.titre_accessible_de_la_video', 'Titre accessible de la vidéo'));
 
       const syncStatus = (val) => {
         if (!val) {
@@ -688,7 +689,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'table',
     title: 'Tableau',
-    description: 'Tableau éditable avec ligne d\'en-tête.',
+    description: tr('admin.js.editor.blocks.tableau_editable_avec_ligne_d', 'Tableau éditable avec ligne d\'en-tête.'),
     icon: 'table',
     category: 'layout',
     keywords: ['tableau', 'table', 'grille'],
@@ -732,7 +733,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       headerChk.addEventListener('change', () => {
         ctx.updateData({ hasHeader: headerChk.checked, rows }, { rerender: true, recordHistory: true });
       });
-      headerToggle.append(headerChk, document.createTextNode(' Ligne d\'en-tête'));
+      headerToggle.append(headerChk, document.createTextNode(tr('admin.js.editor.blocks.ligne_d_en_tete', ' Ligne d\'en-tête')));
 
       controls.append(addRowBtn, addColBtn, headerToggle);
 
@@ -771,8 +772,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 10. Callout (info, success, warning, danger)
   registry.registerBlock({
     type: 'callout',
-    title: 'Encadré',
-    description: 'Bloc d\'attention coloré (info, succès, alerte, danger).',
+    title: tr('admin.js.editor.blocks.encadre', 'Encadré'),
+    description: tr('admin.js.editor.blocks.bloc_d_attention_colore_info', 'Bloc d\'attention coloré (info, succès, alerte, danger).'),
     icon: 'info',
     category: 'layout',
     keywords: ['encadre', 'callout', 'note', 'info', 'alerte'],
@@ -786,7 +787,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       controls.className = 'pc-ed-segmented';
       [
         { key: 'info', label: 'Info' },
-        { key: 'success', label: 'Succès' },
+        { key: 'success', label: tr('admin.js.editor.blocks.succes', 'Succès') },
         { key: 'warning', label: 'Attention' },
         { key: 'danger', label: 'Danger' },
       ].forEach((opt) => {
@@ -804,8 +805,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         tag: 'div',
         className: 'pc-ed-callout-title',
         html: ctx.data.title || '',
-        placeholder: 'Titre de l\'encadré (optionnel)…',
-        ariaLabel: 'Titre de l\'encadré',
+        placeholder: tr('admin.js.editor.blocks.titre_de_l_encadre_optionnel', 'Titre de l\'encadré (optionnel)…'),
+        ariaLabel: tr('admin.js.editor.blocks.titre_de_l_encadre', 'Titre de l\'encadré'),
         onChange: (html) => ctx.updateData({ title: html }),
       });
 
@@ -813,8 +814,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         tag: 'div',
         className: 'pc-ed-callout-body',
         html: ctx.data.text || '',
-        placeholder: 'Message mis en évidence…',
-        ariaLabel: 'Texte de l\'encadré',
+        placeholder: tr('admin.js.editor.blocks.message_mis_en_evidence', 'Message mis en évidence…'),
+        ariaLabel: tr('admin.js.editor.blocks.texte_de_l_encadre', 'Texte de l\'encadré'),
         onChange: (html) => ctx.updateData({ text: html }),
         onPaste: (e, el) => ctx.handlePaste(e, el),
       });
@@ -828,7 +829,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'html',
     title: 'HTML libre',
-    description: 'HTML personnalisé (réservé aux rôles avec content.unfiltered_html).',
+    description: tr('admin.js.editor.blocks.html_personnalise_reserve_aux_roles', 'HTML personnalisé (réservé aux rôles avec content.unfiltered_html).'),
     icon: 'code',
     category: 'advanced',
     requiresCapability: 'content.unfiltered_html',
@@ -842,8 +843,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const badge = document.createElement('div');
       badge.className = 'pc-ed-html-banner';
       badge.textContent = canEditHtml
-        ? 'HTML libre (rendu tel quel — réservé aux rôles de confiance)'
-        : 'Bloc HTML en lecture seule (la permission content.unfiltered_html est requise pour le modifier)';
+        ? tr('admin.js.editor.blocks.html_libre_rendu_tel_quel', 'HTML libre (rendu tel quel — réservé aux rôles de confiance)')
+        : tr('admin.js.editor.blocks.bloc_html_en_lecture_seule', 'Bloc HTML en lecture seule (la permission content.unfiltered_html est requise pour le modifier)');
 
       const textarea = document.createElement('textarea');
       textarea.className = 'pc-ed-code-textarea';
@@ -870,7 +871,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'gallery',
     title: 'Galerie',
-    description: 'Grille d\'images sélectionnées depuis la médiathèque (2 à 4 colonnes).',
+    description: tr('admin.js.editor.blocks.grille_d_images_selectionnees_depuis', 'Grille d\'images sélectionnées depuis la médiathèque (2 à 4 colonnes).'),
     icon: 'images',
     category: 'media',
     keywords: ['galerie', 'gallery', 'photos', 'grille', 'images'],
@@ -888,14 +889,14 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
       addBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
-      addBtn.append(createIconSvg('images', 14), document.createTextNode(' Ajouter des images'));
+      addBtn.append(createIconSvg('images', 14), document.createTextNode(tr('admin.js.editor.blocks.ajouter_des_images', ' Ajouter des images')));
       addBtn.addEventListener('click', () => {
         openBlockMediaPicker(
           {
             multiple: true,
             kinds: ['image'],
             selected: [],
-            title: 'Sélectionner des images pour la galerie',
+            title: tr('admin.js.editor.blocks.selectionner_des_images_pour_la', 'Sélectionner des images pour la galerie'),
           },
           (chosen) => {
             const next = [
@@ -954,7 +955,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
           moveLeft.type = 'button';
           moveLeft.className = 'pc-ed-icon-btn';
           moveLeft.disabled = idx === 0;
-          moveLeft.setAttribute('aria-label', 'Déplacer à gauche');
+          moveLeft.setAttribute('aria-label', tr('admin.js.editor.blocks.deplacer_a_gauche', 'Déplacer à gauche'));
           moveLeft.appendChild(createIconSvg('chevron-left', 13));
           moveLeft.addEventListener('click', () => {
             if (idx === 0) return;
@@ -967,7 +968,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
           moveRight.type = 'button';
           moveRight.className = 'pc-ed-icon-btn';
           moveRight.disabled = idx === items.length - 1;
-          moveRight.setAttribute('aria-label', 'Déplacer à droite');
+          moveRight.setAttribute('aria-label', tr('admin.js.editor.blocks.deplacer_a_droite', 'Déplacer à droite'));
           moveRight.appendChild(createIconSvg('chevron-right', 13));
           moveRight.addEventListener('click', () => {
             if (idx >= items.length - 1) return;
@@ -1012,7 +1013,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       galleryCaption.style.marginTop = '10px';
       galleryCaption.value = stripHtml(ctx.data.caption || '');
       galleryCaption.placeholder = 'Légende globale de la galerie (optionnelle)…';
-      galleryCaption.setAttribute('aria-label', 'Légende de la galerie');
+      galleryCaption.setAttribute('aria-label', tr('admin.js.editor.blocks.legende_de_la_galerie', 'Légende de la galerie'));
       galleryCaption.addEventListener('input', () => ctx.updateData({ caption: escapeHtml(galleryCaption.value) }));
 
       wrap.appendChild(galleryCaption);
@@ -1023,8 +1024,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 13. Video (self-hosted HTML5 video)
   registry.registerBlock({
     type: 'video',
-    title: 'Vidéo (fichier local)',
-    description: 'Lecteur vidéo HTML5 hébergé dans votre médiathèque (MP4, WebM).',
+    title: tr('admin.js.editor.blocks.video_fichier_local', 'Vidéo (fichier local)'),
+    description: tr('admin.js.editor.blocks.lecteur_video_html5_heberge_dans', 'Lecteur vidéo HTML5 hébergé dans votre médiathèque (MP4, WebM).'),
     icon: 'video',
     category: 'media',
     keywords: ['video', 'mp4', 'webm', 'film', 'media'],
@@ -1039,14 +1040,14 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const pickVideo = document.createElement('button');
       pickVideo.type = 'button';
       pickVideo.className = 'pc-btn pc-btn--secondary pc-btn--sm';
-      pickVideo.append(createIconSvg('video', 14), document.createTextNode(' Choisir une vidéo'));
+      pickVideo.append(createIconSvg('video', 14), document.createTextNode(tr('admin.js.editor.blocks.choisir_une_video', ' Choisir une vidéo')));
       pickVideo.addEventListener('click', () => {
         openBlockMediaPicker(
           {
             multiple: false,
             kinds: ['video'],
             selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
-            title: 'Choisir une vidéo',
+            title: tr('admin.js.editor.blocks.choisir_une_video', 'Choisir une vidéo'),
           },
           (chosen) => {
             const m = chosen[0];
@@ -1061,7 +1062,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const pickPoster = document.createElement('button');
       pickPoster.type = 'button';
       pickPoster.className = 'pc-btn pc-btn--ghost pc-btn--sm';
-      pickPoster.append(createIconSvg('image', 14), document.createTextNode(ctx.data.posterUrl ? ' Changer le poster' : ' Image poster'));
+      pickPoster.append(createIconSvg('image', 14), document.createTextNode(ctx.data.posterUrl ? tr('admin.js.editor.blocks.changer_le_poster', ' Changer le poster') : tr('admin.js.editor.blocks.image_poster', ' Image poster')));
       pickPoster.addEventListener('click', () => {
         openBlockMediaPicker(
           {
@@ -1099,7 +1100,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const opts = document.createElement('div');
       opts.className = 'pc-ed-media-picker-row';
       [
-        { key: 'controls', label: 'Contrôles', val: ctx.data.controls !== false },
+        { key: 'controls', label: tr('admin.js.editor.blocks.controles', 'Contrôles'), val: ctx.data.controls !== false },
         { key: 'muted', label: 'Muet', val: Boolean(ctx.data.muted) },
         { key: 'loop', label: 'Boucle', val: Boolean(ctx.data.loop) },
       ].forEach((opt) => {
@@ -1129,7 +1130,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   registry.registerBlock({
     type: 'audio',
     title: 'Audio',
-    description: 'Lecteur audio HTML5 (MP3, OGG, WAV, M4A) depuis la médiathèque.',
+    description: tr('admin.js.editor.blocks.lecteur_audio_html5_mp3_ogg', 'Lecteur audio HTML5 (MP3, OGG, WAV, M4A) depuis la médiathèque.'),
     icon: 'music',
     category: 'media',
     keywords: ['audio', 'podcast', 'son', 'mp3', 'musique'],
@@ -1143,7 +1144,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const pickBtn = document.createElement('button');
       pickBtn.type = 'button';
       pickBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
-      pickBtn.append(createIconSvg('music', 14), document.createTextNode(' Choisir un fichier audio'));
+      pickBtn.append(createIconSvg('music', 14), document.createTextNode(tr('admin.js.editor.blocks.choisir_un_fichier_audio', ' Choisir un fichier audio')));
       pickBtn.addEventListener('click', () => {
         openBlockMediaPicker(
           {
@@ -1204,8 +1205,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 15. File (downloadable document / archive card)
   registry.registerBlock({
     type: 'file',
-    title: 'Fichier à télécharger',
-    description: 'Carte de téléchargement pour un PDF, document ou archive.',
+    title: tr('admin.js.editor.blocks.fichier_a_telecharger', 'Fichier à télécharger'),
+    description: tr('admin.js.editor.blocks.carte_de_telechargement_pour_un', 'Carte de téléchargement pour un PDF, document ou archive.'),
     icon: 'file',
     category: 'media',
     keywords: ['fichier', 'file', 'pdf', 'document', 'telechargement', 'zip'],
@@ -1219,14 +1220,14 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const pickBtn = document.createElement('button');
       pickBtn.type = 'button';
       pickBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
-      pickBtn.append(createIconSvg('file', 14), document.createTextNode(' Choisir un fichier'));
+      pickBtn.append(createIconSvg('file', 14), document.createTextNode(tr('admin.js.editor.blocks.choisir_un_fichier', ' Choisir un fichier')));
       pickBtn.addEventListener('click', () => {
         openBlockMediaPicker(
           {
             multiple: false,
             kinds: ['document', 'archive'],
             selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
-            title: 'Choisir un fichier à télécharger',
+            title: tr('admin.js.editor.blocks.choisir_un_fichier_a_telecharger', 'Choisir un fichier à télécharger'),
           },
           (chosen) => {
             const m = chosen[0];
@@ -1234,7 +1235,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
               {
                 mediaId: Number(m.id),
                 url: m.url || '',
-                label: m.title || m.display_title || m.original_name || 'Télécharger',
+                label: m.title || m.display_title || m.original_name || tr('admin.js.editor.blocks.telecharger', 'Télécharger'),
                 filename: m.original_name || '',
                 extension: m.extension || '',
                 sizeBytes: Number(m.size_bytes || 0),

@@ -16,7 +16,22 @@ final class LanguageChecker
     /**
      * Functions/methods that resolve a translation key.
      */
-    private const CALL_PATTERN = '/(?<![A-Za-z0-9_$>])(?:\$this->|self::|static::|app\(\)\->get\(\s*Translator::class\s*\)->|\$translator->)?\s*(?:__|trans_choice|trans|translate|choice|t)\s*\(\s*([\'"])([a-z0-9][a-z0-9_.:-]*\.[a-z0-9_.:-]+)\1\s*[,)]/i';
+    /**
+     * Admin JavaScript translates through `tr('key', 'fallback')` and `Prime.t('key')`.
+     */
+    private const JS_CALL_PATTERN = '/(?<![A-Za-z0-9_$.])(?:tr|Prime\.t|Prime\.tr)\s*\(\s*(?:[^()?]*\?\s*)?([\'"\`])(admin\.js\.[a-z0-9_.:\-]+)\1/';
+
+    /**
+     * The second branch of a ternary key (`tr($ok ? 'a.x' : 'a.y', …)`).
+     */
+    private const JS_CALL_PATTERN_B = '/(?<![A-Za-z0-9_$.])(?:tr|Prime\.t|Prime\.tr)\s*\([^()]*\?[^:]*:\s*([\'"\`])(admin\.js\.[a-z0-9_.:\-]+)\1/';
+
+    /**
+     * Dynamic lookups: `t('core.date.formats.' . $preset)` or `'validation.' . $rule`.
+     */
+    private const DYNAMIC_PREFIX_PATTERN = '/([\'"])((?:[a-z0-9][a-z0-9_-]*::)?[a-z0-9][a-z0-9_.:-]*\.)\1\s*\.\s*[\$\'"]/i';
+
+    private const CALL_PATTERN = '/(?<![A-Za-z0-9_])(?:\$[A-Za-z_][A-Za-z0-9_]*(?:->|::)|self::|static::|app\(\)->get\(\s*Translator::class\s*\)->)?\s*(?:__|trans_choice|trans|translate|choice|t)\s*\(\s*([\'"])((?:[a-z0-9][a-z0-9_-]*::)?[a-z0-9][a-z0-9_.:-]*\.[a-z0-9_.:-]+)\1\s*[,)]/i';
 
     /**
      * Common French words used to spot untranslatable literals in templates.
@@ -26,14 +41,53 @@ final class LanguageChecker
     private const ACCENT_PATTERN = '/[àâäéèêëîïôöùûüçœÀÂÄÉÈÊËÎÏÔÖÙÛÜÇŒ]/u';
 
     /**
-     * @param list<string> $scanPaths Directories scanned for translation key usages
-     * @param list<string>|null $locales Restrict the analysis to these locales (null = every shipped locale)
+     * HTML attributes whose literal value is user-visible copy.
+     */
+    private const UI_ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'alt'];
+
+    /**
+     * Literal text nodes that are legitimate and must not be reported.
+     *
+     * Brand names, unit labels and typographic symbols only: anything with real prose belongs
+     * in the catalogue.
+     */
+    private const ALLOWED_LITERALS = [
+        'Prime CMS',
+        'CSS',
+        'HTML',
+        'JSON',
+        'PHP',
+        'SQL',
+        'ZIP',
+    ];
+
+    /**
+     * Files excluded from the hard-coded copy scan (suffixes relative to the scanned root).
+     */
+    private const HARDCODED_EXCEPTIONS = [
+        // Component documentation, written in French on purpose.
+        'admin/styleguide/index.php',
+        'admin/styleguide.php',
+        // Machine-readable payloads and technical views.
+        'errors/debug.php',
+        'mail/layout.php',
+        // Third-party / generated bundles.
+        'assets/admin/js/i18n.js',
+    ];
+
+    /**
+     * @param list<string>            $scanPaths      Directories scanned for translation key usages
+     * @param list<string>|null       $locales        Restrict the analysis to these locales
+     * @param list<string>            $usageOnlyPaths Paths whose key references count as usages only
+     * @param list<string>            $unusedBaseline Keys exempted from the unused report
      */
     public function __construct(
         private readonly string $langPath,
         private readonly string $reference = Translator::DEFAULT_LOCALE,
         private readonly array $scanPaths = [],
         private readonly ?array $locales = null,
+        private readonly array $usageOnlyPaths = [],
+        private readonly array $unusedBaseline = [],
     ) {
     }
 
@@ -133,6 +187,7 @@ final class LanguageChecker
     {
         $defined = array_flip(array_keys($this->flatten($this->reference)));
         $usedKeys = [];
+        $dynamicPrefixes = [];
         $hardcoded = [];
 
         foreach ($this->templateFiles() as $file) {
@@ -141,19 +196,40 @@ final class LanguageChecker
                 continue;
             }
 
-            if (preg_match_all(self::CALL_PATTERN, $contents, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) > 0) {
-                foreach ($matches as $match) {
-                    $key = (string) $match[2][0];
-                    $line = substr_count(substr($contents, 0, (int) $match[2][1]), "\n") + 1;
-                    $usedKeys[$key][] = $this->relative($file) . ':' . $line;
+            // `i18n.js` documents the helper API with example keys in its docblock: those are
+            // documentation, not usages. Every other file is scanned, including the ones
+            // excepted from the hard-coded-copy check.
+            if (preg_match_all(self::DYNAMIC_PREFIX_PATTERN, $contents, $dynamic) > 0) {
+                foreach ($dynamic[2] as $prefix) {
+                    $dynamicPrefixes[$prefix] = true;
                 }
             }
 
-            if (!$this->isTemplate($file)) {
+            $patterns = str_ends_with($file, '/js/i18n.js') ? [] : [self::CALL_PATTERN];
+            if ($this->isJavaScript($file)) {
+                $patterns[] = self::JS_CALL_PATTERN;
+                $patterns[] = self::JS_CALL_PATTERN_B;
+            }
+
+            foreach ($patterns as $pattern) {
+                if (preg_match_all($pattern, $contents, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) > 0) {
+                    foreach ($matches as $match) {
+                        $key = (string) $match[2][0];
+                        $line = substr_count(substr($contents, 0, (int) $match[2][1]), "\n") + 1;
+                        $usedKeys[$key][] = $this->relative($file) . ':' . $line;
+                    }
+                }
+            }
+
+            if (!$this->isUiSource($file)) {
                 continue;
             }
 
-            foreach ($this->hardcodedLines($contents) as $line => $text) {
+            $hits = $this->isJavaScript($file)
+                ? $this->hardcodedJavaScript($contents)
+                : $this->hardcodedLines($contents);
+
+            foreach ($hits as $line => $text) {
                 $hardcoded[] = [
                     'file' => $this->relative($file),
                     'line' => $line,
@@ -162,8 +238,38 @@ final class LanguageChecker
             }
         }
 
+        // Keys resolved through a variable prefix cannot be attributed individually, so every
+        // catalogue entry under such a prefix counts as used.
+        if ($dynamicPrefixes !== []) {
+            foreach (array_keys($defined) as $definedKey) {
+                foreach (array_keys($dynamicPrefixes) as $prefix) {
+                    if (str_starts_with($definedKey, $prefix)) {
+                        $usedKeys[$definedKey][] = 'dynamic:' . $prefix;
+                        break;
+                    }
+                }
+            }
+        }
+
+        foreach ($this->usageOnlyFiles() as $file) {
+            $contents = @file_get_contents($file);
+            if (!is_string($contents)) {
+                continue;
+            }
+
+            if (preg_match_all(self::CALL_PATTERN, $contents, $matches, PREG_SET_ORDER) > 0) {
+                foreach ($matches as $match) {
+                    $usedKeys[(string) $match[2]][0] ??= 'test';
+                }
+            }
+        }
+
         $unknown = [];
         foreach ($usedKeys as $key => $places) {
+            // A reference coming only from the suite is a fixture, not a missing catalogue entry.
+            if ($places === ['test']) {
+                continue;
+            }
             if (!isset($defined[$key])) {
                 $unknown[$key] = $places;
             }
@@ -232,12 +338,19 @@ final class LanguageChecker
             $errors[] = sprintf('clé inconnue « %s » utilisée dans %s', $key, implode(', ', array_slice($places, 0, 3)));
         }
 
+        // An unused key is dead weight but the interface still works; copy left hard-coded in a
+        // template or in the admin bundle is untranslatable by definition, so it is an error.
+        $baseline = array_flip($this->unusedBaseline());
+
         foreach ($usage['unused'] as $key) {
+            if (isset($baseline[$key])) {
+                continue;
+            }
             $warnings[] = sprintf('clé jamais utilisée : %s', $key);
         }
 
         foreach ($usage['hardcoded'] as $hit) {
-            $warnings[] = sprintf('%s:%d — texte en dur : %s', $hit['file'], $hit['line'], $hit['text']);
+            $errors[] = sprintf('%s:%d — texte en dur : %s', $hit['file'], $hit['line'], $hit['text']);
         }
 
         return [
@@ -399,7 +512,13 @@ final class LanguageChecker
                 }
 
                 $name = $file->getFilename();
-                if (str_ends_with($name, '.php') && !str_contains($file->getPathname(), '/lang/')) {
+                if (str_contains($file->getPathname(), '/lang/')) {
+                    continue;
+                }
+
+                // Admin JavaScript carries its copy through `tr('key', 'fallback')`, so it has to
+                // be scanned for usages and for hard-coded text like any template.
+                if (str_ends_with($name, '.php') || str_ends_with($name, '.js')) {
                     $files[] = $file->getPathname();
                 }
             }
@@ -416,6 +535,57 @@ final class LanguageChecker
     }
 
     /**
+     * Files whose user-visible copy must come from the catalogue.
+     *
+     * `resources/views`, `content/themes/<theme>/templates`, `content/themes/<theme>/partials`
+     * and the admin JavaScript bundle. The design-system styleguide is deliberately excluded:
+     * it documents every component in French on purpose.
+     */
+    private function isUiSource(string $file): bool
+    {
+        if ($this->isExcepted($file)) {
+            return false;
+        }
+
+        $normalized = str_replace('\\', '/', $file);
+
+        if (str_contains($normalized, '/resources/views/')) {
+            return true;
+        }
+
+        if (preg_match('#/content/themes/[^/]+/(?:templates|partials)/#', $normalized) === 1) {
+            return true;
+        }
+
+        if (str_contains($normalized, '/public/assets/admin/js/') && !str_contains($normalized, '/js/vendor/')) {
+            return true;
+        }
+
+        // Any scanned `views/`, `templates/` or `partials/` tree (the unit fixtures, themes and
+        // plugins all follow the same layout).
+        return $this->isTemplate($normalized);
+    }
+
+    /**
+     * Explicit, reviewable exceptions: files that legitimately contain literal copy.
+     *
+     * Matched as suffixes of the path relative to the scanned root.
+     */
+    private function isExcepted(string $file): bool
+    {
+        $normalized = str_replace('\\', '/', $file);
+        $relative = ltrim($this->relative($file), '/');
+
+        foreach (self::HARDCODED_EXCEPTIONS as $exception) {
+            if ($relative === $exception || str_ends_with($normalized, '/' . $exception)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Detect raw template text (outside `<?php … ?>`) that bypasses the translation layer.
      *
      * @return array<int, string>
@@ -424,10 +594,23 @@ final class LanguageChecker
     {
         $hits = [];
         $inPhp = false;
+        $inStyle = 0;
 
         foreach (explode("\n", $contents) as $index => $rawLine) {
             $text = '';
             $length = strlen($rawLine);
+
+            // Stylesheets and inline scripts carry no translatable copy.
+            if (preg_match('/<style\b/i', $rawLine) === 1) {
+                $inStyle++;
+            }
+            if (preg_match('#</style>#i', $rawLine) === 1) {
+                $inStyle = max(0, $inStyle - 1);
+                continue;
+            }
+            if ($inStyle > 0) {
+                continue;
+            }
 
             for ($i = 0; $i < $length; $i++) {
                 if (!$inPhp && str_starts_with(substr($rawLine, $i), '<?php')) {
@@ -453,7 +636,13 @@ final class LanguageChecker
                 }
             }
 
+            // Tags are removed and attribute values blanked out: a hard-coded `class="…"` or
+            // `aria-expanded="false"` is markup, only the visible text node is copy.
             $text = trim(strip_tags($text));
+            $text = trim((string) preg_replace('/\b[\w:-]+\s*=\s*(?:"[^"]*"|\'[^\']*\')/', '', $text));
+            // HTML entities carry no translatable prose (`&mdash;`, `&rarr;`).
+            $text = trim((string) preg_replace('/&[\w#]+;/', '', $text));
+            $text = trim((string) preg_replace('/\s+/u', ' ', $text));
             if ($text === '' || strlen($text) < 4) {
                 continue;
             }
@@ -462,7 +651,24 @@ final class LanguageChecker
                 continue;
             }
 
-            if (preg_match(self::FRENCH_WORD_PATTERN, $text) !== 1 && preg_match(self::ACCENT_PATTERN, $text) !== 1) {
+            // Any literal prose is untranslatable, whatever its language: two consecutive
+            // letters that are not part of a PHP/echo expression is enough to report it.
+            // Only prose counts: a bare lowercase token is an attribute or a data-* hook, and a
+            // CSS declaration or an HTML entity is markup.
+            if (preg_match('/[A-ZÀ-Ý]/u', $text) !== 1 && preg_match(self::ACCENT_PATTERN, $text) !== 1) {
+                continue;
+            }
+            if (preg_match('/^&[\w#]+;$/', $text) === 1) {
+                continue;
+            }
+            if (preg_match('/^[\w-]+\s*:\s*[^\s].*;$/u', $text) === 1) {
+                continue;
+            }
+            if (preg_match('/^[\w-]+$/u', $text) === 1) {
+                continue;
+            }
+
+            if (in_array($text, self::ALLOWED_LITERALS, true)) {
                 continue;
             }
 
@@ -473,7 +679,274 @@ final class LanguageChecker
             }
         }
 
+        // Literal copy in user-visible attributes (`placeholder`, `title`, `aria-label`, `alt`)
+        // is as untranslatable as a text node, so it is reported the same way.
+        foreach (explode("\n", $contents) as $index => $rawLine) {
+            if (isset($hits[$index + 1])) {
+                continue;
+            }
+
+            foreach (self::UI_ATTRIBUTES as $attribute) {
+                $pattern = '/\b' . preg_quote($attribute, '/') . '\s*=\s*"([^"<>{}]*)"|\b'
+                    . preg_quote($attribute, '/') . "\s*=\s*'([^'<>{}]*)'/u";
+                if (preg_match_all($pattern, $rawLine, $found, PREG_SET_ORDER) === 0) {
+                    continue;
+                }
+
+                foreach ($found as $match) {
+                    $double = trim((string) ($match[1] ?? ''));
+                    $single = trim((string) ($match[2] ?? ''));
+                    $value = $double !== '' ? $double : $single;
+                    if ($value === '' || preg_match('/[A-Za-zÀ-ÿ]/u', $value) !== 1) {
+                        continue;
+                    }
+                    if (preg_match(self::FRENCH_WORD_PATTERN, $value) !== 1
+                        && preg_match(self::ACCENT_PATTERN, $value) !== 1) {
+                        continue;
+                    }
+
+                    $hits[$index + 1] = $attribute . '="' . (strlen($value) > 70 ? substr($value, 0, 67) . '…' : $value) . '"';
+                    break 2;
+                }
+            }
+        }
+
+        ksort($hits);
+
         return $hits;
+    }
+
+    /**
+     * Catalogue keys exempted from the unused report.
+     *
+     * @return list<string>
+     */
+    public function unusedBaseline(): array
+    {
+        $baseline = $this->unusedBaseline;
+
+        if ($this->langPath !== '' && is_file($this->langPath . '/unused-baseline.php')) {
+            $file = require $this->langPath . '/unused-baseline.php';
+            if (is_array($file)) {
+                foreach ($file as $key) {
+                    $baseline[] = (string) $key;
+                }
+            }
+        }
+
+        return array_values(array_unique($baseline));
+    }
+
+    /**
+     * Files scanned for key references only (the test suite).
+     *
+     * @return list<string>
+     */
+    private function usageOnlyFiles(): array
+    {
+        $files = [];
+
+        foreach ($this->usageOnlyPaths as $path) {
+            if (!is_dir($path)) {
+                continue;
+            }
+
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS));
+            foreach ($iterator as $file) {
+                if ($file->isFile() && str_ends_with($file->getFilename(), '.php')) {
+                    $files[] = $file->getPathname();
+                }
+            }
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
+    private function isJavaScript(string $file): bool
+    {
+        return str_ends_with(str_replace('\\', '/', $file), '.js');
+    }
+
+    /**
+     * Detect literal French copy inside admin JavaScript.
+     *
+     * Any string literal that contains letters and is not routed through `tr()` / `t()` is
+     * reported: the admin bundle must never ship untranslatable copy.
+     *
+     * @return array<int, string>
+     */
+    private function hardcodedJavaScript(string $contents): array
+    {
+        $hits = [];
+        $inBlockComment = false;
+
+        foreach (explode("\n", $contents) as $index => $rawLine) {
+            $line = $rawLine;
+            $trimmed = trim($line);
+
+            if ($inBlockComment) {
+                if (str_contains($line, '*/')) {
+                    $inBlockComment = false;
+                }
+                continue;
+            }
+            if (str_starts_with($trimmed, '/*')) {
+                if (!str_contains($line, '*/')) {
+                    $inBlockComment = true;
+                }
+                continue;
+            }
+            if ($trimmed === '' || str_starts_with($trimmed, '//') || str_starts_with($trimmed, '*')
+                || str_starts_with($trimmed, 'import ') || str_starts_with($trimmed, '} from ')) {
+                continue;
+            }
+
+            // Drop comments before scanning so a French sentence in a comment is not reported.
+            $line = (string) preg_replace('#//.*$#', '', $line);
+            $line = (string) preg_replace('#/\*.*?\*/#', '', $line);
+
+            // Blank out the arguments of `tr(...)` / `t(...)` / `choice(...)`: the key and the
+            // French fallback are both translated strings, whatever escaping they use.
+            $line = $this->blankTranslationCalls($line);
+
+            if (preg_match_all('/([\'"`])((?:[^\'"`\\\n]|\\.){3,200})\1/u', $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === 0) {
+                continue;
+            }
+
+            foreach ($matches as $match) {
+                $value = (string) $match[2][0];
+                $offset = (int) $match[0][1];
+                $before = substr($line, 0, $offset);
+
+                // `tr('key', 'texte')`, `t('key')` and `choice('key', …)` are translated already:
+                // the literal is either the key or the explicit French fallback.
+                if (preg_match('/(?:\btr|\bt|\bchoice)\(\s*$/', $before) === 1) {
+                    continue;
+                }
+                if (preg_match('/(?:\btr|\bt|\bchoice)\(\s*(?:\'[^\']*\'|"[^"]*")\s*,\s*$/', $before) === 1) {
+                    continue;
+                }
+
+                if (!$this->looksLikeCopy($value)) {
+                    continue;
+                }
+
+                $hits[$index + 1] = strlen($value) > 80 ? substr($value, 0, 77) . '…' : $value;
+                break;
+            }
+
+            if (count($hits) >= 200) {
+                break;
+            }
+        }
+
+        return $hits;
+    }
+
+    /**
+     * Replace every `tr(...)`, `t(...)` and `choice(...)` call with `tr()`.
+     *
+     * A character scanner is used instead of a regular expression because the arguments are
+     * arbitrary JavaScript string literals: they may contain escaped quotes, parentheses and
+     * interpolations, which a pattern cannot reliably delimit.
+     */
+    private function blankTranslationCalls(string $line): string
+    {
+        $out = '';
+        $length = strlen($line);
+        $quote = null;
+        $i = 0;
+
+        while ($i < $length) {
+            $char = $line[$i];
+
+            if ($quote !== null) {
+                $out .= $char;
+                if ($char === '\\' && $i + 1 < $length) {
+                    $out .= $line[$i + 1];
+                    $i += 2;
+                    continue;
+                }
+                if ($char === $quote) {
+                    $quote = null;
+                }
+                $i++;
+                continue;
+            }
+
+            if ($char === "\'" || $char === '"' || $char === '`') {
+                $quote = $char;
+                $out .= $char;
+                $i++;
+                continue;
+            }
+
+            if (preg_match('/\G(?:tr|t|choice)\s*\(/', $line, $m, 0, $i) === 1
+                && ($i === 0 || preg_match('/[A-Za-z0-9_$.]/', $line[$i - 1]) !== 1)) {
+                $i += strlen($m[0]);
+                $depth = 1;
+                $inner = null;
+                while ($i < $length && $depth > 0) {
+                    $c = $line[$i];
+                    if ($inner !== null) {
+                        if ($c === '\\') {
+                            $i += 2;
+                            continue;
+                        }
+                        if ($c === $inner) {
+                            $inner = null;
+                        }
+                        $i++;
+                        continue;
+                    }
+                    if ($c === "\'" || $c === '"' || $c === '`') {
+                        $inner = $c;
+                        $i++;
+                        continue;
+                    }
+                    if ($c === '(') {
+                        $depth++;
+                    }
+                    if ($c === ')') {
+                        $depth--;
+                    }
+                    $i++;
+                }
+                $out .= 'tr()';
+                continue;
+            }
+
+            $out .= $char;
+            $i++;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Whether a literal is prose rather than an identifier, selector, URL or class name.
+     */
+    private function looksLikeCopy(string $value): bool
+    {
+        if (preg_match('/[A-Za-zÀ-ÿ]/u', $value) !== 1) {
+            return false;
+        }
+        // Identifiers, slugs, selectors, URLs, class lists and code fragments.
+        if (preg_match('/^[a-z0-9_.\-\/:]+$/i', $value) === 1) {
+            return false;
+        }
+        if (preg_match('#<[a-zA-Z/!]|\[data-|\[type=|\[contenteditable|^https?://|\.(?:js|css|php|webp?|png|jpe?g|svg|json)\b#', $value) === 1) {
+            return false;
+        }
+        if (preg_match('/^[\w-]+(?:[\s.,>+~][\w-]+)*$/', $value) === 1
+            && preg_match(self::ACCENT_PATTERN, $value) !== 1) {
+            return false;
+        }
+
+        return preg_match(self::FRENCH_WORD_PATTERN, $value) === 1
+            || preg_match(self::ACCENT_PATTERN, $value) === 1;
     }
 
     /**

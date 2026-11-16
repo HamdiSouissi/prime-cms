@@ -36,7 +36,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                 <?= $this->raw($this->csrfField()) ?>
 
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-term-name">Nom *</label>
+                    <label class="pc-label" for="pc-term-name"><?= t('admin.taxonomies.name') ?> *</label>
                     <input
                         id="pc-term-name"
                         type="text"

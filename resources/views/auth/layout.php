@@ -30,7 +30,7 @@ $brandName = (string) ($siteName ?? 'Prime CMS');
     <link rel="stylesheet" href="<?= $this->e(asset('admin/css/admin.css')) ?>">
 </head>
 <body class="pc-auth-page">
-    <aside class="pc-auth-brand" aria-label="Présentation de Prime CMS">
+    <aside class="pc-auth-brand" aria-label="<?= t('admin.attr.presentation_de_prime_cms') ?>">
         <div class="pc-auth-brand__top">
             <img
                 src="<?= $this->e(asset('brand/logo-128.png')) ?>"

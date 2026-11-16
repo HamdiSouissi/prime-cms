@@ -28,7 +28,7 @@ declare(strict_types=1);
         <div>
             <strong><?= $this->e($this->t('admin.content.preview.mode_previsualisation')) ?></strong>
             · <?= $this->e($contentType->label('singular')) ?>
-            · Statut : <?= $this->e($entry->statusLabel()) ?>
+            · <?= t('admin.content.preview.status') ?> : <?= $this->e($entry->statusLabel()) ?>
             <?php if ($previewRevision !== null): ?>
                 · <?= $this->e($this->t('admin.content.preview.revision', ['id' => $previewRevision->id, 'date' => $previewRevision->createdAt])) ?>
             <?php endif; ?>

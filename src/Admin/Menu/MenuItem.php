@@ -60,6 +60,37 @@ final readonly class MenuItem
     }
 
     /**
+     * Resolve the menu label through the translator.
+     *
+     * Core items are declared with an `admin.menu.*` key so they follow the active locale;
+     * a plugin that passes a literal (`label: 'Shop'`) keeps its own text untouched.
+     */
+    public function translatedLabel(): string
+    {
+        return self::translate($this->label);
+    }
+
+    /**
+     * Resolve the section label (`Contenu`, `Système`, …) through the translator.
+     */
+    public function translatedGroup(): ?string
+    {
+        return $this->group === null ? null : self::translate($this->group);
+    }
+
+    /**
+     * A label is a translation key when it is a dotted `admin.*` / `core.*` identifier.
+     */
+    private static function translate(string $value): string
+    {
+        if (preg_match('/^(?:admin|core)\.[a-z0-9_.]+$/', $value) !== 1) {
+            return $value;
+        }
+
+        return t($value);
+    }
+
+    /**
      * Validate and build a MenuItem from a raw array payload (returns null if invalid).
      */
     public static function fromArray(mixed $raw): ?self

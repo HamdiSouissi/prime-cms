@@ -78,7 +78,7 @@ $hasPrimaryMenu = $site->hasMenu('primary');
       <div class="site-container">
         <form class="site-search-form" role="search" method="get" action="<?= $site->searchUrl() ?>">
           <label class="sr-only" for="aurora-header-q"><?= $site->e($site->t('site.aurora.partials.header.rechercher_site')) ?></label>
-          <input id="aurora-header-q" class="site-search-form__input" type="search" name="q" placeholder="Rechercher un article, une page…" required>
+          <input id="aurora-header-q" class="site-search-form__input" type="search" name="q" placeholder="<?= t('site.attr.rechercher_un_article_une_page') ?>" required>
           <button class="site-search-form__btn" type="submit"><?= $site->e($site->t('site.search.submit')) ?></button>
         </form>
       </div>

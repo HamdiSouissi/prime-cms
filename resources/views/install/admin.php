@@ -20,7 +20,7 @@ $this->layout('install::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-install__header">
-    <h1 class="pc-install__title">Compte administrateur</h1>
+    <h1 class="pc-install__title"><?= t('core.install.admin.account') ?></h1>
     <p class="pc-install__lead">
         <?= $this->e($this->t('core.install.admin.compte_principal')) ?>
         <?= $this->e($this->t('core.install.admin.choisissez_phrase_secrete_unique_moins')) ?>
@@ -59,7 +59,7 @@ $this->layout('install::layout', [
 
         <div class="pc-field<?= isset($errors['email']) ? ' pc-field--error' : '' ?>">
             <label class="pc-field__label" for="admin-email">
-                <span>Adresse e-mail</span>
+                <span><?= t('core.install.admin.email') ?></span>
                 <span class="pc-field__required" aria-hidden="true">*</span>
                 <span class="sr-only"><?= $this->e($this->t('core.install.admin.obligatoire')) ?></span>
             </label>

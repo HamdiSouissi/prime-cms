@@ -15,7 +15,7 @@ declare(strict_types=1);
   <?= $site->partial('breadcrumbs') ?>
 
   <header class="aurora-page-header">
-    <span class="aurora-page-header__eyebrow">Hello Prime</span>
+    <span class="aurora-page-header__eyebrow"><?= $site->e($site->t('plugin::hello-prime.archive.testimonial.eyebrow')) ?></span>
     <h1 class="aurora-page-header__title"><?= $site->e($site->t('plugin::hello-prime.archive.testimonial.temoignages_clients')) ?></h1>
     <p class="aurora-page-header__lead">
       <?= $site->e($site->t('plugin::hello-prime.archive.testimonial.retours_verifies_utilisateurs_partenaires')) ?>

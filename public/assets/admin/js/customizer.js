@@ -6,6 +6,7 @@
  */
 
 import { showToast } from './toast.js';
+import { tr } from './i18n.js';
 
 /**
  * Pure helper computing the CSS custom property value for a field change.
@@ -208,14 +209,14 @@ export function initCustomizer() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok === false) {
-        showToast(data.message || 'Impossible d\'enregistrer la personnalisation.', 'danger');
+        showToast(data.message || tr('admin.js.customizer.impossible_d_enregistrer_la_personnalisation', 'Impossible d\'enregistrer la personnalisation.'), 'danger');
         return;
       }
       dirty = false;
-      showToast(data.message || 'Personnalisation publiée.', 'success');
+      showToast(data.message || tr('admin.js.customizer.personnalisation_publiee', 'Personnalisation publiée.'), 'success');
       postToPreview({ type: 'reload' });
     } catch {
-      showToast('Erreur réseau lors de la publication.', 'danger');
+      showToast(tr('admin.js.customizer.erreur_reseau_lors_de_la', 'Erreur réseau lors de la publication.'), 'danger');
     } finally {
       if (publishBtn instanceof HTMLButtonElement) {
         publishBtn.disabled = false;
@@ -234,7 +235,7 @@ export function initCustomizer() {
   // Reset to defaults
   if (resetBtn instanceof HTMLButtonElement) {
     resetBtn.addEventListener('click', async () => {
-      if (!window.confirm('Réinitialiser toutes les options du thème aux valeurs par défaut ?')) {
+      if (!window.confirm(tr('admin.js.customizer.reinitialiser_toutes_les_options_du', 'Réinitialiser toutes les options du thème aux valeurs par défaut ?'))) {
         return;
       }
       const { csrf } = collectCustomizerPayload(form);
@@ -251,13 +252,13 @@ export function initCustomizer() {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.ok === false) {
-          showToast(data.message || 'Réinitialisation impossible.', 'danger');
+          showToast(data.message || tr('admin.js.customizer.reinitialisation_impossible', 'Réinitialisation impossible.'), 'danger');
           return;
         }
         dirty = false;
         window.location.reload();
       } catch {
-        showToast('Erreur réseau lors de la réinitialisation.', 'danger');
+        showToast(tr('admin.js.customizer.erreur_reseau_lors_de_la', 'Erreur réseau lors de la réinitialisation.'), 'danger');
       }
     });
   }

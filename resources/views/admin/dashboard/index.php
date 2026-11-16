@@ -33,7 +33,7 @@ $showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdm
 <div class="pc-stack pc-stack--lg">
 
     <!-- 4 vibrant KPI stat tiles -->
-    <section aria-label="Indicateurs clés" class="pc-grid pc-grid--stats">
+    <section aria-label="<?= t('admin.attr.indicateurs_cles') ?>" class="pc-grid pc-grid--stats">
         <?php foreach ($stats as $stat): ?>
             <?= $this->raw($this->insert('admin::components/stat-tile', $stat)) ?>
         <?php endforeach; ?>

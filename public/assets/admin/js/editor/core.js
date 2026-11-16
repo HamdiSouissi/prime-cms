@@ -24,6 +24,7 @@ import {
 import { SlashMenu } from './slash-menu.js';
 import { InlineToolbar } from './toolbar.js';
 import { countWords, estimateReadingTime, generateBlockId, stripHtml } from './utils.js';
+import { tr } from '../i18n.js';
 
 registerCoreBlocks(defaultBlockRegistry);
 
@@ -111,7 +112,7 @@ export class PrimeEditor {
         e.preventDefault();
         if (nav.action === 'create_and_focus_first') {
           this.blocks.push(createDefaultBlock('paragraph'));
-          this.afterMutation(0, 'Paragraphe prêt.', false);
+          this.afterMutation(0, tr('admin.js.editor.core.paragraphe_pret', 'Paragraphe prêt.'), false);
           return;
         }
         this.focusBlock(nav.index, nav.atEnd);
@@ -244,7 +245,7 @@ export class PrimeEditor {
       plusBtn.type = 'button';
       plusBtn.className = 'pc-ed-gutter-btn';
       plusBtn.title = 'Insérer un bloc après celui-ci';
-      plusBtn.setAttribute('aria-label', 'Insérer un bloc après');
+      plusBtn.setAttribute('aria-label', tr('admin.js.editor.core.inserer_un_bloc_apres', 'Insérer un bloc après'));
       plusBtn.innerHTML = iconSvg('plus', 15);
       plusBtn.addEventListener('click', (e) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -259,7 +260,7 @@ export class PrimeEditor {
       handleBtn.className = 'pc-ed-gutter-btn pc-ed-drag-handle';
       handleBtn.draggable = true;
       handleBtn.title = 'Options du bloc (Alt+↑ / Alt+↓ pour déplacer)';
-      handleBtn.setAttribute('aria-label', 'Options et déplacement du bloc');
+      handleBtn.setAttribute('aria-label', tr('admin.js.editor.core.options_et_deplacement_du_bloc', 'Options et déplacement du bloc'));
       handleBtn.setAttribute('aria-haspopup', 'menu');
       handleBtn.innerHTML = iconSvg('grip-vertical', 15);
 
@@ -434,7 +435,7 @@ export class PrimeEditor {
       event.preventDefault();
       const newBlock = createDefaultBlock('paragraph');
       this.blocks.splice(index + 1, 0, newBlock);
-      this.afterMutation(index + 1, 'Nouveau paragraphe ajouté.');
+      this.afterMutation(index + 1, tr('admin.js.editor.core.nouveau_paragraphe_ajoute', 'Nouveau paragraphe ajouté.'));
       return;
     }
 
@@ -607,7 +608,7 @@ export class PrimeEditor {
         data: {
           mediaId: Number(m.id),
           url: m.url || '',
-          alt: m.alt || m.alt_text || m.title || m.original_name || m.original_filename || 'Image importée',
+          alt: m.alt || m.alt_text || m.title || m.original_name || m.original_filename || tr('admin.js.editor.core.image_importee', 'Image importée'),
           decorative: false,
           caption: m.caption || '',
           alignment: 'normal',
@@ -634,18 +635,18 @@ export class PrimeEditor {
     const clone = JSON.parse(JSON.stringify(this.blocks[index]));
     clone.id = generateBlockId();
     this.blocks.splice(index + 1, 0, clone);
-    this.afterMutation(index + 1, 'Bloc dupliqué.');
+    this.afterMutation(index + 1, tr('admin.js.editor.core.bloc_duplique', 'Bloc dupliqué.'));
   }
 
   removeBlock(index) {
     if (this.blocks.length === 1) {
       this.blocks[0] = createDefaultBlock('paragraph');
-      this.afterMutation(0, 'Bloc réinitialisé.');
+      this.afterMutation(0, tr('admin.js.editor.core.bloc_reinitialise', 'Bloc réinitialisé.'));
       return;
     }
     this.blocks.splice(index, 1);
     const nextFocus = Math.max(0, index - 1);
-    this.afterMutation(nextFocus, 'Bloc supprimé.', true);
+    this.afterMutation(nextFocus, tr('admin.js.editor.core.bloc_supprime', 'Bloc supprimé.'), true);
   }
 
   afterMutation(focusIndex, announcement, focusAtEnd = false) {
@@ -775,7 +776,7 @@ export class PrimeEditor {
     this.renderAll(focusIdx, true);
     this.updateStats();
     this.updateHistoryButtons();
-    this.announce('Action annulée.');
+    this.announce(tr('admin.js.editor.core.action_annulee', 'Action annulée.'));
   }
 
   redo() {
@@ -791,7 +792,7 @@ export class PrimeEditor {
     this.renderAll(focusIdx, true);
     this.updateStats();
     this.updateHistoryButtons();
-    this.announce('Action rétablie.');
+    this.announce(tr('admin.js.editor.core.action_retablie', 'Action rétablie.'));
   }
 
   updateHistoryButtons() {
@@ -866,7 +867,7 @@ export class PrimeEditor {
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, '0');
             const mm = String(now.getMinutes()).padStart(2, '0');
-            this.autosaveStatusEl.textContent = `Autosauvegardé à ${hh}:${mm}`;
+            this.autosaveStatusEl.textContent = tr('admin.js.editor.core.autosauvegarde_a', 'Autosauvegardé à :time', { time: `${hh}:${mm}` });
           }
         } catch {
           // Silent retry on next interval

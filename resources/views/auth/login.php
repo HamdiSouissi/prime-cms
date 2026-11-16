@@ -73,11 +73,11 @@ $this->layout('auth::layout', [
     </div>
 
     <button type="submit" class="pc-btn pc-btn--primary pc-auth-submit">
-        <span>Se connecter</span>
+        <span><?= t('core.auth.login.submit') ?></span>
     </button>
 </form>
 
 <div class="pc-auth-card__footer">
-    <a href="/" class="pc-auth-link">← Retour au site public</a>
+    <a href="/" class="pc-auth-link"><?= t('core.auth.login.back_to_site') ?></a>
 </div>
 <?php $this->stop(); ?>

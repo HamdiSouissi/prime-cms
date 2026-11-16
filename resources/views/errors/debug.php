@@ -324,7 +324,7 @@
             <h2 id="excerpt-heading" class="dbg-card-title"><?= $this->e($this->t('core.errors.debug.extrait_code_source')) ?></h2>
             <span class="dbg-frame-file"><?= $this->e($file ?? '') ?></span>
           </div>
-          <div class="dbg-code-wrap" role="region" aria-label="Code autour de la ligne en erreur">
+          <div class="dbg-code-wrap" role="region" aria-label="<?= t('admin.attr.code_autour_de_la_ligne_en_erreur') ?>">
             <?php foreach ($excerpt as $row): ?>
               <div class="dbg-code-line<?= !empty($row['highlight']) ? ' dbg-code-line--active' : '' ?>">
                 <span class="dbg-line-num"><?= $this->e($row['number']) ?></span>

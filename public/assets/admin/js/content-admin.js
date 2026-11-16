@@ -3,6 +3,7 @@
  */
 
 import { slugify } from './editor/utils.js';
+import { tr } from './i18n.js';
 
 /**
  * Auto-sync permalink slug from title on new entries until the user edits the slug field manually.
@@ -110,7 +111,7 @@ function initQuickTermCreate() {
         });
         const data = await res.json();
         if (!res.ok || !data.term) {
-          window.Prime?.toast?.(data.error || 'Création impossible.', 'danger');
+          window.Prime?.toast?.(data.error || tr('admin.js.content-admin.creation_impossible', 'Création impossible.'), 'danger');
           return;
         }
 
@@ -129,7 +130,7 @@ function initQuickTermCreate() {
         input.value = '';
         window.Prime?.toast?.(`« ${data.term.name} » ajouté.`, 'success');
       } catch {
-        window.Prime?.toast?.('Erreur réseau lors de la création.', 'danger');
+        window.Prime?.toast?.(tr('admin.js.content-admin.erreur_reseau_lors_de_la', 'Erreur réseau lors de la création.'), 'danger');
       } finally {
         button.disabled = false;
       }
@@ -262,10 +263,10 @@ function initConfirmDeleteButtons() {
 
     event.preventDefault();
     const action = trigger.getAttribute('data-prime-action') || '';
-    const itemName = trigger.getAttribute('data-prime-item-name') || 'cet élément';
-    const warning = trigger.getAttribute('data-prime-warning') || 'Cette action est définitive et irréversible.';
+    const itemName = trigger.getAttribute('data-prime-item-name') || tr('admin.js.content-admin.cet_element', 'cet élément');
+    const warning = trigger.getAttribute('data-prime-warning') || tr('admin.js.content-admin.cette_action_est_definitive_et', 'Cette action est définitive et irréversible.');
 
-    if (titleEl) titleEl.textContent = `Supprimer « ${itemName} » ?`;
+    if (titleEl) titleEl.textContent = tr('admin.js.content-admin.supprimer_item', 'Supprimer « :name » ?', { name: itemName });
     if (bodyEl) bodyEl.textContent = warning;
     if (formEl instanceof HTMLFormElement) formEl.action = action;
 

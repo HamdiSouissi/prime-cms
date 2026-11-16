@@ -76,7 +76,7 @@ $this->layout('install::layout', [
 <?php endif; ?>
 
 <div class="pc-install-summary">
-    <section class="pc-install-summary__section" aria-label="Base de données">
+    <section class="pc-install-summary__section" aria-label="<?= t('admin.attr.base_de_donnees') ?>">
         <div class="pc-install-summary__heading">
             <h2 class="pc-install-summary__title"><?= $this->e($this->t('core.install.database.titre')) ?></h2>
             <a href="/install/database" class="pc-install-summary__edit">Modifier</a>
@@ -101,11 +101,11 @@ $this->layout('install::layout', [
         <dl class="pc-install-dl">
             <dt><?= $this->e($this->t('core.install.run.nom_site')) ?></dt>
             <dd><?= $this->e($summary['site']['name']) ?></dd>
-            <dt>URL publique</dt>
+            <dt><?= t('core.install.run.public_url') ?></dt>
             <dd><?= $this->e($summary['site']['url']) ?></dd>
             <dt>Langue</dt>
             <dd><?= $this->e(strtoupper($summary['site']['locale'])) ?></dd>
-            <dt>Fuseau horaire</dt>
+            <dt><?= t('core.install.run.timezone') ?></dt>
             <dd><?= $this->e($summary['site']['timezone']) ?></dd>
         </dl>
     </section>
@@ -118,7 +118,7 @@ $this->layout('install::layout', [
         <dl class="pc-install-dl">
             <dt><?= $this->e($this->t('core.fields.display_name')) ?></dt>
             <dd><?= $this->e($summary['admin']['display_name']) ?></dd>
-            <dt>Adresse e-mail</dt>
+            <dt><?= t('core.install.run.email') ?></dt>
             <dd><?= $this->e($summary['admin']['email']) ?></dd>
             <dt><?= $this->e($this->t('core.fields.password')) ?></dt>
             <dd><?= $this->e($this->t('core.install.run.masque_stocke_argon2id')) ?></dd>
