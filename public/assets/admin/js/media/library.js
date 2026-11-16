@@ -443,7 +443,7 @@ export function initMediaLibrary() {
         }
         renderFolders();
         await fetchItems(1, false);
-        window.Prime?.toast?.({ type: 'success', title: `Dossier « ${folder.name} » supprimé.` });
+        window.Prime?.toast?.(`Dossier « ${folder.name} » supprimé.`, 'success');
       },
     });
   }
@@ -466,12 +466,12 @@ export function initMediaLibrary() {
       state.counts = res.counts || state.counts;
       renderFolders();
       window.Prime?.closeModal?.('pc-media-folder-modal');
-      window.Prime?.toast?.({
-        type: 'success',
-        title: editingFolderId ? `Dossier « ${name} » mis à jour.` : `Dossier « ${name} » créé.`,
-      });
+      window.Prime?.toast?.(
+        editingFolderId ? `Dossier « ${name} » mis à jour.` : `Dossier « ${name} » créé.`,
+        'success',
+      );
     } catch (err) {
-      window.Prime?.toast?.({ type: 'danger', title: err instanceof Error ? err.message : 'Erreur dossier.' });
+      window.Prime?.toast?.(err instanceof Error ? err.message : 'Erreur dossier.', 'danger');
     }
   });
 
@@ -502,7 +502,7 @@ export function initMediaLibrary() {
       pendingConfirmAction = null;
       window.Prime?.closeModal?.('pc-media-confirm-modal');
     } catch (err) {
-      window.Prime?.toast?.({ type: 'danger', title: err instanceof Error ? err.message : 'Opération impossible.' });
+      window.Prime?.toast?.(err instanceof Error ? err.message : 'Opération impossible.', 'danger');
     } finally {
       confirmBtn.disabled = false;
     }
@@ -545,12 +545,12 @@ export function initMediaLibrary() {
       selection.clear();
       syncSelectionUi();
       await Promise.all([refreshFolders(), fetchItems(1, false)]);
-      window.Prime?.toast?.({
-        type: 'success',
-        title: ids.length > 1 ? `${ids.length} médias déplacés.` : 'Média déplacé.',
-      });
+      window.Prime?.toast?.(
+        ids.length > 1 ? `${ids.length} médias déplacés.` : 'Média déplacé.',
+        'success',
+      );
     } catch (err) {
-      window.Prime?.toast?.({ type: 'danger', title: err instanceof Error ? err.message : 'Déplacement impossible.' });
+      window.Prime?.toast?.(err instanceof Error ? err.message : 'Déplacement impossible.', 'danger');
     }
   }
 
@@ -584,10 +584,10 @@ export function initMediaLibrary() {
         selection.clear();
         syncSelectionUi();
         await Promise.all([refreshFolders(), fetchItems(1, false)]);
-        window.Prime?.toast?.({
-          type: 'success',
-          title: ids.length > 1 ? `${ids.length} médias supprimés.` : 'Média supprimé.',
-        });
+        window.Prime?.toast?.(
+          ids.length > 1 ? `${ids.length} médias supprimés.` : 'Média supprimé.',
+          'success',
+        );
       },
     });
   });
@@ -869,7 +869,7 @@ export function initMediaLibrary() {
       }
       renderItems();
     } catch (err) {
-      window.Prime?.toast?.({ type: 'danger', title: err instanceof Error ? err.message : 'Erreur de chargement.' });
+      window.Prime?.toast?.(err instanceof Error ? err.message : 'Erreur de chargement.', 'danger');
     } finally {
       state.loading = false;
       if (loadMoreBtn instanceof HTMLButtonElement) {
@@ -893,7 +893,7 @@ export function initMediaLibrary() {
       populateDetailDrawer();
       window.Prime?.openDrawer?.('pc-media-detail-drawer');
     } catch (err) {
-      window.Prime?.toast?.({ type: 'danger', title: err instanceof Error ? err.message : 'Média introuvable.' });
+      window.Prime?.toast?.(err instanceof Error ? err.message : 'Média introuvable.', 'danger');
     }
   }
 
@@ -1100,10 +1100,10 @@ export function initMediaLibrary() {
     if (!(drawerUrlInput instanceof HTMLInputElement)) return;
     try {
       await navigator.clipboard.writeText(drawerUrlInput.value);
-      window.Prime?.toast?.({ type: 'success', title: 'URL copiée dans le presse-papiers.' });
+      window.Prime?.toast?.('URL copiée dans le presse-papiers.', 'success');
     } catch {
       drawerUrlInput.select();
-      window.Prime?.toast?.({ type: 'info', title: 'URL sélectionnée — appuyez sur Ctrl+C pour copier.' });
+      window.Prime?.toast?.('URL sélectionnée — appuyez sur Ctrl+C pour copier.', 'info');
     }
   });
 
@@ -1136,9 +1136,9 @@ export function initMediaLibrary() {
       populateDetailDrawer();
       renderItems();
       await refreshFolders();
-      window.Prime?.toast?.({ type: 'success', title: 'Métadonnées enregistrées.' });
+      window.Prime?.toast?.('Métadonnées enregistrées.', 'success');
     } catch (err) {
-      window.Prime?.toast?.({ type: 'danger', title: err instanceof Error ? err.message : 'Enregistrement impossible.' });
+      window.Prime?.toast?.(err instanceof Error ? err.message : 'Enregistrement impossible.', 'danger');
     } finally {
       if (drawerSaveBtn instanceof HTMLButtonElement) drawerSaveBtn.disabled = false;
     }
@@ -1154,9 +1154,9 @@ export function initMediaLibrary() {
       state.items = state.items.map((m) => (Number(m.id) === Number(res.item.id) ? res.item : m));
       populateDetailDrawer();
       renderItems();
-      window.Prime?.toast?.({ type: 'success', title: 'Variantes d’image régénérées.' });
+      window.Prime?.toast?.('Variantes d’image régénérées.', 'success');
     } catch (err) {
-      window.Prime?.toast?.({ type: 'danger', title: err instanceof Error ? err.message : 'Régénération impossible.' });
+      window.Prime?.toast?.(err instanceof Error ? err.message : 'Régénération impossible.', 'danger');
     } finally {
       drawerRegenBtn.disabled = false;
     }
@@ -1184,9 +1184,9 @@ export function initMediaLibrary() {
       state.items = state.items.map((m) => (Number(m.id) === Number(res.item.id) ? res.item : m));
       populateDetailDrawer();
       renderItems();
-      window.Prime?.toast?.({ type: 'success', title: 'Fichier remplacé en conservant l’identifiant et l’URL.' });
+      window.Prime?.toast?.('Fichier remplacé en conservant l’identifiant et l’URL.', 'success');
     } catch (err) {
-      window.Prime?.toast?.({ type: 'danger', title: err instanceof Error ? err.message : 'Remplacement refusé.' });
+      window.Prime?.toast?.(err instanceof Error ? err.message : 'Remplacement refusé.', 'danger');
     }
   });
 
@@ -1210,7 +1210,7 @@ export function initMediaLibrary() {
         window.Prime?.closeDrawer?.('pc-media-detail-drawer');
         state.activeMedia = null;
         await Promise.all([refreshFolders(), fetchItems(1, false)]);
-        window.Prime?.toast?.({ type: 'success', title: `« ${item.display_title} » supprimé.` });
+        window.Prime?.toast?.(`« ${item.display_title} » supprimé.`, 'success');
       },
     });
   });
@@ -1293,7 +1293,7 @@ export function initMediaLibrary() {
         }
         renderItems();
         if (res.warning) {
-          window.Prime?.toast?.({ type: 'warning', title: res.warning });
+          window.Prime?.toast?.(res.warning, 'warning');
         }
       }
     },

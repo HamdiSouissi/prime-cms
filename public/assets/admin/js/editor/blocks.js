@@ -1,10 +1,38 @@
 /**
- * Prime Editor — All 11 core block implementations registered on `defaultBlockRegistry`.
+ * Prime Editor — All 15 core block implementations registered on `defaultBlockRegistry`.
  */
 
 import { resolveListItemKeyAction } from './navigation.js';
 import { defaultBlockRegistry } from './registry.js';
 import { escapeHtml, parseEmbedUrl, sanitizeInlineHtml, slugify, stripHtml } from './utils.js';
+
+/**
+ * Open the reusable Prime Media Picker modal via the single public API `Prime.media.open(...)`.
+ * Never fails silently: logs a console error and shows a toast if the picker API is unavailable.
+ *
+ * @param {{ multiple?: boolean, kinds?: string[], selected?: number[], title?: string }} options
+ * @param {(items: Array<Record<string, any>>) => void} onPicked
+ */
+function openBlockMediaPicker(options, onPicked) {
+  const openFn = window.Prime?.media?.open;
+  if (typeof openFn !== 'function') {
+    console.error('[Prime Editor] Prime.media.open est indisponible : le sélecteur de médias ne peut pas être ouvert.');
+    window.Prime?.toast?.("Le sélecteur de médias n'a pas pu s'ouvrir.", 'danger');
+    return;
+  }
+
+  openFn({
+    multiple: Boolean(options.multiple),
+    kinds: Array.isArray(options.kinds) ? options.kinds : [],
+    selected: Array.isArray(options.selected) ? options.selected : [],
+    title: options.title || 'Sélectionner un média',
+    onSelect: (selection) => {
+      const items = Array.isArray(selection) ? selection : selection ? [selection] : [];
+      if (items.length === 0) return;
+      onPicked(items);
+    },
+  });
+}
 
 function createIconSvg(name, size = 16) {
   const ns = 'http://www.w3.org/2000/svg';
@@ -445,7 +473,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       grid.className = 'pc-ed-form-grid';
 
       const urlInput = document.createElement('input');
-      urlInput.type = 'url';
+      urlInput.type = 'text';
+      urlInput.inputMode = 'url';
       urlInput.className = 'pc-input';
       urlInput.value = ctx.data.url || '';
       urlInput.placeholder = 'https://exemple.com/image.jpg ou /uploads/photo.webp';
@@ -491,27 +520,29 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         alignGroup.appendChild(btn);
       });
 
-      pickBtn.addEventListener('click', async () => {
-        if (!window.Prime?.media?.openPicker) return;
-        const chosen = await window.Prime.media.openPicker({
-          multiple: false,
-          kinds: ['image'],
-          selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
-          title: 'Choisir une image',
-        });
-        if (!chosen || chosen.length === 0) return;
-        const media = chosen[0];
-        const nextUrl = media.url || '';
-        const nextAlt = media.alt || media.alt_text || altInput.value.trim() || media.title || '';
-        const nextCaption = captionInput.value.trim() || media.caption || '';
-        ctx.updateData(
+      pickBtn.addEventListener('click', () => {
+        openBlockMediaPicker(
           {
-            mediaId: Number(media.id),
-            url: nextUrl,
-            alt: decCheck.checked ? '' : nextAlt,
-            caption: escapeHtml(nextCaption),
+            multiple: false,
+            kinds: ['image'],
+            selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
+            title: 'Choisir une image',
           },
-          { rerender: true, recordHistory: true },
+          (chosen) => {
+            const media = chosen[0];
+            const nextUrl = media.url || '';
+            const nextAlt = media.alt || altInput.value.trim() || media.display_title || media.title || media.original_name || '';
+            const nextCaption = captionInput.value.trim() || media.caption || '';
+            ctx.updateData(
+              {
+                mediaId: Number(media.id),
+                url: nextUrl,
+                alt: decCheck.checked ? '' : nextAlt,
+                caption: escapeHtml(nextCaption),
+              },
+              { rerender: true, recordHistory: true },
+            );
+          },
         );
       });
 
@@ -858,24 +889,27 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       addBtn.type = 'button';
       addBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
       addBtn.append(createIconSvg('images', 14), document.createTextNode(' Ajouter des images'));
-      addBtn.addEventListener('click', async () => {
-        if (!window.Prime?.media?.openPicker) return;
-        const chosen = await window.Prime.media.openPicker({
-          multiple: true,
-          kinds: ['image'],
-          title: 'Sélectionner des images pour la galerie',
-        });
-        if (!chosen || chosen.length === 0) return;
-        const next = [
-          ...items,
-          ...chosen.map((m) => ({
-            mediaId: Number(m.id),
-            url: m.url || m.thumbnail_url || '',
-            alt: m.alt || m.alt_text || m.title || '',
-            caption: m.caption || '',
-          })),
-        ].slice(0, 50);
-        ctx.updateData({ columns, items: next }, { rerender: true, recordHistory: true });
+      addBtn.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: true,
+            kinds: ['image'],
+            selected: [],
+            title: 'Sélectionner des images pour la galerie',
+          },
+          (chosen) => {
+            const next = [
+              ...items,
+              ...chosen.map((m) => ({
+                mediaId: Number(m.id),
+                url: m.url || m.thumbnail_url || '',
+                alt: m.alt || m.display_title || m.title || m.original_name || '',
+                caption: m.caption || '',
+              })),
+            ].slice(0, 50);
+            ctx.updateData({ columns, items: next }, { rerender: true, recordHistory: true });
+          },
+        );
       });
 
       const colsGroup = document.createElement('div');
@@ -1006,34 +1040,44 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       pickVideo.type = 'button';
       pickVideo.className = 'pc-btn pc-btn--secondary pc-btn--sm';
       pickVideo.append(createIconSvg('video', 14), document.createTextNode(' Choisir une vidéo'));
-      pickVideo.addEventListener('click', async () => {
-        if (!window.Prime?.media?.openPicker) return;
-        const chosen = await window.Prime.media.openPicker({
-          multiple: false,
-          kinds: ['video'],
-          selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
-          title: 'Choisir une vidéo',
-        });
-        if (!chosen || chosen.length === 0) return;
-        const m = chosen[0];
-        ctx.updateData({ mediaId: Number(m.id), url: m.url || '', mimeType: m.mime_type || '' }, { rerender: true, recordHistory: true });
+      pickVideo.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: false,
+            kinds: ['video'],
+            selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
+            title: 'Choisir une vidéo',
+          },
+          (chosen) => {
+            const m = chosen[0];
+            ctx.updateData(
+              { mediaId: Number(m.id), url: m.url || '', mimeType: m.mime_type || '' },
+              { rerender: true, recordHistory: true },
+            );
+          },
+        );
       });
 
       const pickPoster = document.createElement('button');
       pickPoster.type = 'button';
       pickPoster.className = 'pc-btn pc-btn--ghost pc-btn--sm';
       pickPoster.append(createIconSvg('image', 14), document.createTextNode(ctx.data.posterUrl ? ' Changer le poster' : ' Image poster'));
-      pickPoster.addEventListener('click', async () => {
-        if (!window.Prime?.media?.openPicker) return;
-        const chosen = await window.Prime.media.openPicker({
-          multiple: false,
-          kinds: ['image'],
-          selected: ctx.data.posterMediaId ? [Number(ctx.data.posterMediaId)] : [],
-          title: 'Choisir une image poster',
-        });
-        if (!chosen || chosen.length === 0) return;
-        const m = chosen[0];
-        ctx.updateData({ posterMediaId: Number(m.id), posterUrl: m.url || '' }, { rerender: true, recordHistory: true });
+      pickPoster.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: false,
+            kinds: ['image'],
+            selected: ctx.data.posterMediaId ? [Number(ctx.data.posterMediaId)] : [],
+            title: 'Choisir une image poster',
+          },
+          (chosen) => {
+            const m = chosen[0];
+            ctx.updateData(
+              { posterMediaId: Number(m.id), posterUrl: m.url || '' },
+              { rerender: true, recordHistory: true },
+            );
+          },
+        );
       });
 
       row.append(pickVideo, pickPoster);
@@ -1100,17 +1144,26 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       pickBtn.type = 'button';
       pickBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
       pickBtn.append(createIconSvg('music', 14), document.createTextNode(' Choisir un fichier audio'));
-      pickBtn.addEventListener('click', async () => {
-        if (!window.Prime?.media?.openPicker) return;
-        const chosen = await window.Prime.media.openPicker({
-          multiple: false,
-          kinds: ['audio'],
-          selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
-          title: 'Choisir un fichier audio',
-        });
-        if (!chosen || chosen.length === 0) return;
-        const m = chosen[0];
-        ctx.updateData({ mediaId: Number(m.id), url: m.url || '', title: ctx.data.title || m.title || m.original_name || m.original_filename || '' }, { rerender: true, recordHistory: true });
+      pickBtn.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: false,
+            kinds: ['audio'],
+            selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
+            title: 'Choisir un fichier audio',
+          },
+          (chosen) => {
+            const m = chosen[0];
+            ctx.updateData(
+              {
+                mediaId: Number(m.id),
+                url: m.url || '',
+                title: ctx.data.title || m.display_title || m.title || m.original_name || '',
+              },
+              { rerender: true, recordHistory: true },
+            );
+          },
+        );
       });
       row.appendChild(pickBtn);
       wrap.appendChild(row);
@@ -1167,26 +1220,28 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       pickBtn.type = 'button';
       pickBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
       pickBtn.append(createIconSvg('file', 14), document.createTextNode(' Choisir un fichier'));
-      pickBtn.addEventListener('click', async () => {
-        if (!window.Prime?.media?.openPicker) return;
-        const chosen = await window.Prime.media.openPicker({
-          multiple: false,
-          kinds: ['document', 'archive'],
-          selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
-          title: 'Choisir un fichier à télécharger',
-        });
-        if (!chosen || chosen.length === 0) return;
-        const m = chosen[0];
-        ctx.updateData(
+      pickBtn.addEventListener('click', () => {
+        openBlockMediaPicker(
           {
-            mediaId: Number(m.id),
-            url: m.url || '',
-            label: m.title || m.original_name || m.original_filename || 'Télécharger',
-            filename: m.original_name || m.original_filename || '',
-            extension: m.extension || '',
-            sizeBytes: Number(m.size_bytes || 0),
+            multiple: false,
+            kinds: ['document', 'archive'],
+            selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
+            title: 'Choisir un fichier à télécharger',
           },
-          { rerender: true, recordHistory: true },
+          (chosen) => {
+            const m = chosen[0];
+            ctx.updateData(
+              {
+                mediaId: Number(m.id),
+                url: m.url || '',
+                label: m.title || m.display_title || m.original_name || 'Télécharger',
+                filename: m.original_name || '',
+                extension: m.extension || '',
+                sizeBytes: Number(m.size_bytes || 0),
+              },
+              { rerender: true, recordHistory: true },
+            );
+          },
         );
       });
       row.appendChild(pickBtn);

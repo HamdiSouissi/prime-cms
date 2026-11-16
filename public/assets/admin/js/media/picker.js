@@ -456,10 +456,10 @@ export function openMediaPicker(options = {}) {
       if (aborted || !res.item) return;
       const uploaded = res.item;
       if (kinds.length > 0 && !kinds.includes(uploaded.kind)) {
-        window.Prime?.toast?.({
-          type: 'warning',
-          title: `« ${uploaded.original_name} » a été ajouté mais son type (${uploaded.kind_label}) n’est pas compatible avec ce champ.`,
-        });
+        window.Prime?.toast?.(
+          `« ${uploaded.original_name} » a été ajouté mais son type (${uploaded.kind_label}) n’est pas compatible avec ce champ.`,
+          'warning',
+        );
         return;
       }
       itemsById.set(Number(uploaded.id), uploaded);

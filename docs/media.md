@@ -12,7 +12,8 @@ Le tout **sans aucune dépendance externe au runtime** (PHP 8.2+ natif + Vanilla
 - **Exposition web** :
   1. **Lien symbolique** `public/uploads → ../content/uploads` (créé automatiquement à l'installation et via `php bin/prime media:link`), servi directement par Apache/Nginx sans passer par PHP ;
   2. **Repli PHP sécurisé** `GET|HEAD /uploads/{s1}/{s2}/{s3}` (et 1–4 segments) géré par `Prime\Media\MediaServingController`, avec validation stricte anti-traversée, en-têtes `X-Content-Type-Options: nosniff`, `Content-Security-Policy: ... sandbox`, `Cache-Control: public, max-age=31536000, immutable`, `ETag`/`If-None-Match` (`304`), `HEAD`, `Range` (`206`/`416`) et `Content-Disposition: attachment` pour les fichiers non affichables inline (archives, bureautique).
-- **Défense en profondeur** : `Prime\Media\UploadsGuard` dépose automatiquement `content/uploads/.htaccess` (`php_flag engine off`, `Options -Indexes`, refus absolu des scripts `.php/.phtml/.svg/.html`, `nosniff`, CSP sandbox).
+     - En développement avec le serveur PHP intégré, lancez impérativement `php -S localhost:8080 -t public public/router.php` afin que les URL `/uploads/…` sans lien symbolique atteignent `public/index.php`.
+- **Défense en profondeur** : `Prime\Media\UploadsGuard` dépose automatiquement `content/uploads/.htaccess` (`php_flag engine off`, `Options -Indexes`, blocage des fichiers cachés dont `/uploads/.htaccess`, refus absolu des scripts `.php/.phtml/.svg/.html`, `nosniff`, CSP sandbox). La configuration Nginx (`docs/nginx.conf.example`) et Apache (`public/.htaccess`, `docker/php/apache.conf`) bloquent également `/uploads/.htaccess` et tout fichier caché via le lien symbolique.
 
 ### Schéma SQL (migrations `000015`–`000018`)
 
@@ -98,15 +99,17 @@ echo $this->raw($this->mediaImage($entry->featuredMediaId(), ['variant' => 'larg
 
 ## 6. Sélecteur de média réutilisable (`Prime.media.open`)
 
-Côté administration, le sélecteur modal est disponible globalement pour l'éditeur, les champs personnalisés `media`, l'image à la une, les avatars et les plugins :
+Côté administration, une **unique** API publique `Prime.media.open(...)` est exposée pour les blocs de Prime Editor, les champs personnalisés `media`, l'image à la une, les avatars et les plugins :
 
 ```js
 Prime.media.open({
   multiple: false,          // true pour sélection multiple (ex. galerie)
   kinds: ['image'],         // filtre optionnel : image, document, audio, video, archive
+  selected: [42],           // identifiants déjà sélectionnés (optionnel)
   title: 'Choisir une image',
-  onSelect: (items) => {
-    const media = items[0];
+  onSelect: (selection) => {
+    // Objet média unique si multiple: false ; tableau Media[] si multiple: true
+    const media = Array.isArray(selection) ? selection[0] : selection;
     console.log(media.id, media.url, media.thumbnail_url, media.alt);
   },
 });

@@ -52,8 +52,10 @@ docker compose down
 Prime CMS embarque son propre autoloader PSR-4 (`bootstrap/autoload.php`) et fonctionne sans jamais exécuter `composer install` :
 
 ```bash
-php -S localhost:8080 -t public
+php -S localhost:8080 -t public public/router.php
 ```
+
+> Le script `public/router.php` sert directement les fichiers statiques existants de `public/` et délègue tout le reste à `public/index.php` (ce qui permet notamment au repli PHP `/uploads/…` de fonctionner en développement sans lien symbolique).
 
 Ouvrir ensuite [http://localhost:8080/install](http://localhost:8080/install) pour configurer la base de données, le site et le compte administrateur.
 

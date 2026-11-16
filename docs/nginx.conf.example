@@ -29,6 +29,11 @@ server {
     # Médiathèque (/uploads/) — service statique direct depuis content/uploads/ sans jamais exécuter PHP
     # (`php bin/prime media:link` crée le lien symbolique public/uploads -> ../content/uploads)
     location ^~ /uploads/ {
+        # Interdire l'accès à /uploads/.htaccess et à tout fichier caché via le lien symbolique
+        location ~ /\. {
+            return 403;
+        }
+
         # Interdire tout fichier exécutable, script ou HTML/SVG dans /uploads/
         location ~* \.(php|php[3-8]|phtml|phar|phps|pht|shtml|cgi|pl|py|rb|sh|exe|svg|svgz|html|htm|xhtml)$ {
             return 403;

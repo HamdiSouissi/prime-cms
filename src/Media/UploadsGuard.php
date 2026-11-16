@@ -117,6 +117,13 @@ Options -Indexes -ExecCGI
     php_flag engine off
 </IfModule>
 
+# Block direct access to .htaccess and any hidden file via the public/uploads symlink
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
 <FilesMatch "\.(?i:php|php[3-8]|phtml|phar|phps|pht|shtml|cgi|pl|py|rb|sh|bash|exe|bat|cmd|svg|svgz|html|htm|xhtml)$">
     SetHandler default-handler
     <IfModule mod_authz_core.c>

@@ -1,5 +1,12 @@
 Options -Indexes +FollowSymLinks
 
+# Block hidden files (.htaccess, .env, .git...) even if mod_rewrite is unavailable or via /uploads/ symlink
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 

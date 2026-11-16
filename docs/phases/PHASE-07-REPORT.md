@@ -41,15 +41,79 @@
 
 ## 3. Résultats des vérifications automatisées
 
-- **PHPUnit (Unit + HTTP Integration)** : 425 tests passés, 0 échec, 5 372 assertions.
-- **Tests JS natifs (`node tests/js/run.mjs`)** : 25 tests passés, 0 échec (Prime Editor + `SelectionState` + `UploadQueue`).
+- **PHPUnit (Unit + HTTP Integration)** : 432 tests passés, 0 échec, 5 555 assertions (dont 10 tests d'intégration HTTP dans `AdminMediaHttpTest`).
+- **Tests JS natifs (`node tests/js/run.mjs`)** : 29 tests passés, 0 échec (Prime Editor + `SelectionState` + `UploadQueue` + contrats `Prime.media.open` / `Prime.toast`).
 - **PHP-CS-Fixer (PSR-12)** : 0 fichier à corriger.
 - **PHPStan (niveau 8)** : vérifié en CI (PHP 8.2 & 8.3).
-- **Tests SQL réels (`#[Group('database')]`)** : vérifiés en CI sur MySQL 8.0 (PHP 8.2 & 8.3) et MariaDB 10.6 (PHP 8.3).
+- **Tests SQL réels (`#[Group('database')]`)** : 29 tests (dont 6 dédiés à la médiathèque dans `MediaDatabaseIntegrationTest`), vérifiés en CI sur MySQL 8.0 (PHP 8.2 & 8.3) et MariaDB 10.6 (PHP 8.3).
 - **Smoke test Docker Compose** : vérifié en CI (installation CLI, `media:link`, `/admin/media`, extension `exif`, migration `000018`).
 
 ---
 
-## 4. Prochaine étape
+## 4. Corrections (revue 1)
+
+### C1 — Unification de `Prime.media.open()` dans Prime Editor & suppression des gardes silencieuses
+
+- **Cause identifiée** : `public/assets/admin/js/editor/blocks.js` appelait `window.Prime.media.openPicker(...)` (6 occurrences) avec des gardes silencieuses (`if (!window.Prime?.media?.openPicker) return;`), alors que l'unique API exposée par `public/assets/admin/js/media/picker.js` est `Prime.media.open(...)`. En outre, le champ URL du bloc `image` utilisait `type="url"`, ce qui bloquait la soumission native HTML5 pour les chemins relatifs `/uploads/…`.
+- **Corrections appliquées** :
+  - Ajout du helper unique `openBlockMediaPicker(options, onPicked)` dans `public/assets/admin/js/editor/blocks.js` appelant exclusivement `window.Prime.media.open({ multiple, kinds, selected, title, onSelect })` pour les 6 déclencheurs (`image`, `gallery`, `video` source + poster, `audio`, `file`).
+  - Suppression de toutes les gardes silencieuses : si `Prime.media.open` est indisponible, une erreur explicite est journalisée via `console.error(...)` et un toast `danger` « Le sélecteur de médias n'a pas pu s'ouvrir. » est affiché.
+  - Passage de `urlInput` du bloc `image` en `type="text"` (`inputMode="url"`) afin d'accepter les chemins relatifs `/uploads/…` lors de l'enregistrement de l'article.
+  - Vérification de la correspondance exacte des schémas JS ↔ `Prime\Editor\BlockRegistry` PHP (`image`, `gallery` avec `items`, `video` + `posterMediaId`/`posterUrl`, `audio`, `file`).
+  - Mise à jour de la section 6 de `docs/media.md` et styles de rendu `.pc-prose` pour `gallery`, `file`, `audio` et `video` dans `resources/assets/admin/css/components/media.css` (recompilé dans `public/assets/admin/css/admin.css`).
+  - **Tests JS ajoutés (`tests/js/media.test.mjs`)** : vérification statique que `blocks.js` n'invoque que des méthodes réellement exportées par `mediaApi` (zéro `openPicker`), test runtime des 5 blocs vérifiant les patches produits pour `BlockRegistry`, et test vérifiant que l'absence de `Prime.media.open` journalise une erreur et affiche le toast d'erreur.
+- **Parcours vérifié en navigateur réel (Chromium 153 / Playwright)** sur `/admin/content/post/create` pour les 5 blocs :
+  1. **`image`** : insertion via `/image` → clic « Choisir dans la médiathèque » → sélection de `banner.jpg` → aperçu image + badge `Média #` + URL/alt remplis → enregistré → rendu `<picture>` + `<source type="image/webp">` + `srcset` dans l'aperçu ;
+  2. **`gallery`** : insertion via `/galerie` → clic « Ajouter des images » → sélection multiple (`banner.jpg`, `portrait.png`) → grille d'aperçu 2 cartes remplie → enregistré → rendu `.pc-block--gallery` en grille responsive avec `<picture>` WebP dans l'aperçu ;
+  3. **`file`** : insertion via `/fichier` → clic « Choisir un fichier » → sélection de `brochure.pdf` → badge `brochure.pdf` et libellé remplis → enregistré → carte `.pc-block--file` (`brochure`, `PDF · 322 o`, bouton `Télécharger`) dans l'aperçu ;
+  4. **`audio`** : insertion via `/audio` → clic « Choisir un fichier audio » → sélection de `podcast.wav` → lecteur `<audio controls src="/uploads/…">` + titre remplis → enregistré → lecteur `<audio>` fonctionnel dans l'aperçu ;
+  5. **`video`** : insertion via `/mp4` → clic « Choisir une vidéo » (`demo.mp4`) + clic « Image poster » (`banner.jpg`) → lecteur `<video controls poster="/uploads/…">` rempli → enregistré → lecteur `<video>` avec poster dans l'aperçu (0 image cassée, 0 erreur console/HTTP).
+
+### C2 — Correction des toasts « [object Object] »
+
+- **Cause identifiée** : `showToast(message, type, options)` dans `public/assets/admin/js/toast.js` attend une chaîne en premier argument, tandis que les 19 appels du module médias (`library.js` : 18, `picker.js` : 1) passaient un objet `{ type, title }`.
+- **Corrections appliquées** :
+  - Conversion de l'ensemble des 19 appels `window.Prime?.toast?.(...)` dans `public/assets/admin/js/media/library.js` et `public/assets/admin/js/media/picker.js` vers la signature canonique `Prime.toast(message, type)`.
+  - Ajout d'un test de non-régression JS dans `tests/js/media.test.mjs` interdisant tout appel `toast({ ... })` dans le module médias et `editor/blocks.js`.
+  - Vérifié en navigateur réel : toast doublon à l'envoi (« Un fichier identique existe déjà dans la médiathèque (« banner »). ») et toast d'enregistrement (« Métadonnées enregistrées. ») affichés en texte lisible, zéro `[object Object]`.
+
+### C3 — Serveur de développement (`public/router.php`) & blocage des fichiers cachés `/uploads/.htaccess`
+
+- Ajout de `public/router.php` : bloque `403` les fichiers cachés (`.htaccess`, `.env`, `/uploads/.htaccess`, etc.) et scripts/HTML/SVG sous `/uploads/`, retourne `false` pour les fichiers statiques légitimes existants dans `public/`, et délègue tout le reste (y compris `/uploads/YYYY/MM/…` sans lien symbolique) à `public/index.php`.
+- Mise à jour de `README.md`, `docs/media.md` et `docs/install.md` avec `php -S localhost:8080 -t public public/router.php`.
+- Durcissement anti-fichiers cachés via le lien symbolique `/uploads/` dans :
+  - `docs/nginx.conf.example` (`location ~ /\. { return 403; }` à l'intérieur de `location ^~ /uploads/` pour contrer la priorité du préfixe `^~`) ;
+  - `src/Media/UploadsGuard.php` (`<FilesMatch "^\."> Require all denied </FilesMatch>` dans le `.htaccess` auto-généré de `content/uploads/`) ;
+  - `public/.htaccess` et `docker/php/apache.conf` (`<FilesMatch "^\."> Require all denied </FilesMatch>`).
+
+### C4 — Renforcement des tests d'intégration (HTTP + SQL réel MySQL 8.0 / MariaDB 10.6)
+
+- **`tests/Integration/AdminMediaHttpTest.php`** étendu de 3 à **10 tests d'intégration HTTP** couvrant :
+  1. Matrice RBAC complète (5 rôles : Invité, Abonné, Contributeur, Auteur, Éditeur, Administrateur) sur **chacun des 12 endpoints JSON** + protection CSRF (`419`) sur **chacun des 9 endpoints mutatifs** ;
+  2. Rejet HTTP `422` de **chacun des 9 fichiers malveillants** (polyglotte JPEG+PHP, `.php` renommé `.jpg`, `photo.php.jpg`, `script.html.png`, faux PDF, SVG `<script>`, fichier vide, PNG 100 Mpx, traversée `../../evil.jpg`) avec **0 fichier écrit sur disque** et **0 ligne BDD** ;
+  3. Cycle complet des dossiers (création, renommage, déplacement, refus de boucle `422`, suppression avec remontée des sous-dossiers et médias) ;
+  4. Changement de point focal vérifiant le recadrage réel (pixels rouge vs bleu), régénération explicite, et remplacement préservant ID et métadonnées tout en purgeant les anciens fichiers ;
+  5. Suppression d'un média vérifiant la suppression de l'original + toutes variantes/WebP sur disque et le nettoyage de `pc_media_usage` et `users.avatar_media_id` ;
+  6. Repli de diffusion `/uploads/` (`200`, `304`, `HEAD`, `Range 206`/`416`, PDF inline, ZIP `attachment`, refus `403`/`404` sur `/uploads/.htaccess`, dotfiles, scripts et traversées) ;
+  7. Cycle de vie de l'avatar utilisateur (`/admin/profile`, barre supérieure `/admin`, `/admin/users`, usages, suppression) ;
+  8. Champs personnalisés `media` simple et multiple (persistance meta, `pc_media_usage` `field:*`, widgets `[data-prime-media-field]` sur la page d'édition, nettoyage) ;
+  9. Rendu des blocs (`<picture>`, `srcset`, `gallery`, `file`), miniature `40×40` dans les listings et KPI live du Tableau de bord ;
+  10. Commandes CLI (`media:regenerate`, `media:link` idempotente + vérification `.htaccess`, `media:cleanup --dry-run` puis exécution).
+- **`tests/Integration/MediaDatabaseIntegrationTest.php`** (`#[Group('database')]`) étendu de 1 à **6 tests SQL réels** (MySQL 8.0 & MariaDB 10.6) couvrant migrations/FK/rollback, rejet des 8 fichiers malveillants avec 0 fichier disque/0 ligne BDD, hiérarchie de dossiers, point focal + remplacement + suppression complète, pagination/filtres/FULLTEXT/doublon SHA-256/stats, et suivi d'usages multi-contextes (`thumbnail`, `block`, `field:*`, `avatar`).
+
+### C5 — Vérification finale en navigateur réel (Chromium 153 / Playwright)
+
+Parcours complet exécuté et inspecté visuellement (captures vérifiées, **0 erreur console**, **0 erreur JS**, **0 réponse HTTP ≥ 400**, **0 image cassée**, **0 toast `[object Object]`**) :
+- **Médiathèque en vue Grille et vue Liste à 1440×900 et 375×812** : correction CSS responsive (`grid-template-columns: minmax(0, 1fr)` et `.pc-media-list .pc-table-wrap { overflow-x: auto }`) garantissant **0 débordement horizontal** à 375 px aussi bien en grille qu'en liste ;
+- **Envoi par glisser-déposer** : dépôt simultané de 5 fichiers réels (`banner.jpg`, `portrait.png`, `brochure.pdf`, `podcast.wav`, `demo.mp4`), file d'envoi terminée 5/5, puis doublon `banner.jpg` affichant le toast d'avertissement lisible ;
+- **Fiche inspecteur et point focal au clavier** : focus sur `.pc-focal-stage`, déplacement par flèches (`ArrowRight` ×3, `ArrowDown` ×2 → passage de `50% / 50%` à `56% / 54%`), enregistrement des métadonnées et toast « Métadonnées enregistrées. » ;
+- **Sélecteur depuis chaque bloc Prime Editor (C1)** : `image`, `gallery` (2 images), `file`, `audio`, `video` + poster, aperçus dans l'éditeur, enregistrement et aperçu complet de l'article (`4 <picture>` WebP, galerie, carte téléchargement, lecteurs audio et vidéo) ;
+- **Image mise en avant** : sélection via la modale dans la barre latérale, aperçu miniature et persistance à l'enregistrement ;
+- **Avatar dans « Mon profil »** (`/admin/profile`) : sélection de `portrait.png` via le sélecteur, enregistrement, affichage confirmé dans la fiche profil et dans la barre supérieure ;
+- **Champ « Photo du client » de `hello-prime`** (`/admin/content/testimonial/create`) : sélection de `portrait.png` via le sélecteur modal dans « Détails du témoignage », enregistrement du témoignage et vérification de la persistance après rechargement sur la page d'édition.
+
+---
+
+## 5. Prochaine étape
 
 **Phase 8 — Système de thèmes & moteur de rendu front** : résolution de thèmes dans `content/themes/`, hiérarchie de templates, chargement des menus/contenus/médias responsive (`media_image()`), personnaliseur et thème par défaut Prime.

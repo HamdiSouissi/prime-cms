@@ -72,6 +72,10 @@ Options supplémentaires :
 
 ## 4. Dépannage
 
+- **Serveur de développement PHP intégré** : démarrez avec le routeur dédié afin que toutes les routes dynamiques et le repli `/uploads/…` soient transmis à `public/index.php` :
+  ```bash
+  php -S localhost:8080 -t public public/router.php
+  ```
 - **Erreur de droits sur `storage/`** : exécuter `chmod -R 775 storage content/uploads` et vérifier le propriétaire (`www-data` sous Apache/Docker).
 - **Erreur `419` lors d'une soumission** : vérifier que `storage/sessions` est accessible en écriture et que les cookies sont autorisés par le navigateur.
 - **Réinstaller en environnement local** : supprimer `storage/installed.lock` puis exécuter `php bin/prime migrate:reset` (ou `migrate:fresh`) avant de rouvrir `/install`.
