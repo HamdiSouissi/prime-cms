@@ -32,7 +32,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
     public function testPhase8MigrationsSchemaMenusZonesRedirectsAndRollback(): void
     {
         $schema = new Schema($this->connection);
-        $migrator = new Migrator($this->connection, $schema, dirname(__DIR__, 2) . '/database/migrations');
+        $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
         $ran = $migrator->run();
         $this->assertCount(23, $ran);
 

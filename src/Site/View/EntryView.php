@@ -209,7 +209,7 @@ final class EntryView
             return null;
         }
 
-        return $this->featuredMedia->variantUrl($size) ?? $this->featuredMedia->url();
+        return $this->featuredMedia->variantUrl($size);
     }
 
     /**
@@ -224,10 +224,11 @@ final class EntryView
         }
 
         $merged = array_merge([
+            'variant' => $size,
             'alt' => $this->featuredMedia->alt !== '' ? $this->featuredMedia->alt : $this->entry->title,
         ], $attrs);
 
-        return MediaHelper::image($this->featuredMedia, $size, $merged);
+        return MediaHelper::image($this->featuredMedia, $merged);
     }
 
     /**
@@ -246,15 +247,17 @@ final class EntryView
      */
     public function author(): array
     {
-        $rawName = $this->authorUser?->displayName
-            ?? ($this->entry->authorName !== null && $this->entry->authorName !== '' ? $this->entry->authorName : 'Équipe éditoriale');
-        $slug = $this->authorUser !== null ? $this->authorUser->authorSlug() : 'auteur-' . $this->entry->authorId;
-        $bio = $this->authorUser?->bio ?? '';
+        $rawName = $this->authorUser !== null
+            ? $this->authorUser->displayName
+            : ($this->entry->authorName !== null && $this->entry->authorName !== '' ? $this->entry->authorName : 'Équipe éditoriale');
+        $slug = $this->authorUser !== null ? $this->authorUser->authorSlug() : 'auteur-' . (int) $this->entry->authorId;
+        $bio = $this->authorUser !== null && $this->authorUser->bio !== null ? $this->authorUser->bio : '';
         $url = $this->urls->authorUrl($slug);
 
         $avatarHtml = '';
         if ($this->authorAvatarMedia !== null && $this->authorAvatarMedia->isImage()) {
-            $avatarHtml = MediaHelper::image($this->authorAvatarMedia, 'thumbnail', [
+            $avatarHtml = MediaHelper::image($this->authorAvatarMedia, [
+                'variant' => 'thumbnail',
                 'alt' => $rawName,
                 'class' => 'site-avatar__img',
                 'loading' => 'lazy',
@@ -264,7 +267,7 @@ final class EntryView
         $initials = $this->computeInitials($rawName);
 
         return [
-            'id' => $this->entry->authorId,
+            'id' => $this->entry->authorId ?? 0,
             'name' => $this->e($rawName),
             'raw_name' => $rawName,
             'slug' => $this->e($slug),

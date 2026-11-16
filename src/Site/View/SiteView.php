@@ -192,12 +192,13 @@ final class SiteView
         }
 
         $merged = array_merge([
+            'variant' => 'medium',
             'alt' => $this->rawName(),
             'class' => 'site-brand__logo',
             'loading' => 'eager',
         ], $attrs);
 
-        return MediaHelper::image($item, 'medium', $merged);
+        return MediaHelper::image($item, $merged);
     }
 
     /**

@@ -89,7 +89,7 @@ final class SitemapGenerator
         $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 
         foreach ($slice as $row) {
-            $loc = (string) ($row['loc'] ?? '');
+            $loc = $row['loc'];
             if ($loc === '') {
                 continue;
             }
