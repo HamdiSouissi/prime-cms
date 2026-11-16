@@ -102,9 +102,11 @@ final class SiteView
 
         if ($this->settings !== null) {
             try {
-                $val = $this->settings->get('site.name', 'Prime CMS');
-                if (is_string($val) && trim($val) !== '') {
-                    return trim($val);
+                foreach (['site.name', 'site_name'] as $key) {
+                    $val = $this->settings->get($key);
+                    if (is_string($val) && trim($val) !== '') {
+                        return trim($val);
+                    }
                 }
             } catch (Throwable) {
                 // Ignore
@@ -131,9 +133,11 @@ final class SiteView
 
         if ($this->settings !== null) {
             try {
-                $val = $this->settings->get('site.tagline', '');
-                if (is_string($val)) {
-                    return trim($val);
+                foreach (['site.tagline', 'site_tagline'] as $key) {
+                    $val = $this->settings->get($key);
+                    if (is_string($val) && trim($val) !== '') {
+                        return trim($val);
+                    }
                 }
             } catch (Throwable) {
                 // Ignore

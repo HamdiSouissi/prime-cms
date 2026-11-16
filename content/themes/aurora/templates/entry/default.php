@@ -12,7 +12,7 @@ declare(strict_types=1);
   <article class="aurora-article aurora-article--narrow">
     <header class="aurora-article__header">
       <?php if ($contentType !== null): ?>
-        <span class="aurora-page-header__eyebrow"><?= $site->e($contentType->singularLabel) ?></span>
+        <span class="aurora-page-header__eyebrow"><?= $site->e($contentType->label('singular')) ?></span>
       <?php endif; ?>
       <h1 class="aurora-article__title"><?= $entry->title() ?></h1>
       <?php if ($entry->date() !== ''): ?>

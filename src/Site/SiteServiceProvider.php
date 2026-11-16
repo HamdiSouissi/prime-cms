@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\Site;
 
-use Prime\Auth\AuthManager;
+use Prime\Auth\Auth;
 use Prime\Auth\UserRepository;
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\Entry;
@@ -136,11 +136,13 @@ final class SiteServiceProvider extends ServiceProvider
 
         $c->singleton(ZoneRepository::class, static function (Container $c): ZoneRepository {
             $usage = $c->has(MediaUsageRepository::class) ? $c->get(MediaUsageRepository::class) : null;
+            $themes = $c->has(ThemeManager::class) ? $c->get(ThemeManager::class) : null;
 
             return new ZoneRepository(
                 db: $c->get(Connection::class),
                 renderer: $c->get(Renderer::class),
                 mediaUsage: $usage instanceof MediaUsageRepository ? $usage : null,
+                themes: $themes instanceof ThemeManager ? $themes : null,
             );
         });
 
@@ -241,10 +243,21 @@ final class SiteServiceProvider extends ServiceProvider
             );
         });
 
-        $c->singleton(SiteController::class, static function (Container $c): SiteController {
+        $c->singleton(SiteController::class, function (Container $c): SiteController {
             $entries = $c->has(EntryRepository::class) ? $c->get(EntryRepository::class) : null;
             $entryService = $c->has(EntryService::class) ? $c->get(EntryService::class) : null;
-            $auth = $c->has(AuthManager::class) ? $c->get(AuthManager::class) : null;
+            $auth = null;
+            $appKey = $this->app->config()->get('app.key', '');
+            if ($c->has(Auth::class) && is_string($appKey) && trim($appKey) !== '') {
+                try {
+                    $resolvedAuth = $c->get(Auth::class);
+                    if ($resolvedAuth instanceof Auth) {
+                        $auth = $resolvedAuth;
+                    }
+                } catch (\Throwable) {
+                    $auth = null;
+                }
+            }
 
             return new SiteController(
                 resolver: $c->get(UrlResolver::class),
@@ -257,7 +270,7 @@ final class SiteServiceProvider extends ServiceProvider
                 entries: $entries instanceof EntryRepository ? $entries : null,
                 entryService: $entryService instanceof EntryService ? $entryService : null,
                 urls: $c->get(UrlGenerator::class),
-                auth: $auth instanceof AuthManager ? $auth : null,
+                auth: $auth,
             );
         });
     }

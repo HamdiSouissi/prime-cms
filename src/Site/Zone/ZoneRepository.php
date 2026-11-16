@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Prime\Database\Connection;
 use Prime\Editor\Renderer;
 use Prime\Media\MediaUsageRepository;
+use Prime\Themes\ThemeManager;
 
 /**
  * Persistence and validation for theme block zones (`pc_zones`) edited via Prime Editor.
@@ -23,27 +24,49 @@ final class ZoneRepository
         private readonly Connection $db,
         private readonly Renderer $renderer,
         private readonly ?MediaUsageRepository $mediaUsage = null,
+        private readonly ?ThemeManager $themes = null,
     ) {
     }
 
     /**
-     * Find a saved zone by slug.
-     *
-     * @return ?array{slug: string, content: string, content_html: string, updated_at: string}
+     * Resolve the active theme slug used to scope persisted zones (`pc_zones.theme`).
      */
-    public function find(string $slug): ?array
+    public function activeThemeSlug(?string $theme = null): string
+    {
+        if ($theme !== null && trim($theme) !== '') {
+            return trim($theme);
+        }
+        if ($this->themes !== null) {
+            return $this->themes->configuredActiveSlug();
+        }
+
+        return ThemeManager::DEFAULT_THEME;
+    }
+
+    /**
+     * Find a saved zone by slug (for the active or specified theme).
+     *
+     * @return ?array{id: int, theme: string, slug: string, content: string, content_html: string, updated_at: string}
+     */
+    public function find(string $slug, ?string $theme = null): ?array
     {
         $clean = trim($slug);
         if ($clean === '') {
             return null;
         }
+        $themeSlug = $this->activeThemeSlug($theme);
 
-        $row = $this->db->table('zones')->where('slug', '=', $clean)->first();
+        $row = $this->db->table('zones')
+            ->where('theme', '=', $themeSlug)
+            ->where('slug', '=', $clean)
+            ->first();
         if ($row === null) {
             return null;
         }
 
         return [
+            'id' => (int) $row['id'],
+            'theme' => (string) $row['theme'],
             'slug' => (string) $row['slug'],
             'content' => (string) ($row['content'] ?? ''),
             'content_html' => (string) ($row['content_html'] ?? ''),
@@ -52,17 +75,23 @@ final class ZoneRepository
     }
 
     /**
-     * Return all saved zones indexed by slug.
+     * Return all saved zones indexed by slug for the active (or specified) theme.
      *
-     * @return array<string, array{slug: string, content: string, content_html: string, updated_at: string}>
+     * @return array<string, array{id: int, theme: string, slug: string, content: string, content_html: string, updated_at: string}>
      */
-    public function allIndexed(): array
+    public function allIndexed(?string $theme = null): array
     {
-        $rows = $this->db->table('zones')->orderBy('slug', 'ASC')->get();
+        $themeSlug = $this->activeThemeSlug($theme);
+        $rows = $this->db->table('zones')
+            ->where('theme', '=', $themeSlug)
+            ->orderBy('slug', 'ASC')
+            ->get();
         $out = [];
         foreach ($rows as $row) {
             $slug = (string) $row['slug'];
             $out[$slug] = [
+                'id' => (int) $row['id'],
+                'theme' => (string) $row['theme'],
                 'slug' => $slug,
                 'content' => (string) ($row['content'] ?? ''),
                 'content_html' => (string) ($row['content_html'] ?? ''),
@@ -78,9 +107,9 @@ final class ZoneRepository
      *
      * @return array{version: int, blocks: list<array<string, mixed>>}
      */
-    public function document(string $slug): array
+    public function document(string $slug, ?string $theme = null): array
     {
-        $zone = $this->find($slug);
+        $zone = $this->find($slug, $theme);
         if ($zone === null || trim($zone['content']) === '') {
             return Renderer::emptyDocument();
         }
@@ -99,9 +128,9 @@ final class ZoneRepository
     /**
      * Check whether a zone has at least one non-empty block.
      */
-    public function hasContent(string $slug): bool
+    public function hasContent(string $slug, ?string $theme = null): bool
     {
-        $doc = $this->document($slug);
+        $doc = $this->document($slug, $theme);
 
         return $doc['blocks'] !== [];
     }
@@ -110,16 +139,17 @@ final class ZoneRepository
      * Validate, normalize, render, save a zone document, and sync media usages.
      *
      * @param string|array<string, mixed> $rawDocument
-     * @return array{slug: string, content: string, content_html: string, block_count: int}
+     * @return array{id: int, theme: string, slug: string, content: string, content_html: string, block_count: int}
      */
-    public function save(string $slug, string|array $rawDocument, bool $allowUnfilteredHtml = false): array
+    public function save(string $slug, string|array $rawDocument, bool $allowUnfilteredHtml = false, ?string $theme = null): array
     {
         $cleanSlug = trim($slug);
         if (preg_match('/^[a-z0-9][a-z0-9_-]{0,79}$/', $cleanSlug) !== 1) {
             throw new InvalidArgumentException('Identifiant de zone invalide.');
         }
 
-        $existing = $this->find($cleanSlug);
+        $themeSlug = $this->activeThemeSlug($theme);
+        $existing = $this->find($cleanSlug, $themeSlug);
         $preserved = $existing !== null ? $this->renderer->extractUnfilteredHtmlBlocks($existing['content']) : [];
 
         $validated = $this->renderer->validateAndNormalize(
@@ -138,13 +168,15 @@ final class ZoneRepository
         $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
 
         if ($existing !== null) {
-            $this->db->table('zones')->where('slug', '=', $cleanSlug)->update([
+            $zoneId = $existing['id'];
+            $this->db->table('zones')->where('id', '=', $zoneId)->update([
                 'content' => $json,
                 'content_html' => $html,
                 'updated_at' => $now,
             ]);
         } else {
-            $this->db->table('zones')->insert([
+            $zoneId = $this->db->table('zones')->insertGetId([
+                'theme' => $themeSlug,
                 'slug' => $cleanSlug,
                 'content' => $json,
                 'content_html' => $html,
@@ -154,10 +186,12 @@ final class ZoneRepository
         }
 
         if ($this->mediaUsage !== null) {
-            $this->mediaUsage->syncForZoneDocument($cleanSlug, $doc);
+            $this->mediaUsage->syncForZoneDocument($zoneId, $doc);
         }
 
         return [
+            'id' => $zoneId,
+            'theme' => $themeSlug,
             'slug' => $cleanSlug,
             'content' => $json,
             'content_html' => $html,

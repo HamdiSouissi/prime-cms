@@ -6,7 +6,7 @@ declare(strict_types=1);
 /** @var list<Prime\Site\View\EntryView> $entries */
 /** @var ?Prime\Content\ContentType $contentType */
 $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('sidebar');
-$heading = $contentType !== null ? $contentType->label : 'Archives';
+$heading = $contentType !== null ? $contentType->label('plural') : 'Archives';
 ?>
 <div class="site-container">
   <?= $site->partial('breadcrumbs') ?>

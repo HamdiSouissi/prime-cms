@@ -20,7 +20,7 @@ use Prime\Media\MediaRepository;
 use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
-use Prime\Site\ReservedSlugs;
+use Prime\Site\ReservedSlugValidator;
 use Prime\Validation\Validator;
 use Prime\View\View;
 use Throwable;
@@ -103,7 +103,7 @@ final class ProfileController
         if ($usernameProvided && $username !== '') {
             if (preg_match('/^[a-z0-9](?:[a-z0-9_-]{1,38}[a-z0-9])?$/', $username) !== 1) {
                 $errors['username'] = 'L\'identifiant public doit contenir 3 à 40 caractères (lettres minuscules, chiffres, tirets ou underscores).';
-            } elseif (ReservedSlugs::isReserved($username)) {
+            } elseif ((new ReservedSlugValidator())->isReserved($username)) {
                 $errors['username'] = 'Cet identifiant public est réservé par le système.';
             } else {
                 $existing = $this->users->findByAuthorSlug($username);

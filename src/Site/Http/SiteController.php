@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\Site\Http;
 
-use Prime\Auth\AuthManager;
+use Prime\Auth\Auth;
 use Prime\Content\Entry;
 use Prime\Content\EntryRepository;
 use Prime\Content\EntryService;
@@ -39,7 +39,7 @@ final class SiteController
         private readonly ?EntryRepository $entries = null,
         private readonly ?EntryService $entryService = null,
         private readonly ?UrlGenerator $urls = null,
-        private readonly ?AuthManager $auth = null,
+        private readonly ?Auth $auth = null,
     ) {
     }
 
@@ -115,7 +115,7 @@ final class SiteController
             throw new NotFoundException('Sitemap indisponible.');
         }
 
-        return Response::make($xml, 200, [
+        return new Response($xml, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
             'X-Robots-Tag' => 'noindex, follow',
         ]);
@@ -141,7 +141,7 @@ final class SiteController
             throw new NotFoundException('Sitemap introuvable.');
         }
 
-        return Response::make($xml, 200, [
+        return new Response($xml, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
             'X-Robots-Tag' => 'noindex, follow',
         ]);
@@ -152,7 +152,7 @@ final class SiteController
      */
     public function robotsTxt(Request $request): Response
     {
-        return Response::make($this->robots->generate(), 200, [
+        return new Response($this->robots->generate(), 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',
         ]);
     }
@@ -208,7 +208,7 @@ final class SiteController
             return null;
         }
 
-        $user = $this->auth->user();
+        $user = $this->auth->user($request);
         if ($user === null) {
             return null;
         }
@@ -261,7 +261,7 @@ final class SiteController
             return false;
         }
 
-        $user = $this->auth->user();
+        $user = $this->auth->user($request);
         if ($user === null || !$user->can('themes.manage')) {
             return false;
         }

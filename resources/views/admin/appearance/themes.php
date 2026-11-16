@@ -157,11 +157,11 @@ if ($allowUpload) {
                             <dl class="pc-theme-detail__meta">
                                 <div><dt>Identifiant</dt><dd><code><?= $this->e($theme->slug) ?></code></dd></div>
                                 <div><dt>Version</dt><dd><?= $this->e($theme->version()) ?></dd></div>
-                                <?php if ($manifest !== null && $manifest->authorName !== ''): ?>
-                                    <div><dt>Auteur</dt><dd><?= $this->e($manifest->authorName) ?></dd></div>
+                                <?php if ($manifest !== null && $manifest->author !== ''): ?>
+                                    <div><dt>Auteur</dt><dd><?= $this->e($manifest->author) ?></dd></div>
                                 <?php endif; ?>
-                                <?php if ($manifest !== null && $manifest->license !== ''): ?>
-                                    <div><dt>Licence</dt><dd><?= $this->e($manifest->license) ?></dd></div>
+                                <?php if ($manifest !== null && $manifest->authorUrl !== null && $manifest->authorUrl !== ''): ?>
+                                    <div><dt>Site auteur</dt><dd><a href="<?= $this->e($manifest->authorUrl) ?>" target="_blank" rel="noopener"><?= $this->e($manifest->authorUrl) ?></a></dd></div>
                                 <?php endif; ?>
                                 <?php if ($manifest !== null): ?>
                                     <div><dt>Emplacements de menus</dt><dd><?= $manifest->menus !== [] ? $this->e(implode(', ', array_values($manifest->menus))) : 'Aucun' ?></dd></div>

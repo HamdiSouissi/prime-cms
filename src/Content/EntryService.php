@@ -64,6 +64,11 @@ final class EntryService
     ) {
     }
 
+    public function contentTypes(): ContentTypeRegistry
+    {
+        return $this->types;
+    }
+
     /**
      * Check whether `$user` can create entries of `$type`.
      */

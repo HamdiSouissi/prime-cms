@@ -61,7 +61,7 @@ final class MenuController
         ];
         foreach ($this->types->all() as $ct) {
             if ($ct->public && !in_array($ct->name, ['page', 'post'], true)) {
-                $archives[] = ['type' => $ct->name, 'label' => $ct->label];
+                $archives[] = ['type' => $ct->name, 'label' => $ct->label('plural')];
             }
         }
 

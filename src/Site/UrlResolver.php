@@ -269,7 +269,7 @@ final class UrlResolver
             ->orderBy('published_at', 'DESC')
             ->paginate($page, $perPage);
 
-        if ($page > 1 && $result['items'] === []) {
+        if ($page > 1 && ($page > $result['last_page'] || $result['items'] === [])) {
             return PageContext::notFound($fullPath);
         }
 
@@ -280,7 +280,7 @@ final class UrlResolver
             perPage: $result['per_page'],
             entries: $result['items'],
             totalEntries: $result['total'],
-            totalPages: max(1, $result['total_pages']),
+            totalPages: max(1, $result['last_page']),
             contentType: $this->types->get('post'),
         );
     }
@@ -292,7 +292,7 @@ final class UrlResolver
             ->orderBy('published_at', 'DESC')
             ->paginate($page, $perPage);
 
-        if ($page > 1 && $result['items'] === []) {
+        if ($page > 1 && ($page > $result['last_page'] || $result['items'] === [])) {
             return PageContext::notFound($fullPath);
         }
 
@@ -304,7 +304,7 @@ final class UrlResolver
             entry: $entry,
             entries: $result['items'],
             totalEntries: $result['total'],
-            totalPages: max(1, $result['total_pages']),
+            totalPages: max(1, $result['last_page']),
             contentType: $this->types->get('post'),
         );
     }
@@ -370,7 +370,7 @@ final class UrlResolver
             ->orderBy('published_at', 'DESC')
             ->paginate($page, $perPage);
 
-        if ($page > 1 && $result['items'] === []) {
+        if ($page > 1 && ($page > $result['last_page'] || $result['items'] === [])) {
             return PageContext::notFound($fullPath);
         }
 
@@ -381,7 +381,7 @@ final class UrlResolver
             perPage: $result['per_page'],
             entries: $result['items'],
             totalEntries: $result['total'],
-            totalPages: max(1, $result['total_pages']),
+            totalPages: max(1, $result['last_page']),
             contentType: $type,
         );
     }
@@ -415,7 +415,7 @@ final class UrlResolver
             ->orderBy('published_at', 'DESC')
             ->paginate($page, $perPage);
 
-        if ($page > 1 && $result['items'] === []) {
+        if ($page > 1 && ($page > $result['last_page'] || $result['items'] === [])) {
             return PageContext::notFound($fullPath);
         }
 
@@ -426,7 +426,7 @@ final class UrlResolver
             perPage: $result['per_page'],
             entries: $result['items'],
             totalEntries: $result['total'],
-            totalPages: max(1, $result['total_pages']),
+            totalPages: max(1, $result['last_page']),
             taxonomy: $taxonomy,
             term: $term,
         );
@@ -445,7 +445,7 @@ final class UrlResolver
             ->orderBy('published_at', 'DESC')
             ->paginate($page, $perPage);
 
-        if ($page > 1 && $result['items'] === []) {
+        if ($page > 1 && ($page > $result['last_page'] || $result['items'] === [])) {
             return PageContext::notFound($fullPath);
         }
 
@@ -456,7 +456,7 @@ final class UrlResolver
             perPage: $result['per_page'],
             entries: $result['items'],
             totalEntries: $result['total'],
-            totalPages: max(1, $result['total_pages']),
+            totalPages: max(1, $result['last_page']),
             author: $author,
         );
     }
@@ -492,7 +492,7 @@ final class UrlResolver
             ->orderBy('published_at', 'DESC')
             ->paginate($page, $perPage);
 
-        if ($page > 1 && $result['items'] === []) {
+        if ($page > 1 && ($page > $result['last_page'] || $result['items'] === [])) {
             return PageContext::notFound($fullPath);
         }
 
@@ -503,7 +503,7 @@ final class UrlResolver
             perPage: $result['per_page'],
             entries: $result['items'],
             totalEntries: $result['total'],
-            totalPages: max(1, $result['total_pages']),
+            totalPages: max(1, $result['last_page']),
             searchQuery: $searchQuery,
         );
     }

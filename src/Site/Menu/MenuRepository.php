@@ -182,7 +182,7 @@ final class MenuRepository
                 $this->db->table('menus')->where('location', '=', $cleanLoc)->update(['location' => null, 'updated_at' => $now]);
             }
 
-            $id = $this->db->table('menus')->insert([
+            $id = $this->db->table('menus')->insertGetId([
                 'name' => mb_substr($cleanName, 0, 120),
                 'slug' => $slug,
                 'location' => $cleanLoc,
@@ -315,6 +315,9 @@ final class MenuRepository
                 continue;
             }
             $type = is_string($node['type'] ?? null) ? trim($node['type']) : self::TYPE_URL;
+            if ($type === 'custom') {
+                $type = self::TYPE_URL;
+            }
             if (!in_array($type, self::ALLOWED_ITEM_TYPES, true)) {
                 throw new InvalidArgumentException(sprintf('Type d\'élément de menu invalide : "%s".', $type));
             }
@@ -367,7 +370,7 @@ final class MenuRepository
                 }
             }
 
-            $insertedId = $this->db->table('menu_items')->insert([
+            $insertedId = $this->db->table('menu_items')->insertGetId([
                 'menu_id' => $menuId,
                 'parent_id' => $parentId,
                 'type' => $type,

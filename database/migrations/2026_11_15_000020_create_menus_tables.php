@@ -13,9 +13,11 @@ return new class () extends Migration {
             $table->id();
             $table->string('name', 150);
             $table->string('slug', 120);
+            $table->string('location', 80)->nullable();
             $table->timestamps();
 
             $table->unique('slug', 'uq_menus_slug');
+            $table->index('location', 'idx_menus_location');
         });
 
         $schema->create('menu_items', static function (Blueprint $table): void {
@@ -23,12 +25,11 @@ return new class () extends Migration {
             $table->foreignId('menu_id');
             $table->unsignedBigInteger('parent_id')->default(0);
             $table->unsignedInteger('position')->default(0);
-            $table->string('kind', 20)->default('custom');
-            $table->unsignedBigInteger('object_id')->nullable();
+            $table->string('type', 20)->default('url');
+            $table->unsignedBigInteger('target_id')->nullable();
             $table->string('url', 500)->nullable();
             $table->string('label', 255)->default('');
-            $table->string('title_attr', 255)->nullable();
-            $table->boolean('open_new_tab')->default(false);
+            $table->string('target', 16)->default('_self');
             $table->string('css_class', 255)->nullable();
             $table->timestamps();
 

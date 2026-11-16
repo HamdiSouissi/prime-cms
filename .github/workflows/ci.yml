@@ -67,9 +67,9 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Check ES2022 syntax across all admin and plugin scripts
+      - name: Check ES2022 syntax across all admin, theme, and plugin scripts
         run: |
-          for f in public/assets/admin/js/*.js public/assets/admin/js/editor/*.js public/assets/admin/js/media/*.js content/plugins/hello-prime/assets/js/*.js; do
+          for f in public/assets/admin/js/*.js public/assets/admin/js/editor/*.js public/assets/admin/js/media/*.js content/themes/aurora/assets/js/*.js content/plugins/hello-prime/assets/js/*.js; do
             node --check "$f"
           done
 
@@ -198,8 +198,9 @@ jobs:
 
           # Verify CLI tools against live DB
           docker compose exec -T app php bin/prime db:check | grep -q "Connexion à la base de données réussie"
-          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000018_add_avatar_media_id_to_users_table"
+          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000023_add_author_slug_and_bio_to_users_table"
           docker compose exec -T app php bin/prime media:link | grep -q "public/uploads"
+          docker compose exec -T app php bin/prime themes:list | grep -q "aurora"
           docker compose exec -T app php bin/prime settings:get site_name | grep -q '"Prime Docker Smoke"'
           docker compose exec -T app php bin/prime role:list | grep -q "administrator"
           docker compose exec -T app php bin/prime user:list | grep -q "admin@prime-docker.test"
@@ -208,8 +209,12 @@ jobs:
           docker compose exec -T app php bin/prime content:create --type=post --title="Bienvenue Docker" --status=published --body="Contenu créé par la smoke test." | grep -q "Bienvenue Docker"
           docker compose exec -T app php bin/prime content:list --type=post | grep -q "Bienvenue Docker"
 
-          # Post-install checks: / = 200, /install = 404, unauthenticated /admin -> 302 /admin/login, /inconnu = 404
-          curl -sf http://localhost:8080/ | grep -q "Le noyau est en place"
+          # Post-install checks: / renders active theme Aurora, /blog/{slug} = 200, /sitemap.xml + /robots.txt = 200, /install = 404, unauthenticated /admin -> 302 /admin/login
+          curl -sf http://localhost:8080/ | grep -q "Prime Docker Smoke"
+          curl -sf http://localhost:8080/ | grep -q "Bienvenue Docker"
+          curl -sf http://localhost:8080/blog/bienvenue-docker | grep -q "Bienvenue Docker"
+          curl -sf http://localhost:8080/sitemap.xml | grep -q "<sitemapindex"
+          curl -sf http://localhost:8080/robots.txt | grep -q "Sitemap:"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/install)" = "404"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/install/database)" = "404"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin)" = "302"
@@ -229,12 +234,19 @@ jobs:
             --data-urlencode "password=Ciel!Mandarine#8429")
           test "$LOGIN_CODE" = "302"
 
-          # Authenticated admin checks: dashboard, media, content, taxonomies, plugins, users, roles, profile, styleguide
+          # Authenticated admin checks: dashboard, media, content, taxonomies, appearance, settings, plugins, users, roles, profile, styleguide
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Tableau de bord"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/media | grep -q "Médiathèque"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/content/page | grep -q "Pages"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/content/post | grep -q "Bienvenue Docker"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/taxonomies/category | grep -q "Non classé"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/appearance/themes | grep -q "Aurora"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/appearance/customizer | grep -q "Personnaliser"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/appearance/menus | grep -q "Menus de navigation"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/appearance/zones | grep -q "Zones de blocs"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/settings/reading | grep -q "Lecture"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/settings/permalinks | grep -q "Permaliens"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/settings/seo | grep -q "Référencement"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/plugins | grep -q "Hello Prime"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/users | grep -q "admin@prime-docker.test"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/roles | grep -q "Administrateur"

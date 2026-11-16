@@ -13,7 +13,7 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
 
   <header class="aurora-page-header">
     <?php if ($taxonomy !== null): ?>
-      <span class="aurora-page-header__eyebrow"><?= $site->e($taxonomy->singularLabel) ?></span>
+      <span class="aurora-page-header__eyebrow"><?= $site->e($taxonomy->label('singular')) ?></span>
     <?php endif; ?>
     <h1 class="aurora-page-header__title"><?= $term !== null ? $site->e($term->name) : 'Archive' ?></h1>
     <?php if ($term !== null && $term->description !== null && trim($term->description) !== ''): ?>

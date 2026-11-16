@@ -152,8 +152,10 @@ final class ThemeController
             ? $this->options->all($manifest, $parent?->manifest)
             : [];
 
-        $siteName = (string) $this->settings->get('site.name', 'Prime CMS');
-        $siteTagline = (string) $this->settings->get('site.tagline', '');
+        $rawSiteName = $this->settings->get('site.name') ?? $this->settings->get('site_name', 'Prime CMS');
+        $siteName = is_string($rawSiteName) && trim($rawSiteName) !== '' ? trim($rawSiteName) : 'Prime CMS';
+        $rawTagline = $this->settings->get('site.tagline') ?? $this->settings->get('site_tagline', '');
+        $siteTagline = is_string($rawTagline) ? trim($rawTagline) : '';
         $logoId = $this->settings->get('site.logo_id');
         $iconId = $this->settings->get('site.icon_id');
         $logoMedia = (is_numeric($logoId) && (int) $logoId > 0 && $this->media !== null) ? $this->media->find((int) $logoId) : null;
@@ -216,12 +218,16 @@ final class ThemeController
         if (array_key_exists('name', $identity) && is_string($identity['name'])) {
             $name = trim(strip_tags($identity['name']));
             if ($name !== '') {
-                $this->settings->set('site.name', mb_substr($name, 0, 120), autoload: true);
+                $cleanName = mb_substr($name, 0, 120);
+                $this->settings->set('site.name', $cleanName, autoload: true);
+                $this->settings->set('site_name', $cleanName, autoload: true);
             }
         }
         if (array_key_exists('tagline', $identity) && is_string($identity['tagline'])) {
             $tagline = trim(strip_tags($identity['tagline']));
-            $this->settings->set('site.tagline', mb_substr($tagline, 0, 240), autoload: true);
+            $cleanTagline = mb_substr($tagline, 0, 240);
+            $this->settings->set('site.tagline', $cleanTagline, autoload: true);
+            $this->settings->set('site_tagline', $cleanTagline, autoload: true);
         }
         if (array_key_exists('logo_id', $identity)) {
             $logoId = is_numeric($identity['logo_id']) && (int) $identity['logo_id'] > 0 ? (int) $identity['logo_id'] : null;

@@ -122,10 +122,16 @@ final class TemplateResolver
      */
     public function isSafeRelativeTemplate(string $relativePath): bool
     {
-        $normalized = ltrim(str_replace('\\', '/', $relativePath), '/');
-        if ($normalized === '' || str_contains($normalized, "\0") || str_contains($normalized, '..')) {
+        if (
+            $relativePath === ''
+            || str_starts_with($relativePath, '/')
+            || str_contains($relativePath, '\\')
+            || str_contains($relativePath, "\0")
+            || str_contains($relativePath, '..')
+        ) {
             return false;
         }
+        $normalized = $relativePath;
         if (!str_ends_with($normalized, '.php')) {
             return false;
         }

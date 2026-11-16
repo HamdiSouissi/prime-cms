@@ -133,6 +133,7 @@ const TYPE_LABELS = {
   entry: 'Contenu',
   term: 'Taxonomie',
   archive: 'Archive',
+  url: 'Lien',
   custom: 'Lien',
 };
 
@@ -309,7 +310,7 @@ export function initMenusAdmin() {
       labelField.append(labelL, labelIn);
       details.append(labelField);
 
-      if (item.type === 'custom') {
+      if (item.type === 'custom' || item.type === 'url') {
         const urlField = document.createElement('div');
         urlField.className = 'pc-field';
         const urlL = document.createElement('label');
