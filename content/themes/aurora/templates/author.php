@@ -24,7 +24,7 @@ $authorInitials = ($entries !== []) ? $entries[0]->author()['initials'] : strtou
         <?php endif; ?>
       </div>
       <div>
-        <span class="aurora-page-header__eyebrow">Auteur</span>
+        <span class="aurora-page-header__eyebrow"><?= $site->e($site->t('site.aurora.templates.author.eyebrow')) ?></span>
         <h1 class="aurora-page-header__title"><?= $site->e($authorName) ?></h1>
         <?php if ($authorBio !== ''): ?>
           <p class="aurora-page-header__lead"><?= $site->e($authorBio) ?></p>

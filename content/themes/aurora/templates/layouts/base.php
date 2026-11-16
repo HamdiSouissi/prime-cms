@@ -6,7 +6,7 @@ declare(strict_types=1);
 /** @var string $content */
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= $site->e($site->locale()) ?>" dir="<?= $site->e($site->direction()) ?>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

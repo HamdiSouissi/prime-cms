@@ -60,3 +60,6 @@ Desktop.ini
 
 # Local dev harness (PHP/Composer unavailable in this sandbox)
 /.arena-tools/
+
+# Local demo runtime (generated database, cache and logs)
+/storage-demo/

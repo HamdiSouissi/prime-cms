@@ -12,7 +12,7 @@ $heading = $contentType !== null ? $contentType->label('plural') : 'Archives';
   <?= $site->partial('breadcrumbs') ?>
 
   <header class="aurora-page-header">
-    <span class="aurora-page-header__eyebrow">Archive</span>
+    <span class="aurora-page-header__eyebrow"><?= $site->e($site->t('site.archive.eyebrow')) ?></span>
     <h1 class="aurora-page-header__title"><?= $site->e($heading) ?></h1>
     <p class="aurora-page-header__lead">
       <?= $site->context()->totalEntries ?> publication<?= $site->context()->totalEntries > 1 ? 's' : '' ?>

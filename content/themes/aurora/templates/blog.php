@@ -11,8 +11,8 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
   <?= $site->partial('breadcrumbs') ?>
 
   <header class="aurora-page-header">
-    <span class="aurora-page-header__eyebrow">Journal</span>
-    <h1 class="aurora-page-header__title"><?= $entry !== null ? $entry->title() : 'Blog' ?></h1>
+    <span class="aurora-page-header__eyebrow"><?= $site->e($site->t('site.aurora.templates.blog.eyebrow')) ?></span>
+    <h1 class="aurora-page-header__title"><?= $entry !== null ? $entry->title() : $site->e($site->t('site.blog.title')) ?></h1>
     <?php if ($entry !== null && $entry->excerpt() !== ''): ?>
       <p class="aurora-page-header__lead"><?= $entry->excerpt(200) ?></p>
     <?php endif; ?>

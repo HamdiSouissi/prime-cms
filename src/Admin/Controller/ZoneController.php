@@ -137,7 +137,9 @@ final class ZoneController
             ]);
         }
 
-        $this->context->flashToast(sprintf('La zone « %s » a été enregistrée.', $declaredZones[$slug]['label']), 'success');
+        $this->context->flashToast(t('admin.appearance.zones.saved', [
+            'zone' => t((string) $declaredZones[$slug]['label']),
+        ]), 'success');
 
         return Response::redirect('/admin/appearance/zones?zone=' . rawurlencode($slug));
     }

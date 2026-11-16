@@ -160,7 +160,7 @@ if ($allowUpload) {
                                 <?php endif; ?>
                                 <?php if ($manifest !== null): ?>
                                     <div><dt><?= $this->e($this->t('admin.appearance.themes.emplacements_menus')) ?></dt><dd><?= $manifest->menus !== [] ? $this->e(implode(', ', array_values($manifest->menus))) : 'Aucun' ?></dd></div>
-                                    <div><dt><?= $this->e($this->t('admin.appearance.themes.zones_blocs')) ?></dt><dd><?= $manifest->zones !== [] ? $this->e(implode(', ', array_column($manifest->zones, 'label'))) : 'Aucune' ?></dd></div>
+                                    <div><dt><?= $this->e($this->t('admin.appearance.themes.zones_blocs')) ?></dt><dd><?= $manifest->zones !== [] ? $this->e(implode(', ', array_map(fn (string $zoneLabel): string => $this->t($zoneLabel), array_column($manifest->zones, 'label')))) : $this->e($this->t('core.none')) ?></dd></div>
                                 <?php endif; ?>
                             </dl>
                         </div>

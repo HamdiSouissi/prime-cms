@@ -18,6 +18,7 @@ use Prime\Editor\BlockDefinition;
 use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
+use Prime\I18n\Translator;
 use Prime\Kernel\Container;
 use Prime\Kernel\ServiceProvider;
 use Prime\Media\MediaRepository;
@@ -184,6 +185,7 @@ final class SiteServiceProvider extends ServiceProvider
                 media: $media instanceof MediaRepository ? $media : null,
                 themeOptions: $themeOptions instanceof ThemeOptions ? $themeOptions : null,
                 hooks: $hooks instanceof Hooks ? $hooks : null,
+                translator: $c->has(Translator::class) ? $c->get(Translator::class) : null,
             );
         });
 

@@ -24,15 +24,15 @@ $hasPrimaryMenu = $site->hasMenu('primary');
 
     <div class="site-header__nav" id="aurora-primary-nav" data-aurora-nav>
       <?php if ($hasPrimaryMenu): ?>
-        <?= $site->menu('primary', ['class' => 'site-nav', 'aria_label' => 'Navigation principale']) ?>
+        <?= $site->menu('primary', ['class' => 'site-nav', 'aria_label' => $site->t('site.aurora.partials.header.primary_nav')]) ?>
       <?php else: ?>
-        <nav class="site-nav" aria-label="Navigation principale">
+        <nav class="site-nav" aria-label="<?= $site->e($site->t('site.aurora.partials.header.primary_nav')) ?>">
           <ul class="site-nav__list">
             <li class="site-nav__item">
-              <a class="site-nav__link" href="/"<?= $site->isFront() ? ' aria-current="page"' : '' ?>>Accueil</a>
+              <a class="site-nav__link" href="/"<?= $site->isFront() ? ' aria-current="page"' : '' ?>><?= $site->e($site->t('site.aurora.partials.header.home')) ?></a>
             </li>
             <li class="site-nav__item">
-              <a class="site-nav__link" href="<?= $site->blogUrl() ?>"<?= $site->isBlog() ? ' aria-current="page"' : '' ?>>Blog</a>
+              <a class="site-nav__link" href="<?= $site->blogUrl() ?>"<?= $site->isBlog() ? ' aria-current="page"' : '' ?>><?= $site->e($site->t('site.aurora.partials.header.blog')) ?></a>
             </li>
           </ul>
         </nav>
@@ -78,7 +78,7 @@ $hasPrimaryMenu = $site->hasMenu('primary');
       <div class="site-container">
         <form class="site-search-form" role="search" method="get" action="<?= $site->searchUrl() ?>">
           <label class="sr-only" for="aurora-header-q"><?= $site->e($site->t('site.aurora.partials.header.rechercher_site')) ?></label>
-          <input id="aurora-header-q" class="site-search-form__input" type="search" name="q" placeholder="<?= t('site.attr.rechercher_un_article_une_page') ?>" required>
+          <input id="aurora-header-q" class="site-search-form__input" type="search" name="q" placeholder="<?= $site->e($site->t('site.attr.rechercher_un_article_une_page')) ?>" required>
           <button class="site-search-form__btn" type="submit"><?= $site->e($site->t('site.search.submit')) ?></button>
         </form>
       </div>

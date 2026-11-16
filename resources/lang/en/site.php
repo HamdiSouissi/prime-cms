@@ -7,11 +7,12 @@ declare(strict_types=1);
  */
 return [
     'archive' => [
-        'author' => 'All content by :name',
+        'author' => 'Author',
         'category' => 'Category: :name',
         'count' => ':count item|:count items',
         'day' => 'Archive for :date',
         'empty' => 'No published content in this archive.',
+        'eyebrow' => 'Archive',
         'month' => 'Monthly archive: :month :year',
         'tag' => 'Tag: :name',
         'title' => 'Archives',
@@ -70,9 +71,18 @@ return [
         'latest' => 'Latest posts',
         'latest_more' => 'See all posts',
         'partials' => [
+            'card' => [
+                'min_lecture' => ':count min read',
+            ],
+            'footer' => [
+                'footer_nav' => 'Footer navigation',
+            ],
             'header' => [
+                'blog' => 'Blog',
+                'home' => 'Home',
                 'ouvrir_menu_navigation' => 'Open the navigation menu',
                 'ouvrir_recherche' => 'Open search',
+                'primary_nav' => 'Primary navigation',
                 'rechercher_site' => 'Search the site',
             ],
             'pagination' => [
@@ -85,15 +95,101 @@ return [
             'tapez_mot_cle' => 'Type a keyword…',
             'terme_recherche' => 'Search term',
         ],
+        'templates' => [
+            'author' => [
+                'eyebrow' => 'Author',
+            ],
+            'blog' => [
+                'eyebrow' => 'Journal',
+            ],
+        ],
         'term' => [
             'default' => [
                 'aucun_article_rubrique' => 'No post in this section',
                 'aucun_contenu_publie_encore_associe' => 'No published content is associated with this term yet.',
             ],
         ],
+        'theme' => [
+            'options' => [
+                'fields' => [
+                    'accent_color' => [
+                        'couleur_d_accentuation' => 'Accent colour',
+                    ],
+                    'bg_color' => [
+                        'couleur_d_arriere_plan' => 'Background colour',
+                    ],
+                    'container_width' => [
+                        'largeur_maximale_du_site_px' => 'Maximum site width (px)',
+                    ],
+                    'font_body' => [
+                        'police_du_texte_courant' => 'Body font',
+                    ],
+                    'font_heading' => [
+                        'police_des_titres' => 'Heading font',
+                    ],
+                    'footer_text' => [
+                        'texte_de_pied_de_page' => 'Footer text',
+                    ],
+                    'header_sticky' => [
+                        'fixer_l_en_tete_au_defilement' => 'Stick the header on scroll',
+                    ],
+                    'show_author_box' => [
+                        'afficher_l_encart_auteur_sous_les_articles' => 'Show the author box under posts',
+                    ],
+                    'show_header_search' => [
+                        'afficher_le_bouton_de_recherche_dans_l_en_tete' => 'Show the search button in the header',
+                    ],
+                    'show_related' => [
+                        'afficher_les_articles_similaires' => 'Show related posts',
+                    ],
+                    'show_sidebar' => [
+                        'afficher_la_barre_laterale_quand_elle_contient_des_blocs' => 'Show the sidebar when it contains blocks',
+                    ],
+                    'surface_color' => [
+                        'couleur_des_cartes' => 'Card colour',
+                    ],
+                    'text_color' => [
+                        'couleur_du_texte_principal' => 'Body text colour',
+                    ],
+                ],
+                'sections' => [
+                    'colors' => [
+                        'couleurs' => 'Colours',
+                    ],
+                    'footer' => [
+                        'pied_de_page' => 'Footer',
+                    ],
+                    'header' => [
+                        'en_tete' => 'Header',
+                    ],
+                    'layout' => [
+                        'mise_en_page' => 'Layout',
+                    ],
+                    'typography' => [
+                        'typographie' => 'Typography',
+                    ],
+                ],
+            ],
+            'zones' => [
+                'footer_1' => [
+                    'pied_de_page_colonne_1' => 'Footer — Column 1',
+                ],
+                'footer_2' => [
+                    'pied_de_page_colonne_2' => 'Footer — Column 2',
+                ],
+                'footer_3' => [
+                    'pied_de_page_colonne_3' => 'Footer — Column 3',
+                ],
+                'sidebar' => [
+                    'barre_laterale' => 'Sidebar',
+                ],
+            ],
+        ],
     ],
     'back_to_top' => 'Back to top',
-    'blog' => 'Blog',
+    'blog' => [
+        'title' => 'Blog',
+    ],
     'by_author' => 'By :author',
     'comments' => [
         'by' => 'by :author',
@@ -111,6 +207,9 @@ return [
         'website' => 'Website',
     ],
     'continue_reading' => 'Continue reading',
+    'error' => [
+        'not_found_title' => 'Page not found',
+    ],
     'errors' => [
         '404' => [
             'heading' => 'Page not found',
@@ -191,6 +290,7 @@ return [
         'results_for' => 'Results for “:query”',
         'submit' => 'Search',
         'title' => 'Search',
+        'title_with_query' => 'Search: :query',
         'try_again' => 'Try other keywords.',
     ],
     'skip_content' => 'Skip to content',

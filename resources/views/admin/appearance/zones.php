@@ -44,7 +44,7 @@ $this->layout('admin::layouts/app');
                         class="pc-zones-nav__item<?= $active ? ' is-active' : '' ?>"
                         <?= $active ? 'aria-current="page"' : '' ?>
                     >
-                        <span class="pc-zones-nav__label"><?= $this->e($zMeta['label']) ?></span>
+                        <span class="pc-zones-nav__label"><?= $this->e($this->t((string) $zMeta['label'])) ?></span>
                         <span class="pc-badge pc-badge--neutral"><?= $this->e((string) ($zoneCounts[$zSlug] ?? 0)) ?></span>
                     </a>
                 <?php endforeach; ?>
@@ -74,7 +74,7 @@ $this->layout('admin::layouts/app');
             <?php if ($selectedZone !== null): ?>
                 <header class="pc-card__header">
                     <div>
-                        <h2 class="pc-card__title"><?= $this->e($selectedZone['label']) ?></h2>
+                        <h2 class="pc-card__title"><?= $this->e($this->t((string) $selectedZone['label'])) ?></h2>
                         <?php if ($selectedZone['description'] !== ''): ?>
                             <p class="pc-text-xs pc-text-muted"><?= $this->e($selectedZone['description']) ?></p>
                         <?php endif; ?>

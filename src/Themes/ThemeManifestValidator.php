@@ -241,9 +241,10 @@ final class ThemeManifestValidator
                             'label' => trim($zoneDef),
                             'description' => '',
                         ];
-                    } elseif (is_array($zoneDef) && is_string($zoneDef['label'] ?? null) && trim($zoneDef['label']) !== '') {
+                    } elseif (is_array($zoneDef) && ($zoneLabel = $this->labelOf($zoneDef)) !== null) {
                         $zones[$zoneSlug] = [
-                            'label' => trim($zoneDef['label']),
+                            'label' => $zoneLabel,
+                            'label_key' => $this->labelKeyOf($zoneDef),
                             'description' => is_string($zoneDef['description'] ?? null) ? trim($zoneDef['description']) : '',
                         ];
                     } else {
@@ -446,9 +447,10 @@ final class ThemeManifestValidator
                     }
                     if (is_string($secDef) && trim($secDef) !== '') {
                         $sections[$secKey] = ['label' => trim($secDef), 'description' => ''];
-                    } elseif (is_array($secDef) && is_string($secDef['label'] ?? null) && trim($secDef['label']) !== '') {
+                    } elseif (is_array($secDef) && ($secLabel = $this->labelOf($secDef)) !== null) {
                         $sections[$secKey] = [
-                            'label' => trim($secDef['label']),
+                            'label' => $secLabel,
+                            'label_key' => $this->labelKeyOf($secDef),
                             'description' => is_string($secDef['description'] ?? null) ? trim($secDef['description']) : '',
                         ];
                     } else {
@@ -478,8 +480,8 @@ final class ThemeManifestValidator
                         continue;
                     }
 
-                    $label = is_string($fieldDef['label'] ?? null) ? trim($fieldDef['label']) : '';
-                    if ($label === '') {
+                    $label = $this->labelOf($fieldDef);
+                    if ($label === null) {
                         $errors[] = sprintf('Le champ d\'option "%s" doit définir un libellé.', $fieldKey);
                         continue;
                     }
@@ -519,6 +521,7 @@ final class ThemeManifestValidator
                         'section' => $section,
                         'type' => $type,
                         'label' => $label,
+                        'label_key' => $this->labelKeyOf($fieldDef),
                         'description' => is_string($fieldDef['description'] ?? null) ? trim($fieldDef['description']) : '',
                         'default' => $fieldDef['default'] ?? null,
                         'css_var' => $cssVar !== '' ? $cssVar : null,
@@ -551,5 +554,38 @@ final class ThemeManifestValidator
         }
 
         return ['sections' => $sections, 'fields' => $fields];
+    }
+
+    /**
+     * Readable label of a manifest entry.
+     *
+     * Themes ship `label_key` (a catalogue key translated at render time) and fall back to a
+     * literal `label`, which is what third-party themes written before the catalogue existed
+     * still use.
+     *
+     * @param array<string, mixed> $definition
+     */
+    private function labelOf(array $definition): ?string
+    {
+        $key = $this->labelKeyOf($definition);
+        if ($key !== null) {
+            return $key;
+        }
+
+        $label = $definition['label'] ?? null;
+
+        return is_string($label) && trim($label) !== '' ? trim($label) : null;
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     */
+    private function labelKeyOf(array $definition): ?string
+    {
+        $key = $definition['label_key'] ?? null;
+
+        return is_string($key) && preg_match('/^theme::[a-z0-9_-]+\.[a-z0-9_.]+$|^site\.[a-z0-9_.]+$|^core\.[a-z0-9_.]+$/', $key) === 1
+            ? $key
+            : null;
     }
 }

@@ -62,6 +62,7 @@ return [
             'aucune_zone_declaree' => 'No zone declared',
             'dynamic_blocks' => 'Available dynamic blocks',
             'enregistrer_zone' => 'Save the zone',
+            'saved' => 'The “:zone” zone has been saved.',
             'theme_actif_aucune_zone' => 'The active theme declares no block zone in its <code>theme.json</code> file.',
             'zones_theme' => 'Theme zones',
         ],

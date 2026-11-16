@@ -31,6 +31,13 @@ final class LanguageChecker
      */
     private const DYNAMIC_PREFIX_PATTERN = '/([\'"])((?:[a-z0-9][a-z0-9_-]*::)?[a-z0-9][a-z0-9_.:-]*\.)\1\s*\.\s*[\$\'"]/i';
 
+    /**
+     * Catalogue keys referenced as data by a theme manifest (`"label_key": "site.aurora.…"`).
+     *
+     * Group 2 is the key, so it lines up with `CALL_PATTERN` and `JS_CALL_PATTERN`.
+     */
+    private const MANIFEST_KEY_PATTERN = '/"(label_key)"\s*:\s*"((?:[a-z0-9][a-z0-9_-]*::)?[a-z0-9][a-z0-9_.:-]*\.[a-z0-9_.:-]+)"/i';
+
     private const CALL_PATTERN = '/(?<![A-Za-z0-9_])(?:\$[A-Za-z_][A-Za-z0-9_]*(?:->|::)|self::|static::|app\(\)->get\(\s*Translator::class\s*\)->)?\s*(?:__|trans_choice|trans|translate|choice|t)\s*\(\s*([\'"])((?:[a-z0-9][a-z0-9_-]*::)?[a-z0-9][a-z0-9_.:-]*\.[a-z0-9_.:-]+)\1\s*[,)]/i';
 
     /**
@@ -211,6 +218,15 @@ final class LanguageChecker
                 $patterns[] = self::JS_CALL_PATTERN_B;
             }
 
+            // A theme manifest names catalogue keys as data (`"label_key": "site.aurora.…"`).
+            if (str_ends_with($file, '.json') && preg_match_all(self::MANIFEST_KEY_PATTERN, $contents, $manifest, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) > 0) {
+                foreach ($manifest as $match) {
+                    $key = (string) $match[2][0];
+                    $line = substr_count(substr($contents, 0, (int) $match[2][1]), "\n") + 1;
+                    $usedKeys[$key][] = $this->relative($file) . ':' . $line;
+                }
+            }
+
             foreach ($patterns as $pattern) {
                 if (preg_match_all($pattern, $contents, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) > 0) {
                     foreach ($matches as $match) {
@@ -221,7 +237,7 @@ final class LanguageChecker
                 }
             }
 
-            if (!$this->isUiSource($file)) {
+            if (str_ends_with($file, '.json') || !$this->isUiSource($file)) {
                 continue;
             }
 
@@ -517,8 +533,10 @@ final class LanguageChecker
                 }
 
                 // Admin JavaScript carries its copy through `tr('key', 'fallback')`, so it has to
-                // be scanned for usages and for hard-coded text like any template.
-                if (str_ends_with($name, '.php') || str_ends_with($name, '.js')) {
+                // be scanned for usages and for hard-coded text like any template. A theme
+                // manifest references catalogue keys through `label_key`, so `.json` files only
+                // count as usages (they are never scanned for hard-coded copy).
+                if (str_ends_with($name, '.php') || str_ends_with($name, '.js') || str_ends_with($name, '.json')) {
                     $files[] = $file->getPathname();
                 }
             }

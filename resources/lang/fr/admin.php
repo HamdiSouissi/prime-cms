@@ -62,6 +62,7 @@ return [
             'aucune_zone_declaree' => 'Aucune zone déclarée',
             'dynamic_blocks' => 'Blocs dynamiques disponibles',
             'enregistrer_zone' => 'Enregistrer la zone',
+            'saved' => 'La zone « :zone » a été enregistrée.',
             'theme_actif_aucune_zone' => 'Le thème actif ne déclare aucune zone de blocs dans son fichier <code>theme.json</code>.',
             'zones_theme' => 'Zones du thème',
         ],

@@ -109,7 +109,7 @@ foreach ($schema['fields'] as $key => $field) {
                 <?php $secFields = $fieldsBySection[$secKey] ?? []; ?>
                 <?php if ($secFields === []): continue; endif; ?>
                 <details class="pc-customizer__section">
-                    <summary class="pc-customizer__summary"><?= $this->e($secMeta['label']) ?></summary>
+                    <summary class="pc-customizer__summary"><?= $this->e($this->t((string) $secMeta['label'])) ?></summary>
                     <div class="pc-customizer__fields pc-stack pc-stack--sm">
                         <?php if ($secMeta['description'] !== ''): ?>
                             <p class="pc-text-xs pc-text-muted"><?= $this->e($secMeta['description']) ?></p>
@@ -136,10 +136,10 @@ foreach ($schema['fields'] as $key => $field) {
                                             data-prime-opt-key="<?= $this->e($fieldKey) ?>"
                                             data-prime-opt-type="toggle"
                                         >
-                                        <span><?= $this->e((string) $field['label']) ?></span>
+                                        <span><?= $this->e($this->t((string) $field['label'])) ?></span>
                                     </label>
                                 <?php else: ?>
-                                    <label class="pc-label" for="<?= $this->e($inputId) ?>"><?= $this->e((string) $field['label']) ?></label>
+                                    <label class="pc-label" for="<?= $this->e($inputId) ?>"><?= $this->e($this->t((string) $field['label'])) ?></label>
                                     <?php if ($type === 'color'): ?>
                                         <div class="pc-customizer__color-row">
                                             <input
