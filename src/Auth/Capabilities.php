@@ -85,6 +85,10 @@ final class Capabilities
             'label' => 'Supprimer les contenus de tous les auteurs',
             'group' => 'Contenus',
         ],
+        'content.unfiltered_html' => [
+            'label' => 'Insérer du HTML libre dans l\'éditeur de blocs',
+            'group' => 'Contenus',
+        ],
 
         // Médias
         'media.view' => [

@@ -207,7 +207,7 @@ final class PluginManagerTest extends TestCase
             'license' => 'proprietary',
             'namespace' => $ns . '\\',
             'main' => $ns . '\\Plugin',
-            'requires' => ['prime' => '^0.5', 'php' => '^8.2'],
+            'requires' => ['prime' => '>=0.5.0', 'php' => '^8.2'],
         ], JSON_UNESCAPED_SLASHES));
         file_put_contents($inDir . '/src/Plugin.php', <<<PHP
 <?php
@@ -268,7 +268,7 @@ PHP);
             'license' => 'proprietary',
             'namespace' => 'ExternalErr\\',
             'main' => 'ExternalErr\\Plugin',
-            'requires' => ['prime' => '^0.5', 'php' => '^8.2'],
+            'requires' => ['prime' => '>=0.5.0', 'php' => '^8.2'],
         ], JSON_UNESCAPED_SLASHES));
 
         $this->repository->markActive('external-err', '1.0.0', 'ext');

@@ -35,4 +35,6 @@ return [
     'components/install.css',
     'components/auth.css',
     'components/plugins.css',
+    'components/content.css',
+    'components/editor.css',
 ];

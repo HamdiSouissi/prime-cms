@@ -5,6 +5,8 @@
 
 import { initAdminUsers } from './admin-users.js';
 import { initAdminPlugins } from './plugins.js';
+import { initContentAdmin } from './content-admin.js';
+import { editorApi, initPrimeEditor } from './editor/core.js';
 import { initCommandPalette, openCommandPalette } from './command-palette.js';
 import { closeDrawer, initDrawers, openDrawer } from './drawer.js';
 import { initDropdowns } from './dropdown.js';
@@ -138,6 +140,8 @@ function bootstrap() {
   initBulkTables();
   initAdminUsers();
   initAdminPlugins();
+  initContentAdmin();
+  initPrimeEditor();
 }
 
 window.Prime = Object.freeze({
@@ -147,6 +151,7 @@ window.Prime = Object.freeze({
   closeModal,
   openDrawer,
   closeDrawer,
+  editor: editorApi,
 });
 
 if (document.readyState === 'loading') {

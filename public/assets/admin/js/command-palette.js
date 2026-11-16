@@ -3,6 +3,7 @@
  * Consumes JSON payload embedded in `<script type="application/json" id="prime-command-palette-data">`.
  */
 
+import { shouldBlockGlobalSlashShortcut } from './editor/navigation.js';
 import { showToast } from './toast.js';
 
 /**
@@ -110,11 +111,7 @@ export function searchCommands(items, query) {
 
 /** @returns {boolean} */
 function isEditableTarget(target) {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  const tag = target.tagName;
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+  return shouldBlockGlobalSlashShortcut(target, typeof document !== 'undefined' ? document.activeElement : null);
 }
 
 /** @returns {string} */

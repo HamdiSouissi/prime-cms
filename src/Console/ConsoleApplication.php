@@ -9,6 +9,12 @@ use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
 use Prime\Console\Commands\AboutCommand;
 use Prime\Console\Commands\AssetsBuildCommand;
+use Prime\Console\Commands\ContentCreateCommand;
+use Prime\Console\Commands\ContentListCommand;
+use Prime\Console\Commands\ContentPublishScheduledCommand;
+use Prime\Console\Commands\ContentPurgeTrashCommand;
+use Prime\Console\Commands\ContentRerenderCommand;
+use Prime\Console\Commands\ContentTypesCommand;
 use Prime\Console\Commands\DbCheckCommand;
 use Prime\Console\Commands\InstallCommand;
 use Prime\Console\Commands\ListCommand;
@@ -36,6 +42,10 @@ use Prime\Console\Commands\UserListCommand;
 use Prime\Console\Commands\UserPasswordCommand;
 use Prime\Console\Commands\UserRoleCommand;
 use Prime\Console\Commands\UserTwoFactorResetCommand;
+use Prime\Content\ContentTypeRegistry;
+use Prime\Content\EntryQuery;
+use Prime\Content\EntryService;
+use Prime\Content\TaxonomyRegistry;
 use Prime\Database\Connection;
 use Prime\Database\Migrations\Migrator;
 use Prime\Hooks\Hooks;
@@ -194,6 +204,26 @@ final class ConsoleApplication
             $this->register(new PluginUninstallCommand($pluginManager));
             $this->register(new PluginInstallCommand($pluginInstaller));
             $this->register(new PluginPublishAssetsCommand($pluginManager));
+        }
+
+        if ($this->app->container()->has(EntryService::class) && $this->app->container()->has(ContentTypeRegistry::class)) {
+            /** @var EntryQuery $entryQuery */
+            $entryQuery = $this->app->get(EntryQuery::class);
+            /** @var EntryService $entryService */
+            $entryService = $this->app->get(EntryService::class);
+            /** @var ContentTypeRegistry $contentTypes */
+            $contentTypes = $this->app->get(ContentTypeRegistry::class);
+            /** @var TaxonomyRegistry $taxonomies */
+            $taxonomies = $this->app->get(TaxonomyRegistry::class);
+            /** @var UserRepository $contentUsers */
+            $contentUsers = $this->app->get(UserRepository::class);
+
+            $this->register(new ContentListCommand($entryQuery));
+            $this->register(new ContentCreateCommand($entryService, $contentUsers));
+            $this->register(new ContentPublishScheduledCommand($entryService));
+            $this->register(new ContentPurgeTrashCommand($this->app, $entryService));
+            $this->register(new ContentRerenderCommand($entryService));
+            $this->register(new ContentTypesCommand($contentTypes, $taxonomies));
         }
 
         $this->register(new MakePluginCommand($this->app));

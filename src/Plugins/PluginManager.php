@@ -204,7 +204,9 @@ final class PluginManager
                 manifest: $manifest,
                 status: $status,
                 installedVersion: $installedVersion,
-                lastError: $dbRow !== null ? $dbRow['last_error'] : null,
+                lastError: $dbRow !== null && $dbRow['last_error'] !== null
+                    ? self::sanitizeStoredErrorMessage($slug, $dbRow['last_error'], $this->pluginsPath, $this->app->basePath())
+                    : null,
                 erroredAt: $dbRow !== null ? $dbRow['errored_at'] : null,
                 installedAt: $dbRow !== null ? $dbRow['installed_at'] : null,
                 activatedAt: $dbRow !== null ? $dbRow['activated_at'] : null,
@@ -946,15 +948,32 @@ final class PluginManager
     }
 
     /**
-     * Strip any server absolute paths from a message and truncate to 300 characters.
+     * Sanitize a stored or legacy `pc_plugins.last_error` value for safe UI display
+     * and data-migration cleanup (Phase 6 L0).
+     *
+     * Strips server-specific absolute filesystem paths (both current mount paths and
+     * arbitrary Unix/Windows paths from older installs/containers), retaining only a
+     * plugin-relative path when the failing file belongs to `content/plugins/{slug}/`.
      */
-    private function sanitizePublicMessage(string $slug, string $message): string
-    {
-        $sanitized = $message;
+    public static function sanitizeStoredErrorMessage(
+        string $slug,
+        string $rawError,
+        ?string $pluginsPath = null,
+        ?string $basePath = null,
+    ): string {
+        $sanitized = $rawError;
         $prefixes = [];
 
-        $pluginDir = rtrim($this->pluginsPath, DIRECTORY_SEPARATOR . '/') . DIRECTORY_SEPARATOR . $slug;
-        foreach ([$pluginDir, $this->pluginsPath, $this->app->basePath()] as $candidate) {
+        $candidates = [];
+        if ($pluginsPath !== null && $pluginsPath !== '') {
+            $candidates[] = rtrim($pluginsPath, DIRECTORY_SEPARATOR . '/') . DIRECTORY_SEPARATOR . $slug;
+            $candidates[] = $pluginsPath;
+        }
+        if ($basePath !== null && $basePath !== '') {
+            $candidates[] = $basePath;
+        }
+
+        foreach ($candidates as $candidate) {
             $variants = [$candidate];
             $real = realpath($candidate);
             if ($real !== false && $real !== $candidate) {
@@ -975,7 +994,6 @@ final class PluginManager
             }
         }
 
-        // Replace longest path prefixes first without altering PHP namespace backslashes
         usort($prefixes, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
         foreach (array_unique($prefixes) as $prefix) {
             if (str_contains($sanitized, $prefix)) {
@@ -983,12 +1001,54 @@ final class PluginManager
             }
         }
 
+        // Normalize any trailing parenthesized location `(<path>:<line>)`:
+        // keep relative path if inside `content/plugins/{slug}/`, omit if an external absolute path.
+        $quotedSlug = preg_quote($slug, '#');
+        if (preg_match('/\s*\(([^()]+):(\d+)\)\s*$/', $sanitized, $locMatch) === 1) {
+            $rawLocation = trim($locMatch[1]);
+            $line = $locMatch[2];
+            $prefixText = substr($sanitized, 0, strlen($sanitized) - strlen($locMatch[0]));
+            $normalizedLoc = str_replace('\\', '/', $rawLocation);
+
+            if (preg_match('#(?:^|/)content/plugins/' . $quotedSlug . '/(.+)$#', $normalizedLoc, $relMatch) === 1) {
+                $sanitized = sprintf('%s (%s:%s)', rtrim($prefixText), ltrim($relMatch[1], '/'), $line);
+            } elseif (
+                str_starts_with($normalizedLoc, '/')
+                || preg_match('/^[a-zA-Z]:\//', $normalizedLoc) === 1
+            ) {
+                $sanitized = rtrim($prefixText);
+            }
+        }
+
+        // Replace embedded absolute paths pointing inside `content/plugins/{slug}/...` with relative paths.
+        $sanitized = (string) preg_replace_callback(
+            '#(?<![a-zA-Z0-9_\\\\])(?:[a-zA-Z]:[\\\\/]|/)[^\s\)\]\'"<>]*?content[\\\\/]plugins[\\\\/]' . $quotedSlug . '[\\\\/]([^\s\)\]\'"<>]+)#',
+            static fn (array $m): string => str_replace('\\', '/', $m[1]),
+            $sanitized,
+        );
+
+        // Strip remaining arbitrary absolute server filesystem paths (Unix or Windows drive paths)
+        // without touching PHP namespace references like `HelloPrime\Plugin`.
+        $sanitized = (string) preg_replace(
+            '#(?<![a-zA-Z0-9_])(?:[a-zA-Z]:\\\\(?:[^\\\\\s\)\]\'"<>]+\\\\)+[^\\\\\s\)\]\'"<>]*|/(?:var|home|srv|tmp|usr|opt|app|etc|root|mnt|Users|private|Volumes)/(?:[^\s\)\]\'"<>]+))#',
+            '[chemin masqué]',
+            $sanitized,
+        );
+
         $clean = trim((string) preg_replace('/\s+/', ' ', $sanitized));
         if (mb_strlen($clean) > self::MAX_PUBLIC_ERROR_LENGTH) {
             $clean = rtrim(mb_substr($clean, 0, self::MAX_PUBLIC_ERROR_LENGTH - 1)) . '…';
         }
 
         return $clean;
+    }
+
+    /**
+     * Strip any server absolute paths from a message and truncate to 300 characters.
+     */
+    private function sanitizePublicMessage(string $slug, string $message): string
+    {
+        return self::sanitizeStoredErrorMessage($slug, $message, $this->pluginsPath, $this->app->basePath());
     }
 
     /**

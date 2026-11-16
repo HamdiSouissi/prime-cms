@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Prime\Admin\AdminServiceProvider;
 use Prime\Auth\AuthServiceProvider;
+use Prime\Content\ContentServiceProvider;
 use Prime\Database\DatabaseServiceProvider;
 use Prime\Http\Middleware\RedirectIfNotInstalled;
 use Prime\Http\Middleware\SecurityHeaders;
@@ -38,6 +39,7 @@ return [
         HttpServiceProvider::class,
         AuthServiceProvider::class,
         InstallServiceProvider::class,
+        ContentServiceProvider::class,
         AdminServiceProvider::class,
         PluginServiceProvider::class,
     ],

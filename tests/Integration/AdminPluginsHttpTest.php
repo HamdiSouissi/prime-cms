@@ -237,7 +237,7 @@ final class AdminPluginsHttpTest extends TestCase
                 'license' => 'proprietary',
                 'namespace' => $ns . '\\',
                 'main' => $ns . '\\Plugin',
-                'requires' => ['prime' => '^0.5', 'php' => '^8.2'],
+                'requires' => ['prime' => '>=0.5.0', 'php' => '^8.2'],
             ], JSON_UNESCAPED_SLASHES));
             file_put_contents($dir . '/src/Plugin.php', $body);
         };

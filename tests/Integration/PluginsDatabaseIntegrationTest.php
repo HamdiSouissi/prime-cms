@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Notices;
 use Prime\Auth\Capabilities;
+use Prime\Database\Connection;
 use Prime\Database\Migrations\Migrator;
 use Prime\Database\Schema\Schema;
 use Prime\Hooks\Hooks;
@@ -63,7 +64,7 @@ final class PluginsDatabaseIntegrationTest extends DatabaseTestCase
         );
 
         $ran = $migrator->run();
-        $this->assertCount(8, $ran);
+        $this->assertCount(14, $ran);
         $this->assertTrue($schema->hasTable('plugins'));
         $this->assertTrue($schema->hasColumn('migrations', 'source'));
 
@@ -121,7 +122,7 @@ final class PluginsDatabaseIntegrationTest extends DatabaseTestCase
         $pluginRow = $repository->find('hello-prime');
         $this->assertNotNull($pluginRow);
         $this->assertSame(PluginInfo::STATUS_ACTIVE, $pluginRow['status']);
-        $this->assertSame('1.0.0', $pluginRow['version']);
+        $this->assertSame('1.1.0', $pluginRow['version']);
 
         // Insert a greeting & customize setting, then dispatch GET /hello-prime
         $settings->set('plugin.hello-prime.greeting', 'Bienvenue sur MySQL Prime !');
