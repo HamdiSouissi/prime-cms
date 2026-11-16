@@ -37,6 +37,61 @@ final class UserRepository
         return $this->hydrateMany([$row])[0] ?? null;
     }
 
+    /**
+     * Batch-load users keyed by ID (avoids N+1 queries on public entry lists).
+     *
+     * @param list<int> $ids
+     * @return array<int, User>
+     */
+    public function findByIds(array $ids): array
+    {
+        $clean = array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
+        if ($clean === []) {
+            return [];
+        }
+
+        $rows = $this->connection->table('users')
+            ->whereIn('id', $clean)
+            ->get();
+
+        $map = [];
+        foreach ($this->hydrateMany($rows) as $user) {
+            $map[$user->id] = $user;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Resolve an active user by public author slug (`username` column or slugified `display_name`).
+     */
+    public function findByAuthorSlug(string $slug): ?User
+    {
+        $clean = strtolower(trim($slug));
+        if ($clean === '') {
+            return null;
+        }
+
+        try {
+            $row = $this->connection->table('users')
+                ->where('username', '=', $clean)
+                ->first();
+            if ($row !== null) {
+                return $this->hydrateMany([$row])[0] ?? null;
+            }
+        } catch (\Throwable) {
+            // `username` column may not exist on older test schemas; fall through to display_name scan.
+        }
+
+        foreach ($this->all() as $user) {
+            if ($user->authorSlug() === $clean) {
+                return $user;
+            }
+        }
+
+        return null;
+    }
+
     public function findByEmail(string $email): ?User
     {
         $row = $this->findRawByEmail($email);
@@ -446,6 +501,8 @@ final class UserRepository
                 roles: $userRoles,
                 capabilities: array_keys($capabilities),
                 avatarMediaId: isset($row['avatar_media_id']) && $row['avatar_media_id'] !== '' ? (int) $row['avatar_media_id'] : null,
+                username: isset($row['username']) && is_string($row['username']) && trim($row['username']) !== '' ? trim($row['username']) : null,
+                bio: isset($row['bio']) && is_string($row['bio']) && trim($row['bio']) !== '' ? trim($row['bio']) : null,
             );
         }
 

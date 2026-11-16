@@ -227,6 +227,31 @@ final readonly class Entry
     }
 
     /**
+     * Resolve the public URL of this entry via `UrlGenerator` (with clean fallback outside HTTP).
+     */
+    public function url(): string
+    {
+        if (\Prime\Kernel\Application::hasInstance()) {
+            $container = \Prime\Kernel\Application::getInstance()->container();
+            if ($container->has(\Prime\Site\UrlGenerator::class)) {
+                /** @var \Prime\Site\UrlGenerator $generator */
+                $generator = $container->get(\Prime\Site\UrlGenerator::class);
+
+                return $generator->entryUrl($this);
+            }
+        }
+
+        if ($this->type === 'page') {
+            return '/' . rawurlencode($this->slug);
+        }
+        if ($this->type === 'post') {
+            return '/blog/' . rawurlencode($this->slug);
+        }
+
+        return '/' . rawurlencode($this->type) . '/' . rawurlencode($this->slug);
+    }
+
+    /**
      * @param array<string, mixed> $meta
      * @param array<string, list<Term>> $terms
      */
