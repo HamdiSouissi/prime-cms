@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from './run.mjs';
 
+import { submitFormPreservingStatus } from '../../public/assets/admin/js/editor/core.js';
 import { HistoryStack } from '../../public/assets/admin/js/editor/history.js';
 import {
   resolveBlockArrowNavigation,
@@ -445,6 +446,99 @@ describe('Keyboard Navigation, Focus Resolution & Slash Shortcut Guard (C3)', ()
     // Outside any editable context (e.g., admin dashboard body/link), `/` remains allowed
     assert.equal(shouldBlockGlobalSlashShortcut(bodyEl, bodyEl), false);
     assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'BUTTON' }), bodyEl), false);
+  });
+
+  test('Ctrl/Cmd+S submits editor form without clicking status-mutating CTA buttons', () => {
+    const createMockEditorForm = (initialStatus, primaryTargetStatus) => {
+      const statusSelect = { value: initialStatus };
+      let primaryClicked = false;
+      let submittedStatus = null;
+      let requestSubmitCalls = 0;
+
+      const primaryBtn = {
+        disabled: false,
+        dataset: { primeSubmitStatus: primaryTargetStatus },
+        click() {
+          primaryClicked = true;
+          if (primaryTargetStatus) {
+            statusSelect.value = primaryTargetStatus;
+          }
+        },
+      };
+      const secondaryBtn = {
+        disabled: false,
+        dataset: { primeSubmitStatus: 'draft' },
+        click() {
+          statusSelect.value = 'draft';
+        },
+      };
+
+      const form = {
+        querySelectorAll(selector) {
+          if (selector.includes('primary-save')) {
+            return [primaryBtn, secondaryBtn];
+          }
+          return [];
+        },
+        requestSubmit(submitter) {
+          requestSubmitCalls += 1;
+          assert.equal(submitter, undefined, 'Ctrl/Cmd+S must submit without a status-mutating submitter button');
+          submittedStatus = statusSelect.value;
+        },
+      };
+
+      return {
+        form,
+        statusSelect,
+        primaryBtn,
+        secondaryBtn,
+        get primaryClicked() {
+          return primaryClicked;
+        },
+        get submittedStatus() {
+          return submittedStatus;
+        },
+        get requestSubmitCalls() {
+          return requestSubmitCalls;
+        },
+      };
+    };
+
+    // 1. New entry (draft) with "Publier" primary CTA: Ctrl/Cmd+S keeps draft!
+    const newDraft = createMockEditorForm('draft', 'published');
+    assert.equal(submitFormPreservingStatus(newDraft.form), true);
+    assert.equal(newDraft.primaryClicked, false);
+    assert.equal(newDraft.statusSelect.value, 'draft');
+    assert.equal(newDraft.submittedStatus, 'draft');
+    assert.equal(newDraft.requestSubmitCalls, 1);
+
+    // 2. Existing published entry: Ctrl/Cmd+S updates in place as published!
+    const existingPublished = createMockEditorForm('published', '');
+    assert.equal(submitFormPreservingStatus(existingPublished.form), true);
+    assert.equal(existingPublished.primaryClicked, false);
+    assert.equal(existingPublished.statusSelect.value, 'published');
+    assert.equal(existingPublished.submittedStatus, 'published');
+
+    // 3. Contributor draft with "Soumettre pour relecture" primary CTA: Ctrl/Cmd+S keeps draft!
+    const contributorDraft = createMockEditorForm('draft', 'pending');
+    assert.equal(submitFormPreservingStatus(contributorDraft.form), true);
+    assert.equal(contributorDraft.primaryClicked, false);
+    assert.equal(contributorDraft.statusSelect.value, 'draft');
+    assert.equal(contributorDraft.submittedStatus, 'draft');
+
+    // 4. Explicit click on primary CTA still publishes as intended
+    newDraft.primaryBtn.click();
+    assert.equal(newDraft.statusSelect.value, 'published');
+
+    // 5. Lock lost or all save buttons disabled prevents Ctrl/Cmd+S submission
+    const lockedForm = createMockEditorForm('draft', 'published');
+    assert.equal(submitFormPreservingStatus(lockedForm.form, { lockLost: true }), false);
+    assert.equal(lockedForm.requestSubmitCalls, 0);
+
+    lockedForm.primaryBtn.disabled = true;
+    lockedForm.secondaryBtn.disabled = true;
+    assert.equal(submitFormPreservingStatus(lockedForm.form), false);
+    assert.equal(lockedForm.requestSubmitCalls, 0);
   });
 });
 

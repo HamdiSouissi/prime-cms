@@ -62,6 +62,7 @@ export class PrimeEditor {
     this.blocks = initialDoc.blocks;
     this.history = new HistoryStack(this.blocks, 100);
     this.dirty = false;
+    this.lockLost = false;
     this.historyTimer = null;
     this.dragSourceIndex = null;
     this.openMenuIndex = null;
@@ -720,16 +721,14 @@ export class PrimeEditor {
 
   submitForm() {
     if (!this.form) {
-      return;
+      return false;
     }
     this.syncTextarea();
-    this.dirty = false;
-    const primaryBtn = this.form.querySelector('[data-prime-primary-save]');
-    if (primaryBtn instanceof HTMLButtonElement && !primaryBtn.disabled) {
-      primaryBtn.click();
-    } else {
-      this.form.requestSubmit();
+    const submitted = submitFormPreservingStatus(this.form, { lockLost: this.lockLost });
+    if (submitted) {
+      this.dirty = false;
     }
+    return submitted;
   }
 
   initAutosaveAndLocks() {
@@ -814,6 +813,7 @@ export class PrimeEditor {
   }
 
   handleLockLost(userName) {
+    this.lockLost = true;
     window.clearInterval(this.autosaveTimer);
     window.clearInterval(this.heartbeatTimer);
 
@@ -834,6 +834,40 @@ export class PrimeEditor {
 
     this.announce(`Attention : ${userName} a pris la main sur ce contenu. Enregistrement désactivé.`);
   }
+}
+
+/**
+ * Submit an editor form while strictly preserving the current entry status.
+ *
+ * Unlike clicking the primary CTA button (which carries `data-prime-submit-status="published"`
+ * on new entries or `"pending"` for contributors), `Ctrl/Cmd+S` submits the form directly
+ * without a submitter button so a draft stays a draft and a published entry updates in place.
+ *
+ * @param {HTMLFormElement | null | undefined} form
+ * @param {{ lockLost?: boolean }} [options]
+ * @returns {boolean} True when the form was submitted
+ */
+export function submitFormPreservingStatus(form, { lockLost = false } = {}) {
+  if (!form || lockLost) {
+    return false;
+  }
+
+  const saveButtons = Array.from(
+    form.querySelectorAll('[data-prime-primary-save], [data-prime-secondary-save]'),
+  );
+  if (saveButtons.length > 0 && saveButtons.every((btn) => Boolean(btn.disabled))) {
+    return false;
+  }
+
+  if (typeof form.requestSubmit === 'function') {
+    form.requestSubmit();
+  } else if (typeof form.submit === 'function') {
+    form.submit();
+  } else {
+    return false;
+  }
+
+  return true;
 }
 
 export function initPrimeEditor() {
