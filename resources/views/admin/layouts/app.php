@@ -24,6 +24,7 @@ declare(strict_types=1);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= $this->e($this->csrfToken()) ?>">
     <meta name="prime-icon-sprite" content="<?= $this->e(asset('admin/icons/sprite.svg')) ?>">
     <title><?= $this->e($fullTitle) ?></title>
     <link rel="icon" href="<?= $this->e(asset('brand/favicon.ico')) ?>" sizes="32x32">

@@ -579,7 +579,11 @@ export function initMediaFields(scope = document) {
 
     /** @type {Array<object>} */
     let selectedItems = [];
-    const initialJson = container.getAttribute('data-prime-media-initial');
+    const initialScript = container.querySelector('script[data-prime-media-initial]');
+    const initialJson =
+      initialScript instanceof HTMLScriptElement
+        ? initialScript.textContent
+        : container.getAttribute('data-prime-media-initial');
     if (initialJson) {
       try {
         const parsed = JSON.parse(initialJson);
@@ -605,6 +609,7 @@ export function initMediaFields(scope = document) {
 
     const renderPreview = () => {
       previewWrap.innerHTML = '';
+      previewWrap.hidden = selectedItems.length === 0;
       if (clearBtn instanceof HTMLElement) {
         clearBtn.hidden = selectedItems.length === 0;
       }

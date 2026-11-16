@@ -314,20 +314,20 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                         data-prime-media-kinds="image"
                         data-prime-media-title="Choisir une image à la une"
                     >
-                        <script type="application/json" data-prime-field-initial><?= $this->raw((string) ($featuredMediaJson ?? '[]')) ?></script>
+                        <script type="application/json" data-prime-media-initial><?= $this->raw((string) ($featuredMediaJson ?? '[]')) ?></script>
                         <input
                             type="hidden"
                             name="featured_media_id"
                             value="<?= $this->e($featuredMediaId !== null ? (string) $featuredMediaId : '') ?>"
-                            data-prime-field-input
+                            data-prime-media-input
                         >
-                        <div class="pc-media-field__preview" data-prime-field-preview hidden></div>
+                        <div class="pc-media-field__preview" data-prime-media-preview hidden></div>
                         <div class="pc-media-field__buttons">
-                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-field-pick>
+                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-choose>
                                 <?= $this->raw($this->icon('image', 14)) ?>
-                                <span>Choisir une image</span>
+                                <span data-prime-media-choose-label>Choisir une image</span>
                             </button>
-                            <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-field-clear hidden>Retirer</button>
+                            <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear hidden>Retirer</button>
                         </div>
                         <?php if (isset($errors['featured_media_id'])): ?>
                             <span class="pc-field__error"><?= $this->e($errors['featured_media_id']) ?></span>

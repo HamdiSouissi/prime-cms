@@ -223,5 +223,26 @@ Tout écouteur ou filtre enregistré via `$context->hooks()` (ou pendant l'exéc
 | `content.restored` | Événement | `Prime\Content\Entry $entry`, `Prime\Auth\User $actor` | Après restauration d'un contenu depuis la corbeille ou d'une révision. |
 | `content.deleted` | Événement | `Prime\Content\Entry $entry`, `?Prime\Auth\User $actor` | Après suppression définitive d'un contenu (manuelle ou purge automatique de la corbeille). |
 
+---
+
+## Hooks de la Médiathèque (Phase 7)
+
+### Filtres de configuration média
+
+| Hook | Type | Valeur filtrée | Usage |
+|------|------|----------------|-------|
+| `media.allowed_types` | Filtre | `array<string, array{kind: string, mimes: list<string>}> $types` | Autoriser ou restreindre des extensions et types MIME acceptés au téléversement. |
+| `media.image_sizes` | Filtre | `array<string, array{width: int, height: int, crop: bool}> $sizes` | Ajouter ou ajuster les formats de variantes GD générés automatiquement (ex. `card` 600×400). |
+
+### Événements du cycle de vie des médias
+
+| Hook | Type | Paramètres | Déclenchement |
+|------|------|------------|---------------|
+| `media.before_upload` | Événement | `array<string, mixed> $validated`, `?Prime\Auth\User $actor`, `?int $folderId` | Juste après validation de sécurité et avant l'écriture sur disque (permet de rejeter un upload via exception). |
+| `media.uploaded` | Événement | `Prime\Media\Media $media`, `?Prime\Auth\User $actor`, `?Prime\Media\Media $duplicate` | Après traitement GD, génération WebP et persistance en base (indique un éventuel doublon SHA-256). |
+| `media.updated` | Événement | `Prime\Media\Media $media`, `?Prime\Auth\User $actor` | Après mise à jour des métadonnées, changement de point focal, remplacement de fichier ou régénération des variantes. |
+| `media.deleted` | Événement | `Prime\Media\Media $media`, `?Prime\Auth\User $actor` | Après suppression en base et suppression des fichiers originaux et variantes sur disque. |
+
+
 
 

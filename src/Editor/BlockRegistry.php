@@ -992,7 +992,7 @@ final class BlockRegistry
                     $itemCaption = is_string($item['caption'] ?? null) ? $sanitizer->sanitizeInline($item['caption']) : '';
 
                     $normalizedItem = [
-                        'url' => $safeUrl ?? ($resolved !== null ? $resolved->url() : ''),
+                        'url' => $safeUrl ?? $resolved->url(),
                         'alt' => $alt,
                         'caption' => $itemCaption,
                     ];
@@ -1343,8 +1343,8 @@ final class BlockRegistry
                 if ($label === '') {
                     $label = $resolved !== null ? ($resolved->title !== '' ? $resolved->title : $resolved->originalName) : 'Télécharger le fichier';
                 }
-                $ext = strtoupper(trim((string) ($data['extension'] ?? ($resolved?->extension ?? ''))));
-                $sizeBytes = (int) ($data['sizeBytes'] ?? ($resolved?->sizeBytes ?? 0));
+                $ext = strtoupper(trim((string) ($data['extension'] ?? ($resolved !== null ? $resolved->extension : ''))));
+                $sizeBytes = (int) ($data['sizeBytes'] ?? ($resolved !== null ? $resolved->sizeBytes : 0));
                 $metaParts = [];
                 if ($ext !== '') {
                     $metaParts[] = $ext;

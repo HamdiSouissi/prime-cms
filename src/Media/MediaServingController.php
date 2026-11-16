@@ -70,6 +70,26 @@ final class MediaServingController
 
     public function serve(Request $request, string $path): Response
     {
+        return $this->serveRelativePath($request, $path);
+    }
+
+    public function serveTwo(Request $request, string $s1, string $s2): Response
+    {
+        return $this->serveRelativePath($request, $s1 . '/' . $s2);
+    }
+
+    public function serveThree(Request $request, string $s1, string $s2, string $s3): Response
+    {
+        return $this->serveRelativePath($request, $s1 . '/' . $s2 . '/' . $s3);
+    }
+
+    public function serveFour(Request $request, string $s1, string $s2, string $s3, string $s4): Response
+    {
+        return $this->serveRelativePath($request, $s1 . '/' . $s2 . '/' . $s3 . '/' . $s4);
+    }
+
+    private function serveRelativePath(Request $request, string $path): Response
+    {
         $decodedPath = rawurldecode($path);
 
         // 1. Strict path traversal and hidden-file guard

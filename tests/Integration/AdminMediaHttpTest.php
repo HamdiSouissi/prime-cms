@@ -290,6 +290,17 @@ final class AdminMediaHttpTest extends TestCase
         ))->body(), true, 512, JSON_THROW_ON_ERROR)['item'];
         $avatarId = (int) $avatar['id'];
 
+        // Verify public fallback route serves dated YYYY/MM thumbnails & originals through full HTTP Kernel
+        $thumbServeRes = $kernel->handle(Request::create('GET', (string) $hero['thumbnail_url']));
+        $this->assertSame(200, $thumbServeRes->status());
+        $this->assertSame('image/jpeg', $thumbServeRes->header('Content-Type'));
+        $this->assertSame('nosniff', $thumbServeRes->header('X-Content-Type-Options'));
+        $this->assertStringContainsString('sandbox', (string) $thumbServeRes->header('Content-Security-Policy'));
+
+        // Verify admin HTML layout exposes `<meta name="csrf-token">` for browser JS fetch/XHR uploads
+        $mediaPageHtml = $kernel->handle(Request::create('GET', '/admin/media'))->body();
+        $this->assertStringContainsString('<meta name="csrf-token" content="', $mediaPageHtml);
+
         // 2. Attach hero as featured image + editor image block on a new post
         $blocksJson = json_encode([
             'version' => 1,

@@ -48,20 +48,20 @@ ob_start();
                     data-prime-media-kinds="image"
                     data-prime-media-title="Choisir un avatar"
                 >
-                    <script type="application/json" data-prime-field-initial><?= $this->raw((string) ($avatarInitialJson ?? '[]')) ?></script>
+                    <script type="application/json" data-prime-media-initial><?= $this->raw((string) ($avatarInitialJson ?? '[]')) ?></script>
                     <input
                         type="hidden"
                         name="avatar_media_id"
                         value="<?= $this->e($profileUser->avatarMediaId !== null ? (string) $profileUser->avatarMediaId : '') ?>"
-                        data-prime-field-input
+                        data-prime-media-input
                     >
-                    <div class="pc-media-field__preview" data-prime-field-preview hidden></div>
+                    <div class="pc-media-field__preview" data-prime-media-preview hidden></div>
                     <div class="pc-media-field__buttons">
-                        <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-field-pick>
+                        <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-choose>
                             <?= $this->raw($this->icon('image', 14)) ?>
-                            <span>Choisir une photo</span>
+                            <span data-prime-media-choose-label>Choisir une photo</span>
                         </button>
-                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-field-clear hidden>Retirer l’avatar</button>
+                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear hidden>Retirer l’avatar</button>
                     </div>
                 </div>
                 <?php if (isset($infoErrors['avatar_media_id'])): ?>

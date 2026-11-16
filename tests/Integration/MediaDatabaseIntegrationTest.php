@@ -58,13 +58,12 @@ final class MediaDatabaseIntegrationTest extends DatabaseTestCase
         $adminRole = $roles->findBySlug('administrator');
         $this->assertNotNull($adminRole);
 
-        $user = $users->create([
-            'email' => 'media-db@prime.test',
-            'password_hash' => password_hash('Prime!Secret#2026', PASSWORD_BCRYPT),
-            'display_name' => 'Media Admin',
-            'status' => 'active',
-            'locale' => 'fr',
-        ], [$adminRole->id]);
+        $user = $users->create(
+            email: 'media-db@prime.test',
+            displayName: 'Media Admin',
+            plainPassword: 'Prime!Secret#2026',
+            roleIds: [$adminRole->id],
+        );
 
         /** @var array<string, mixed> $cfgArr */
         $cfgArr = require dirname(__DIR__, 2) . '/config/media.php';

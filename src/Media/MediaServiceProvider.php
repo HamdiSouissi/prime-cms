@@ -99,7 +99,14 @@ final class MediaServiceProvider extends ServiceProvider
         $router = $this->app->get(Router::class);
 
         // Public fallback serving uploaded files when `public/uploads` symlink is unavailable.
-        $router->match(['GET', 'HEAD'], '/uploads/{path:.+}', [MediaServingController::class, 'serve'])
+        // Prime's Router matches per segment, so register 1..4 segment patterns (canonical layout: YYYY/MM/file.ext).
+        $router->match(['GET', 'HEAD'], '/uploads/{s1}/{s2}/{s3}', [MediaServingController::class, 'serveThree'])
             ->name('media.serve');
+        $router->match(['GET', 'HEAD'], '/uploads/{s1}/{s2}', [MediaServingController::class, 'serveTwo'])
+            ->name('media.serve.two');
+        $router->match(['GET', 'HEAD'], '/uploads/{s1}/{s2}/{s3}/{s4}', [MediaServingController::class, 'serveFour'])
+            ->name('media.serve.four');
+        $router->match(['GET', 'HEAD'], '/uploads/{path}', [MediaServingController::class, 'serve'])
+            ->name('media.serve.one');
     }
 }

@@ -33,7 +33,7 @@ Chaque contenu est stocké dans `pc_entries.content` sous forme de document JSON
 
 ---
 
-## 2. Les 11 blocs natifs du noyau
+## 2. Les 15 blocs natifs du noyau
 
 | Type | Catégorie | Données principales | Rendu HTML |
 |------|-----------|---------------------|------------|
@@ -43,7 +43,11 @@ Chaque contenu est stocké dans `pc_entries.content` sous forme de document JSON
 | `quote` | `text` | `text`, `cite` | `<figure class="pc-block pc-block--quote"><blockquote>...` |
 | `callout` | `text` | `variant` (`info`\|`success`\|`warning`\|`danger`), `title`, `text` | `<aside class="pc-block pc-block--callout ...">` |
 | `code` | `code` | `language`, `code` (échappé strictement) | `<pre class="pc-block pc-block--code"><code>...` |
-| `image` | `media` | `url` (URL sûre), `alt`, `caption`, `align` (`left`\|`center`\|`right`\|`wide`) | `<figure class="pc-block pc-block--image ...">` |
+| `image` | `media` | `mediaId` (ou `url` sûre), `alt`, `decorative`, `caption`, `align` (`left`\|`center`\|`right`\|`wide`) | `<figure class="pc-block pc-block--image ...">` + `<picture>` WebP responsive (`media_image`) |
+| `gallery` | `media` | `columns` (`2`\|`3`\|`4`), `items[{mediaId, url, alt, caption}]`, `caption` | `<figure class="pc-block pc-block--gallery pc-gallery--cols-N">` |
+| `video` | `media` | `mediaId` (ou `url`), `posterMediaId`/`posterUrl`, `controls`, `muted`, `loop`, `caption` | `<figure class="pc-block pc-block--video"><video ...>` |
+| `audio` | `media` | `mediaId` (ou `url`), `title`, `caption` | `<figure class="pc-block pc-block--audio"><audio controls ...>` |
+| `file` | `media` | `mediaId` (ou `url`), `label`, `extension`, `sizeBytes`, `showSize` | `<div class="pc-block pc-block--file">` + bouton `download` |
 | `embed` | `media` | `url` (YouTube / Vimeo uniquement), `caption` | `<figure>` + `<iframe src="https://www.youtube-nocookie.com/embed/..." sandbox="...">` |
 | `table` | `layout` | `hasHeader` (`bool`), `rows[][]` | `<div class="pc-block pc-block--table"><table>...` |
 | `separator` | `layout` | — | `<hr class="pc-block pc-block--separator">` |
@@ -57,6 +61,8 @@ L'éditeur ES2022 (`public/assets/admin/js/editor/*.js`) fonctionne sous CSP str
 
 - **Menu slash `/`** : tapez `/` dans un bloc vide pour filtrer et insérer n'importe quel bloc (noyau ou plugin).
 - **Raccourcis Markdown** : `# `, `## `, `### ` (titres), `- ` / `* ` (liste à puces), `1. ` (liste numérotée), `> ` (citation), `---` (séparateur), `` ``` `` (bloc de code).
+- **Enregistrement clavier (`Ctrl/⌘+S`)** : sauvegarde le contenu en préservant son statut courant (`draft`, `published`, `scheduled`, etc.) sans basculer involontairement un article publié en brouillon.
+- **Coller / Glisser-déposer une image** : coller une capture depuis le presse-papiers ou déposer une image dans l'éditeur la téléverse automatiquement vers `/admin/media/api/upload` et insère un bloc `image` lié par `mediaId`.
 - **Barre de formatage flottante** : sélectionnez du texte pour appliquer gras (`Ctrl/⌘+B`), italique (`Ctrl/⌘+I`), souligné (`Ctrl/⌘+U`), code inline ou lien (`https://`, `http://`, `mailto:`, `/`).
 - **Collage intelligent (`paste.js`)** : convertit proprement le texte/HTML collé en blocs structurés et transforme automatiquement une URL YouTube/Vimeo collée seule en bloc `embed`.
 - **Historique complet (`history.js`)** : Annuler (`Ctrl/⌘+Z`) et Rétablir (`Ctrl/⌘+Shift+Z` / `Ctrl/⌘+Y`) jusqu'à 100 états.

@@ -2,7 +2,7 @@
 
 **Prime CMS** est un système de gestion de contenu (CMS) 100 % original écrit en **PHP 8.2+ natif**, sans framework et avec **zéro dépendance au runtime**.
 
-> Version actuelle : **0.6.0** (Phase 6 — Contenus, taxonomies, champs personnalisés & Prime Editor)
+> Version actuelle : **0.7.0** (Phase 7 — Médiathèque : upload sécurisé, GD/WebP, bibliothèque, sélecteur réutilisable & intégration complète)
 > Référence complète d'architecture et de conventions : [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 ---
@@ -11,7 +11,7 @@
 
 - **Avec Docker** : Docker et Docker Compose v2
 - **Sans Docker** :
-  - PHP **8.2** ou **8.3** (`mbstring`, `json`, `gd`, `fileinfo`, `openssl`, `zip`, `pdo_mysql`, `intl` recommandée)
+  - PHP **8.2** ou **8.3** (`mbstring`, `json`, `gd`, `exif`, `fileinfo`, `openssl`, `zip`, `pdo_mysql`, `intl` recommandée)
   - **MySQL 8.0+** ou **MariaDB 10.6+**
   - Composer (uniquement pour les outils qualité de développement : PHPUnit, PHPStan, PHP-CS-Fixer)
 
@@ -31,7 +31,8 @@ docker compose up -d
    - **Santé (JSON)** : [http://localhost:8080/health](http://localhost:8080/health)
    - **Connexion administration** : [http://localhost:8080/admin/login](http://localhost:8080/admin/login)
    - **Tableau de bord (authentifié)** : [http://localhost:8080/admin](http://localhost:8080/admin)
-   - **Contenus & Taxonomies** : `/admin/content/page`, `/admin/content/post`, `/admin/taxonomies/category`, `/admin/taxonomies/tag` (éditeur de blocs natif **Prime Editor**, révisions/diff, autosave, verrous d'édition et aperçu sécurisé)
+   - **Contenus & Taxonomies** : `/admin/content/page`, `/admin/content/post`, `/admin/taxonomies/category`, `/admin/taxonomies/tag` (éditeur de blocs natif **Prime Editor**, image à la une, champs `media`, révisions/diff, autosave, verrous d'édition et aperçu sécurisé)
+   - **Médiathèque** : `/admin/media` (upload parallèle drag & drop, traitement GD/WebP, dossiers hiérarchiques, point focal, suivi des utilisations et sélecteur réutilisable)
    - **Plugins** : `/admin/plugins` (incluant le plugin de référence `hello-prime`)
    - **Utilisateurs, rôles & profil** : `/admin/users`, `/admin/roles`, `/admin/profile`
    - **Design System (styleguide, admin + `APP_ENV=local`)** : [http://localhost:8080/admin/styleguide](http://localhost:8080/admin/styleguide)
@@ -98,6 +99,9 @@ php bin/prime content:create [options]       # Crée un contenu (--type, --title
 php bin/prime content:publish-scheduled      # Publie les contenus planifiés arrivés à échéance
 php bin/prime content:purge-trash [--days=N] # Purge définitivement les contenus en corbeille
 php bin/prime content:rerender [--type=...]  # Re-génère content_html et content_text depuis JSON
+php bin/prime media:regenerate [options]     # Régénère les variantes GD et WebP (--id, --variant, --force)
+php bin/prime media:link                     # Crée ou vérifie le symlink public/uploads et .htaccess
+php bin/prime media:cleanup [--dry-run]      # Nettoie les fichiers orphelins dans content/uploads/
 ```
 
 ---
@@ -151,7 +155,8 @@ prime-cms/
 - [`docs/users-and-roles.md`](docs/users-and-roles.md) — Rôles, catalogue de permissions (RBAC), garde `UserGuard` et commandes CLI
 - [`docs/plugins.md`](docs/plugins.md) — Guide complet du système de plugins, API `PluginContext`, SemVer, isolation et sécurité ZIP
 - [`docs/content.md`](docs/content.md) — Types de contenus (CPT), taxonomies, champs personnalisés, `EntryService`, `EntryQuery`, révisions et verrous
-- [`docs/editor.md`](docs/editor.md) — Prime Editor (format JSON v1, 11 blocs natifs, `HtmlSanitizer`, CSP aperçu et blocs de plugins)
+- [`docs/editor.md`](docs/editor.md) — Prime Editor (format JSON v1, 15 blocs natifs, `HtmlSanitizer`, CSP aperçu et blocs de plugins)
+- [`docs/media.md`](docs/media.md) — Médiathèque (pipeline upload sécurisé, GD/WebP, point focal, sélecteur `Prime.media.open()`, helpers responsive et CLI)
 - [`docs/design-system.md`](docs/design-system.md) — Guide complet du design system, des composants, icônes et modules JS
 - [`docs/hooks.md`](docs/hooks.md) — Référence de tous les hooks (événements et filtres)
 - [`docs/nginx.conf.example`](docs/nginx.conf.example) — Exemple de configuration Nginx
