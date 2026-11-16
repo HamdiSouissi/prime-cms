@@ -106,7 +106,7 @@ function initQuickTermCreate() {
         });
         const data = await res.json();
         if (!res.ok || !data.term) {
-          window.Prime?.toast?.({ type: 'danger', title: data.error || 'Création impossible.' });
+          window.Prime?.toast?.(data.error || 'Création impossible.', 'danger');
           return;
         }
 
@@ -123,9 +123,9 @@ function initQuickTermCreate() {
         list.prepend(label);
 
         input.value = '';
-        window.Prime?.toast?.({ type: 'success', title: `« ${data.term.name} » ajouté.` });
+        window.Prime?.toast?.(`« ${data.term.name} » ajouté.`, 'success');
       } catch {
-        window.Prime?.toast?.({ type: 'danger', title: 'Erreur réseau lors de la création.' });
+        window.Prime?.toast?.('Erreur réseau lors de la création.', 'danger');
       } finally {
         button.disabled = false;
       }

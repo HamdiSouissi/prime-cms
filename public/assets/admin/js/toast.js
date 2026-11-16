@@ -64,16 +64,68 @@ function ensureStack() {
 }
 
 /**
+ * Normalize arguments passed to `showToast()`, defensively handling legacy object payloads
+ * `{ message?: string, title?: string, type?: string, duration?: number }`.
+ *
+ * @param {string|{ message?: string, title?: string, type?: string, duration?: number }} message
+ * @param {'info'|'success'|'warning'|'danger'} [type='info']
+ * @param {{ title?: string, duration?: number }} [options={}]
+ * @returns {{ message: string, type: 'info'|'success'|'warning'|'danger', title: string|undefined, duration: number }}
+ */
+export function normalizeToastArgs(message, type = 'info', options = {}) {
+  let resolvedMessage = '';
+  let resolvedType = type;
+  let resolvedTitle = typeof options?.title === 'string' && options.title !== '' ? options.title : undefined;
+  let resolvedDuration = typeof options?.duration === 'number' ? options.duration : 4500;
+
+  if (message !== null && typeof message === 'object') {
+    const payload = /** @type {{ message?: unknown, title?: unknown, type?: unknown, duration?: unknown }} */ (message);
+    const hasMessage = typeof payload.message === 'string' && payload.message.trim() !== '';
+    const hasTitle = typeof payload.title === 'string' && payload.title.trim() !== '';
+    if (hasMessage && hasTitle) {
+      resolvedTitle = payload.title.trim();
+      resolvedMessage = payload.message.trim();
+    } else if (hasMessage) {
+      resolvedMessage = payload.message.trim();
+    } else if (hasTitle) {
+      resolvedMessage = payload.title.trim();
+    }
+    if (typeof payload.type === 'string' && VALID_TYPES.has(payload.type)) {
+      resolvedType = /** @type {'info'|'success'|'warning'|'danger'} */ (payload.type);
+    }
+    if (typeof payload.duration === 'number') {
+      resolvedDuration = payload.duration;
+    }
+  } else if (typeof message === 'string') {
+    resolvedMessage = message;
+  } else if (message !== undefined && message !== null) {
+    resolvedMessage = String(message);
+  }
+
+  const normalizedType = VALID_TYPES.has(resolvedType)
+    ? /** @type {'info'|'success'|'warning'|'danger'} */ (resolvedType)
+    : 'info';
+
+  return {
+    message: resolvedMessage,
+    type: normalizedType,
+    title: resolvedTitle,
+    duration: resolvedDuration,
+  };
+}
+
+/**
  * Show a toast notification.
  *
- * @param {string} message
+ * @param {string|{ message?: string, title?: string, type?: string, duration?: number }} message
  * @param {'info'|'success'|'warning'|'danger'} [type='info']
  * @param {{ title?: string, duration?: number }} [options={}]
  * @returns {HTMLElement}
  */
 export function showToast(message, type = 'info', options = {}) {
-  const normalizedType = VALID_TYPES.has(type) ? type : 'info';
-  const duration = typeof options.duration === 'number' ? options.duration : 4500;
+  const normalized = normalizeToastArgs(message, type, options);
+  const normalizedType = normalized.type;
+  const duration = normalized.duration;
   const stack = ensureStack();
 
   const toast = document.createElement('div');
@@ -87,16 +139,16 @@ export function showToast(message, type = 'info', options = {}) {
   const content = document.createElement('div');
   content.className = 'pc-toast__content';
 
-  if (options.title) {
+  if (normalized.title) {
     const titleEl = document.createElement('div');
     titleEl.className = 'pc-toast__title';
-    titleEl.textContent = options.title;
+    titleEl.textContent = normalized.title;
     content.appendChild(titleEl);
   }
 
   const messageEl = document.createElement('div');
   messageEl.className = 'pc-toast__message';
-  messageEl.textContent = message;
+  messageEl.textContent = normalized.message;
   content.appendChild(messageEl);
 
   const closeBtn = document.createElement('button');
