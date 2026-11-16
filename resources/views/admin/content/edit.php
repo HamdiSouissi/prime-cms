@@ -363,7 +363,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
             <?php if ($isEdit && $entry !== null && $canDelete): ?>
                 <section class="pc-inspector-card">
                     <h2 class="pc-inspector-card__title">Actions</h2>
-                    <button type="submit" form="pc-editor-trash-form" class="pc-btn pc-btn--danger pc-btn--sm" style="width:100%;">
+                    <button type="submit" form="pc-editor-trash-form" class="pc-btn pc-btn--danger-outline pc-btn--sm" style="width:100%;">
                         <?= $this->raw($this->icon('trash', 16)) ?>
                         <span>Mettre à la corbeille</span>
                     </button>

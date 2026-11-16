@@ -73,6 +73,18 @@
   color: var(--color-text-inverse);
 }
 
+.pc-btn--danger-outline {
+  background-color: transparent;
+  border-color: var(--danger-border);
+  color: var(--danger-ink);
+}
+
+.pc-btn--danger-outline:hover {
+  background-color: var(--danger-soft);
+  border-color: var(--danger-600);
+  color: var(--danger-700);
+}
+
 /* Sizes */
 .pc-btn--sm {
   height: 32px;

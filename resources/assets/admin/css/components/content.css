@@ -225,6 +225,17 @@
 
 /* Responsive content list cards on mobile (< 768px) */
 @media (max-width: 767px) {
+  .pc-content-filters {
+    padding: 12px;
+  }
+
+  .pc-content-filters .pc-input,
+  .pc-content-filters .pc-select {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
   .pc-content-table thead {
     display: none;
   }

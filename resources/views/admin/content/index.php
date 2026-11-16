@@ -144,11 +144,11 @@ if ($canCreate) {
             'actionUrl' => (!$isTrash && $canCreate) ? $contentType->adminCreateUrl() : null,
         ])) ?>
     <?php else: ?>
-        <form method="post" action="<?= $this->e($baseUrl . '/bulk') ?>" data-prime-bulk-table>
+        <form method="post" action="<?= $this->e($baseUrl . '/bulk') ?>" data-prime-table-bulk>
             <?= $this->raw($this->csrfField()) ?>
 
-            <div class="pc-table-bulk" data-prime-bulk-bar hidden>
-                <span class="pc-text-sm" data-prime-bulk-count>0 sélectionné(s)</span>
+            <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
+                <span class="pc-text-sm" data-prime-table-bulk-count>0 sélectionné(s)</span>
                 <select name="bulk_action" class="pc-select pc-select--sm" aria-label="Action groupée">
                     <option value="">Choisir une action…</option>
                     <?php if ($isTrash): ?>
@@ -174,7 +174,7 @@ if ($canCreate) {
                     <thead>
                         <tr>
                             <th style="width: 36px;">
-                                <input type="checkbox" data-prime-bulk-all aria-label="Tout sélectionner">
+                                <input type="checkbox" data-prime-table-select-all aria-label="Tout sélectionner">
                             </th>
                             <th>Titre</th>
                             <th>Statut</th>
@@ -199,7 +199,7 @@ if ($canCreate) {
                                         type="checkbox"
                                         name="ids[]"
                                         value="<?= $this->e((string) $entry->id) ?>"
-                                        data-prime-bulk-item
+                                        data-prime-table-select-row
                                         aria-label="Sélectionner <?= $this->e($entry->title) ?>"
                                     >
                                 </td>

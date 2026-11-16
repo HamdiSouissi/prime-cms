@@ -87,4 +87,17 @@ final class CssBuilderTest extends TestCase
             $this->assertSame($before, $after, 'Committed admin.css must match assets:build output.');
         }
     }
+
+    public function testCompiledAdminCssContainsGlobalHiddenRule(): void
+    {
+        $target = dirname(__DIR__, 4) . '/public/assets/admin/css/admin.css';
+        $this->assertFileExists($target);
+
+        $compiled = (string) file_get_contents($target);
+        $this->assertMatchesRegularExpression(
+            '/\[hidden\]\s*\{\s*display:\s*none\s*!important\s*;?\s*\}/',
+            $compiled,
+            'Compiled admin.css must enforce [hidden] { display: none !important; } globally.',
+        );
+    }
 }

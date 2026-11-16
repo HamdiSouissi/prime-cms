@@ -823,6 +823,31 @@
   }
 }
 
+@media (max-width: 480px) {
+  .pc-editor-topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .pc-editor-sheet {
+    padding: 16px 12px 28px;
+  }
+
+  .pc-editor-title-input {
+    font-size: 22px;
+  }
+
+  .pc-ed-block {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 4px;
+    padding: 4px 2px;
+  }
+
+  .pc-ed-slash-menu {
+    width: min(300px, calc(100vw - 24px));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pc-ed-block,
   .pc-ed-block-gutter,
