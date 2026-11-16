@@ -8,6 +8,8 @@ use Prime\Admin\Notices;
 use Prime\Auth\Auth;
 use Prime\Http\Request;
 use Prime\Http\Response;
+use Prime\Settings\Settings;
+use Prime\Themes\ThemeManager;
 
 /**
  * Handles dismissing persistent dashboard notices (`POST /admin/notices/{id}/dismiss`).
@@ -17,6 +19,7 @@ final class NoticeController
     public function __construct(
         private readonly Notices $notices,
         private readonly Auth $auth,
+        private readonly ?Settings $settings = null,
     ) {
     }
 
@@ -27,7 +30,18 @@ final class NoticeController
             return Response::json(['ok' => false, 'message' => 'Non authentifié.'], 401);
         }
 
-        $dismissed = $this->notices->dismiss($id, $user->id);
+        if ($id === ThemeManager::FALLBACK_NOTICE_ID) {
+            $dismissed = $this->notices->remove($id);
+            if ($this->settings !== null) {
+                try {
+                    $this->settings->delete(ThemeManager::SETTING_FALLBACK_ERROR);
+                } catch (\Throwable) {
+                    // Ignore storage error.
+                }
+            }
+        } else {
+            $dismissed = $this->notices->dismiss($id, $user->id);
+        }
 
         if ($this->wantsJson($request)) {
             return Response::json(['ok' => $dismissed, 'id' => $id], $dismissed ? 200 : 400);

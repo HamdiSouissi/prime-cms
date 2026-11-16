@@ -15,6 +15,6 @@ final class Theme extends AbstractTheme
     public function boot(ThemeContext $context): void
     {
         $context->style('aurora-main', 'css/aurora.css');
-        $context->script('aurora-main', 'js/aurora.js', defer: true);
+        $context->script('aurora-main', 'js/aurora.js', [], ['defer' => true]);
     }
 }

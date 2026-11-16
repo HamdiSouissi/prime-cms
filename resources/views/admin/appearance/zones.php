@@ -12,7 +12,7 @@ declare(strict_types=1);
  * @var ?array{label: string, description: string} $selectedZone
  * @var string $zoneContentJson
  * @var string $editorConfigJson
- * @var list<array{name: string, label: string, description: string, defaults: array<string, mixed>}> $dynamicCatalog
+ * @var list<array{name: string, label: string, description: string, defaults: array<string, mixed>, fields: list<array<string, mixed>>}> $dynamicCatalog
  * @var list<array{label: string, url: ?string}> $breadcrumbs
  */
 $this->layout('admin::layouts/app');

@@ -131,7 +131,7 @@ final class EntryView
         if (
             $this->zones !== null
             && $this->dynamicBlocks !== null
-            && str_contains($this->entry->content, '"type":"dynamic"')
+            && str_contains($this->entry->content, '"dynamic"')
         ) {
             return $this->zones->renderDocumentWithDynamicBlocks(
                 $this->entry->decodedContent(),

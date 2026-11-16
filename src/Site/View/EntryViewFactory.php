@@ -50,9 +50,9 @@ final class EntryViewFactory
             if ($entry->authorId !== null && $entry->authorId > 0) {
                 $authorIds[$entry->authorId] = true;
             }
-            $featured = $entry->meta('featured_image');
-            if (is_numeric($featured) && (int) $featured > 0) {
-                $mediaIds[(int) $featured] = true;
+            $featuredId = $entry->featuredMediaId();
+            if ($featuredId !== null) {
+                $mediaIds[$featuredId] = true;
             }
         }
 
@@ -74,9 +74,9 @@ final class EntryViewFactory
         $views = [];
         foreach ($entries as $entry) {
             $author = $entry->authorId !== null ? ($usersMap[$entry->authorId] ?? null) : null;
-            $featuredId = $entry->meta('featured_image');
-            $featuredMedia = (is_numeric($featuredId) && (int) $featuredId > 0)
-                ? ($mediaMap[(int) $featuredId] ?? null)
+            $featuredId = $entry->featuredMediaId();
+            $featuredMedia = $featuredId !== null
+                ? ($mediaMap[$featuredId] ?? null)
                 : null;
             $avatarMedia = ($author !== null && $author->avatarMediaId !== null)
                 ? ($mediaMap[$author->avatarMediaId] ?? null)

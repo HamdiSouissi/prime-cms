@@ -71,3 +71,49 @@
 ## 5. Prochaine étape
 
 **Phase 9 — Réglages, langues, cache, mails, tâches** : pages de réglages généraux, i18n (FR, EN, IT), cache de pages et d'objets, client SMTP, planificateur de tâches et journal d'audit.
+
+---
+
+## 6. Revue 1 — Corrections (C1–C9) et vérifications navigateur réel
+
+### 6.1 Correctifs livrés
+
+| Point | Périmètre corrigé | Fichiers clés |
+|-------|-------------------|---------------|
+| **C1** | Bug bloquant `ThemeContext::script()` dans Aurora (`[], ['defer' => true]` au lieu de `['defer' => true]` en 3ᵉ argument `$deps`) ; ajout de `content/themes` et `content/plugins/hello-prime` dans `phpstan.neon.dist` (templates/partials/views exclus) ; journalisation d'erreur de repli `ThemeManager::recordDefaultThemeFailure()` ; resynchronisation de `options-{hash}.css` dans `SiteRenderer::render()` | `content/themes/aurora/src/Theme.php`, `phpstan.neon.dist`, `src/Themes/ThemeManager.php`, `src/Site/SiteRenderer.php` |
+| **C2** | Blocs dynamiques sans JSON brut : 4 blocs cœur typés (`latest_entries`, `term_list`, `menu`, `search_form`) déclarant leur schéma de champs (`text`, `number`, `toggle`, `select`) et rendu serveur complet (vignettes + extraits préchargés sans N+1, compteur de termes, menus sauvegardés, recherche accessible sans réglage) ; rendu dynamique unifié dans les zones **et** dans les articles/pages (`EntryView::content()`, `ZoneRepository`) ; éditeur visuel de blocs dynamiques avec formulaires typés et résumé lisible en temps réel (0 textarea JSON) partagé entre Prime Editor et Zones ; migration du bloc `hello_testimonial` de `hello-prime` sur le schéma `fields` ; tests unitaires JS dédiés | `src/Site/Zone/{DynamicBlockRegistry,ZoneRepository}.php`, `src/Site/View/EntryView.php`, `src/Site/SiteServiceProvider.php`, `content/plugins/hello-prime/src/Plugin.php`, `resources/views/admin/appearance/zones.php`, `public/assets/admin/js/{zones-admin,editor/core}.js`, `tests/js/appearance.test.mjs` |
+| **C3** | Prévisualisation et liens « Voir » : correction de `Entry::previewUrl()` (`/admin/content/{type}/{id}/preview`), aperçu d'URL temps réel fidèle au `UrlGenerator` (`__PRIME_SLUG__`) dans l'éditeur de contenu, affichage du lien « Voir » vers l'URL publique dans la barre d'édition et la liste des contenus pour les entrées publiées | `src/Content/Entry.php`, `src/Admin/Controller/ContentController.php`, `src/Admin/AdminServiceProvider.php`, `resources/views/admin/content/{edit,index}.php`, `public/assets/admin/js/content-admin.js` |
+| **C4** | Styles complets des 15 blocs Prime Editor dans Aurora (`aurora.css` = **29 150 o / 28,47 Ko**, sous le budget de 30 Ko) : `.pc-block--gallery` / `.pc-gallery__grid` (2/3/4 colonnes, passage en 2 colonnes sous 640 px), `.pc-block--table` avec défilement horizontal sécurisé sur mobile, `<video>` 100 % arrondi, `<audio>` pleine largeur, listes à puces/numérotées, rythme des titres et blocs dynamiques ; fixture complète **« Tous les blocs »** (15 blocs cœur + bloc dynamique) | `content/themes/aurora/assets/css/aurora.css`, `database/seeds/tous-les-blocs.php` |
+| **C5** | Avis unique de bascule de thème (`theme.fallback`) : remplacement de l'avis sans accumulation, effacement automatique à l'activation/suppression/démarrage sain ou lors de la fermeture (`NoticeController`), suppression du bandeau statique redondant dans `themes.php` | `src/Themes/ThemeManager.php`, `src/Admin/Controller/NoticeController.php`, `src/Admin/AdminServiceProvider.php`, `resources/views/admin/appearance/themes.php` |
+| **C6** | Balises `<image:image>` (`xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"`) dans les sitemaps XML d'entrées : image mise en avant + blocs `image` et `gallery`, préchargement par lots (`MediaRepository::findByIds()`, zéro N+1) et déduplication | `src/Site/Seo/SitemapGenerator.php`, `src/Site/SiteServiceProvider.php` |
+| **C7** | Extension massive des tests d'intégration HTTP (`SiteRenderingTest` : **10 tests, 227 assertions**) et SQL réels MySQL 8.0 / MariaDB 10.6 (`SiteDatabaseIntegrationTest` : parcours complet HTTP + DB, redirections 301, menus imbriqués + rejet `javascript:`, zones + 4 blocs dynamiques, SEO/sitemap `<image:image>`/robots/CSP, matrice permissions contributeur vs admin, isolation bascule/enfant/ZIP malveillant, preuve zéro N+1 à 10 vs 30 articles avec nombre de requêtes SQL constant) | `tests/Integration/SiteRenderingTest.php`, `tests/Integration/SiteDatabaseIntegrationTest.php` |
+| **C8** | Finitions design : licence Aurora passée à `"proprietary"`, déplacement du badge « Actif » dans le corps de carte à côté du titre (sans chevauchement sur l'aperçu), passage des boutons « Supprimer » en `.pc-btn--danger-outline`, recompilation de `public/assets/admin/css/admin.css` (**124,18 Ko**) | `content/themes/aurora/theme.json`, `resources/views/admin/appearance/{themes,menus}.php`, `resources/views/admin/settings/permalinks.php`, `public/assets/admin/js/menus-admin.js`, `resources/assets/admin/css/components/appearance.css`, `public/assets/admin/css/admin.css` |
+
+### 6.2 Anomalies supplémentaires détectées et corrigées pendant les tests C7 & navigateur réel
+
+1. **Clé méta d'image mise en avant** : `EntryViewFactory`, `SeoManager` et `SitemapGenerator` lisaient `$entry->meta('featured_image')` au lieu de `$entry->featuredMediaId()` (`_featured_media_id`) — corrigé dans les trois classes.
+2. **Légende média nullable** : `SitemapGenerator::extractEntryImages()` vérifie désormais `$media->caption !== null && $media->caption !== ''` avant repli sur `$media->alt`.
+3. **Slug de taxonomie des étiquettes** : alignement du catalogue de repli de `DynamicBlockRegistry` et `zones-admin.js` sur `'tag'` (taxonomie officielle Prime CMS).
+4. **Envoi explicite des cookies same-origin** : ajout de `credentials: 'same-origin'` sur les appels `fetch()` du Personnaliseur (`public/assets/admin/js/customizer.js`).
+
+### 6.3 Vérifications navigateur réel (Chromium 153.0.8010.0) & captures visuelles
+
+Exécutées contre le noyau HTTP réel de Prime CMS (sans erreur console, sans erreur JS, sans image cassée, sans débordement horizontal) :
+
+1. **Menu mobile Aurora (375 px)** : `<script src="...aurora.js..." defer>` vérifié, ouverture/fermeture au clic et à la touche `Escape`, `aria-expanded` synchronisé, `scrollWidth === 375`.
+2. **Recherche en-tête (1440 px & 375 px)** : ouverture du panneau de recherche, soumission `Tous les blocs`, affichage des résultats sur `/recherche?q=Tous+les+blocs`.
+3. **Personnalisation publiée visible côté visiteur** : modification de `--aurora-accent` (`#1D4ED8`) dans `/admin/appearance/customizer`, publication (`HTTP 200`, nouveau hash `options-62a570d133.css`), vérification immédiate côté visiteur anonyme (`getComputedStyle` = `#1D4ED8`).
+4. **Les 4 blocs dynamiques (barre latérale + article)** : insertion et configuration sans JSON dans `/admin/appearance/zones`, enregistrement et rechargement confirmant la persistance exacte de chaque option, rendu public complet sur `/blog` ; insertion dans un nouvel article, aperçu d'URL en direct (`/blog/article-dyn-e2e`), lien « Voir » et rendu public du bloc dans l'article.
+5. **Aperçu d'un article brouillon** : liens « Aperçu » (`/admin/content/post/3/preview`) et « Voir » (`/blog/tous-les-blocs`) vérifiés dans la liste et l'éditeur, rendu du brouillon dans Aurora avec bandeau d'aperçu.
+6. **Galerie et styles de tous les blocs** : `.pc-block--gallery` (`display: block`), `.pc-gallery--cols-3 .pc-gallery__grid` (`3` colonnes à 1440 px, `2` colonnes à 375 px), `.pc-gallery--cols-2 .pc-gallery__grid` (`2` colonnes), `.pc-block--table` (`overflow-x: auto`, défilement interne sans débordement de page à 375 px), `<video>` 100 % arrondi, `<audio>` pleine largeur, listes `disc` / `decimal`.
+7. **Article « Tous les blocs » (captures visuelles inspectées)** :
+   - Desktop **1440 px** (`scrollWidth = 1440`, 9/9 images chargées, 0 erreur) : `docs/phases/screens/phase-08/tous-les-blocs-desktop-1440.png`
+   - Mobile **375 px** (`scrollWidth = 375`, 0 débordement horizontal, 0 erreur) : `docs/phases/screens/phase-08/tous-les-blocs-mobile-375.png`
+
+### 6.4 Résultats finaux des suites automatisées (post-Revue 1)
+
+- **PHPUnit (Unit + HTTP Integration)** : **452 tests passés**, 0 échec, 0 ignoré, **6 369 assertions**.
+- **Tests JS natifs (`node tests/js/run.mjs`)** : **39 tests passés**, 0 échec.
+- **PHP-CS-Fixer (PSR-12)** : **0 / 400 fichiers à corriger**.
+- **Poids des assets Aurora** : `aurora.css` = **29 150 o** (28,47 Ko < 30 Ko), `aurora.js` = **2 087 o** (2,04 Ko < 8 Ko).
+

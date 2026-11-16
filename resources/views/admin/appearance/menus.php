@@ -207,7 +207,7 @@ $this->layout('admin::layouts/app');
                 <div class="pc-card__footer pc-menus-danger-row">
                     <form method="post" action="/admin/appearance/menus/<?= $this->e((string) $currentMenu['id']) ?>/delete">
                         <?= $this->raw($this->csrfField()) ?>
-                        <button type="submit" class="pc-btn pc-btn--ghost pc-btn--danger pc-btn--sm" data-prime-confirm="Supprimer définitivement le menu « <?= $this->e($currentMenu['name']) ?> » ?">
+                        <button type="submit" class="pc-btn pc-btn--danger-outline pc-btn--sm" data-prime-confirm="Supprimer définitivement le menu « <?= $this->e($currentMenu['name']) ?> » ?">
                             Supprimer ce menu
                         </button>
                     </form>

@@ -223,7 +223,7 @@ final readonly class Entry
 
     public function previewUrl(): string
     {
-        return sprintf('/admin/content/%d/preview', $this->id);
+        return sprintf('/admin/content/%s/%d/preview', $this->type, $this->id);
     }
 
     /**

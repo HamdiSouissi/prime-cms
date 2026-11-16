@@ -460,10 +460,7 @@ final class SeoManager
             if (is_numeric($seoImg) && (int) $seoImg > 0) {
                 $mediaId = (int) $seoImg;
             } else {
-                $featured = $context->entry->meta('featured_image');
-                if (is_numeric($featured) && (int) $featured > 0) {
-                    $mediaId = (int) $featured;
-                }
+                $mediaId = $context->entry->featuredMediaId();
             }
         }
 

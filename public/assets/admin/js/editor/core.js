@@ -299,6 +299,7 @@ export class PrimeEditor {
           index,
           blockCount: this.blocks.length,
           data: block.data,
+          config: this.config,
           capabilities: this.capabilities,
           isCaretAtEdge: (el, edge) => this.isCaretAtEdge(el, edge),
           focusBlock: (targetIdx, atEnd = false) => this.focusBlock(targetIdx, atEnd),
@@ -509,6 +510,37 @@ export class PrimeEditor {
       this.blocks.splice(index + 1, 0, ...parsed);
       this.afterMutation(index + parsed.length, `${parsed.length} bloc(s) collé(s) et nettoyé(s).`);
     }
+  }
+
+  insertBlock(type, customData = null) {
+    const def = this.registry.get(type);
+    const defaultData = def && typeof def.defaultData === 'function' ? def.defaultData() : {};
+    const mergedData = customData && typeof customData === 'object'
+      ? { ...defaultData, ...customData }
+      : defaultData;
+
+    const newBlock = createDefaultBlock(type, {
+      id: generateBlockId(),
+      data: mergedData,
+    });
+
+    // Replace lone empty starter paragraph cleanly (e.g. empty zone)
+    const isSingleEmptyParagraph = this.blocks.length === 1
+      && this.blocks[0].type === 'paragraph'
+      && stripHtml(String(this.blocks[0].data?.text || '')) === '';
+
+    let focusIndex;
+    if (isSingleEmptyParagraph) {
+      this.blocks.splice(0, 1, newBlock);
+      focusIndex = 0;
+    } else {
+      this.blocks.push(newBlock);
+      focusIndex = this.blocks.length - 1;
+    }
+
+    const label = def?.title || type;
+    this.afterMutation(focusIndex, `Bloc ${label} inséré.`, false);
+    return newBlock;
   }
 
   handleBlockChoice(def, ctx) {

@@ -59,6 +59,14 @@ final class SiteRenderer
             $themeTemplateDirs[] = $parentTheme->path . DIRECTORY_SEPARATOR . 'templates';
         }
 
+        // Keep compiled theme options CSS synchronized even when published within the same process
+        if ($activeTheme->manifest !== null) {
+            $optionsCssUrl = $this->themeOptions->publishedCssUrl($activeTheme->manifest, $parentTheme?->manifest);
+            if ($optionsCssUrl !== null) {
+                $this->assets->style('theme-options', $optionsCssUrl);
+            }
+        }
+
         $site = new SiteView(
             context: $context,
             activeTheme: $activeTheme,

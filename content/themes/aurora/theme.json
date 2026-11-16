@@ -7,7 +7,7 @@
     "name": "Prime CMS",
     "url": "https://github.com/HamdiSouissi/prime-cms"
   },
-  "license": "MIT",
+  "license": "proprietary",
   "requires": {
     "prime": ">=0.8.0",
     "php": ">=8.2"

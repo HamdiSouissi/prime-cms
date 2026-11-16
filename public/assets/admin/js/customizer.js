@@ -198,6 +198,7 @@ export function initCustomizer() {
     try {
       const res = await fetch(saveUrl, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
@@ -240,6 +241,7 @@ export function initCustomizer() {
       try {
         const res = await fetch(resetUrl, {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',

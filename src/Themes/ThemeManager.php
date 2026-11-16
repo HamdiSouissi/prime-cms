@@ -28,6 +28,7 @@ final class ThemeManager
     public const DEFAULT_THEME = 'aurora';
     public const SETTING_ACTIVE = 'theme.active';
     public const SETTING_FALLBACK_ERROR = 'theme.fallback_error';
+    public const FALLBACK_NOTICE_ID = 'theme.fallback';
 
     private bool $booted = false;
 
@@ -338,15 +339,13 @@ final class ThemeManager
 
         if ($this->settings !== null) {
             $this->settings->set(self::SETTING_ACTIVE, $theme->slug, autoload: true);
-            $this->settings->delete(self::SETTING_FALLBACK_ERROR);
         }
 
+        $this->clearFallbackError();
         $this->discoveredCache = null;
         $this->booted = false;
         $this->activeTheme = null;
         $this->parentTheme = null;
-        $this->fellBackToDefault = false;
-        $this->fallbackError = null;
 
         if ($previousSlug !== $theme->slug) {
             $this->hooks->emit('theme.deactivated', $previousSlug, $theme->slug);
@@ -389,6 +388,11 @@ final class ThemeManager
         if ($this->settings !== null) {
             $this->settings->delete('theme_options.' . $theme->slug);
             $this->settings->delete('theme_options_css.' . $theme->slug);
+        }
+
+        $storedError = $this->readStoredFallbackError();
+        if ($storedError !== null && $storedError['slug'] === $theme->slug) {
+            $this->clearFallbackError();
         }
 
         $this->discoveredCache = null;
@@ -551,6 +555,14 @@ final class ThemeManager
                 $this->assets->style('theme-options', $optionsCssUrl);
             }
 
+            // If this theme previously failed and now boots cleanly, clear the stale fallback error & notice
+            if ($allowFallback) {
+                $stored = $this->readStoredFallbackError();
+                if ($stored !== null && $stored['slug'] === $theme->slug) {
+                    $this->clearFallbackError();
+                }
+            }
+
             $this->hooks->emit('theme.booted', $theme->slug, $theme->manifest, $parent?->manifest);
         } catch (Throwable $e) {
             $this->logger?->error('Theme boot threw an exception.', [
@@ -564,6 +576,8 @@ final class ThemeManager
                 $this->assets->clear();
                 $this->recordFallback($theme->slug, $e->getMessage());
                 $this->bootSpecificTheme(self::DEFAULT_THEME, allowFallback: false);
+            } elseif ($theme->slug === self::DEFAULT_THEME) {
+                $this->recordDefaultThemeFailure($theme->slug, $e->getMessage());
             }
         }
     }
@@ -636,6 +650,25 @@ final class ThemeManager
         $instance->boot($context);
     }
 
+    /**
+     * Clear any stored fallback error and remove all theme fallback notices.
+     */
+    public function clearFallbackError(): void
+    {
+        $this->fellBackToDefault = false;
+        $this->fallbackError = null;
+
+        if ($this->settings !== null) {
+            try {
+                $this->settings->delete(self::SETTING_FALLBACK_ERROR);
+            } catch (Throwable) {
+                // Ignore if DB unavailable.
+            }
+        }
+
+        $this->clearThemeFallbackNotices();
+    }
+
     private function recordFallback(string $failingSlug, string $rawError): void
     {
         $safeError = $this->sanitizeErrorMessage($rawError);
@@ -659,8 +692,9 @@ final class ThemeManager
             }
         }
 
+        $this->clearThemeFallbackNotices();
         $this->pushNotice(
-            'theme.fallback.' . $failingSlug,
+            self::FALLBACK_NOTICE_ID,
             Notice::TYPE_DANGER,
             sprintf('Erreur dans le thème « %s »', $failingSlug),
             sprintf(
@@ -669,6 +703,58 @@ final class ThemeManager
                 $safeError,
             ),
         );
+    }
+
+    private function recordDefaultThemeFailure(string $slug, string $rawError): void
+    {
+        $safeError = $this->sanitizeErrorMessage($rawError);
+        $this->fallbackError = [
+            'slug' => $slug,
+            'message' => $safeError,
+        ];
+
+        $this->logger?->critical('Default theme boot failed; no fallback theme is available.', [
+            'theme' => $slug,
+            'error' => $safeError,
+        ]);
+
+        if ($this->settings !== null) {
+            try {
+                $this->settings->set(self::SETTING_FALLBACK_ERROR, $this->fallbackError, autoload: false);
+            } catch (Throwable) {
+                // Ignore if DB unavailable.
+            }
+        }
+
+        $this->clearThemeFallbackNotices();
+        $this->pushNotice(
+            self::FALLBACK_NOTICE_ID,
+            Notice::TYPE_DANGER,
+            sprintf('Erreur critique dans le thème par défaut « %s »', $slug),
+            sprintf(
+                'Le thème par défaut « %s » n’a pas pu démarrer (%s). Aucune bascule automatique n’est possible : corrigez le thème ou vérifiez les journaux.',
+                $slug,
+                $safeError,
+            ),
+        );
+    }
+
+    private function clearThemeFallbackNotices(): void
+    {
+        if ($this->notices === null) {
+            return;
+        }
+
+        try {
+            $this->notices->remove(self::FALLBACK_NOTICE_ID);
+            foreach ($this->notices->all() as $notice) {
+                if ($notice->source === 'themes' && str_starts_with($notice->id, 'theme.fallback')) {
+                    $this->notices->remove($notice->id);
+                }
+            }
+        } catch (Throwable) {
+            // Never crash on notice cleanup.
+        }
     }
 
     private function pushNotice(string $id, string $type, string $title, string $message): void

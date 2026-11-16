@@ -283,7 +283,8 @@ export function initMenusAdmin() {
         dirty = true;
         render();
       });
-      delBtn.classList.add('pc-btn--danger');
+      delBtn.classList.remove('pc-btn--ghost');
+      delBtn.classList.add('pc-btn--danger-outline');
       controls.append(toggleBtn, delBtn);
 
       header.append(titleWrap, controls);

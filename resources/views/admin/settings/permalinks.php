@@ -122,7 +122,7 @@ $this->layout('admin::layouts/app');
                                     <td class="pc-table__actions-col">
                                         <form method="post" action="/admin/settings/permalinks/redirects/<?= $this->e((string) $rule['id']) ?>/delete">
                                             <?= $this->raw($this->csrfField()) ?>
-                                            <button type="submit" class="pc-btn pc-btn--ghost pc-btn--danger pc-btn--sm">Supprimer</button>
+                                            <button type="submit" class="pc-btn pc-btn--danger-outline pc-btn--sm">Supprimer</button>
                                         </form>
                                     </td>
                                 </tr>

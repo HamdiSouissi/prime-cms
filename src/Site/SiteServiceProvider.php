@@ -148,6 +148,9 @@ final class SiteServiceProvider extends ServiceProvider
 
         $c->singleton(DynamicBlockRegistry::class, static function (Container $c): DynamicBlockRegistry {
             $hooks = $c->has(Hooks::class) ? $c->get(Hooks::class) : null;
+            $contentTypes = $c->has(ContentTypeRegistry::class) ? $c->get(ContentTypeRegistry::class) : null;
+            $menus = $c->has(MenuRepository::class) ? $c->get(MenuRepository::class) : null;
+            $media = $c->has(MediaRepository::class) ? $c->get(MediaRepository::class) : null;
 
             return new DynamicBlockRegistry(
                 query: $c->get(EntryQuery::class),
@@ -156,6 +159,9 @@ final class SiteServiceProvider extends ServiceProvider
                 urls: $c->get(UrlGenerator::class),
                 menuRenderer: $c->get(MenuRenderer::class),
                 hooks: $hooks instanceof Hooks ? $hooks : null,
+                contentTypes: $contentTypes instanceof ContentTypeRegistry ? $contentTypes : null,
+                menus: $menus instanceof MenuRepository ? $menus : null,
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
 
@@ -183,6 +189,7 @@ final class SiteServiceProvider extends ServiceProvider
 
         $c->singleton(SitemapGenerator::class, static function (Container $c): SitemapGenerator {
             $hooks = $c->has(Hooks::class) ? $c->get(Hooks::class) : null;
+            $media = $c->has(MediaRepository::class) ? $c->get(MediaRepository::class) : null;
 
             return new SitemapGenerator(
                 types: $c->get(ContentTypeRegistry::class),
@@ -191,6 +198,7 @@ final class SiteServiceProvider extends ServiceProvider
                 terms: $c->get(TermRepository::class),
                 urls: $c->get(UrlGenerator::class),
                 hooks: $hooks instanceof Hooks ? $hooks : null,
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
 

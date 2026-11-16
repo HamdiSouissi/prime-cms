@@ -19,7 +19,11 @@ function initSlugSync() {
 
   const updatePreview = (val) => {
     if (previewSlug) {
-      previewSlug.textContent = val || 'slug-automatique';
+      const slug = val || 'nouveau-contenu';
+      const pattern = previewSlug.getAttribute('data-prime-url-pattern');
+      previewSlug.textContent = pattern && pattern.includes('__PRIME_SLUG__')
+        ? pattern.replace('__PRIME_SLUG__', slug)
+        : `/${slug}`;
     }
   };
 

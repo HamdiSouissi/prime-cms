@@ -72,7 +72,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
     <div class="pc-editor-sheet">
         <h1 style="margin-bottom:12px;"><?= $this->e($entry->title) ?></h1>
-        <p class="pc-text-sm pc-text-muted" style="margin-bottom:18px;">Permalien : <code>/<?= $this->e($entry->slug) ?></code> · Mis à jour le <?= $this->e($entry->updatedAt) ?> UTC</p>
+        <p class="pc-text-sm pc-text-muted" style="margin-bottom:18px;">Permalien : <code><?= $this->e($entry->url()) ?></code> · Mis à jour le <?= $this->e($entry->updatedAt) ?> UTC</p>
         <div class="pc-preview-body">
             <?= $this->raw($entry->contentHtml !== '' ? $entry->contentHtml : '<p class="pc-text-muted">Aucun contenu saisi.</p>') ?>
         </div>
@@ -110,6 +110,12 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
         <div class="pc-editor-topbar__right">
             <?php if ($isEdit && $entry !== null): ?>
+                <?php if ($entry->status === \Prime\Content\Entry::STATUS_PUBLISHED): ?>
+                    <a href="<?= $this->e($entry->url()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-view-public>
+                        <?= $this->raw($this->icon('external-link', 16)) ?>
+                        <span>Voir</span>
+                    </a>
+                <?php endif; ?>
                 <a href="<?= $this->e($entry->previewUrl()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--secondary pc-btn--sm">
                     <?= $this->raw($this->icon('eye', 16)) ?>
                     <span>Aperçu</span>
@@ -262,7 +268,13 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                             placeholder="genere-automatiquement"
                             data-prime-content-slug
                         >
-                        <span class="pc-text-xs pc-text-muted">Aperçu : /<span data-prime-slug-preview><?= $this->e($form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu') ?></span></span>
+                        <?php
+                            $previewPattern = is_string($urlPreviewPattern ?? null) ? $urlPreviewPattern : '/__PRIME_SLUG__';
+                            $previewInitial = is_string($urlPreviewInitial ?? null)
+                                ? $urlPreviewInitial
+                                : str_replace('__PRIME_SLUG__', $form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu', $previewPattern);
+                        ?>
+                        <span class="pc-text-xs pc-text-muted">Aperçu : <code data-prime-slug-preview data-prime-url-pattern="<?= $this->e($previewPattern) ?>"><?= $this->e($previewInitial) ?></code></span>
                         <?php if (isset($errors['slug'])): ?>
                             <span class="pc-field__error"><?= $this->e($errors['slug']) ?></span>
                         <?php endif; ?>

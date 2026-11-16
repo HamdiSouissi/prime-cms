@@ -251,7 +251,7 @@ final class ZoneRepository
                 }
                 $data = is_array($block['data'] ?? null) ? $block['data'] : [];
                 $name = is_string($data['name'] ?? null) ? trim($data['name']) : '';
-                $attrs = is_array($data['attrs'] ?? null) ? $data['attrs'] : $data;
+                $attrs = is_array($data['attrs'] ?? null) ? $data['attrs'] : [];
                 if ($name !== '') {
                     $rendered = $dynamicBlocks->render($name, $attrs);
                     if ($rendered !== '') {

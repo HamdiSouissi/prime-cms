@@ -61,6 +61,7 @@ use Prime\Site\Menu\MenuRepository;
 use Prime\Site\PermalinkSettings;
 use Prime\Site\RedirectRepository;
 use Prime\Site\Seo\SeoSettings;
+use Prime\Site\UrlGenerator;
 use Prime\Site\Zone\DynamicBlockRegistry;
 use Prime\Site\Zone\ZoneRepository;
 use Prime\Themes\ThemeInstaller;
@@ -136,6 +137,12 @@ final class AdminServiceProvider extends ServiceProvider
             $siteController = $this->app->container()->has(SiteController::class)
                 ? $this->app->get(SiteController::class)
                 : null;
+            $urls = $this->app->container()->has(UrlGenerator::class)
+                ? $this->app->get(UrlGenerator::class)
+                : null;
+            $dynamicBlocks = $this->app->container()->has(DynamicBlockRegistry::class)
+                ? $this->app->get(DynamicBlockRegistry::class)
+                : null;
 
             return new ContentController(
                 app: $this->app,
@@ -158,6 +165,8 @@ final class AdminServiceProvider extends ServiceProvider
                 themes: $themes instanceof ThemeManager ? $themes : null,
                 seoSettings: $seoSettings instanceof SeoSettings ? $seoSettings : null,
                 siteController: $siteController instanceof SiteController ? $siteController : null,
+                urls: $urls instanceof UrlGenerator ? $urls : null,
+                dynamicBlocks: $dynamicBlocks instanceof DynamicBlockRegistry ? $dynamicBlocks : null,
             );
         });
 
@@ -242,9 +251,14 @@ final class AdminServiceProvider extends ServiceProvider
         });
 
         $container->singleton(NoticeController::class, function (): NoticeController {
+            $settings = $this->app->container()->has(Settings::class)
+                ? $this->app->get(Settings::class)
+                : null;
+
             return new NoticeController(
                 notices: $this->app->get(Notices::class),
                 auth: $this->app->get(Auth::class),
+                settings: $settings instanceof Settings ? $settings : null,
             );
         });
 

@@ -49,16 +49,6 @@ if ($allowUpload) {
         </div>
     <?php endif; ?>
 
-    <?php if ($fallbackError !== null): ?>
-        <div class="pc-alert pc-alert--danger" role="alert">
-            <span class="pc-alert__icon" aria-hidden="true"><?= $this->raw($this->icon('alert-circle', 18)) ?></span>
-            <div class="pc-alert__body">
-                <p class="pc-alert__title">Bascule de sécurité sur Aurora</p>
-                <p>Le thème « <?= $this->e($fallbackError['slug']) ?> » a provoqué une erreur : <?= $this->e($fallbackError['message']) ?></p>
-            </div>
-        </div>
-    <?php endif; ?>
-
     <?php if ($themes === []): ?>
         <div class="pc-empty-state">
             <p class="pc-empty-state__title">Aucun thème trouvé</p>
@@ -82,23 +72,28 @@ if ($allowUpload) {
                             </div>
                         <?php endif; ?>
 
-                        <div class="pc-theme-card__badges">
-                            <?php if ($theme->active): ?>
-                                <span class="pc-badge pc-badge--success">Actif</span>
-                            <?php elseif (!$theme->valid): ?>
-                                <span class="pc-badge pc-badge--danger">Invalide</span>
-                            <?php elseif (!$theme->compatible): ?>
-                                <span class="pc-badge pc-badge--warning">Incompatible</span>
-                            <?php endif; ?>
-                            <?php if ($theme->parentSlug() !== null): ?>
-                                <span class="pc-badge pc-badge--neutral">Enfant de <?= $this->e($theme->parentSlug()) ?></span>
-                            <?php endif; ?>
-                        </div>
+                        <?php if (!$theme->valid || !$theme->compatible || $theme->parentSlug() !== null): ?>
+                            <div class="pc-theme-card__badges">
+                                <?php if (!$theme->valid): ?>
+                                    <span class="pc-badge pc-badge--danger">Invalide</span>
+                                <?php elseif (!$theme->compatible): ?>
+                                    <span class="pc-badge pc-badge--warning">Incompatible</span>
+                                <?php endif; ?>
+                                <?php if ($theme->parentSlug() !== null): ?>
+                                    <span class="pc-badge pc-badge--neutral">Enfant de <?= $this->e($theme->parentSlug()) ?></span>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="pc-theme-card__body">
                         <div class="pc-theme-card__head">
-                            <h2 class="pc-theme-card__title"><?= $this->e($theme->name()) ?></h2>
+                            <div class="pc-theme-card__title-group">
+                                <h2 class="pc-theme-card__title"><?= $this->e($theme->name()) ?></h2>
+                                <?php if ($theme->active): ?>
+                                    <span class="pc-badge pc-badge--success">Actif</span>
+                                <?php endif; ?>
+                            </div>
                             <span class="pc-text-xs pc-text-muted">v<?= $this->e($theme->version()) ?></span>
                         </div>
 
@@ -131,7 +126,7 @@ if ($allowUpload) {
                         <?php if ($canDelete): ?>
                             <form method="post" action="/admin/appearance/themes/<?= $this->e($theme->slug) ?>/delete" class="pc-theme-card__delete-form">
                                 <?= $this->raw($this->csrfField()) ?>
-                                <button type="submit" class="pc-btn pc-btn--ghost pc-btn--danger pc-btn--sm" data-prime-confirm="Supprimer définitivement le thème « <?= $this->e($theme->name()) ?> » ?">
+                                <button type="submit" class="pc-btn pc-btn--danger-outline pc-btn--sm" data-prime-confirm="Supprimer définitivement le thème « <?= $this->e($theme->name()) ?> » ?">
                                     Supprimer
                                 </button>
                             </form>

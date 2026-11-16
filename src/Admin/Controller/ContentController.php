@@ -40,6 +40,8 @@ use Prime\Media\MediaRepository;
 use Prime\Media\MediaUsageRepository;
 use Prime\Site\Http\SiteController;
 use Prime\Site\Seo\SeoSettings;
+use Prime\Site\UrlGenerator;
+use Prime\Site\Zone\DynamicBlockRegistry;
 use Prime\Themes\ThemeManager;
 use Prime\View\View;
 use Throwable;
@@ -75,6 +77,8 @@ final class ContentController
         private readonly ?ThemeManager $themes = null,
         private readonly ?SeoSettings $seoSettings = null,
         private readonly ?SiteController $siteController = null,
+        private readonly ?UrlGenerator $urls = null,
+        private readonly ?DynamicBlockRegistry $dynamicBlocks = null,
     ) {
     }
 
@@ -1035,7 +1039,12 @@ final class ContentController
             'heartbeatIntervalMs' => max(15, (int) $this->app->config()->get('content.lock_heartbeat_seconds', 30)) * 1000,
             'releaseUrl' => $entry !== null ? sprintf('/admin/content/%s/%d/lock/release', $contentType->name, $entry->id) : '',
             'pluginBlocks' => $pluginBlocks,
+            'dynamicBlocks' => $this->dynamicBlocks !== null ? $this->dynamicBlocks->catalog() : [],
         ];
+
+        $urlPreviewPattern = $this->buildUrlPreviewPattern($contentType, $entry, $formParentId, $formPublishedAt);
+        $previewSlugSample = $formSlug !== '' ? $formSlug : 'nouveau-contenu';
+        $urlPreviewInitial = str_replace('__PRIME_SLUG__', $previewSlugSample, $urlPreviewPattern);
 
         $editorConfigJson = json_encode(
             $editorConfig,
@@ -1047,6 +1056,8 @@ final class ContentController
             'contentType' => $contentType,
             'entry' => $entry,
             'isEdit' => $isEdit,
+            'urlPreviewPattern' => $urlPreviewPattern,
+            'urlPreviewInitial' => $urlPreviewInitial,
             'form' => [
                 'title' => $formTitle,
                 'slug' => $formSlug,
@@ -1367,6 +1378,57 @@ final class ContentController
         } catch (Throwable) {
             return [];
         }
+    }
+
+    /**
+     * Build a live URL preview template (with `__PRIME_SLUG__` placeholder) using `UrlGenerator`.
+     */
+    private function buildUrlPreviewPattern(
+        ContentType $contentType,
+        ?Entry $entry,
+        int $parentId,
+        string $publishedAt,
+    ): string {
+        $nowUtc = gmdate('Y-m-d H:i:s');
+        $effectiveDate = trim($publishedAt) !== ''
+            ? str_replace('T', ' ', trim($publishedAt))
+            : ($entry?->publishedAt ?? $entry?->createdAt ?? $nowUtc);
+
+        $probe = new Entry(
+            id: $entry?->id ?? 0,
+            type: $contentType->name,
+            status: $entry?->status ?? Entry::STATUS_PUBLISHED,
+            title: $entry?->title ?? '',
+            slug: '__PRIME_SLUG__',
+            excerpt: null,
+            content: '{}',
+            contentHtml: '',
+            contentText: '',
+            authorId: $entry?->authorId,
+            parentId: max(0, $parentId),
+            menuOrder: 0,
+            template: $entry?->template,
+            publishedAt: $effectiveDate,
+            previousStatus: null,
+            trashedAt: null,
+            createdAt: $entry?->createdAt ?? $nowUtc,
+            updatedAt: $entry?->updatedAt ?? $nowUtc,
+        );
+
+        if ($this->urls !== null) {
+            return $this->urls->entryUrl($probe);
+        }
+
+        if ($contentType->name === 'page') {
+            return '/__PRIME_SLUG__';
+        }
+        if ($contentType->name === 'post') {
+            return '/blog/__PRIME_SLUG__';
+        }
+
+        $base = $contentType->rewriteBase !== '' ? trim($contentType->rewriteBase, '/') : $contentType->name;
+
+        return '/' . $base . '/__PRIME_SLUG__';
     }
 
     /**
