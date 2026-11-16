@@ -1284,6 +1284,7 @@ final class SiteRenderingTest extends TestCase
         // Page caching is exercised by its own dedicated suite: here every request must hit the
         // database so that SQL query counts measure template/query efficiency, not cache hits.
         $app->config()->set('cache.page.enabled', false);
+        $app->config()->set('cache.page.directory', sys_get_temp_dir() . '/prime_pages_' . uniqid('', true));
         $app->boot();
 
         $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {

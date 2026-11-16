@@ -166,6 +166,10 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $app->config()->set('app.debug', true);
         $app->config()->set('app.url', 'https://prime-db.test');
         $app->config()->set('app.key', 'base64:' . base64_encode(str_repeat('d', 32)));
+        // The page cache is covered by its own suite: here `/blog` must always reach the
+        // database so the SQL query counts measure template efficiency, not cache hits.
+        $app->config()->set('cache.page.enabled', false);
+        $app->config()->set('cache.page.directory', sys_get_temp_dir() . '/prime_pages_' . uniqid('', true));
         $app->boot();
 
         $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {

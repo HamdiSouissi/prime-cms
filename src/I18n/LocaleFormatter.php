@@ -22,25 +22,6 @@ use Throwable;
 final class LocaleFormatter
 {
     /**
-     * `IntlDateFormatter` style/date type combinations for each supported preset.
-     *
-     * Values mirror the extension constants (NONE = 0, FULL = 1, LONG = 2, MEDIUM = 3, SHORT = 4)
-     * so that the class can be loaded on runtimes compiled without `intl`.
-     *
-     * @var array<string, array{0: int, 1: int}>
-     */
-    private const INTL_PRESETS = [
-        'short' => [4, 0],
-        'medium' => [3, 0],
-        'long' => [2, 0],
-        'full' => [1, 0],
-        'time' => [0, 4],
-        'timeLong' => [0, 3],
-        'dateTime' => [3, 4],
-        'dateTimeLong' => [2, 4],
-    ];
-
-    /**
      * Fallback PHP-style patterns, overridable per locale through `core.date.formats.*`.
      *
      * @var array<string, string>
@@ -496,17 +477,19 @@ final class LocaleFormatter
         $moment = (new DateTimeImmutable('@' . $timestamp))->setTimezone(new DateTimeZone($this->timezone));
         $locale ??= $this->translator->locale();
 
-        if (extension_loaded('intl') && class_exists(IntlDateFormatter::class) && isset(self::INTL_PRESETS[$preset])) {
-            [$dateType, $timeType] = self::INTL_PRESETS[$preset];
-
+        // A locale may ship an explicit ICU pattern (`core.date.patterns.{preset}`).
+        // Only then does `intl` format the date, and only when the extension is loaded.
+        $icuPattern = $this->patternOverride($preset, $locale);
+        if ($icuPattern !== null && extension_loaded('intl') && class_exists(IntlDateFormatter::class)) {
             try {
                 $formatter = new IntlDateFormatter(
                     $this->translator->localeTag($locale),
-                    $dateType,
-                    $timeType,
+                    // NONE (-1): the explicit pattern below carries both date and time.
+                    -1,
+                    -1,
                     new DateTimeZone($this->timezone),
                     IntlDateFormatter::GREGORIAN,
-                    $this->patternOverride($preset, $locale),
+                    $icuPattern,
                 );
 
                 $formatted = $formatter->format($moment);
@@ -518,11 +501,14 @@ final class LocaleFormatter
             }
         }
 
+        // Every preset is rendered from the catalogue pattern, so a runtime with `intl` and
+        // one without produce byte-identical output: ICU locale defaults would otherwise
+        // differ from the shipped `core.date.formats.*` patterns.
         return $this->renderPattern($moment, $preset, $locale);
     }
 
     /**
-     * Allow a locale to force an explicit ICU pattern through `core.date.patterns.{preset}`.
+     * Explicit ICU pattern shipped by a locale, or `null` when it does not define one.
      */
     private function patternOverride(string $preset, string $locale): ?string
     {
