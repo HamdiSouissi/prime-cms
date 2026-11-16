@@ -58,7 +58,7 @@ final class MediaHelper
     ): ?string {
         $resolved = self::resolve($media, $repository);
 
-        return $resolved?->url($variant, $format);
+        return $resolved?->variantUrl($variant, $format === 'webp');
     }
 
     /**
@@ -76,38 +76,7 @@ final class MediaHelper
             return '';
         }
 
-        $targetFormat = $format ?? 'original';
-        $candidates = [];
-
-        foreach ($resolved->variants as $variantData) {
-            $w = (int) ($variantData['width'] ?? 0);
-            if ($w <= 0) {
-                continue;
-            }
-            $relPath = $targetFormat === 'webp'
-                ? ($variantData['webp_path'] ?? null)
-                : ($variantData['path'] ?? null);
-            if (!is_string($relPath) || $relPath === '') {
-                continue;
-            }
-            $candidates[$w] = '/uploads/' . ltrim($relPath, '/') . ' ' . $w . 'w';
-        }
-
-        // For original srcset, also include the full original image if wider than all generated variants.
-        if ($targetFormat === 'original' && $resolved->width !== null && $resolved->width > 0) {
-            $origW = $resolved->width;
-            if (!isset($candidates[$origW])) {
-                $candidates[$origW] = $resolved->url() . ' ' . $origW . 'w';
-            }
-        }
-
-        if ($candidates === []) {
-            return '';
-        }
-
-        ksort($candidates, SORT_NUMERIC);
-
-        return implode(', ', $candidates);
+        return $resolved->srcset($format === 'webp');
     }
 
     /**
@@ -116,7 +85,7 @@ final class MediaHelper
      * Supported `$attrs` options:
      * - `variant`: preferred fallback variant (`thumbnail` | `medium` | `large` | null for original, default `large`)
      * - `sizes`: HTML `sizes` attribute (default `100vw`)
-     * - `alt`: override alt text (defaults to `$media->altText`)
+     * - `alt`: override alt text (defaults to `$media->alt`)
      * - `decorative`: bool — forces `alt="" aria-hidden="true"`
      * - `class`: CSS classes on `<img>`
      * - `picture_class`: CSS classes on `<picture>`
@@ -142,9 +111,9 @@ final class MediaHelper
             ? (is_string($attrs['variant']) && $attrs['variant'] !== '' ? $attrs['variant'] : null)
             : 'large';
 
-        $fallbackSrc = $resolved->url($variant, 'original');
-        $fallbackSrcset = self::srcset($resolved, 'original');
-        $webpSrcset = self::srcset($resolved, 'webp');
+        $fallbackSrc = $resolved->variantUrl($variant, false);
+        $fallbackSrcset = $resolved->srcset(false);
+        $webpSrcset = $resolved->srcset(true);
 
         $sizes = is_string($attrs['sizes'] ?? null) && trim($attrs['sizes']) !== ''
             ? trim($attrs['sizes'])
@@ -153,7 +122,7 @@ final class MediaHelper
         $decorative = (bool) ($attrs['decorative'] ?? false);
         $alt = $decorative
             ? ''
-            : (is_string($attrs['alt'] ?? null) ? $attrs['alt'] : $resolved->altText);
+            : (is_string($attrs['alt'] ?? null) ? $attrs['alt'] : $resolved->alt);
 
         $loading = is_string($attrs['loading'] ?? null) && in_array($attrs['loading'], ['lazy', 'eager'], true)
             ? $attrs['loading']
@@ -213,7 +182,7 @@ final class MediaHelper
             && (abs($resolved->focalX - 0.5) >= 0.005 || abs($resolved->focalY - 0.5) >= 0.005)
             && !str_contains(strtolower(implode(';', $styleParts)), 'object-position')
         ) {
-            $styleParts[] = 'object-position:' . $resolved->focalPositionCss();
+            $styleParts[] = 'object-position:' . $resolved->focalPointCss();
         }
         if ($styleParts !== []) {
             $imgParts[] = 'style="' . self::esc(implode(';', $styleParts)) . '"';
@@ -243,17 +212,7 @@ final class MediaHelper
      */
     public static function formatBytes(int $bytes): string
     {
-        if ($bytes < 1024) {
-            return $bytes . ' o';
-        }
-        if ($bytes < 1024 * 1024) {
-            return number_format($bytes / 1024, 1, ',', ' ') . ' Ko';
-        }
-        if ($bytes < 1024 * 1024 * 1024) {
-            return number_format($bytes / (1024 * 1024), 1, ',', ' ') . ' Mo';
-        }
-
-        return number_format($bytes / (1024 * 1024 * 1024), 2, ',', ' ') . ' Go';
+        return Media::formatBytes($bytes);
     }
 
     private static function esc(string $value): string

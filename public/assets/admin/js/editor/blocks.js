@@ -502,7 +502,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         if (!chosen || chosen.length === 0) return;
         const media = chosen[0];
         const nextUrl = media.url || '';
-        const nextAlt = media.alt_text || altInput.value.trim() || media.title || '';
+        const nextAlt = media.alt || media.alt_text || altInput.value.trim() || media.title || '';
         const nextCaption = captionInput.value.trim() || media.caption || '';
         ctx.updateData(
           {
@@ -871,7 +871,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
           ...chosen.map((m) => ({
             mediaId: Number(m.id),
             url: m.url || m.thumbnail_url || '',
-            alt: m.alt_text || m.title || '',
+            alt: m.alt || m.alt_text || m.title || '',
             caption: m.caption || '',
           })),
         ].slice(0, 50);
@@ -1110,7 +1110,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         });
         if (!chosen || chosen.length === 0) return;
         const m = chosen[0];
-        ctx.updateData({ mediaId: Number(m.id), url: m.url || '', title: ctx.data.title || m.title || m.original_filename || '' }, { rerender: true, recordHistory: true });
+        ctx.updateData({ mediaId: Number(m.id), url: m.url || '', title: ctx.data.title || m.title || m.original_name || m.original_filename || '' }, { rerender: true, recordHistory: true });
       });
       row.appendChild(pickBtn);
       wrap.appendChild(row);
@@ -1181,8 +1181,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
           {
             mediaId: Number(m.id),
             url: m.url || '',
-            label: m.title || m.original_filename || 'Télécharger',
-            filename: m.original_filename || '',
+            label: m.title || m.original_name || m.original_filename || 'Télécharger',
+            filename: m.original_name || m.original_filename || '',
             extension: m.extension || '',
             sizeBytes: Number(m.size_bytes || 0),
           },

@@ -505,8 +505,8 @@ final class BlockRegistry
 
                 $decorative = (bool) ($data['decorative'] ?? false);
                 $alt = is_string($data['alt'] ?? null) ? trim($data['alt']) : '';
-                if (!$decorative && $alt === '' && $resolvedMedia !== null && $resolvedMedia->altText !== '') {
-                    $alt = $resolvedMedia->altText;
+                if (!$decorative && $alt === '' && $resolvedMedia !== null && $resolvedMedia->alt !== '') {
+                    $alt = $resolvedMedia->alt;
                 }
 
                 if (!$decorative && $alt === '') {
@@ -987,7 +987,7 @@ final class BlockRegistry
 
                     $alt = is_string($item['alt'] ?? null) ? trim($item['alt']) : '';
                     if ($alt === '' && $resolved !== null) {
-                        $alt = $resolved->altText;
+                        $alt = $resolved->alt;
                     }
                     $itemCaption = is_string($item['caption'] ?? null) ? $sanitizer->sanitizeInline($item['caption']) : '';
 
@@ -1127,7 +1127,7 @@ final class BlockRegistry
                 $resolvedPoster = $posterMediaId !== null ? MediaHelper::resolve($posterMediaId, $mediaRepo) : null;
                 $rawPoster = is_string($data['posterUrl'] ?? null) ? trim($data['posterUrl']) : '';
                 if ($rawPoster === '' && $resolvedPoster !== null) {
-                    $rawPoster = $resolvedPoster->url('large');
+                    $rawPoster = $resolvedPoster->variantUrl('large');
                 }
                 $safePoster = $rawPoster !== '' ? $sanitizer->sanitizeResourceUrl($rawPoster) : '';
 
@@ -1167,7 +1167,7 @@ final class BlockRegistry
                     : null;
                 $resolvedPoster = $posterMediaId !== null ? MediaHelper::resolve($posterMediaId, $mediaRepo) : null;
                 $posterUrl = $resolvedPoster !== null
-                    ? $resolvedPoster->url('large')
+                    ? $resolvedPoster->variantUrl('large')
                     : ($sanitizer->sanitizeResourceUrl((string) ($data['posterUrl'] ?? '')) ?? '');
 
                 $attrs = ['preload="metadata"'];
@@ -1229,7 +1229,7 @@ final class BlockRegistry
 
                 $title = is_string($data['title'] ?? null) ? trim($data['title']) : '';
                 if ($title === '' && $resolved !== null) {
-                    $title = $resolved->title !== '' ? $resolved->title : $resolved->originalFilename;
+                    $title = $resolved->title !== '' ? $resolved->title : $resolved->originalName;
                 }
                 $caption = is_string($data['caption'] ?? null) ? $sanitizer->sanitizeInline($data['caption']) : '';
 
@@ -1303,7 +1303,7 @@ final class BlockRegistry
 
                 $filename = is_string($data['filename'] ?? null) ? trim($data['filename']) : '';
                 if ($filename === '' && $resolved !== null) {
-                    $filename = $resolved->originalFilename;
+                    $filename = $resolved->originalName;
                 }
                 $label = is_string($data['label'] ?? null) ? trim($data['label']) : '';
                 if ($label === '') {
@@ -1341,7 +1341,7 @@ final class BlockRegistry
 
                 $label = trim((string) ($data['label'] ?? ''));
                 if ($label === '') {
-                    $label = $resolved !== null ? ($resolved->title !== '' ? $resolved->title : $resolved->originalFilename) : 'Télécharger le fichier';
+                    $label = $resolved !== null ? ($resolved->title !== '' ? $resolved->title : $resolved->originalName) : 'Télécharger le fichier';
                 }
                 $ext = strtoupper(trim((string) ($data['extension'] ?? ($resolved?->extension ?? ''))));
                 $sizeBytes = (int) ($data['sizeBytes'] ?? ($resolved?->sizeBytes ?? 0));

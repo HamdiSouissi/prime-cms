@@ -91,7 +91,7 @@ final class MediaRegenerateCommand implements CommandInterface
             }
 
             if (!$force && $variant !== '' && isset($item->variants[$variant])) {
-                $vPath = (string) ($item->variants[$variant]['path'] ?? '');
+                $vPath = $item->variants[$variant]['path'];
                 if ($vPath !== '' && is_file($uploadsRoot . '/' . ltrim($vPath, '/'))) {
                     $skipped++;
                     continue;
@@ -101,10 +101,10 @@ final class MediaRegenerateCommand implements CommandInterface
             try {
                 $this->uploader->regenerate($item, $variant !== '' ? $variant : null);
                 $regenerated++;
-                $output->writeln(sprintf('[%d/%d] #%d %s — variantes régénérées', $num, $total, $item->id, $item->originalFilename));
+                $output->writeln(sprintf('[%d/%d] #%d %s — variantes régénérées', $num, $total, $item->id, $item->originalName));
             } catch (Throwable $exception) {
                 $failed++;
-                $output->error(sprintf('[%d/%d] #%d %s — échec : %s', $num, $total, $item->id, $item->originalFilename, $exception->getMessage()));
+                $output->error(sprintf('[%d/%d] #%d %s — échec : %s', $num, $total, $item->id, $item->originalName, $exception->getMessage()));
             }
         }
 

@@ -82,7 +82,7 @@ final class UploadService
         $validated = $this->validateUploadedFile($uploadedFile);
 
         if ($this->hooks !== null) {
-            $this->hooks->action('media.before_upload', $validated, $actor, $folderId);
+            $this->hooks->emit('media.before_upload', $validated, $actor, $folderId);
         }
 
         $this->guard->ensureProtectedUploadsDirectory();
@@ -117,7 +117,7 @@ final class UploadService
                 $writtenFiles[] = $absPath;
                 foreach ($variants as $v) {
                     $writtenFiles[] = $uploadsRoot . '/' . ltrim($v['path'], '/');
-                    if (isset($v['webp']) && is_string($v['webp'])) {
+                    if (isset($v['webp']) && $v['webp'] !== '') {
                         $writtenFiles[] = $uploadsRoot . '/' . ltrim($v['webp'], '/');
                     }
                 }
@@ -131,7 +131,7 @@ final class UploadService
             }
 
             $checksum = hash_file('sha256', $absPath);
-            if (!is_string($checksum) || $checksum === '') {
+            if (!is_string($checksum)) {
                 throw new MediaException('Impossible de calculer l\'empreinte SHA-256 du fichier.');
             }
 
@@ -165,7 +165,7 @@ final class UploadService
             ]);
 
             if ($this->hooks !== null) {
-                $this->hooks->action('media.uploaded', $created, $actor, $duplicate);
+                $this->hooks->emit('media.uploaded', $created, $actor, $duplicate);
             }
 
             return [
@@ -197,7 +197,7 @@ final class UploadService
         $validated = $this->validateUploadedFile($uploadedFile);
 
         if ($this->hooks !== null) {
-            $this->hooks->action('media.before_upload', $validated, $actor, $existing->folderId);
+            $this->hooks->emit('media.before_upload', $validated, $actor, $existing->folderId);
         }
 
         $this->guard->ensureProtectedUploadsDirectory();
@@ -235,7 +235,7 @@ final class UploadService
                 @unlink($stagingAbsPath);
                 foreach ($staged['variants'] as $sv) {
                     @unlink($uploadsRoot . '/' . ltrim($sv['path'], '/'));
-                    if (isset($sv['webp']) && is_string($sv['webp'])) {
+                    if (isset($sv['webp']) && $sv['webp'] !== '') {
                         @unlink($uploadsRoot . '/' . ltrim($sv['webp'], '/'));
                     }
                 }
@@ -255,7 +255,7 @@ final class UploadService
                 $newWrittenPaths[$newRelPath] = true;
                 foreach ($variants as $v) {
                     $newWrittenPaths[$v['path']] = true;
-                    if (isset($v['webp']) && is_string($v['webp'])) {
+                    if (isset($v['webp']) && $v['webp'] !== '') {
                         $newWrittenPaths[$v['webp']] = true;
                     }
                 }
@@ -269,7 +269,7 @@ final class UploadService
             }
 
             $checksum = hash_file('sha256', $newAbsPath);
-            if (!is_string($checksum) || $checksum === '') {
+            if (!is_string($checksum)) {
                 throw new MediaException('Impossible de calculer l\'empreinte SHA-256 du fichier de remplacement.');
             }
 
@@ -299,7 +299,7 @@ final class UploadService
             }
 
             if ($this->hooks !== null) {
-                $this->hooks->action('media.updated', $updated, $actor);
+                $this->hooks->emit('media.updated', $updated, $actor);
             }
 
             return $updated;
@@ -380,7 +380,7 @@ final class UploadService
         }
 
         if ($this->hooks !== null) {
-            $this->hooks->action('media.updated', $updated, $actor);
+            $this->hooks->emit('media.updated', $updated, $actor);
         }
 
         return $updated;
@@ -399,7 +399,7 @@ final class UploadService
         $updated = $this->media->update($media->id, ['variants' => $variants]) ?? $media;
 
         if ($this->hooks !== null) {
-            $this->hooks->action('media.updated', $updated, $actor);
+            $this->hooks->emit('media.updated', $updated, $actor);
         }
 
         return $updated;
@@ -418,7 +418,7 @@ final class UploadService
         }
 
         if ($this->hooks !== null) {
-            $this->hooks->action('media.deleted', $media, $actor);
+            $this->hooks->emit('media.deleted', $media, $actor);
         }
     }
 

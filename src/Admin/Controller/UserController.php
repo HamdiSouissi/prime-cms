@@ -23,7 +23,6 @@ use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Kernel\Application;
 use Prime\Media\MediaRepository;
-use Prime\Media\MediaUsageRepository;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
 use Prime\Validation\Validator;
@@ -57,7 +56,6 @@ final class UserController
         private readonly Connection $connection,
         private readonly PasswordPolicy $passwordPolicy,
         private readonly ?MediaRepository $media = null,
-        private readonly ?MediaUsageRepository $mediaUsage = null,
     ) {
     }
 
@@ -98,7 +96,7 @@ final class UserController
                 $loadedAvatars = $this->media->findByIds(array_keys($avatarMediaIds));
                 foreach ($pagination['items'] as $item) {
                     if ($item->avatarMediaId !== null && isset($loadedAvatars[$item->avatarMediaId]) && $loadedAvatars[$item->avatarMediaId]->isImage()) {
-                        $avatarUrls[$item->id] = $loadedAvatars[$item->avatarMediaId]->thumbnailUrl();
+                        $avatarUrls[$item->id] = $loadedAvatars[$item->avatarMediaId]->variantUrl('thumbnail');
                     }
                 }
             } catch (Throwable) {
@@ -429,12 +427,6 @@ final class UserController
         }
 
         $this->users->delete($target->id);
-        if ($this->mediaUsage !== null) {
-            try {
-                $this->mediaUsage->deleteForEntity('user', $target->id);
-            } catch (Throwable) {
-            }
-        }
         $this->context->flashToast(sprintf('Le compte « %s » a été supprimé.', $target->displayName), 'success');
 
         return Response::redirect('/admin/users', 302);

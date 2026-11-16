@@ -369,7 +369,7 @@ final class AdminContext
             try {
                 $avatarMedia = $this->media->find($user->avatarMediaId);
                 if ($avatarMedia !== null && $avatarMedia->isImage()) {
-                    $avatarUrl = $avatarMedia->thumbnailUrl();
+                    $avatarUrl = $avatarMedia->variantUrl('thumbnail');
                 }
             } catch (Throwable) {
                 $avatarUrl = null;

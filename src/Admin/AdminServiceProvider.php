@@ -207,7 +207,6 @@ final class AdminServiceProvider extends ServiceProvider
 
         $container->singleton(UserController::class, function (): UserController {
             $media = $this->app->container()->has(MediaRepository::class) ? $this->app->get(MediaRepository::class) : null;
-            $mediaUsage = $this->app->container()->has(MediaUsageRepository::class) ? $this->app->get(MediaUsageRepository::class) : null;
 
             return new UserController(
                 app: $this->app,
@@ -222,7 +221,6 @@ final class AdminServiceProvider extends ServiceProvider
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
                 media: $media instanceof MediaRepository ? $media : null,
-                mediaUsage: $mediaUsage instanceof MediaUsageRepository ? $mediaUsage : null,
             );
         });
 
@@ -238,7 +236,6 @@ final class AdminServiceProvider extends ServiceProvider
 
         $container->singleton(ProfileController::class, function (): ProfileController {
             $media = $this->app->container()->has(MediaRepository::class) ? $this->app->get(MediaRepository::class) : null;
-            $mediaUsage = $this->app->container()->has(MediaUsageRepository::class) ? $this->app->get(MediaUsageRepository::class) : null;
 
             return new ProfileController(
                 app: $this->app,
@@ -253,7 +250,6 @@ final class AdminServiceProvider extends ServiceProvider
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
                 hasher: $this->app->get(Hasher::class),
                 media: $media instanceof MediaRepository ? $media : null,
-                mediaUsage: $mediaUsage instanceof MediaUsageRepository ? $mediaUsage : null,
             );
         });
     }

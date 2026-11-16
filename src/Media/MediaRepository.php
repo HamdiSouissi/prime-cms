@@ -147,7 +147,7 @@ final class MediaRepository
             $bindings[] = (int) $filters['folder_id'];
         }
 
-        if (!empty($filters['kinds']) && is_array($filters['kinds'])) {
+        if (!empty($filters['kinds'])) {
             $validKinds = array_values(array_intersect($filters['kinds'], Media::ALL_KINDS));
             if ($validKinds !== []) {
                 $placeholders = implode(', ', array_fill(0, count($validKinds), '?'));

@@ -22,7 +22,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: mbstring, gd, pdo_mysql, zip, fileinfo, openssl, intl
+          extensions: mbstring, gd, exif, pdo_mysql, zip, fileinfo, openssl, intl
           coverage: none
 
       - name: Verify runtime without vendor/
@@ -69,11 +69,11 @@ jobs:
 
       - name: Check ES2022 syntax across all admin and plugin scripts
         run: |
-          for f in public/assets/admin/js/*.js public/assets/admin/js/editor/*.js content/plugins/hello-prime/assets/js/*.js; do
+          for f in public/assets/admin/js/*.js public/assets/admin/js/editor/*.js public/assets/admin/js/media/*.js content/plugins/hello-prime/assets/js/*.js; do
             node --check "$f"
           done
 
-      - name: Run zero-dependency Prime Editor JS unit tests
+      - name: Run zero-dependency Prime JS unit tests
         run: node tests/js/run.mjs
 
   database-tests:
@@ -119,7 +119,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: mbstring, gd, pdo_mysql, zip, fileinfo, openssl, intl
+          extensions: mbstring, gd, exif, pdo_mysql, zip, fileinfo, openssl, intl
           coverage: none
 
       - name: Install dev dependencies
@@ -198,7 +198,8 @@ jobs:
 
           # Verify CLI tools against live DB
           docker compose exec -T app php bin/prime db:check | grep -q "Connexion à la base de données réussie"
-          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000014_create_entry_locks_table"
+          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000018_add_avatar_media_id_to_users_table"
+          docker compose exec -T app php bin/prime media:link | grep -q "public/uploads"
           docker compose exec -T app php bin/prime settings:get site_name | grep -q '"Prime Docker Smoke"'
           docker compose exec -T app php bin/prime role:list | grep -q "administrator"
           docker compose exec -T app php bin/prime user:list | grep -q "admin@prime-docker.test"
@@ -228,8 +229,9 @@ jobs:
             --data-urlencode "password=Ciel!Mandarine#8429")
           test "$LOGIN_CODE" = "302"
 
-          # Authenticated admin checks: dashboard, content, taxonomies, plugins, users, roles, profile, styleguide
+          # Authenticated admin checks: dashboard, media, content, taxonomies, plugins, users, roles, profile, styleguide
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Tableau de bord"
+          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/media | grep -q "Médiathèque"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/content/page | grep -q "Pages"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/content/post | grep -q "Bienvenue Docker"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/taxonomies/category | grep -q "Non classé"
@@ -254,6 +256,7 @@ jobs:
           docker compose exec -T app php -m | grep -iq "mbstring"
           docker compose exec -T app php -m | grep -iq "pdo_mysql"
           docker compose exec -T app php -m | grep -iq "gd"
+          docker compose exec -T app php -m | grep -iq "exif"
 
       - name: Tear down stack
         if: always()

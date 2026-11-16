@@ -18,7 +18,6 @@ use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Media\MediaRepository;
-use Prime\Media\MediaUsageExtractor;
 use Prime\Media\MediaUsageRepository;
 use Prime\Support\Str;
 use Throwable;
@@ -581,7 +580,7 @@ final class EntryService
 
         if ($this->mediaUsage !== null) {
             try {
-                $this->mediaUsage->deleteForEntity('entry', $existing->id);
+                $this->mediaUsage->deleteForEntry($existing->id);
             } catch (Throwable) {
             }
         }
@@ -1159,9 +1158,7 @@ final class EntryService
         }
 
         try {
-            $fields = $this->fields !== null ? $this->fields->fieldsForContentType($entry->type) : [];
-            $grouped = MediaUsageExtractor::fromEntryData($entry->decodedContent(), $entry->meta, $fields);
-            $this->mediaUsage->sync('entry', $entry->id, $grouped);
+            $this->mediaUsage->syncFromEntry($entry, $this->fields);
         } catch (Throwable) {
             // Gracefully ignore when media tables are absent in minimal content unit harnesses.
         }

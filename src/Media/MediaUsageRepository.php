@@ -77,6 +77,16 @@ final class MediaUsageRepository
     }
 
     /**
+     * Remove all usage rows for an entry (explicit cleanup for engines without FK cascades).
+     */
+    public function deleteForEntry(int $entryId): void
+    {
+        $this->db->table('media_usage')
+            ->where('entry_id', '=', $entryId)
+            ->delete();
+    }
+
+    /**
      * Extract all media usages (`thumbnail`, `block`, `field:<name>`) from an entry and persist them.
      */
     public function syncFromEntry(Entry $entry, ?FieldRegistry $fields = null): void
@@ -85,7 +95,7 @@ final class MediaUsageRepository
     }
 
     /**
-     * Return all entries currently referencing a media item, hydrated with entry title/type/status/edit URL.
+     * Return all entries (and user avatars) currently referencing a media item.
      *
      * @return list<array{entry_id: int, context: string, context_label: string, title: string, type: string, status: string, edit_url: string}>
      */
@@ -93,6 +103,7 @@ final class MediaUsageRepository
     {
         $usageTable = $this->db->prefixed('media_usage');
         $entriesTable = $this->db->prefixed('entries');
+        $usersTable = $this->db->prefixed('users');
 
         $rows = $this->db->select(
             sprintf(
@@ -123,11 +134,31 @@ final class MediaUsageRepository
             ];
         }
 
+        $avatarUsers = $this->db->select(
+            sprintf(
+                'SELECT `id`, `display_name`, `status` FROM `%s` WHERE `avatar_media_id` = ? ORDER BY `display_name` ASC',
+                $usersTable,
+            ),
+            [$mediaId],
+        );
+
+        foreach ($avatarUsers as $uRow) {
+            $results[] = [
+                'entry_id' => (int) $uRow['id'],
+                'context' => 'avatar',
+                'context_label' => 'Avatar utilisateur',
+                'title' => (string) $uRow['display_name'],
+                'type' => 'user',
+                'status' => (string) $uRow['status'],
+                'edit_url' => '/admin/users',
+            ];
+        }
+
         return $results;
     }
 
     /**
-     * Batch count of usages keyed by `media_id` (plus avatar references on `pc_users`).
+     * Batch count of usages keyed by `media_id` (content references + user avatar references).
      *
      * @param list<int> $mediaIds
      * @return array<int, int>
@@ -141,6 +172,7 @@ final class MediaUsageRepository
 
         $placeholders = implode(', ', array_fill(0, count($ids), '?'));
         $usageTable = $this->db->prefixed('media_usage');
+        $usersTable = $this->db->prefixed('users');
 
         $rows = $this->db->select(
             sprintf(
@@ -154,6 +186,20 @@ final class MediaUsageRepository
         $counts = [];
         foreach ($rows as $row) {
             $counts[(int) $row['media_id']] = (int) $row['cnt'];
+        }
+
+        $avatarRows = $this->db->select(
+            sprintf(
+                'SELECT `avatar_media_id` AS `media_id`, COUNT(*) AS `cnt` FROM `%s` WHERE `avatar_media_id` IN (%s) GROUP BY `avatar_media_id`',
+                $usersTable,
+                $placeholders,
+            ),
+            $ids,
+        );
+
+        foreach ($avatarRows as $row) {
+            $mid = (int) $row['media_id'];
+            $counts[$mid] = ($counts[$mid] ?? 0) + (int) $row['cnt'];
         }
 
         return $counts;
@@ -181,8 +227,7 @@ final class MediaUsageRepository
         // 2. Editor JSON blocks (`block`)
         $doc = $entry->decodedContent();
         foreach ($doc['blocks'] as $block) {
-            $data = $block['data'] ?? [];
-            foreach (self::extractMediaIdsFromBlockData($data) as $mid) {
+            foreach (self::extractMediaIdsFromBlockData($block['data']) as $mid) {
                 $usages[] = [
                     'media_id' => $mid,
                     'context' => self::CONTEXT_BLOCK,
@@ -258,7 +303,7 @@ final class MediaUsageRepository
     /**
      * @return list<int>
      */
-    private static function extractMediaIdsFromFieldValue(mixed $val): array
+    public static function extractMediaIdsFromFieldValue(mixed $val): array
     {
         if (is_int($val) && $val > 0) {
             return [$val];

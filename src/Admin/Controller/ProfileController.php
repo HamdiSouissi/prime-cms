@@ -17,7 +17,6 @@ use Prime\Http\Response;
 use Prime\Http\Session;
 use Prime\Kernel\Application;
 use Prime\Media\MediaRepository;
-use Prime\Media\MediaUsageRepository;
 use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
@@ -56,7 +55,6 @@ final class ProfileController
         private readonly PasswordPolicy $passwordPolicy,
         private readonly Hasher $hasher,
         private readonly ?MediaRepository $media = null,
-        private readonly ?MediaUsageRepository $mediaUsage = null,
     ) {
     }
 
@@ -144,17 +142,6 @@ final class ProfileController
         }
 
         $this->users->updateFields($user->id, $fieldsToUpdate);
-
-        if ($avatarProvided && $this->mediaUsage !== null) {
-            try {
-                $this->mediaUsage->sync(
-                    'user',
-                    $user->id,
-                    $avatarMediaId !== null ? ['avatar' => [$avatarMediaId]] : [],
-                );
-            } catch (Throwable) {
-            }
-        }
 
         $this->auth->resetCache();
         $this->context->flashToast('Vos informations personnelles ont été enregistrées.', 'success');
@@ -371,7 +358,7 @@ final class ProfileController
             try {
                 $avatarMedia = $this->media->find($user->avatarMediaId);
                 if ($avatarMedia !== null) {
-                    $encoded = json_encode([$avatarMedia->toArray()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
+                    $encoded = json_encode([$avatarMedia->toApiArray()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
                     if (is_string($encoded)) {
                         $avatarInitialJson = $encoded;
                     }

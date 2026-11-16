@@ -147,7 +147,7 @@ final readonly class Media
             return $this->url($prefix);
         }
 
-        if ($webp && isset($variant['webp']) && is_string($variant['webp']) && $variant['webp'] !== '') {
+        if ($webp && isset($variant['webp']) && $variant['webp'] !== '') {
             return $prefix . '/' . ltrim($variant['webp'], '/');
         }
 
@@ -185,7 +185,7 @@ final readonly class Media
             }
 
             if ($webp) {
-                if (isset($info['webp']) && is_string($info['webp']) && $info['webp'] !== '') {
+                if (isset($info['webp']) && $info['webp'] !== '') {
                     $byWidth[$w] = $prefix . '/' . ltrim($info['webp'], '/');
                 }
             } else {
@@ -298,7 +298,7 @@ final readonly class Media
             if ($variant['path'] !== '') {
                 $paths[$variant['path']] = true;
             }
-            if (isset($variant['webp']) && is_string($variant['webp']) && $variant['webp'] !== '') {
+            if (isset($variant['webp']) && $variant['webp'] !== '') {
                 $paths[$variant['webp']] = true;
             }
         }

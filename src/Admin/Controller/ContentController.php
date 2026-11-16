@@ -37,7 +37,7 @@ use Prime\Http\Response;
 use Prime\Kernel\Application;
 use Prime\Media\Media;
 use Prime\Media\MediaRepository;
-use Prime\Media\MediaUsageExtractor;
+use Prime\Media\MediaUsageRepository;
 use Prime\View\View;
 use Throwable;
 
@@ -896,7 +896,7 @@ final class ContentController
                         }
                     }
                 } elseif ($field->type === 'media') {
-                    foreach (MediaUsageExtractor::extractIdsFromValue($metaValues[$field->name] ?? null) as $mId) {
+                    foreach (MediaUsageRepository::extractMediaIdsFromFieldValue($metaValues[$field->name] ?? null) as $mId) {
                         $neededMediaIds[$mId] = true;
                     }
                 }
@@ -912,9 +912,9 @@ final class ContentController
                     continue;
                 }
                 $resolvedList = [];
-                foreach (MediaUsageExtractor::extractIdsFromValue($metaValues[$field->name] ?? null) as $mId) {
+                foreach (MediaUsageRepository::extractMediaIdsFromFieldValue($metaValues[$field->name] ?? null) as $mId) {
                     if (isset($loadedMediaById[$mId])) {
-                        $resolvedList[] = $loadedMediaById[$mId]->toArray();
+                        $resolvedList[] = $loadedMediaById[$mId]->toApiArray();
                     }
                 }
                 $fieldMediaItems[$field->name] = $resolvedList;
@@ -1027,7 +1027,7 @@ final class ContentController
             'metaValues' => $metaValues,
             'relatedEntryLabels' => $relatedEntryLabels,
             'featuredMediaId' => $featuredMediaId,
-            'featuredMediaJson' => $this->encodeJsonArray($featuredMedia !== null ? [$featuredMedia->toArray()] : []),
+            'featuredMediaJson' => $this->encodeJsonArray($featuredMedia !== null ? [$featuredMedia->toApiArray()] : []),
             'fieldMediaItems' => $fieldMediaItems,
             'mainFieldGroups' => $mainFieldGroups,
             'sidebarFieldGroups' => $sidebarFieldGroups,
@@ -1282,8 +1282,8 @@ final class ContentController
             $fid = $entry->featuredMediaId();
             if ($fid !== null && isset($loaded[$fid]) && $loaded[$fid]->isImage()) {
                 $thumbs[$entry->id] = [
-                    'url' => $loaded[$fid]->thumbnailUrl(),
-                    'alt' => $loaded[$fid]->altText !== '' ? $loaded[$fid]->altText : $entry->title,
+                    'url' => $loaded[$fid]->variantUrl('thumbnail'),
+                    'alt' => $loaded[$fid]->alt !== '' ? $loaded[$fid]->alt : $entry->title,
                 ];
             }
         }

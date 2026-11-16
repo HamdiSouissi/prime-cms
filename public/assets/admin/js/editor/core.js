@@ -575,7 +575,7 @@ export class PrimeEditor {
         data: {
           mediaId: Number(m.id),
           url: m.url || '',
-          alt: m.alt_text || m.title || m.original_filename || 'Image importée',
+          alt: m.alt || m.alt_text || m.title || m.original_name || m.original_filename || 'Image importée',
           decorative: false,
           caption: m.caption || '',
           alignment: 'normal',

@@ -242,7 +242,7 @@ final class Plugin extends AbstractPlugin
         // 13. Observe `media.uploaded` lifecycle event (Phase 7 example)
         $context->hooks()->on('media.uploaded', static function (mixed $media) use ($context): void {
             if ($media instanceof Media) {
-                $context->logger()->info(sprintf('Hello Prime : nouveau média détecté (#%d — %s)', $media->id, $media->originalFilename));
+                $context->logger()->info(sprintf('Hello Prime : nouveau média détecté (#%d — %s)', $media->id, $media->originalName));
             }
         });
     }

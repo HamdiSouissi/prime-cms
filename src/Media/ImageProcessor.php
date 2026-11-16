@@ -212,7 +212,7 @@ final class ImageProcessor
             $newPaths = [$media->diskPath => true];
             foreach ($nextVariants as $info) {
                 $newPaths[$info['path']] = true;
-                if (isset($info['webp']) && is_string($info['webp']) && $info['webp'] !== '') {
+                if (isset($info['webp']) && $info['webp'] !== '') {
                     $newPaths[$info['webp']] = true;
                 }
             }
