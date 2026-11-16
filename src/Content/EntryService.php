@@ -12,11 +12,15 @@ use Prime\Content\Exception\ContentException;
 use Prime\Content\Exception\ContentForbiddenException;
 use Prime\Content\Exception\ContentLockedException;
 use Prime\Content\Exception\ContentValidationException;
+use Prime\Content\Fields\FieldRegistry;
 use Prime\Content\Fields\FieldValidator;
 use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
+use Prime\Media\MediaRepository;
+use Prime\Media\MediaUsageRepository;
 use Prime\Support\Str;
+use Throwable;
 
 /**
  * Single authoritative domain service for creating, updating, scheduling, trashing,
@@ -34,6 +38,7 @@ final class EntryService
         'install',
         'api',
         'assets',
+        'uploads',
         'health',
         'login',
         'content',
@@ -53,6 +58,9 @@ final class EntryService
         private readonly int $revisionsMax = 25,
         private readonly string $schedulerStampPath = '',
         private readonly int $schedulerIntervalSeconds = 60,
+        private readonly ?MediaUsageRepository $mediaUsage = null,
+        private readonly ?FieldRegistry $fields = null,
+        private readonly ?MediaRepository $media = null,
     ) {
     }
 
@@ -233,6 +241,8 @@ final class EntryService
             $entry = $this->entries->find($entry->id) ?? $entry;
         }
 
+        $this->syncEntryMediaUsage($entry);
+
         $this->hooks->emit('content.saved', $entry, true, $actor);
         if ($entry->status === Entry::STATUS_PUBLISHED) {
             $this->hooks->emit('content.published', $entry, $actor);
@@ -344,6 +354,8 @@ final class EntryService
         if ($updated === null) {
             throw new ContentException('Impossible de relire le contenu mis à jour.');
         }
+
+        $this->syncEntryMediaUsage($updated);
 
         $this->hooks->emit('content.saved', $updated, false, $actor);
 
@@ -565,6 +577,13 @@ final class EntryService
 
         $termIds = $existing->termIds();
         $this->entries->deletePermanent($existing->id);
+
+        if ($this->mediaUsage !== null) {
+            try {
+                $this->mediaUsage->deleteForEntry($existing->id);
+            } catch (Throwable) {
+            }
+        }
 
         if ($termIds !== []) {
             $this->terms->recountTerms($termIds);
@@ -976,10 +995,33 @@ final class EntryService
             $meta = $fieldValidation['values'];
         }
 
-        // Optional thumbnail URL in meta if supported
-        if ($type->supports('thumbnail') && isset($input['thumbnail_url']) && is_string($input['thumbnail_url'])) {
-            $thumb = trim($input['thumbnail_url']);
-            $meta['_thumbnail_url'] = $thumb !== '' ? $thumb : null;
+        // Optional featured image (`featured_media_id`) and legacy `_thumbnail_url` if supported
+        if ($type->supports('thumbnail')) {
+            if (array_key_exists('featured_media_id', $input)) {
+                $rawFeatured = $input['featured_media_id'];
+                if ($rawFeatured === null || $rawFeatured === '' || $rawFeatured === 0 || $rawFeatured === '0') {
+                    $meta['_featured_media_id'] = null;
+                } elseif (is_numeric($rawFeatured) && (int) $rawFeatured > 0) {
+                    $featuredId = (int) $rawFeatured;
+                    if ($this->media !== null) {
+                        $mediaItem = $this->media->find($featuredId);
+                        if ($mediaItem === null || !$mediaItem->isImage()) {
+                            $errors['featured_media_id'][] = 'L’image à la une sélectionnée est introuvable ou n’est pas une image.';
+                        } else {
+                            $meta['_featured_media_id'] = $featuredId;
+                        }
+                    } else {
+                        $meta['_featured_media_id'] = $featuredId;
+                    }
+                } else {
+                    $errors['featured_media_id'][] = 'Identifiant d’image à la une invalide.';
+                }
+            }
+
+            if (isset($input['thumbnail_url']) && is_string($input['thumbnail_url'])) {
+                $thumb = trim($input['thumbnail_url']);
+                $meta['_thumbnail_url'] = $thumb !== '' ? $thumb : null;
+            }
         }
 
         // 10. Taxonomy terms resolution
@@ -1107,6 +1149,19 @@ final class EntryService
         }
 
         return false;
+    }
+
+    private function syncEntryMediaUsage(Entry $entry): void
+    {
+        if ($this->mediaUsage === null) {
+            return;
+        }
+
+        try {
+            $this->mediaUsage->syncFromEntry($entry, $this->fields);
+        } catch (Throwable) {
+            // Gracefully ignore when media tables are absent in minimal content unit harnesses.
+        }
     }
 
     private function nowUtc(): string

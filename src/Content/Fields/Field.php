@@ -14,7 +14,7 @@ final readonly class Field
     public const NAME_PATTERN = '/^[a-z][a-z0-9_]{0,120}$/';
 
     /**
-     * All 12 supported Phase 6 field types.
+     * All 13 supported custom field types (12 from Phase 6 + `media` from Phase 7).
      *
      * @var list<string>
      */
@@ -31,12 +31,14 @@ final readonly class Field
         'datetime',
         'color',
         'entry',
+        'media',
     ];
 
     /**
      * @param array<string, string> $options Key => label options for `select` fields
      * @param list<string> $entryTypes Allowed content types for `entry` relation fields
      * @param list<string> $rules Extra `Prime\Validation\Validator` rules
+     * @param list<string> $mediaKinds Allowed media kinds (`image`, `document`, `audio`, `video`, `archive`) for `media` fields
      */
     public function __construct(
         public string $name,
@@ -52,6 +54,8 @@ final readonly class Field
         public ?float $step = null,
         public array $entryTypes = [],
         public array $rules = [],
+        public array $mediaKinds = [],
+        public bool $multiple = false,
     ) {
         if (preg_match(self::NAME_PATTERN, $name) !== 1) {
             throw new InvalidArgumentException(sprintf('Invalid custom field name [%s].', $name));

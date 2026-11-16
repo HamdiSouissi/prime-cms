@@ -40,6 +40,7 @@ final class User
         public readonly ?string $updatedAt,
         public readonly array $roles = [],
         public readonly array $capabilities = [],
+        public readonly ?int $avatarMediaId = null,
     ) {
     }
 

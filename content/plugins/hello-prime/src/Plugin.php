@@ -19,6 +19,7 @@ use Prime\Content\Taxonomy;
 use Prime\Content\TermRepository;
 use Prime\Editor\BlockDefinition;
 use Prime\Http\Router;
+use Prime\Media\Media;
 use Prime\Plugins\AbstractPlugin;
 use Prime\Plugins\PluginContext;
 use Prime\Security\HtmlSanitizer;
@@ -62,7 +63,7 @@ final class Plugin extends AbstractPlugin
             accent: 'violet',
             hierarchical: false,
             public: true,
-            supports: ['editor', 'excerpt', 'author', 'revisions', 'custom_fields'],
+            supports: ['editor', 'excerpt', 'author', 'revisions', 'custom_fields', 'thumbnail'],
             taxonomies: [self::TAX_SOURCE],
             menuPosition: 35,
             rewriteBase: 'temoignages',
@@ -103,6 +104,13 @@ final class Plugin extends AbstractPlugin
                     min: 1.0,
                     max: 5.0,
                     step: 1.0,
+                ),
+                new Field(
+                    name: 'author_photo',
+                    type: 'media',
+                    label: 'Photo du client',
+                    description: 'Portrait sélectionné depuis la médiathèque (optionnel).',
+                    mediaKinds: ['image'],
                 ),
                 new Field(
                     name: 'featured',
@@ -229,6 +237,13 @@ final class Plugin extends AbstractPlugin
         // 12. Register public front-office route (`GET /hello-prime`)
         $context->router()->frontGroup(static function (Router $r): void {
             $r->get('/hello-prime', [HelloPrimeController::class, 'publicPage'])->name('public');
+        });
+
+        // 13. Observe `media.uploaded` lifecycle event (Phase 7 example)
+        $context->hooks()->on('media.uploaded', static function (mixed $media) use ($context): void {
+            if ($media instanceof Media) {
+                $context->logger()->info(sprintf('Hello Prime : nouveau média détecté (#%d — %s)', $media->id, $media->originalName));
+            }
         });
     }
 

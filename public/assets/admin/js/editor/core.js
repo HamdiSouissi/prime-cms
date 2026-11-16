@@ -62,6 +62,7 @@ export class PrimeEditor {
     this.blocks = initialDoc.blocks;
     this.history = new HistoryStack(this.blocks, 100);
     this.dirty = false;
+    this.lockLost = false;
     this.historyTimer = null;
     this.dragSourceIndex = null;
     this.openMenuIndex = null;
@@ -214,7 +215,7 @@ export class PrimeEditor {
       const def = this.registry.get(block.type);
       wrapper.setAttribute('aria-label', `Bloc ${index + 1} : ${def ? def.title : block.type}`);
 
-      // Drag and drop handlers
+      // Drag and drop handlers (block reorder OR direct external image upload)
       wrapper.addEventListener('dragover', (e) => {
         e.preventDefault();
         wrapper.classList.add('is-drag-over');
@@ -225,8 +226,14 @@ export class PrimeEditor {
         wrapper.classList.remove('is-drag-over');
         if (this.dragSourceIndex !== null && this.dragSourceIndex !== index) {
           this.moveBlock(this.dragSourceIndex, index);
+          this.dragSourceIndex = null;
+          return;
         }
         this.dragSourceIndex = null;
+        const droppedFiles = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith('image/'));
+        if (droppedFiles.length > 0) {
+          void this.uploadAndInsertImageFiles(droppedFiles, index);
+        }
       });
 
       // Left gutter: "+" inserter & drag/actions handle
@@ -462,6 +469,13 @@ export class PrimeEditor {
       return;
     }
 
+    const imageFiles = Array.from(clipboard.files || []).filter((f) => f.type.startsWith('image/'));
+    if (imageFiles.length > 0) {
+      event.preventDefault();
+      void this.uploadAndInsertImageFiles(imageFiles, index);
+      return;
+    }
+
     const html = clipboard.getData('text/html');
     const plain = clipboard.getData('text/plain');
     const parsed = html ? parsePastedHtmlToBlocks(html) : parsePlainTextToBlocks(plain);
@@ -519,6 +533,60 @@ export class PrimeEditor {
     }
 
     this.afterMutation(plan.focusIndex, `Bloc ${def.title} inséré.`, false);
+  }
+
+  async uploadAndInsertImageFiles(files, afterIndex) {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+      || document.querySelector('input[name="_token"]')?.value
+      || '';
+    const uploaded = [];
+
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/admin/media/api/upload', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrf,
+          },
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok && data?.media) {
+          uploaded.push(data.media);
+        } else {
+          window.Prime?.toast?.(data?.message || `Échec du téléversement de ${file.name}.`, 'danger');
+        }
+      } catch {
+        window.Prime?.toast?.(`Erreur réseau lors du téléversement de ${file.name}.`, 'danger');
+      }
+    }
+
+    if (uploaded.length === 0) {
+      return;
+    }
+
+    const newBlocks = uploaded.map((m) =>
+      createDefaultBlock('image', {
+        id: generateBlockId(),
+        data: {
+          mediaId: Number(m.id),
+          url: m.url || '',
+          alt: m.alt || m.alt_text || m.title || m.original_name || m.original_filename || 'Image importée',
+          decorative: false,
+          caption: m.caption || '',
+          alignment: 'normal',
+        },
+      }),
+    );
+
+    const insertAt = Math.min(this.blocks.length, Math.max(0, afterIndex + 1));
+    this.blocks.splice(insertAt, 0, ...newBlocks);
+    this.afterMutation(insertAt, `${newBlocks.length} image(s) téléversée(s) et insérée(s).`);
+    window.Prime?.toast?.(`${newBlocks.length} image(s) ajoutée(s) depuis le presse-papiers.`, 'success');
   }
 
   moveBlock(fromIndex, toIndex) {
@@ -720,16 +788,14 @@ export class PrimeEditor {
 
   submitForm() {
     if (!this.form) {
-      return;
+      return false;
     }
     this.syncTextarea();
-    this.dirty = false;
-    const primaryBtn = this.form.querySelector('[data-prime-primary-save]');
-    if (primaryBtn instanceof HTMLButtonElement && !primaryBtn.disabled) {
-      primaryBtn.click();
-    } else {
-      this.form.requestSubmit();
+    const submitted = submitFormPreservingStatus(this.form, { lockLost: this.lockLost });
+    if (submitted) {
+      this.dirty = false;
     }
+    return submitted;
   }
 
   initAutosaveAndLocks() {
@@ -814,6 +880,7 @@ export class PrimeEditor {
   }
 
   handleLockLost(userName) {
+    this.lockLost = true;
     window.clearInterval(this.autosaveTimer);
     window.clearInterval(this.heartbeatTimer);
 
@@ -834,6 +901,40 @@ export class PrimeEditor {
 
     this.announce(`Attention : ${userName} a pris la main sur ce contenu. Enregistrement désactivé.`);
   }
+}
+
+/**
+ * Submit an editor form while strictly preserving the current entry status.
+ *
+ * Unlike clicking the primary CTA button (which carries `data-prime-submit-status="published"`
+ * on new entries or `"pending"` for contributors), `Ctrl/Cmd+S` submits the form directly
+ * without a submitter button so a draft stays a draft and a published entry updates in place.
+ *
+ * @param {HTMLFormElement | null | undefined} form
+ * @param {{ lockLost?: boolean }} [options]
+ * @returns {boolean} True when the form was submitted
+ */
+export function submitFormPreservingStatus(form, { lockLost = false } = {}) {
+  if (!form || lockLost) {
+    return false;
+  }
+
+  const saveButtons = Array.from(
+    form.querySelectorAll('[data-prime-primary-save], [data-prime-secondary-save]'),
+  );
+  if (saveButtons.length > 0 && saveButtons.every((btn) => Boolean(btn.disabled))) {
+    return false;
+  }
+
+  if (typeof form.requestSubmit === 'function') {
+    form.requestSubmit();
+  } else if (typeof form.submit === 'function') {
+    form.submit();
+  } else {
+    return false;
+  }
+
+  return true;
 }
 
 export function initPrimeEditor() {

@@ -6,6 +6,7 @@ namespace Prime\Admin;
 
 use Prime\Admin\Controller\ContentController;
 use Prime\Admin\Controller\DashboardController;
+use Prime\Admin\Controller\MediaController;
 use Prime\Admin\Controller\NoticeController;
 use Prime\Admin\Controller\PluginController;
 use Prime\Admin\Controller\ProfileController;
@@ -41,6 +42,11 @@ use Prime\Http\Router;
 use Prime\Http\Session;
 use Prime\Kernel\ServiceProvider;
 use Prime\Log\Logger;
+use Prime\Media\MediaConfig;
+use Prime\Media\MediaFolderRepository;
+use Prime\Media\MediaRepository;
+use Prime\Media\MediaUsageRepository;
+use Prime\Media\UploadService;
 use Prime\Plugins\PluginInstaller;
 use Prime\Plugins\PluginManager;
 use Prime\Security\Hasher;
@@ -83,6 +89,9 @@ final class AdminServiceProvider extends ServiceProvider
             $entries = $this->app->container()->has(EntryRepository::class)
                 ? $this->app->get(EntryRepository::class)
                 : null;
+            $media = $this->app->container()->has(MediaRepository::class)
+                ? $this->app->get(MediaRepository::class)
+                : null;
 
             return new AdminContext(
                 $this->app,
@@ -95,10 +104,15 @@ final class AdminServiceProvider extends ServiceProvider
                 $contentTypes instanceof ContentTypeRegistry ? $contentTypes : null,
                 $taxonomies instanceof TaxonomyRegistry ? $taxonomies : null,
                 $entries instanceof EntryRepository ? $entries : null,
+                $media instanceof MediaRepository ? $media : null,
             );
         });
 
         $container->singleton(ContentController::class, function (): ContentController {
+            $media = $this->app->container()->has(MediaRepository::class)
+                ? $this->app->get(MediaRepository::class)
+                : null;
+
             return new ContentController(
                 app: $this->app,
                 view: $this->app->get(View::class),
@@ -116,6 +130,7 @@ final class AdminServiceProvider extends ServiceProvider
                 revisions: $this->app->get(RevisionRepository::class),
                 locks: $this->app->get(EntryLockRepository::class),
                 users: $this->app->get(UserRepository::class),
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
 
@@ -125,6 +140,19 @@ final class AdminServiceProvider extends ServiceProvider
                 context: $this->app->get(AdminContext::class),
                 taxonomies: $this->app->get(TaxonomyRegistry::class),
                 terms: $this->app->get(TermRepository::class),
+            );
+        });
+
+        $container->singleton(MediaController::class, function (): MediaController {
+            return new MediaController(
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                auth: $this->app->get(Auth::class),
+                config: $this->app->get(MediaConfig::class),
+                media: $this->app->get(MediaRepository::class),
+                folders: $this->app->get(MediaFolderRepository::class),
+                usages: $this->app->get(MediaUsageRepository::class),
+                uploader: $this->app->get(UploadService::class),
             );
         });
 
@@ -160,6 +188,7 @@ final class AdminServiceProvider extends ServiceProvider
             $entries = $this->app->container()->has(EntryRepository::class) ? $this->app->get(EntryRepository::class) : null;
             $users = $this->app->container()->has(UserRepository::class) ? $this->app->get(UserRepository::class) : null;
             $types = $this->app->container()->has(ContentTypeRegistry::class) ? $this->app->get(ContentTypeRegistry::class) : null;
+            $media = $this->app->container()->has(MediaRepository::class) ? $this->app->get(MediaRepository::class) : null;
 
             return new DashboardController(
                 app: $this->app,
@@ -172,10 +201,13 @@ final class AdminServiceProvider extends ServiceProvider
                 entries: $entries instanceof EntryRepository ? $entries : null,
                 users: $users instanceof UserRepository ? $users : null,
                 types: $types instanceof ContentTypeRegistry ? $types : null,
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
 
         $container->singleton(UserController::class, function (): UserController {
+            $media = $this->app->container()->has(MediaRepository::class) ? $this->app->get(MediaRepository::class) : null;
+
             return new UserController(
                 app: $this->app,
                 view: $this->app->get(View::class),
@@ -188,6 +220,7 @@ final class AdminServiceProvider extends ServiceProvider
                 twoFactor: $this->app->get(TwoFactorService::class),
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
 
@@ -202,6 +235,8 @@ final class AdminServiceProvider extends ServiceProvider
         });
 
         $container->singleton(ProfileController::class, function (): ProfileController {
+            $media = $this->app->container()->has(MediaRepository::class) ? $this->app->get(MediaRepository::class) : null;
+
             return new ProfileController(
                 app: $this->app,
                 view: $this->app->get(View::class),
@@ -214,6 +249,7 @@ final class AdminServiceProvider extends ServiceProvider
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
                 hasher: $this->app->get(Hasher::class),
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
     }
@@ -426,6 +462,47 @@ final class AdminServiceProvider extends ServiceProvider
                     ->middleware('can:content.delete')
                     ->name('taxonomies.delete');
 
+                // Media Library & JSON API (Phase 7)
+                $r->get('/media', [MediaController::class, 'index'])
+                    ->middleware('can:media.view')
+                    ->name('media.index');
+                $r->get('/media/api/items', [MediaController::class, 'apiList'])
+                    ->middleware('can:media.view')
+                    ->name('media.api.items');
+                $r->get('/media/api/items/{id:\d+}', [MediaController::class, 'apiShow'])
+                    ->middleware('can:media.view')
+                    ->name('media.api.show');
+                $r->post('/media/api/upload', [MediaController::class, 'apiUpload'])
+                    ->middleware('can:media.upload')
+                    ->name('media.api.upload');
+                $r->post('/media/api/items/{id:\d+}', [MediaController::class, 'apiUpdate'])
+                    ->middleware('can:media.view')
+                    ->name('media.api.update');
+                $r->post('/media/api/items/{id:\d+}/regenerate', [MediaController::class, 'apiRegenerate'])
+                    ->middleware('can:media.view')
+                    ->name('media.api.regenerate');
+                $r->post('/media/api/items/{id:\d+}/replace', [MediaController::class, 'apiReplace'])
+                    ->middleware('can:media.view')
+                    ->name('media.api.replace');
+                $r->post('/media/api/items/{id:\d+}/delete', [MediaController::class, 'apiDelete'])
+                    ->middleware('can:media.view')
+                    ->name('media.api.delete');
+                $r->post('/media/api/bulk', [MediaController::class, 'apiBulk'])
+                    ->middleware('can:media.view')
+                    ->name('media.api.bulk');
+                $r->get('/media/api/folders', [MediaController::class, 'apiFolders'])
+                    ->middleware('can:media.view')
+                    ->name('media.api.folders');
+                $r->post('/media/api/folders', [MediaController::class, 'apiCreateFolder'])
+                    ->middleware('can:media.upload')
+                    ->name('media.api.folders.create');
+                $r->post('/media/api/folders/{id:\d+}', [MediaController::class, 'apiUpdateFolder'])
+                    ->middleware('can:media.upload')
+                    ->name('media.api.folders.update');
+                $r->post('/media/api/folders/{id:\d+}/delete', [MediaController::class, 'apiDeleteFolder'])
+                    ->middleware('can:media.upload')
+                    ->name('media.api.folders.delete');
+
                 // Backwards-compatible redirects from Phase 2 placeholder content routes
                 $r->get('/pages', static fn (): Response => Response::redirect('/admin/content/page'))
                     ->middleware('can:content.view')
@@ -435,7 +512,7 @@ final class AdminServiceProvider extends ServiceProvider
                     ->name('legacy.articles');
 
                 // Upcoming CMS module placeholders (capability verified in DashboardController::module)
-                $r->get('/{module:media|appearance|settings}', [DashboardController::class, 'module'])
+                $r->get('/{module:appearance|settings}', [DashboardController::class, 'module'])
                     ->name('module');
                 $r->get('/{module:appearance|settings}/{section:[a-z0-9-]+}', [DashboardController::class, 'module'])
                     ->name('module.section');

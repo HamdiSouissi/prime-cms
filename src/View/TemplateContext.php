@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Prime\View;
 
 use Prime\Kernel\Application;
+use Prime\Media\Media;
+use Prime\Media\MediaHelper;
 use Prime\Security\Csrf;
 use Prime\View\Exception\ViewException;
 use Stringable;
@@ -160,6 +162,34 @@ final class TemplateContext
         $csrf = Application::getInstance()->get(Csrf::class);
 
         return $csrf->field();
+    }
+
+    /**
+     * Resolve a media URL (or variant URL) from a Media entity or ID.
+     */
+    public function mediaUrl(int|Media|null $media, ?string $variant = null, ?string $format = null): ?string
+    {
+        return MediaHelper::url($media, $variant, $format);
+    }
+
+    /**
+     * Build a responsive `srcset` attribute string for an image media.
+     *
+     * @param 'original'|'webp'|null $format
+     */
+    public function mediaSrcset(int|Media|null $media, ?string $format = null): string
+    {
+        return MediaHelper::srcset($media, $format);
+    }
+
+    /**
+     * Render a responsive `<picture>` / `<img>` HTML tag for an image media.
+     *
+     * @param array<string, mixed> $attrs
+     */
+    public function mediaImage(int|Media|null $media, array $attrs = []): string
+    {
+        return MediaHelper::image($media, $attrs);
     }
 
     /**

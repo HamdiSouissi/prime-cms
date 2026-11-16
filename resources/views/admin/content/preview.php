@@ -54,6 +54,13 @@ declare(strict_types=1);
             <?php endif; ?>
         </div>
 
+        <?php if ($entry->featuredMediaId() !== null): ?>
+            <?php $heroImg = $this->mediaImage($entry->featuredMediaId(), ['variant' => 'large', 'sizes' => '(max-width: 900px) 100vw, 820px', 'class' => 'pc-preview-hero']); ?>
+            <?php if ($heroImg !== ''): ?>
+                <figure class="pc-block pc-block--image" style="margin:0 0 24px;"><?= $this->raw($heroImg) ?></figure>
+            <?php endif; ?>
+        <?php endif; ?>
+
         <div class="pc-prose">
             <?= $this->raw($renderedHtml) ?>
         </div>

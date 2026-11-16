@@ -38,6 +38,38 @@ ob_start();
 
     <?php ob_start(); ?>
     <div class="pc-stack pc-stack--md">
+        <?php if (!empty($canPickAvatar)): ?>
+            <div class="pc-field">
+                <span class="pc-field__label">Photo de profil (avatar)</span>
+                <div
+                    class="pc-media-field"
+                    data-prime-media-field
+                    data-prime-media-multiple="0"
+                    data-prime-media-kinds="image"
+                    data-prime-media-title="Choisir un avatar"
+                >
+                    <script type="application/json" data-prime-media-initial><?= $this->raw((string) ($avatarInitialJson ?? '[]')) ?></script>
+                    <input
+                        type="hidden"
+                        name="avatar_media_id"
+                        value="<?= $this->e($profileUser->avatarMediaId !== null ? (string) $profileUser->avatarMediaId : '') ?>"
+                        data-prime-media-input
+                    >
+                    <div class="pc-media-field__preview" data-prime-media-preview hidden></div>
+                    <div class="pc-media-field__buttons">
+                        <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-choose>
+                            <?= $this->raw($this->icon('image', 14)) ?>
+                            <span data-prime-media-choose-label>Choisir une photo</span>
+                        </button>
+                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear hidden>Retirer l’avatar</button>
+                    </div>
+                </div>
+                <?php if (isset($infoErrors['avatar_media_id'])): ?>
+                    <span class="pc-field__error"><?= $this->e($infoErrors['avatar_media_id']) ?></span>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'profile-display-name',
             'name' => 'display_name',

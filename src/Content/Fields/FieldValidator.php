@@ -53,13 +53,29 @@ final class FieldValidator
                 continue;
             }
 
-            $strVal = is_scalar($raw) ? trim((string) $raw) : '';
-            if ($strVal === '') {
-                if ($field->required) {
-                    $errors['fields.' . $name][] = sprintf('Le champ « %s » est obligatoire.', $field->label);
+            // `media` fields accept scalar ID, CSV, JSON array, or PHP array of IDs
+            if ($field->type === 'media' && is_array($raw)) {
+                $raw = array_values(array_filter(
+                    $raw,
+                    static fn (mixed $v): bool => is_scalar($v) && trim((string) $v) !== '',
+                ));
+                if ($raw === []) {
+                    if ($field->required) {
+                        $errors['fields.' . $name][] = sprintf('Le champ « %s » est obligatoire.', $field->label);
+                    }
+                    $values[$name] = $field->multiple ? [] : null;
+                    continue;
                 }
-                $values[$name] = null;
-                continue;
+                $strVal = implode(',', array_map(static fn (mixed $v): string => trim((string) $v), $raw));
+            } else {
+                $strVal = is_scalar($raw) ? trim((string) $raw) : '';
+                if ($strVal === '') {
+                    if ($field->required) {
+                        $errors['fields.' . $name][] = sprintf('Le champ « %s » est obligatoire.', $field->label);
+                    }
+                    $values[$name] = $field->type === 'media' && $field->multiple ? [] : null;
+                    continue;
+                }
             }
 
             // Build Validator rules for compatible types
@@ -180,6 +196,62 @@ final class FieldValidator
                         }
                     }
                     $values[$name] = $entryId;
+                    break;
+
+                case 'media':
+                    $rawIds = [];
+                    if (is_array($raw)) {
+                        $rawIds = $raw;
+                    } elseif (str_starts_with($strVal, '[')) {
+                        $decodedIds = json_decode($strVal, true);
+                        $rawIds = is_array($decodedIds) ? $decodedIds : [];
+                    } else {
+                        $rawIds = array_values(array_filter(
+                            array_map('trim', explode(',', $strVal)),
+                            static fn (string $s): bool => $s !== '',
+                        ));
+                    }
+
+                    $parsedMediaIds = [];
+                    $invalidMedia = false;
+                    foreach ($rawIds as $candidateId) {
+                        $idStr = is_scalar($candidateId) ? trim((string) $candidateId) : '';
+                        if ($idStr === '' || !ctype_digit($idStr) || (int) $idStr <= 0) {
+                            $invalidMedia = true;
+                            break;
+                        }
+                        $parsedMediaIds[] = (int) $idStr;
+                    }
+                    $parsedMediaIds = array_values(array_unique($parsedMediaIds));
+
+                    if ($invalidMedia || $parsedMediaIds === []) {
+                        $errors['fields.' . $name][] = sprintf(
+                            'Le champ « %s » doit référencer un média valide.',
+                            $field->label,
+                        );
+                        break;
+                    }
+
+                    if (!$field->multiple) {
+                        $parsedMediaIds = [$parsedMediaIds[0]];
+                    }
+
+                    if ($this->db !== null) {
+                        $qb = $this->db->table('media')->whereIn('id', $parsedMediaIds);
+                        if ($field->mediaKinds !== []) {
+                            $qb->whereIn('kind', $field->mediaKinds);
+                        }
+                        $foundCount = $qb->count();
+                        if ($foundCount !== count($parsedMediaIds)) {
+                            $errors['fields.' . $name][] = sprintf(
+                                'Le média sélectionné pour « %s » est introuvable ou d’un type non autorisé.',
+                                $field->label,
+                            );
+                            break;
+                        }
+                    }
+
+                    $values[$name] = $field->multiple ? $parsedMediaIds : $parsedMediaIds[0];
                     break;
             }
         }

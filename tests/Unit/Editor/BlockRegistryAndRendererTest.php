@@ -13,7 +13,7 @@ use Prime\Security\HtmlSanitizer;
 
 final class BlockRegistryAndRendererTest extends TestCase
 {
-    public function testRegistersAllElevenCoreBlocks(): void
+    public function testRegistersAllCoreBlocks(): void
     {
         $registry = new BlockRegistry();
         $expected = [
@@ -28,9 +28,13 @@ final class BlockRegistryAndRendererTest extends TestCase
             'table',
             'callout',
             'html',
+            'gallery',
+            'video',
+            'audio',
+            'file',
         ];
 
-        $this->assertCount(11, $registry->all());
+        $this->assertCount(15, $registry->all());
         foreach ($expected as $type) {
             $this->assertTrue($registry->has($type), "Missing core block [{$type}].");
         }

@@ -7,11 +7,13 @@ namespace Prime\Editor;
 use InvalidArgumentException;
 use Prime\Auth\User;
 use Prime\Hooks\Hooks;
+use Prime\Media\MediaHelper;
+use Prime\Media\MediaRepository;
 use Prime\Security\HtmlSanitizer;
 use Prime\Support\Str;
 
 /**
- * Registry of all Prime Editor blocks (11 core blocks + plugin extensions via `editor.blocks`).
+ * Registry of all Prime Editor blocks (15 core blocks + plugin extensions via `editor.blocks`).
  */
 final class BlockRegistry
 {
@@ -29,6 +31,7 @@ final class BlockRegistry
 
     public function __construct(
         private readonly ?Hooks $hooks = null,
+        private readonly ?MediaRepository $media = null,
     ) {
         $this->registerCoreBlocks();
     }
@@ -469,26 +472,42 @@ final class BlockRegistry
             keywords: ['citation', 'quote', 'blockquote'],
         ));
 
-        // 5. Image (URL, required alt unless decorative, caption, normal/wide/full)
+        // 5. Image (Media Library ID or URL, required alt unless decorative, caption, normal/wide/full)
+        $mediaRepo = $this->media;
         $this->register(new BlockDefinition(
             type: 'image',
             title: 'Image',
-            description: 'Image via URL avec texte alternatif accessible et légende.',
+            description: 'Image issue de la médiathèque ou via URL, avec texte alternatif accessible et légende.',
             icon: 'image',
             category: 'media',
-            validator: static function (array $data, HtmlSanitizer $sanitizer): array {
+            validator: static function (array $data, HtmlSanitizer $sanitizer) use ($mediaRepo): array {
                 $errors = [];
+                $mediaId = is_numeric($data['mediaId'] ?? null) && (int) $data['mediaId'] > 0
+                    ? (int) $data['mediaId']
+                    : null;
+
+                $resolvedMedia = $mediaId !== null ? MediaHelper::resolve($mediaId, $mediaRepo) : null;
+
                 $rawUrl = is_string($data['url'] ?? null) ? trim($data['url']) : '';
+                if ($rawUrl === '' && $resolvedMedia !== null) {
+                    $rawUrl = $resolvedMedia->url();
+                }
+
                 $safeUrl = $rawUrl !== '' ? $sanitizer->sanitizeResourceUrl($rawUrl) : null;
 
-                if ($rawUrl === '') {
+                if ($mediaId === null && $rawUrl === '') {
                     $errors[] = 'L\'URL de l\'image est obligatoire.';
-                } elseif ($safeUrl === null) {
+                } elseif ($rawUrl !== '' && $safeUrl === null) {
                     $errors[] = 'L\'URL de l\'image doit utiliser http(s) ou un chemin relatif sûr.';
+                } elseif ($mediaId !== null && $resolvedMedia === null && $safeUrl === null) {
+                    $errors[] = 'Le média sélectionné est introuvable.';
                 }
 
                 $decorative = (bool) ($data['decorative'] ?? false);
                 $alt = is_string($data['alt'] ?? null) ? trim($data['alt']) : '';
+                if (!$decorative && $alt === '' && $resolvedMedia !== null && $resolvedMedia->alt !== '') {
+                    $alt = $resolvedMedia->alt;
+                }
 
                 if (!$decorative && $alt === '') {
                     $errors[] = 'Le texte alternatif (alt) est obligatoire sauf si l\'image est marquée comme décorative.';
@@ -501,22 +520,27 @@ final class BlockRegistry
                     $alignment = 'normal';
                 }
 
+                $normalized = [
+                    'url' => $safeUrl ?? '',
+                    'alt' => $decorative ? '' : $alt,
+                    'decorative' => $decorative,
+                    'caption' => $caption,
+                    'alignment' => $alignment,
+                ];
+                if ($mediaId !== null) {
+                    $normalized['mediaId'] = $mediaId;
+                }
+
                 return [
-                    'data' => [
-                        'url' => $safeUrl ?? '',
-                        'alt' => $decorative ? '' : $alt,
-                        'decorative' => $decorative,
-                        'caption' => $caption,
-                        'alignment' => $alignment,
-                    ],
+                    'data' => $normalized,
                     'errors' => $errors,
                 ];
             },
-            renderer: static function (array $data, HtmlSanitizer $sanitizer, array $context): string {
-                $url = $sanitizer->sanitizeResourceUrl((string) ($data['url'] ?? ''));
-                if ($url === null || $url === '') {
-                    return '';
-                }
+            renderer: static function (array $data, HtmlSanitizer $sanitizer, array $context) use ($mediaRepo): string {
+                $mediaId = is_numeric($data['mediaId'] ?? null) && (int) $data['mediaId'] > 0
+                    ? (int) $data['mediaId']
+                    : null;
+                $resolvedMedia = $mediaId !== null ? MediaHelper::resolve($mediaId, $mediaRepo) : null;
 
                 $decorative = (bool) ($data['decorative'] ?? false);
                 $alt = $decorative ? '' : (string) ($data['alt'] ?? '');
@@ -525,19 +549,41 @@ final class BlockRegistry
                     : 'normal';
                 $caption = trim($sanitizer->sanitizeInline((string) ($data['caption'] ?? '')));
 
-                $imgAttrs = sprintf(
-                    'src="%s" alt="%s" loading="lazy"',
-                    htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    htmlspecialchars($alt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                );
-                if ($decorative) {
-                    $imgAttrs .= ' aria-hidden="true"';
+                $sizes = match ($alignment) {
+                    'full' => '100vw',
+                    'wide' => '(max-width: 1200px) 100vw, 1120px',
+                    default => '(max-width: 820px) 100vw, 780px',
+                };
+
+                if ($resolvedMedia !== null && $resolvedMedia->isImage()) {
+                    $innerImg = MediaHelper::image($resolvedMedia, [
+                        'variant' => $alignment === 'full' ? null : 'large',
+                        'sizes' => $sizes,
+                        'alt' => $alt,
+                        'decorative' => $decorative,
+                        'loading' => 'lazy',
+                        'decoding' => 'async',
+                    ], $mediaRepo);
+                } else {
+                    $url = $sanitizer->sanitizeResourceUrl((string) ($data['url'] ?? ''));
+                    if ($url === null || $url === '') {
+                        return '';
+                    }
+                    $imgAttrs = sprintf(
+                        'src="%s" alt="%s" loading="lazy"',
+                        htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                        htmlspecialchars($alt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                    );
+                    if ($decorative) {
+                        $imgAttrs .= ' aria-hidden="true"';
+                    }
+                    $innerImg = '<img ' . $imgAttrs . '>';
                 }
 
                 $html = sprintf(
-                    '<figure class="pc-block pc-block--image pc-block--align-%s"><img %s>',
+                    '<figure class="pc-block pc-block--image pc-block--align-%s">%s',
                     $alignment,
-                    $imgAttrs,
+                    $innerImg,
                 );
                 if ($caption !== '') {
                     $html .= '<figcaption>' . $caption . '</figcaption>';
@@ -897,6 +943,436 @@ final class BlockRegistry
             textExtractor: static fn (array $data): string => Str::plainText((string) ($data['html'] ?? '')),
             requiresCapability: 'content.unfiltered_html',
             keywords: ['html', 'brut', 'custom', 'raw'],
+        ));
+
+        // 12. Gallery (multi-image grid from Media Library)
+        $this->register(new BlockDefinition(
+            type: 'gallery',
+            title: 'Galerie',
+            description: 'Grille d\'images sélectionnées depuis la médiathèque (2 à 4 colonnes).',
+            icon: 'images',
+            category: 'media',
+            validator: static function (array $data, HtmlSanitizer $sanitizer) use ($mediaRepo): array {
+                $errors = [];
+                $columns = is_numeric($data['columns'] ?? null) ? (int) $data['columns'] : 3;
+                if (!in_array($columns, [2, 3, 4], true)) {
+                    $errors[] = 'Le nombre de colonnes de la galerie doit être 2, 3 ou 4.';
+                    $columns = 3;
+                }
+
+                $rawItems = $data['items'] ?? [];
+                if (!is_array($rawItems) || $rawItems === []) {
+                    $errors[] = 'La galerie doit contenir au moins une image.';
+                    $rawItems = [];
+                }
+
+                $items = [];
+                foreach (array_slice($rawItems, 0, 50) as $idx => $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    $mId = is_numeric($item['mediaId'] ?? null) && (int) $item['mediaId'] > 0
+                        ? (int) $item['mediaId']
+                        : null;
+                    $resolved = $mId !== null ? MediaHelper::resolve($mId, $mediaRepo) : null;
+                    $rawUrl = is_string($item['url'] ?? null) ? trim($item['url']) : '';
+                    if ($rawUrl === '' && $resolved !== null) {
+                        $rawUrl = $resolved->url();
+                    }
+                    $safeUrl = $rawUrl !== '' ? $sanitizer->sanitizeResourceUrl($rawUrl) : null;
+                    if ($safeUrl === null && $resolved === null) {
+                        $errors[] = sprintf('Image #%d de la galerie : source invalide.', $idx + 1);
+                        continue;
+                    }
+
+                    $alt = is_string($item['alt'] ?? null) ? trim($item['alt']) : '';
+                    if ($alt === '' && $resolved !== null) {
+                        $alt = $resolved->alt;
+                    }
+                    $itemCaption = is_string($item['caption'] ?? null) ? $sanitizer->sanitizeInline($item['caption']) : '';
+
+                    $normalizedItem = [
+                        'url' => $safeUrl ?? $resolved->url(),
+                        'alt' => $alt,
+                        'caption' => $itemCaption,
+                    ];
+                    if ($mId !== null) {
+                        $normalizedItem['mediaId'] = $mId;
+                    }
+                    $items[] = $normalizedItem;
+                }
+
+                $caption = is_string($data['caption'] ?? null) ? $sanitizer->sanitizeInline($data['caption']) : '';
+
+                return [
+                    'data' => [
+                        'columns' => $columns,
+                        'caption' => $caption,
+                        'items' => $items,
+                    ],
+                    'errors' => $errors,
+                ];
+            },
+            renderer: static function (array $data, HtmlSanitizer $sanitizer, array $context) use ($mediaRepo): string {
+                $items = is_array($data['items'] ?? null) ? $data['items'] : [];
+                if ($items === []) {
+                    return '';
+                }
+                $columns = in_array((int) ($data['columns'] ?? 3), [2, 3, 4], true) ? (int) ($data['columns'] ?? 3) : 3;
+                $sizes = match ($columns) {
+                    2 => '(max-width: 720px) 100vw, 50vw',
+                    4 => '(max-width: 720px) 50vw, 25vw',
+                    default => '(max-width: 720px) 50vw, 33vw',
+                };
+
+                $html = sprintf('<figure class="pc-block pc-block--gallery pc-gallery--cols-%d"><div class="pc-gallery__grid">', $columns);
+                foreach ($items as $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    $mId = is_numeric($item['mediaId'] ?? null) && (int) $item['mediaId'] > 0
+                        ? (int) $item['mediaId']
+                        : null;
+                    $resolved = $mId !== null ? MediaHelper::resolve($mId, $mediaRepo) : null;
+                    $alt = (string) ($item['alt'] ?? '');
+                    $itemCaption = trim($sanitizer->sanitizeInline((string) ($item['caption'] ?? '')));
+
+                    if ($resolved !== null && $resolved->isImage()) {
+                        $imgHtml = MediaHelper::image($resolved, [
+                            'variant' => 'medium',
+                            'sizes' => $sizes,
+                            'alt' => $alt,
+                            'loading' => 'lazy',
+                            'decoding' => 'async',
+                        ], $mediaRepo);
+                    } else {
+                        $safeUrl = $sanitizer->sanitizeResourceUrl((string) ($item['url'] ?? ''));
+                        if ($safeUrl === null || $safeUrl === '') {
+                            continue;
+                        }
+                        $imgHtml = sprintf(
+                            '<img src="%s" alt="%s" loading="lazy" decoding="async">',
+                            htmlspecialchars($safeUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                            htmlspecialchars($alt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                        );
+                    }
+
+                    $html .= '<figure class="pc-gallery__item">' . $imgHtml;
+                    if ($itemCaption !== '') {
+                        $html .= '<figcaption>' . $itemCaption . '</figcaption>';
+                    }
+                    $html .= '</figure>';
+                }
+                $html .= '</div>';
+
+                $caption = trim($sanitizer->sanitizeInline((string) ($data['caption'] ?? '')));
+                if ($caption !== '') {
+                    $html .= '<figcaption class="pc-gallery__caption">' . $caption . '</figcaption>';
+                }
+
+                return $html . '</figure>';
+            },
+            textExtractor: static function (array $data): string {
+                $parts = [];
+                $items = is_array($data['items'] ?? null) ? $data['items'] : [];
+                foreach ($items as $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    $alt = trim((string) ($item['alt'] ?? ''));
+                    $cap = Str::plainText((string) ($item['caption'] ?? ''));
+                    if ($alt !== '') {
+                        $parts[] = $alt;
+                    }
+                    if ($cap !== '') {
+                        $parts[] = $cap;
+                    }
+                }
+                $caption = Str::plainText((string) ($data['caption'] ?? ''));
+                if ($caption !== '') {
+                    $parts[] = $caption;
+                }
+
+                return implode(' ', $parts);
+            },
+            keywords: ['galerie', 'gallery', 'photos', 'grille', 'images'],
+        ));
+
+        // 13. Video (self-hosted HTML5 video from Media Library)
+        $this->register(new BlockDefinition(
+            type: 'video',
+            title: 'Vidéo (fichier local)',
+            description: 'Lecteur vidéo HTML5 hébergé dans votre médiathèque (MP4, WebM).',
+            icon: 'video',
+            category: 'media',
+            validator: static function (array $data, HtmlSanitizer $sanitizer) use ($mediaRepo): array {
+                $errors = [];
+                $mediaId = is_numeric($data['mediaId'] ?? null) && (int) $data['mediaId'] > 0
+                    ? (int) $data['mediaId']
+                    : null;
+                $resolved = $mediaId !== null ? MediaHelper::resolve($mediaId, $mediaRepo) : null;
+
+                $rawUrl = is_string($data['url'] ?? null) ? trim($data['url']) : '';
+                if ($rawUrl === '' && $resolved !== null) {
+                    $rawUrl = $resolved->url();
+                }
+                $safeUrl = $rawUrl !== '' ? $sanitizer->sanitizeResourceUrl($rawUrl) : null;
+                if ($safeUrl === null) {
+                    $errors[] = 'La source vidéo est obligatoire et doit être valide.';
+                }
+
+                $posterMediaId = is_numeric($data['posterMediaId'] ?? null) && (int) $data['posterMediaId'] > 0
+                    ? (int) $data['posterMediaId']
+                    : null;
+                $resolvedPoster = $posterMediaId !== null ? MediaHelper::resolve($posterMediaId, $mediaRepo) : null;
+                $rawPoster = is_string($data['posterUrl'] ?? null) ? trim($data['posterUrl']) : '';
+                if ($rawPoster === '' && $resolvedPoster !== null) {
+                    $rawPoster = $resolvedPoster->variantUrl('large');
+                }
+                $safePoster = $rawPoster !== '' ? $sanitizer->sanitizeResourceUrl($rawPoster) : '';
+
+                $mimeType = is_string($data['mimeType'] ?? null) && trim($data['mimeType']) !== ''
+                    ? trim($data['mimeType'])
+                    : ($resolved !== null ? $resolved->mimeType : '');
+                $caption = is_string($data['caption'] ?? null) ? $sanitizer->sanitizeInline($data['caption']) : '';
+
+                $normalized = [
+                    'url' => $safeUrl ?? '',
+                    'mimeType' => $mimeType,
+                    'posterUrl' => $safePoster ?? '',
+                    'caption' => $caption,
+                    'controls' => array_key_exists('controls', $data) ? (bool) $data['controls'] : true,
+                    'muted' => (bool) ($data['muted'] ?? false),
+                    'loop' => (bool) ($data['loop'] ?? false),
+                ];
+                if ($mediaId !== null) {
+                    $normalized['mediaId'] = $mediaId;
+                }
+                if ($posterMediaId !== null) {
+                    $normalized['posterMediaId'] = $posterMediaId;
+                }
+
+                return ['data' => $normalized, 'errors' => $errors];
+            },
+            renderer: static function (array $data, HtmlSanitizer $sanitizer, array $context) use ($mediaRepo): string {
+                $mediaId = is_numeric($data['mediaId'] ?? null) && (int) $data['mediaId'] > 0 ? (int) $data['mediaId'] : null;
+                $resolved = $mediaId !== null ? MediaHelper::resolve($mediaId, $mediaRepo) : null;
+                $url = $resolved !== null ? $resolved->url() : $sanitizer->sanitizeResourceUrl((string) ($data['url'] ?? ''));
+                if ($url === null || $url === '') {
+                    return '';
+                }
+
+                $posterMediaId = is_numeric($data['posterMediaId'] ?? null) && (int) $data['posterMediaId'] > 0
+                    ? (int) $data['posterMediaId']
+                    : null;
+                $resolvedPoster = $posterMediaId !== null ? MediaHelper::resolve($posterMediaId, $mediaRepo) : null;
+                $posterUrl = $resolvedPoster !== null
+                    ? $resolvedPoster->variantUrl('large')
+                    : ($sanitizer->sanitizeResourceUrl((string) ($data['posterUrl'] ?? '')) ?? '');
+
+                $attrs = ['preload="metadata"'];
+                if (!array_key_exists('controls', $data) || (bool) $data['controls']) {
+                    $attrs[] = 'controls';
+                }
+                if (!empty($data['muted'])) {
+                    $attrs[] = 'muted';
+                }
+                if (!empty($data['loop'])) {
+                    $attrs[] = 'loop';
+                }
+                if ($posterUrl !== '') {
+                    $attrs[] = 'poster="' . htmlspecialchars($posterUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"';
+                }
+
+                $mimeType = $resolved !== null ? $resolved->mimeType : trim((string) ($data['mimeType'] ?? ''));
+                $typeAttr = $mimeType !== '' ? ' type="' . htmlspecialchars($mimeType, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"' : '';
+                $caption = trim($sanitizer->sanitizeInline((string) ($data['caption'] ?? '')));
+
+                $html = sprintf(
+                    '<figure class="pc-block pc-block--video"><video %s><source src="%s"%s></video>',
+                    implode(' ', $attrs),
+                    htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                    $typeAttr,
+                );
+                if ($caption !== '') {
+                    $html .= '<figcaption>' . $caption . '</figcaption>';
+                }
+
+                return $html . '</figure>';
+            },
+            textExtractor: static fn (array $data): string => Str::plainText((string) ($data['caption'] ?? '')),
+            keywords: ['video', 'mp4', 'webm', 'media', 'film'],
+        ));
+
+        // 14. Audio (self-hosted HTML5 audio from Media Library)
+        $this->register(new BlockDefinition(
+            type: 'audio',
+            title: 'Audio',
+            description: 'Lecteur audio HTML5 (MP3, OGG, WAV, M4A) depuis la médiathèque.',
+            icon: 'music',
+            category: 'media',
+            validator: static function (array $data, HtmlSanitizer $sanitizer) use ($mediaRepo): array {
+                $errors = [];
+                $mediaId = is_numeric($data['mediaId'] ?? null) && (int) $data['mediaId'] > 0
+                    ? (int) $data['mediaId']
+                    : null;
+                $resolved = $mediaId !== null ? MediaHelper::resolve($mediaId, $mediaRepo) : null;
+
+                $rawUrl = is_string($data['url'] ?? null) ? trim($data['url']) : '';
+                if ($rawUrl === '' && $resolved !== null) {
+                    $rawUrl = $resolved->url();
+                }
+                $safeUrl = $rawUrl !== '' ? $sanitizer->sanitizeResourceUrl($rawUrl) : null;
+                if ($safeUrl === null) {
+                    $errors[] = 'La source audio est obligatoire et doit être valide.';
+                }
+
+                $title = is_string($data['title'] ?? null) ? trim($data['title']) : '';
+                if ($title === '' && $resolved !== null) {
+                    $title = $resolved->title !== '' ? $resolved->title : $resolved->originalName;
+                }
+                $caption = is_string($data['caption'] ?? null) ? $sanitizer->sanitizeInline($data['caption']) : '';
+
+                $normalized = [
+                    'url' => $safeUrl ?? '',
+                    'title' => mb_substr($title, 0, 255),
+                    'caption' => $caption,
+                ];
+                if ($mediaId !== null) {
+                    $normalized['mediaId'] = $mediaId;
+                }
+
+                return ['data' => $normalized, 'errors' => $errors];
+            },
+            renderer: static function (array $data, HtmlSanitizer $sanitizer, array $context) use ($mediaRepo): string {
+                $mediaId = is_numeric($data['mediaId'] ?? null) && (int) $data['mediaId'] > 0 ? (int) $data['mediaId'] : null;
+                $resolved = $mediaId !== null ? MediaHelper::resolve($mediaId, $mediaRepo) : null;
+                $url = $resolved !== null ? $resolved->url() : $sanitizer->sanitizeResourceUrl((string) ($data['url'] ?? ''));
+                if ($url === null || $url === '') {
+                    return '';
+                }
+
+                $title = trim((string) ($data['title'] ?? ''));
+                $caption = trim($sanitizer->sanitizeInline((string) ($data['caption'] ?? '')));
+
+                $html = '<figure class="pc-block pc-block--audio">';
+                if ($title !== '') {
+                    $html .= '<p class="pc-audio__title">' . htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
+                }
+                $html .= sprintf(
+                    '<audio controls preload="metadata" src="%s"></audio>',
+                    htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                );
+                if ($caption !== '') {
+                    $html .= '<figcaption>' . $caption . '</figcaption>';
+                }
+
+                return $html . '</figure>';
+            },
+            textExtractor: static function (array $data): string {
+                $title = trim((string) ($data['title'] ?? ''));
+                $cap = Str::plainText((string) ($data['caption'] ?? ''));
+
+                return trim($title . ($title !== '' && $cap !== '' ? ' — ' : '') . $cap);
+            },
+            keywords: ['audio', 'podcast', 'son', 'mp3', 'musique'],
+        ));
+
+        // 15. File (downloadable document / archive card from Media Library)
+        $this->register(new BlockDefinition(
+            type: 'file',
+            title: 'Fichier à télécharger',
+            description: 'Carte de téléchargement pour un document PDF, bureautique ou archive.',
+            icon: 'file',
+            category: 'media',
+            validator: static function (array $data, HtmlSanitizer $sanitizer) use ($mediaRepo): array {
+                $errors = [];
+                $mediaId = is_numeric($data['mediaId'] ?? null) && (int) $data['mediaId'] > 0
+                    ? (int) $data['mediaId']
+                    : null;
+                $resolved = $mediaId !== null ? MediaHelper::resolve($mediaId, $mediaRepo) : null;
+
+                $rawUrl = is_string($data['url'] ?? null) ? trim($data['url']) : '';
+                if ($rawUrl === '' && $resolved !== null) {
+                    $rawUrl = $resolved->url();
+                }
+                $safeUrl = $rawUrl !== '' ? $sanitizer->sanitizeResourceUrl($rawUrl) : null;
+                if ($safeUrl === null) {
+                    $errors[] = 'Le fichier à télécharger est obligatoire.';
+                }
+
+                $filename = is_string($data['filename'] ?? null) ? trim($data['filename']) : '';
+                if ($filename === '' && $resolved !== null) {
+                    $filename = $resolved->originalName;
+                }
+                $label = is_string($data['label'] ?? null) ? trim($data['label']) : '';
+                if ($label === '') {
+                    $label = $resolved !== null && $resolved->title !== ''
+                        ? $resolved->title
+                        : ($filename !== '' ? $filename : 'Télécharger le fichier');
+                }
+                $extension = is_string($data['extension'] ?? null) && trim($data['extension']) !== ''
+                    ? strtolower(trim($data['extension']))
+                    : ($resolved !== null ? $resolved->extension : strtolower((string) pathinfo($filename, PATHINFO_EXTENSION)));
+                $sizeBytes = is_numeric($data['sizeBytes'] ?? null) && (int) $data['sizeBytes'] > 0
+                    ? (int) $data['sizeBytes']
+                    : ($resolved !== null ? $resolved->sizeBytes : 0);
+
+                $normalized = [
+                    'url' => $safeUrl ?? '',
+                    'label' => mb_substr($label, 0, 255),
+                    'filename' => mb_substr($filename, 0, 255),
+                    'extension' => mb_substr($extension, 0, 20),
+                    'sizeBytes' => $sizeBytes,
+                ];
+                if ($mediaId !== null) {
+                    $normalized['mediaId'] = $mediaId;
+                }
+
+                return ['data' => $normalized, 'errors' => $errors];
+            },
+            renderer: static function (array $data, HtmlSanitizer $sanitizer, array $context) use ($mediaRepo): string {
+                $mediaId = is_numeric($data['mediaId'] ?? null) && (int) $data['mediaId'] > 0 ? (int) $data['mediaId'] : null;
+                $resolved = $mediaId !== null ? MediaHelper::resolve($mediaId, $mediaRepo) : null;
+                $url = $resolved !== null ? $resolved->url() : $sanitizer->sanitizeResourceUrl((string) ($data['url'] ?? ''));
+                if ($url === null || $url === '') {
+                    return '';
+                }
+
+                $label = trim((string) ($data['label'] ?? ''));
+                if ($label === '') {
+                    $label = $resolved !== null ? ($resolved->title !== '' ? $resolved->title : $resolved->originalName) : 'Télécharger le fichier';
+                }
+                $ext = strtoupper(trim((string) ($data['extension'] ?? ($resolved !== null ? $resolved->extension : ''))));
+                $sizeBytes = (int) ($data['sizeBytes'] ?? ($resolved !== null ? $resolved->sizeBytes : 0));
+                $metaParts = [];
+                if ($ext !== '') {
+                    $metaParts[] = $ext;
+                }
+                if ($sizeBytes > 0) {
+                    $metaParts[] = MediaHelper::formatBytes($sizeBytes);
+                }
+                $metaHtml = $metaParts !== []
+                    ? '<span class="pc-file-card__meta">' . htmlspecialchars(implode(' · ', $metaParts), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</span>'
+                    : '';
+
+                return sprintf(
+                    '<div class="pc-block pc-block--file"><a href="%s" download class="pc-file-card">'
+                    . '<span class="pc-file-card__info"><span class="pc-file-card__title">%s</span>%s</span>'
+                    . '<span class="pc-file-card__cta">Télécharger</span>'
+                    . '</a></div>',
+                    htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                    htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                    $metaHtml,
+                );
+            },
+            textExtractor: static function (array $data): string {
+                $label = trim((string) ($data['label'] ?? ''));
+                $filename = trim((string) ($data['filename'] ?? ''));
+
+                return trim($label !== '' ? $label : $filename);
+            },
+            keywords: ['fichier', 'file', 'pdf', 'document', 'telechargement', 'zip'],
         ));
     }
 }

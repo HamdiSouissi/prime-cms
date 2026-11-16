@@ -1,10 +1,38 @@
 /**
- * Prime Editor — All 11 core block implementations registered on `defaultBlockRegistry`.
+ * Prime Editor — All 15 core block implementations registered on `defaultBlockRegistry`.
  */
 
 import { resolveListItemKeyAction } from './navigation.js';
 import { defaultBlockRegistry } from './registry.js';
 import { escapeHtml, parseEmbedUrl, sanitizeInlineHtml, slugify, stripHtml } from './utils.js';
+
+/**
+ * Open the reusable Prime Media Picker modal via the single public API `Prime.media.open(...)`.
+ * Never fails silently: logs a console error and shows a toast if the picker API is unavailable.
+ *
+ * @param {{ multiple?: boolean, kinds?: string[], selected?: number[], title?: string }} options
+ * @param {(items: Array<Record<string, any>>) => void} onPicked
+ */
+function openBlockMediaPicker(options, onPicked) {
+  const openFn = window.Prime?.media?.open;
+  if (typeof openFn !== 'function') {
+    console.error('[Prime Editor] Prime.media.open est indisponible : le sélecteur de médias ne peut pas être ouvert.');
+    window.Prime?.toast?.("Le sélecteur de médias n'a pas pu s'ouvrir.", 'danger');
+    return;
+  }
+
+  openFn({
+    multiple: Boolean(options.multiple),
+    kinds: Array.isArray(options.kinds) ? options.kinds : [],
+    selected: Array.isArray(options.selected) ? options.selected : [],
+    title: options.title || 'Sélectionner un média',
+    onSelect: (selection) => {
+      const items = Array.isArray(selection) ? selection : selection ? [selection] : [];
+      if (items.length === 0) return;
+      onPicked(items);
+    },
+  });
+}
 
 function createIconSvg(name, size = 16) {
   const ns = 'http://www.w3.org/2000/svg';
@@ -396,18 +424,33 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
     },
   });
 
-  // 5. Image (URL, required alt unless decorative, caption, normal/wide/full)
+  // 5. Image (Media Library picker or URL, required alt unless decorative, caption, normal/wide/full)
   registry.registerBlock({
     type: 'image',
     title: 'Image',
-    description: 'Image via URL avec texte alternatif et légende.',
+    description: 'Image issue de la médiathèque ou via URL, avec texte alternatif et légende.',
     icon: 'image',
     category: 'media',
-    keywords: ['image', 'photo', 'img', 'visuel'],
-    defaultData: () => ({ url: '', alt: '', decorative: false, caption: '', alignment: 'normal' }),
+    keywords: ['image', 'photo', 'img', 'visuel', 'media'],
+    defaultData: () => ({ mediaId: null, url: '', alt: '', decorative: false, caption: '', alignment: 'normal' }),
     render: (ctx) => {
       const wrap = document.createElement('div');
       wrap.className = 'pc-ed-block-body pc-ed-image';
+
+      const pickerRow = document.createElement('div');
+      pickerRow.className = 'pc-ed-media-picker-row';
+
+      const pickBtn = document.createElement('button');
+      pickBtn.type = 'button';
+      pickBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
+      pickBtn.append(createIconSvg('image', 14), document.createTextNode(' Choisir dans la médiathèque'));
+
+      const mediaBadge = document.createElement('span');
+      mediaBadge.className = 'pc-badge pc-badge--neutral';
+      mediaBadge.hidden = !ctx.data.mediaId;
+      mediaBadge.textContent = ctx.data.mediaId ? `Média #${ctx.data.mediaId}` : '';
+
+      pickerRow.append(pickBtn, mediaBadge);
 
       const preview = document.createElement('div');
       preview.className = 'pc-ed-image-preview';
@@ -430,7 +473,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       grid.className = 'pc-ed-form-grid';
 
       const urlInput = document.createElement('input');
-      urlInput.type = 'url';
+      urlInput.type = 'text';
+      urlInput.inputMode = 'url';
       urlInput.className = 'pc-input';
       urlInput.value = ctx.data.url || '';
       urlInput.placeholder = 'https://exemple.com/image.jpg ou /uploads/photo.webp';
@@ -476,9 +520,37 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         alignGroup.appendChild(btn);
       });
 
+      pickBtn.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: false,
+            kinds: ['image'],
+            selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
+            title: 'Choisir une image',
+          },
+          (chosen) => {
+            const media = chosen[0];
+            const nextUrl = media.url || '';
+            const nextAlt = media.alt || altInput.value.trim() || media.display_title || media.title || media.original_name || '';
+            const nextCaption = captionInput.value.trim() || media.caption || '';
+            ctx.updateData(
+              {
+                mediaId: Number(media.id),
+                url: nextUrl,
+                alt: decCheck.checked ? '' : nextAlt,
+                caption: escapeHtml(nextCaption),
+              },
+              { rerender: true, recordHistory: true },
+            );
+          },
+        );
+      });
+
       urlInput.addEventListener('input', () => {
-        ctx.updateData({ url: urlInput.value.trim() });
-        syncPreview(urlInput.value.trim(), altInput.value.trim());
+        const val = urlInput.value.trim();
+        ctx.updateData({ url: val, mediaId: null });
+        mediaBadge.hidden = true;
+        syncPreview(val, altInput.value.trim());
       });
       altInput.addEventListener('input', () => ctx.updateData({ alt: altInput.value }));
       decCheck.addEventListener('change', () => {
@@ -489,7 +561,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       captionInput.addEventListener('input', () => ctx.updateData({ caption: escapeHtml(captionInput.value) }));
 
       grid.append(urlInput, altInput, decWrap, captionInput, alignGroup);
-      wrap.append(preview, grid);
+      wrap.append(pickerRow, preview, grid);
       return wrap;
     },
   });
@@ -790,6 +862,405 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       }
 
       wrap.append(badge, textarea);
+      return wrap;
+    },
+  });
+
+  // 12. Gallery (multi-image grid from Media Library)
+  registry.registerBlock({
+    type: 'gallery',
+    title: 'Galerie',
+    description: 'Grille d\'images sélectionnées depuis la médiathèque (2 à 4 colonnes).',
+    icon: 'images',
+    category: 'media',
+    keywords: ['galerie', 'gallery', 'photos', 'grille', 'images'],
+    defaultData: () => ({ columns: 3, caption: '', items: [] }),
+    render: (ctx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'pc-ed-block-body pc-ed-gallery';
+
+      const columns = [2, 3, 4].includes(Number(ctx.data.columns)) ? Number(ctx.data.columns) : 3;
+      const items = Array.isArray(ctx.data.items) ? ctx.data.items.map((it) => ({ ...it })) : [];
+
+      const topRow = document.createElement('div');
+      topRow.className = 'pc-ed-media-picker-row';
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
+      addBtn.append(createIconSvg('images', 14), document.createTextNode(' Ajouter des images'));
+      addBtn.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: true,
+            kinds: ['image'],
+            selected: [],
+            title: 'Sélectionner des images pour la galerie',
+          },
+          (chosen) => {
+            const next = [
+              ...items,
+              ...chosen.map((m) => ({
+                mediaId: Number(m.id),
+                url: m.url || m.thumbnail_url || '',
+                alt: m.alt || m.display_title || m.title || m.original_name || '',
+                caption: m.caption || '',
+              })),
+            ].slice(0, 50);
+            ctx.updateData({ columns, items: next }, { rerender: true, recordHistory: true });
+          },
+        );
+      });
+
+      const colsGroup = document.createElement('div');
+      colsGroup.className = 'pc-ed-segmented';
+      [2, 3, 4].forEach((n) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `pc-ed-seg-btn${columns === n ? ' is-active' : ''}`;
+        btn.textContent = `${n} col.`;
+        btn.addEventListener('click', () => {
+          ctx.updateData({ columns: n, items }, { rerender: true, recordHistory: true });
+        });
+        colsGroup.appendChild(btn);
+      });
+
+      topRow.append(addBtn, colsGroup);
+      wrap.appendChild(topRow);
+
+      if (items.length === 0) {
+        const hint = document.createElement('p');
+        hint.className = 'pc-text-sm pc-text-muted';
+        hint.textContent = 'Aucune image sélectionnée. Cliquez sur « Ajouter des images » pour composer votre galerie.';
+        wrap.appendChild(hint);
+      } else {
+        const grid = document.createElement('div');
+        grid.className = 'pc-ed-gallery-grid';
+        grid.setAttribute('data-prime-cols', String(columns));
+
+        items.forEach((item, idx) => {
+          const card = document.createElement('div');
+          card.className = 'pc-ed-gallery-card';
+
+          const img = document.createElement('img');
+          img.src = item.url || '';
+          img.alt = item.alt || '';
+          img.loading = 'lazy';
+
+          const tools = document.createElement('div');
+          tools.className = 'pc-ed-gallery-card__tools';
+
+          const moveLeft = document.createElement('button');
+          moveLeft.type = 'button';
+          moveLeft.className = 'pc-ed-icon-btn';
+          moveLeft.disabled = idx === 0;
+          moveLeft.setAttribute('aria-label', 'Déplacer à gauche');
+          moveLeft.appendChild(createIconSvg('chevron-left', 13));
+          moveLeft.addEventListener('click', () => {
+            if (idx === 0) return;
+            const copy = [...items];
+            [copy[idx - 1], copy[idx]] = [copy[idx], copy[idx - 1]];
+            ctx.updateData({ columns, items: copy }, { rerender: true, recordHistory: true });
+          });
+
+          const moveRight = document.createElement('button');
+          moveRight.type = 'button';
+          moveRight.className = 'pc-ed-icon-btn';
+          moveRight.disabled = idx === items.length - 1;
+          moveRight.setAttribute('aria-label', 'Déplacer à droite');
+          moveRight.appendChild(createIconSvg('chevron-right', 13));
+          moveRight.addEventListener('click', () => {
+            if (idx >= items.length - 1) return;
+            const copy = [...items];
+            [copy[idx], copy[idx + 1]] = [copy[idx + 1], copy[idx]];
+            ctx.updateData({ columns, items: copy }, { rerender: true, recordHistory: true });
+          });
+
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'pc-ed-icon-btn';
+          removeBtn.setAttribute('aria-label', 'Retirer de la galerie');
+          removeBtn.appendChild(createIconSvg('x', 13));
+          removeBtn.addEventListener('click', () => {
+            const copy = items.filter((_, i) => i !== idx);
+            ctx.updateData({ columns, items: copy }, { rerender: true, recordHistory: true });
+          });
+
+          tools.append(moveLeft, moveRight, removeBtn);
+
+          const cap = document.createElement('input');
+          cap.type = 'text';
+          cap.className = 'pc-ed-gallery-card__cap';
+          cap.value = stripHtml(item.caption || '');
+          cap.placeholder = 'Légende…';
+          cap.setAttribute('aria-label', `Légende image ${idx + 1}`);
+          cap.addEventListener('input', () => {
+            items[idx].caption = escapeHtml(cap.value);
+            ctx.updateData({ columns, items });
+          });
+
+          card.append(img, tools, cap);
+          grid.appendChild(card);
+        });
+
+        wrap.appendChild(grid);
+      }
+
+      const galleryCaption = document.createElement('input');
+      galleryCaption.type = 'text';
+      galleryCaption.className = 'pc-input';
+      galleryCaption.style.marginTop = '10px';
+      galleryCaption.value = stripHtml(ctx.data.caption || '');
+      galleryCaption.placeholder = 'Légende globale de la galerie (optionnelle)…';
+      galleryCaption.setAttribute('aria-label', 'Légende de la galerie');
+      galleryCaption.addEventListener('input', () => ctx.updateData({ caption: escapeHtml(galleryCaption.value) }));
+
+      wrap.appendChild(galleryCaption);
+      return wrap;
+    },
+  });
+
+  // 13. Video (self-hosted HTML5 video)
+  registry.registerBlock({
+    type: 'video',
+    title: 'Vidéo (fichier local)',
+    description: 'Lecteur vidéo HTML5 hébergé dans votre médiathèque (MP4, WebM).',
+    icon: 'video',
+    category: 'media',
+    keywords: ['video', 'mp4', 'webm', 'film', 'media'],
+    defaultData: () => ({ mediaId: null, url: '', mimeType: '', posterMediaId: null, posterUrl: '', caption: '', controls: true, muted: false, loop: false }),
+    render: (ctx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'pc-ed-block-body pc-ed-video';
+
+      const row = document.createElement('div');
+      row.className = 'pc-ed-media-picker-row';
+
+      const pickVideo = document.createElement('button');
+      pickVideo.type = 'button';
+      pickVideo.className = 'pc-btn pc-btn--secondary pc-btn--sm';
+      pickVideo.append(createIconSvg('video', 14), document.createTextNode(' Choisir une vidéo'));
+      pickVideo.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: false,
+            kinds: ['video'],
+            selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
+            title: 'Choisir une vidéo',
+          },
+          (chosen) => {
+            const m = chosen[0];
+            ctx.updateData(
+              { mediaId: Number(m.id), url: m.url || '', mimeType: m.mime_type || '' },
+              { rerender: true, recordHistory: true },
+            );
+          },
+        );
+      });
+
+      const pickPoster = document.createElement('button');
+      pickPoster.type = 'button';
+      pickPoster.className = 'pc-btn pc-btn--ghost pc-btn--sm';
+      pickPoster.append(createIconSvg('image', 14), document.createTextNode(ctx.data.posterUrl ? ' Changer le poster' : ' Image poster'));
+      pickPoster.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: false,
+            kinds: ['image'],
+            selected: ctx.data.posterMediaId ? [Number(ctx.data.posterMediaId)] : [],
+            title: 'Choisir une image poster',
+          },
+          (chosen) => {
+            const m = chosen[0];
+            ctx.updateData(
+              { posterMediaId: Number(m.id), posterUrl: m.url || '' },
+              { rerender: true, recordHistory: true },
+            );
+          },
+        );
+      });
+
+      row.append(pickVideo, pickPoster);
+      wrap.appendChild(row);
+
+      if (ctx.data.url) {
+        const video = document.createElement('video');
+        video.controls = true;
+        video.preload = 'metadata';
+        video.src = ctx.data.url;
+        if (ctx.data.posterUrl) video.poster = ctx.data.posterUrl;
+        video.style.maxWidth = '100%';
+        video.style.maxHeight = '260px';
+        video.style.borderRadius = '8px';
+        video.style.marginBottom = '8px';
+        wrap.appendChild(video);
+      }
+
+      const opts = document.createElement('div');
+      opts.className = 'pc-ed-media-picker-row';
+      [
+        { key: 'controls', label: 'Contrôles', val: ctx.data.controls !== false },
+        { key: 'muted', label: 'Muet', val: Boolean(ctx.data.muted) },
+        { key: 'loop', label: 'Boucle', val: Boolean(ctx.data.loop) },
+      ].forEach((opt) => {
+        const lbl = document.createElement('label');
+        lbl.className = 'pc-ed-checkbox';
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = opt.val;
+        chk.addEventListener('change', () => ctx.updateData({ [opt.key]: chk.checked }, { recordHistory: true }));
+        lbl.append(chk, document.createTextNode(` ${opt.label}`));
+        opts.appendChild(lbl);
+      });
+
+      const capInput = document.createElement('input');
+      capInput.type = 'text';
+      capInput.className = 'pc-input';
+      capInput.value = stripHtml(ctx.data.caption || '');
+      capInput.placeholder = 'Légende de la vidéo (optionnelle)…';
+      capInput.addEventListener('input', () => ctx.updateData({ caption: escapeHtml(capInput.value) }));
+
+      wrap.append(opts, capInput);
+      return wrap;
+    },
+  });
+
+  // 14. Audio (self-hosted HTML5 audio)
+  registry.registerBlock({
+    type: 'audio',
+    title: 'Audio',
+    description: 'Lecteur audio HTML5 (MP3, OGG, WAV, M4A) depuis la médiathèque.',
+    icon: 'music',
+    category: 'media',
+    keywords: ['audio', 'podcast', 'son', 'mp3', 'musique'],
+    defaultData: () => ({ mediaId: null, url: '', title: '', caption: '' }),
+    render: (ctx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'pc-ed-block-body pc-ed-audio';
+
+      const row = document.createElement('div');
+      row.className = 'pc-ed-media-picker-row';
+      const pickBtn = document.createElement('button');
+      pickBtn.type = 'button';
+      pickBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
+      pickBtn.append(createIconSvg('music', 14), document.createTextNode(' Choisir un fichier audio'));
+      pickBtn.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: false,
+            kinds: ['audio'],
+            selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
+            title: 'Choisir un fichier audio',
+          },
+          (chosen) => {
+            const m = chosen[0];
+            ctx.updateData(
+              {
+                mediaId: Number(m.id),
+                url: m.url || '',
+                title: ctx.data.title || m.display_title || m.title || m.original_name || '',
+              },
+              { rerender: true, recordHistory: true },
+            );
+          },
+        );
+      });
+      row.appendChild(pickBtn);
+      wrap.appendChild(row);
+
+      if (ctx.data.url) {
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.preload = 'metadata';
+        audio.src = ctx.data.url;
+        audio.style.width = '100%';
+        audio.style.marginBottom = '8px';
+        wrap.appendChild(audio);
+      }
+
+      const grid = document.createElement('div');
+      grid.className = 'pc-ed-form-grid';
+
+      const titleInput = document.createElement('input');
+      titleInput.type = 'text';
+      titleInput.className = 'pc-input';
+      titleInput.value = ctx.data.title || '';
+      titleInput.placeholder = 'Titre de l\'enregistrement audio…';
+      titleInput.addEventListener('input', () => ctx.updateData({ title: titleInput.value }));
+
+      const capInput = document.createElement('input');
+      capInput.type = 'text';
+      capInput.className = 'pc-input';
+      capInput.value = stripHtml(ctx.data.caption || '');
+      capInput.placeholder = 'Légende optionnelle…';
+      capInput.addEventListener('input', () => ctx.updateData({ caption: escapeHtml(capInput.value) }));
+
+      grid.append(titleInput, capInput);
+      wrap.appendChild(grid);
+      return wrap;
+    },
+  });
+
+  // 15. File (downloadable document / archive card)
+  registry.registerBlock({
+    type: 'file',
+    title: 'Fichier à télécharger',
+    description: 'Carte de téléchargement pour un PDF, document ou archive.',
+    icon: 'file',
+    category: 'media',
+    keywords: ['fichier', 'file', 'pdf', 'document', 'telechargement', 'zip'],
+    defaultData: () => ({ mediaId: null, url: '', label: '', filename: '', extension: '', sizeBytes: 0 }),
+    render: (ctx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'pc-ed-block-body pc-ed-file';
+
+      const row = document.createElement('div');
+      row.className = 'pc-ed-media-picker-row';
+      const pickBtn = document.createElement('button');
+      pickBtn.type = 'button';
+      pickBtn.className = 'pc-btn pc-btn--secondary pc-btn--sm';
+      pickBtn.append(createIconSvg('file', 14), document.createTextNode(' Choisir un fichier'));
+      pickBtn.addEventListener('click', () => {
+        openBlockMediaPicker(
+          {
+            multiple: false,
+            kinds: ['document', 'archive'],
+            selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
+            title: 'Choisir un fichier à télécharger',
+          },
+          (chosen) => {
+            const m = chosen[0];
+            ctx.updateData(
+              {
+                mediaId: Number(m.id),
+                url: m.url || '',
+                label: m.title || m.display_title || m.original_name || 'Télécharger',
+                filename: m.original_name || '',
+                extension: m.extension || '',
+                sizeBytes: Number(m.size_bytes || 0),
+              },
+              { rerender: true, recordHistory: true },
+            );
+          },
+        );
+      });
+      row.appendChild(pickBtn);
+      if (ctx.data.filename) {
+        const badge = document.createElement('span');
+        badge.className = 'pc-badge pc-badge--neutral pc-mono';
+        badge.textContent = ctx.data.filename;
+        row.appendChild(badge);
+      }
+      wrap.appendChild(row);
+
+      const labelInput = document.createElement('input');
+      labelInput.type = 'text';
+      labelInput.className = 'pc-input';
+      labelInput.value = ctx.data.label || '';
+      labelInput.placeholder = 'Libellé du bouton de téléchargement (ex. Télécharger la brochure PDF)';
+      labelInput.addEventListener('input', () => ctx.updateData({ label: labelInput.value }));
+      wrap.appendChild(labelInput);
+
       return wrap;
     },
   });

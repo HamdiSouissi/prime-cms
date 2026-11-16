@@ -782,6 +782,93 @@ final class AdminContentHttpTest extends TestCase
         $this->assertSame($queries2, $queries20, 'EntryQuery must execute identical SQL count for 2 vs 20 entries (0 N+1).');
     }
 
+    public function testCreateAndEditPreserveStatusOnDirectSaveWhileExplicitPublishChangesStatus(): void
+    {
+        $app = $this->createApp(authenticateAs: 'admin');
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        /** @var EntryRepository $entryRepo */
+        $entryRepo = $app->get(EntryRepository::class);
+        $csrf = $this->csrfToken($app);
+
+        // 1. Create form defaults status select to `draft`, while primary CTA explicitly targets `published`
+        $createPage = $kernel->handle(Request::create('GET', '/admin/content/post/create'));
+        $this->assertSame(200, $createPage->status());
+        $this->assertStringContainsString('<option value="draft" selected>Brouillon</option>', $createPage->body());
+        $this->assertStringContainsString('data-prime-primary-save', $createPage->body());
+        $this->assertStringContainsString('data-prime-submit-status="published"', $createPage->body());
+
+        // 2. Direct form submission (as triggered by Ctrl/Cmd+S) preserves `draft` on creation
+        $storeRes = $kernel->handle(Request::create(
+            'POST',
+            '/admin/content/post',
+            body: [
+                '_csrf_token' => $csrf,
+                'title' => 'Brouillon Raccourci Clavier',
+                'status' => 'draft',
+                'content_json' => '{"version":1,"blocks":[{"id":"b1","type":"paragraph","data":{"text":"Version initiale."}}]}',
+            ],
+        ));
+        $this->assertSame(302, $storeRes->status());
+        preg_match('#/admin/content/post/(\d+)/edit$#', (string) $storeRes->header('Location'), $m);
+        $entryId = (int) ($m[1] ?? 0);
+        $this->assertGreaterThan(0, $entryId);
+
+        $created = $entryRepo->find($entryId);
+        $this->assertNotNull($created);
+        $this->assertSame('draft', $created->status);
+
+        // 3. Direct save on existing draft preserves `draft`
+        $updateDraftRes = $kernel->handle(Request::create(
+            'POST',
+            "/admin/content/post/{$entryId}",
+            body: [
+                '_csrf_token' => $csrf,
+                'title' => 'Brouillon Raccourci Clavier v2',
+                'status' => 'draft',
+                'content_json' => '{"version":1,"blocks":[{"id":"b1","type":"paragraph","data":{"text":"Mise à jour brouillon."}}]}',
+            ],
+        ));
+        $this->assertSame(302, $updateDraftRes->status());
+        $stillDraft = $entryRepo->find($entryId);
+        $this->assertNotNull($stillDraft);
+        $this->assertSame('draft', $stillDraft->status);
+        $this->assertSame('Brouillon Raccourci Clavier v2', $stillDraft->title);
+
+        // 4. Explicit publication sets status to `published`
+        $publishRes = $kernel->handle(Request::create(
+            'POST',
+            "/admin/content/post/{$entryId}",
+            body: [
+                '_csrf_token' => $csrf,
+                'title' => 'Article Publié Explicitement',
+                'status' => 'published',
+                'content_json' => '{"version":1,"blocks":[{"id":"b1","type":"paragraph","data":{"text":"Contenu public."}}]}',
+            ],
+        ));
+        $this->assertSame(302, $publishRes->status());
+        $published = $entryRepo->find($entryId);
+        $this->assertNotNull($published);
+        $this->assertSame('published', $published->status);
+
+        // 5. Direct save on already-published entry updates in place while staying `published`
+        $updatePubRes = $kernel->handle(Request::create(
+            'POST',
+            "/admin/content/post/{$entryId}",
+            body: [
+                '_csrf_token' => $csrf,
+                'title' => 'Article Publié Mis à Jour',
+                'status' => 'published',
+                'content_json' => '{"version":1,"blocks":[{"id":"b1","type":"paragraph","data":{"text":"Contenu public édité."}}]}',
+            ],
+        ));
+        $this->assertSame(302, $updatePubRes->status());
+        $stillPublished = $entryRepo->find($entryId);
+        $this->assertNotNull($stillPublished);
+        $this->assertSame('published', $stillPublished->status);
+        $this->assertSame('Article Publié Mis à Jour', $stillPublished->title);
+    }
+
     /**
      * @param array<string, mixed> $fields
      */

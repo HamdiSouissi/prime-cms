@@ -152,6 +152,22 @@ final readonly class Entry
     }
 
     /**
+     * Return the featured image media ID stored in `_featured_media_id` meta, if set.
+     */
+    public function featuredMediaId(): ?int
+    {
+        $raw = $this->meta('_featured_media_id');
+        if (is_int($raw) && $raw > 0) {
+            return $raw;
+        }
+        if (is_string($raw) && ctype_digit($raw) && (int) $raw > 0) {
+            return (int) $raw;
+        }
+
+        return null;
+    }
+
+    /**
      * @return list<Term>
      */
     public function terms(string $taxonomy): array

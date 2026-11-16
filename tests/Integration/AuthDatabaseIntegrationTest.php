@@ -39,7 +39,7 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
         );
         $ran = $migrator->run();
 
-        $this->assertCount(14, $ran);
+        $this->assertCount(18, $ran);
 
         $rolesRepo = new RoleRepository($this->connection);
         $usersRepo = new UserRepository($this->connection, $rolesRepo);
@@ -115,9 +115,9 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
         }
         $this->assertTrue($blocked, 'Disabling the sole active administrator must throw PolicyException.');
 
-        // Full rollback of all 8 migrations must succeed cleanly without FK errors
+        // Full rollback of all core migrations must succeed cleanly without FK errors
         $rolledBack = $migrator->reset();
-        $this->assertCount(14, $rolledBack);
+        $this->assertCount(18, $rolledBack);
     }
 
     public function testEndToEndAuthTwoFactorRateLimiterAndPasswordResetOnRealDatabase(): void
