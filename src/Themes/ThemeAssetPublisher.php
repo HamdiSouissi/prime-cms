@@ -38,7 +38,7 @@ final class ThemeAssetPublisher
         $preservedOptionsCss = $this->snapshotOptionsCss($slug);
 
         if (is_dir($assetsDir)) {
-            $count += $this->publisher->publish($slug, $assetsDir);
+            $count += $this->publisher->publish($slug, $themePath);
         } else {
             $targetDir = $this->targetDir($slug);
             if (!is_dir($targetDir)) {

@@ -43,7 +43,7 @@ final class ThemePublishCommand implements CommandInterface
             }
 
             foreach ($counts as $tSlug => $count) {
-                $output->success(sprintf('Thème « %s » : %d fichier(s) publié(s) dans public/assets/themes/%s/.', $tSlug, $count, $tSlug));
+                $output->writeln(sprintf('Thème « %s » : %d fichier(s) publié(s) dans public/assets/themes/%s/.', $tSlug, $count, $tSlug));
             }
 
             return self::SUCCESS;

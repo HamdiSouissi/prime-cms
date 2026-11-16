@@ -39,7 +39,7 @@ final class ThemeActivateCommand implements CommandInterface
 
         try {
             $activated = $this->themes->activate($slug);
-            $output->success(sprintf('Thème « %s » (%s) activé avec succès.', $activated->name(), $activated->slug));
+            $output->writeln(sprintf('Thème « %s » (%s) activé avec succès.', $activated->name(), $activated->slug));
 
             return self::SUCCESS;
         } catch (ThemeException $e) {

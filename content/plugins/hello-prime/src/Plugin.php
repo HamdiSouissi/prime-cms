@@ -12,6 +12,7 @@ use Prime\Admin\Notice;
 use Prime\Auth\Auth;
 use Prime\Auth\User;
 use Prime\Content\ContentType;
+use Prime\Content\EntryQuery;
 use Prime\Content\EntryRepository;
 use Prime\Content\Fields\Field;
 use Prime\Content\Fields\FieldGroup;
@@ -244,6 +245,77 @@ final class Plugin extends AbstractPlugin
             if ($media instanceof Media) {
                 $context->logger()->info(sprintf('Hello Prime : nouveau média détecté (#%d — %s)', $media->id, $media->originalName));
             }
+        });
+
+        // 14. Register dynamic block `hello_testimonial` via `blocks.dynamic` (Phase 8 L12)
+        $context->hooks()->filter('blocks.dynamic', static function (mixed $blocks) use ($context): mixed {
+            if (!is_array($blocks)) {
+                return $blocks;
+            }
+            $blocks['hello_testimonial'] = [
+                'label' => 'Témoignage aléatoire (Hello Prime)',
+                'description' => 'Affiche un témoignage client publié tiré au sort.',
+                'defaults' => [
+                    'title' => 'Témoignage client',
+                ],
+                'render' => static function (array $attrs) use ($context): string {
+                    if (!$context->app()->container()->has(EntryQuery::class)) {
+                        return '';
+                    }
+                    try {
+                        /** @var EntryQuery $query */
+                        $query = $context->app()->get(EntryQuery::class);
+                        $items = $query->newQuery()
+                            ->type(self::CPT_TESTIMONIAL)
+                            ->orderBy('published_at', 'DESC')
+                            ->limit(25)
+                            ->get();
+                        if ($items === []) {
+                            return '';
+                        }
+                        $chosen = $items[random_int(0, count($items) - 1)];
+                        $e = static fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                        $heading = is_string($attrs['title'] ?? null) ? trim($attrs['title']) : '';
+                        $role = is_string($chosen->meta('author_role')) ? trim((string) $chosen->meta('author_role')) : '';
+                        $rating = max(1, min(5, (int) ($chosen->meta('rating') ?? 5)));
+                        $stars = str_repeat('★', $rating) . str_repeat('☆', 5 - $rating);
+                        $quote = $chosen->excerpt !== null && trim($chosen->excerpt) !== ''
+                            ? trim($chosen->excerpt)
+                            : trim($chosen->contentText);
+
+                        $html = '<section class="prime-dyn prime-dyn--hello-testimonial aurora-testimonial">';
+                        if ($heading !== '') {
+                            $html .= '<h3 class="prime-dyn__title">' . $e($heading) . '</h3>';
+                        }
+                        $html .= '<div class="aurora-testimonial__stars" aria-label="Note : ' . $rating . ' sur 5">' . $stars . '</div>';
+                        $html .= '<blockquote class="aurora-testimonial__quote">' . $e($quote) . '</blockquote>';
+                        $html .= '<footer class="aurora-testimonial__author">' . $e($chosen->title);
+                        if ($role !== '') {
+                            $html .= '<span class="aurora-testimonial__role">' . $e($role) . '</span>';
+                        }
+                        $html .= '</footer></section>';
+
+                        return $html;
+                    } catch (Throwable) {
+                        return '';
+                    }
+                },
+            ];
+
+            return $blocks;
+        });
+
+        // 15. Provide fallback archive template `archive/testimonial.php` via `site.template_paths` (Phase 8 L12)
+        $pluginTemplatesDir = dirname(__DIR__) . '/templates';
+        $context->hooks()->filter('site.template_paths', static function (mixed $paths) use ($pluginTemplatesDir): mixed {
+            if (!is_array($paths)) {
+                return $paths;
+            }
+            if (is_dir($pluginTemplatesDir) && !in_array($pluginTemplatesDir, $paths, true)) {
+                $paths[] = $pluginTemplatesDir;
+            }
+
+            return $paths;
         });
     }
 

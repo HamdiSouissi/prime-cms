@@ -46,7 +46,7 @@ final class SiteController
     /**
      * Resolve and render any public site request (called for `/` and router fallback).
      */
-    public function handle(Request $request): Response
+    public function handle(Request $request, bool $rethrowDbConnectionError = false): Response
     {
         // Only GET and HEAD are valid public site methods; other methods on unknown routes return 404
         if (!in_array($request->method(), ['GET', 'HEAD'], true)) {
@@ -73,7 +73,10 @@ final class SiteController
         try {
             try {
                 $context = $this->resolveWithOptionalPreview($request, $isCustomizerPreview);
-            } catch (ConnectionException) {
+            } catch (ConnectionException $e) {
+                if ($rethrowDbConnectionError) {
+                    throw $e;
+                }
                 throw new NotFoundException('Page introuvable.');
             }
 

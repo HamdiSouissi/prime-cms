@@ -21,13 +21,20 @@
 !/storage/plugins/
 /storage/plugins/*
 !/storage/plugins/.gitkeep
+!/storage/themes/
+/storage/themes/*
+!/storage/themes/.gitkeep
 !/storage/tmp/
 /storage/tmp/*
 !/storage/tmp/.gitkeep
 
-# Published plugin static assets
+# Published plugin & theme static assets and generated site favicons
 /public/assets/plugins/*
 !/public/assets/plugins/.gitkeep
+/public/assets/themes/*
+!/public/assets/themes/.gitkeep
+/public/assets/site/*
+!/public/assets/site/.gitkeep
 
 # User uploads & public symlink
 /content/uploads/*

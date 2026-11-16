@@ -46,7 +46,7 @@ final class HomeController
                     /** @var SiteController $siteController */
                     $siteController = $this->app->get(SiteController::class);
 
-                    return $siteController->handle($request);
+                    return $siteController->handle($request, rethrowDbConnectionError: true);
                 }
             } catch (ConnectionException) {
                 // Database not connected (e.g. pre-install or isolated HTTP kernel tests): render welcome page.

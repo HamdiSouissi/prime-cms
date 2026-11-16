@@ -537,6 +537,14 @@ final class ThemeManager
             $this->activeTheme = $theme;
             $this->parentTheme = $parent;
 
+            // Ensure static assets exist in `public/assets/themes/{slug}` on fresh deployments
+            if ($parent !== null && !is_dir($this->publisher->targetDir($parent->slug))) {
+                $this->publisher->publish($parent->slug, $parent->path);
+            }
+            if (!is_dir($this->publisher->targetDir($theme->slug))) {
+                $this->publisher->publish($theme->slug, $theme->path);
+            }
+
             // Enqueue compiled theme options CSS if present
             $optionsCssUrl = $this->options->publishedCssUrl($theme->manifest, $parent?->manifest);
             if ($optionsCssUrl !== null) {
