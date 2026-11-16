@@ -13,7 +13,9 @@ use Prime\Auth\UserRepository;
 use Prime\Console\ConsoleApplication;
 use Prime\Console\ConsoleOutput;
 use Prime\Content\Entry;
+use Prime\Content\EntryQuery;
 use Prime\Content\EntryRepository;
+use Prime\Content\RevisionRepository;
 use Prime\Content\TermRepository;
 use Prime\Database\Connection;
 use Prime\Database\Migrations\Migrator;
@@ -407,6 +409,408 @@ final class AdminContentHttpTest extends TestCase
         $this->assertSame([], $termRepo->allForTaxonomy('testimonial_source'));
     }
 
+    public function testContentListTabsSearchFiltersAndRoleVisibilityHttp(): void
+    {
+        $app = $this->createApp(authenticateAs: 'admin');
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        /** @var Connection $conn */
+        $conn = $app->get(Connection::class);
+        /** @var TermRepository $termRepo */
+        $termRepo = $app->get(TermRepository::class);
+        $termRepo->ensureDefaultCategory();
+        $catGuides = $termRepo->create('category', 'Guides', 'guides');
+        $catNews = $termRepo->create('category', 'Actualités', 'actualites');
+
+        $csrfAdmin = $this->csrfToken($app);
+
+        // Seed Admin entries across statuses: published, draft (2026-09), private, scheduled, trash
+        $pubId = $this->createPostViaHttp($kernel, $csrfAdmin, [
+            'title' => 'Article Phare Novembre',
+            'status' => 'published',
+            'published_at' => '2026-11-10T10:00',
+            'terms' => ['category' => [(string) $catGuides->id]],
+        ]);
+        $draftAdminId = $this->createPostViaHttp($kernel, $csrfAdmin, [
+            'title' => 'Brouillon Secret Admin',
+            'status' => 'draft',
+            'terms' => ['category' => [(string) $catNews->id]],
+        ]);
+        $conn->table('entries')->where('id', '=', $draftAdminId)->update(['created_at' => '2026-09-12 09:00:00']);
+
+        $this->createPostViaHttp($kernel, $csrfAdmin, [
+            'title' => 'Note Privée Admin',
+            'status' => 'private',
+        ]);
+        $this->createPostViaHttp($kernel, $csrfAdmin, [
+            'title' => 'Annonce Future Planifiée',
+            'status' => 'scheduled',
+            'published_at' => '2030-05-01T08:00',
+        ]);
+        $trashId = $this->createPostViaHttp($kernel, $csrfAdmin, [
+            'title' => 'Article Corbeille Admin',
+            'status' => 'draft',
+        ]);
+        $kernel->handle(Request::create('POST', "/admin/content/post/{$trashId}/trash", body: ['_csrf_token' => $csrfAdmin]));
+
+        // Seed Contributor pending entry
+        $this->loginAs($app, 2);
+        $csrfContrib = $this->csrfToken($app);
+        $this->createPostViaHttp($kernel, $csrfContrib, [
+            'title' => 'Proposition Contributeur',
+            'status' => 'pending',
+            'terms' => ['category' => [(string) $catGuides->id]],
+        ]);
+
+        // Seed Author draft entry
+        $this->loginAs($app, 4);
+        $csrfAuthor = $this->csrfToken($app);
+        $this->createPostViaHttp($kernel, $csrfAuthor, [
+            'title' => 'Brouillon Auteur Perso',
+            'status' => 'draft',
+        ]);
+
+        // 1. Admin: `all` lists all 6 non-trash entries and excludes trashed entry
+        $this->loginAs($app, 1);
+        $allRes = $kernel->handle(Request::create('GET', '/admin/content/post'));
+        $this->assertSame(200, $allRes->status());
+        $allTableBody = $this->extractTbody($allRes->body());
+        $this->assertStringContainsString('Article Phare Novembre', $allTableBody);
+        $this->assertStringContainsString('Brouillon Secret Admin', $allTableBody);
+        $this->assertStringContainsString('Note Privée Admin', $allTableBody);
+        $this->assertStringContainsString('Annonce Future Planifiée', $allTableBody);
+        $this->assertStringContainsString('Proposition Contributeur', $allTableBody);
+        $this->assertStringContainsString('Brouillon Auteur Perso', $allTableBody);
+        $this->assertStringNotContainsString('Article Corbeille Admin', $allTableBody);
+        $this->assertSame(6, substr_count($allTableBody, 'data-prime-table-select-row'));
+
+        // Each exact status tab shows ONLY matching entries and matches tab counter
+        $expectedTabs = [
+            'published' => ['count' => 1, 'present' => 'Article Phare Novembre', 'absent' => 'Brouillon Secret Admin'],
+            'draft' => ['count' => 2, 'present' => 'Brouillon Secret Admin', 'absent' => 'Article Phare Novembre'],
+            'pending' => ['count' => 1, 'present' => 'Proposition Contributeur', 'absent' => 'Brouillon Secret Admin'],
+            'scheduled' => ['count' => 1, 'present' => 'Annonce Future Planifiée', 'absent' => 'Article Phare Novembre'],
+            'private' => ['count' => 1, 'present' => 'Note Privée Admin', 'absent' => 'Article Phare Novembre'],
+            'trash' => ['count' => 1, 'present' => 'Article Corbeille Admin', 'absent' => 'Article Phare Novembre'],
+        ];
+        foreach ($expectedTabs as $tab => $expect) {
+            $res = $kernel->handle(Request::create('GET', "/admin/content/post?status={$tab}"));
+            $this->assertSame(200, $res->status());
+            $tbody = $this->extractTbody($res->body());
+            $this->assertSame($expect['count'], substr_count($tbody, 'data-prime-table-select-row'), "Row count mismatch on tab [{$tab}]");
+            $this->assertStringContainsString($expect['present'], $tbody);
+            $this->assertStringNotContainsString($expect['absent'], $tbody);
+        }
+
+        // 2. Search works with BOTH `?q=` and `?search=` alias
+        foreach (['/admin/content/post?q=Phare', '/admin/content/post?search=Phare'] as $url) {
+            $res = $kernel->handle(Request::create('GET', $url));
+            $this->assertSame(200, $res->status());
+            $tbody = $this->extractTbody($res->body());
+            $this->assertSame(1, substr_count($tbody, 'data-prime-table-select-row'));
+            $this->assertStringContainsString('Article Phare Novembre', $tbody);
+            $this->assertStringNotContainsString('Brouillon Secret Admin', $tbody);
+        }
+
+        // 3. Taxonomy, author, and month filters narrow list accurately
+        $catRes = $kernel->handle(Request::create('GET', '/admin/content/post?term=category:' . $catGuides->id));
+        $catBody = $this->extractTbody($catRes->body());
+        $this->assertSame(2, substr_count($catBody, 'data-prime-table-select-row'));
+        $this->assertStringContainsString('Article Phare Novembre', $catBody);
+        $this->assertStringContainsString('Proposition Contributeur', $catBody);
+
+        $monthRes = $kernel->handle(Request::create('GET', '/admin/content/post?month=2026-09'));
+        $monthBody = $this->extractTbody($monthRes->body());
+        $this->assertSame(1, substr_count($monthBody, 'data-prime-table-select-row'));
+        $this->assertStringContainsString('Brouillon Secret Admin', $monthBody);
+
+        $authorFilterRes = $kernel->handle(Request::create('GET', '/admin/content/post?author=2'));
+        $authorFilterBody = $this->extractTbody($authorFilterRes->body());
+        $this->assertSame(1, substr_count($authorFilterBody, 'data-prime-table-select-row'));
+        $this->assertStringContainsString('Proposition Contributeur', $authorFilterBody);
+
+        // 4. Contributor visibility: sees ONLY own entries + published entries (never Admin/Author drafts or private!)
+        $this->loginAs($app, 2);
+        $contribList = $kernel->handle(Request::create('GET', '/admin/content/post'));
+        $this->assertSame(200, $contribList->status());
+        $contribBody = $this->extractTbody($contribList->body());
+        $this->assertSame(2, substr_count($contribBody, 'data-prime-table-select-row'));
+        $this->assertStringContainsString('Article Phare Novembre', $contribBody);
+        $this->assertStringContainsString('Proposition Contributeur', $contribBody);
+        $this->assertStringNotContainsString('Brouillon Secret Admin', $contribBody);
+        $this->assertStringNotContainsString('Note Privée Admin', $contribBody);
+        $this->assertStringNotContainsString('Brouillon Auteur Perso', $contribBody);
+
+        // 5. Author visibility: sees ONLY own entries + published entries (never Admin draft/private or Contributor pending!)
+        $this->loginAs($app, 4);
+        $authorList = $kernel->handle(Request::create('GET', '/admin/content/post'));
+        $this->assertSame(200, $authorList->status());
+        $authorBody = $this->extractTbody($authorList->body());
+        $this->assertSame(2, substr_count($authorBody, 'data-prime-table-select-row'));
+        $this->assertStringContainsString('Article Phare Novembre', $authorBody);
+        $this->assertStringContainsString('Brouillon Auteur Perso', $authorBody);
+        $this->assertStringNotContainsString('Brouillon Secret Admin', $authorBody);
+        $this->assertStringNotContainsString('Proposition Contributeur', $authorBody);
+
+        $this->assertGreaterThan(0, $pubId);
+    }
+
+    public function testPermanentDeleteOutsideTrashReturnsHttp409OnRowAndBulk(): void
+    {
+        $app = $this->createApp(authenticateAs: 'admin');
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        /** @var EntryRepository $entryRepo */
+        $entryRepo = $app->get(EntryRepository::class);
+        $csrf = $this->csrfToken($app);
+
+        $id1 = $this->createPostViaHttp($kernel, $csrf, ['title' => 'Actif Un', 'status' => 'draft']);
+        $id2 = $this->createPostViaHttp($kernel, $csrf, ['title' => 'Actif Deux', 'status' => 'published']);
+
+        // Single permanent delete outside trash -> HTTP 409 & entry preserved
+        $single409 = $kernel->handle(Request::create('POST', "/admin/content/post/{$id1}/delete", body: ['_csrf_token' => $csrf]));
+        $this->assertSame(409, $single409->status());
+        $this->assertStringContainsString('corbeille', $single409->body());
+        $this->assertNotNull($entryRepo->find($id1));
+
+        // Bulk permanent delete outside trash -> HTTP 409 & BOTH entries preserved
+        $bulk409 = $kernel->handle(Request::create('POST', '/admin/content/post/bulk', body: [
+            '_csrf_token' => $csrf,
+            'bulk_action' => 'delete',
+            'ids' => [(string) $id1, (string) $id2],
+        ]));
+        $this->assertSame(409, $bulk409->status());
+        $this->assertStringContainsString('corbeille', $bulk409->body());
+        $this->assertNotNull($entryRepo->find($id1));
+        $this->assertNotNull($entryRepo->find($id2));
+
+        // After moving to trash, single and bulk permanent deletions succeed
+        $kernel->handle(Request::create('POST', "/admin/content/post/{$id1}/trash", body: ['_csrf_token' => $csrf]));
+        $kernel->handle(Request::create('POST', "/admin/content/post/{$id2}/trash", body: ['_csrf_token' => $csrf]));
+
+        $singleOk = $kernel->handle(Request::create('POST', "/admin/content/post/{$id1}/delete", body: ['_csrf_token' => $csrf]));
+        $this->assertSame(302, $singleOk->status());
+        $this->assertNull($entryRepo->find($id1));
+
+        $bulkOk = $kernel->handle(Request::create('POST', '/admin/content/post/bulk', body: [
+            '_csrf_token' => $csrf,
+            'bulk_action' => 'delete',
+            'ids' => [(string) $id2],
+        ]));
+        $this->assertSame(302, $bulkOk->status());
+        $this->assertNull($entryRepo->find($id2));
+    }
+
+    public function testContributorPrimarySubmitPendingLockAndFourRoleHttpMatrix(): void
+    {
+        $app = $this->createApp(authenticateAs: 'contributor');
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        /** @var EntryRepository $entryRepo */
+        $entryRepo = $app->get(EntryRepository::class);
+        $csrfContrib = $this->csrfToken($app);
+
+        // 1. Contributor create screen displays primary "Soumettre pour relecture" (pending) + secondary "Enregistrer le brouillon" (draft)
+        $createView = $kernel->handle(Request::create('GET', '/admin/content/post/create'));
+        $this->assertSame(200, $createView->status());
+        $this->assertStringContainsString('Soumettre pour relecture', $createView->body());
+        $this->assertStringContainsString('Enregistrer le brouillon', $createView->body());
+        $this->assertMatchesRegularExpression('/data-prime-primary-save[^>]*data-prime-submit-status="pending"/', $createView->body());
+        $this->assertMatchesRegularExpression('/data-prime-secondary-save[^>]*data-prime-submit-status="draft"/', $createView->body());
+
+        // 2. Contributor submits entry for review (`pending`) -> becomes read-only on GET and 403 on POST
+        $pendingId = $this->createPostViaHttp($kernel, $csrfContrib, [
+            'title' => 'Article Soumis Relecture',
+            'status' => 'pending',
+        ]);
+        $savedPending = $entryRepo->find($pendingId);
+        $this->assertNotNull($savedPending);
+        $this->assertSame(Entry::STATUS_PENDING, $savedPending->status);
+
+        $readOnlyView = $kernel->handle(Request::create('GET', "/admin/content/post/{$pendingId}/edit"));
+        $this->assertSame(200, $readOnlyView->status());
+        $this->assertStringContainsString('en attente de relecture', strtolower($readOnlyView->body()));
+        $this->assertStringNotContainsString('data-prime-primary-save', $readOnlyView->body());
+
+        $editPendingPost = $kernel->handle(Request::create('POST', "/admin/content/post/{$pendingId}", body: [
+            '_csrf_token' => $csrfContrib,
+            'title' => 'Tentative Modification',
+            'status' => 'draft',
+            'content_json' => '{"version":1,"blocks":[]}',
+        ]));
+        $this->assertSame(403, $editPendingPost->status());
+
+        // Contributor cannot trash own entry
+        $contribTrash = $kernel->handle(Request::create('POST', "/admin/content/post/{$pendingId}/trash", body: ['_csrf_token' => $csrfContrib]));
+        $this->assertSame(403, $contribTrash->status());
+
+        // 3. Author can publish/edit/trash/restore own entry, CANNOT edit or trash contributor's entry
+        $this->loginAs($app, 4);
+        $csrfAuthor = $this->csrfToken($app);
+
+        $authorId = $this->createPostViaHttp($kernel, $csrfAuthor, [
+            'title' => 'Article Auteur Publié',
+            'status' => 'published',
+        ]);
+        $this->assertSame(Entry::STATUS_PUBLISHED, $entryRepo->find($authorId)?->status);
+
+        $authorEditOther = $kernel->handle(Request::create('GET', "/admin/content/post/{$pendingId}/edit"));
+        $this->assertSame(403, $authorEditOther->status());
+        $authorTrashOther = $kernel->handle(Request::create('POST', "/admin/content/post/{$pendingId}/trash", body: ['_csrf_token' => $csrfAuthor]));
+        $this->assertSame(403, $authorTrashOther->status());
+
+        $authorTrashOwn = $kernel->handle(Request::create('POST', "/admin/content/post/{$authorId}/trash", body: ['_csrf_token' => $csrfAuthor]));
+        $this->assertSame(302, $authorTrashOwn->status());
+        $authorRestoreOwn = $kernel->handle(Request::create('POST', "/admin/content/post/{$authorId}/restore", body: ['_csrf_token' => $csrfAuthor]));
+        $this->assertSame(302, $authorRestoreOwn->status());
+        $this->assertSame(Entry::STATUS_PUBLISHED, $entryRepo->find($authorId)?->status);
+
+        // 4. Editor can edit & publish contributor's pending entry
+        $this->loginAs($app, 3);
+        $csrfEditor = $this->csrfToken($app);
+
+        $editorEdit = $kernel->handle(Request::create('GET', "/admin/content/post/{$pendingId}/edit"));
+        $this->assertSame(200, $editorEdit->status());
+        $this->assertStringContainsString('data-prime-primary-save', $editorEdit->body());
+
+        $editorPub = $kernel->handle(Request::create('POST', "/admin/content/post/{$pendingId}", body: [
+            '_csrf_token' => $csrfEditor,
+            'title' => 'Article Validé Éditeur',
+            'status' => 'published',
+            'content_json' => '{"version":1,"blocks":[]}',
+        ]));
+        $this->assertSame(302, $editorPub->status());
+        $this->assertSame(Entry::STATUS_PUBLISHED, $entryRepo->find($pendingId)?->status);
+    }
+
+    public function testLockHolderBannerHiddenDiscreetTrashCtaRevisionRestoreAndZeroNPlusOne(): void
+    {
+        $app = $this->createApp(authenticateAs: 'admin');
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        /** @var EntryRepository $entryRepo */
+        $entryRepo = $app->get(EntryRepository::class);
+        /** @var RevisionRepository $revRepo */
+        $revRepo = $app->get(RevisionRepository::class);
+        /** @var TermRepository $termRepo */
+        $termRepo = $app->get(TermRepository::class);
+        /** @var Connection $conn */
+        $conn = $app->get(Connection::class);
+        $conn->enableQueryLog(true);
+
+        $csrfAdmin = $this->csrfToken($app);
+
+        $v1Json = json_encode([
+            'version' => 1,
+            'blocks' => [['id' => 'p1', 'type' => 'paragraph', 'data' => ['text' => 'Contenu V1 original.']]],
+        ], JSON_THROW_ON_ERROR);
+        $v2Json = json_encode([
+            'version' => 1,
+            'blocks' => [['id' => 'p2', 'type' => 'paragraph', 'data' => ['text' => 'Contenu V2 révisé.']]],
+        ], JSON_THROW_ON_ERROR);
+
+        $entryId = $this->createPostViaHttp($kernel, $csrfAdmin, [
+            'title' => 'Titre Version 1',
+            'status' => 'draft',
+            'content_json' => $v1Json,
+        ]);
+
+        // 1. Lock holder visiting GET /edit sees hidden lock-lost banner and discreet outline trash button (C1 + C7)
+        $editRes = $kernel->handle(Request::create('GET', "/admin/content/post/{$entryId}/edit"));
+        $this->assertSame(200, $editRes->status());
+        $this->assertMatchesRegularExpression('/data-prime-lock-lost-banner[^>]*\bhidden\b/', $editRes->body());
+        $this->assertStringContainsString('pc-btn--danger-outline', $editRes->body());
+        $this->assertStringNotContainsString('pc-btn--danger pc-btn--sm pc-btn--block', $editRes->body());
+
+        // Lock holder heartbeat returns 200 ok:true
+        $hbOk = $kernel->handle(Request::create(
+            'POST',
+            "/admin/content/post/{$entryId}/lock/heartbeat",
+            headers: ['Accept' => 'application/json', 'X-CSRF-Token' => $csrfAdmin],
+        ));
+        $this->assertSame(200, $hbOk->status());
+        $this->assertStringContainsString('"ok":true', $hbOk->body());
+
+        // Update to V2 and restore V1 via HTTP revision restore endpoint
+        $kernel->handle(Request::create('POST', "/admin/content/post/{$entryId}", body: [
+            '_csrf_token' => $csrfAdmin,
+            'title' => 'Titre Version 2',
+            'status' => 'draft',
+            'content_json' => $v2Json,
+        ]));
+        $revs = $revRepo->forEntry($entryId, includeAutosaves: false);
+        $v1Rev = $revs[count($revs) - 1];
+        $restoreRes = $kernel->handle(Request::create(
+            'POST',
+            "/admin/content/post/{$entryId}/revisions/{$v1Rev->id}/restore",
+            body: ['_csrf_token' => $csrfAdmin],
+        ));
+        $this->assertSame(302, $restoreRes->status());
+        $restoredEntry = $entryRepo->find($entryId);
+        $this->assertNotNull($restoredEntry);
+        $this->assertSame('Titre Version 1', $restoredEntry->title);
+        $this->assertStringContainsString('Contenu V1 original.', $restoredEntry->contentHtml);
+
+        // 2. EntryQuery 0 N+1 proof: identical SQL query count for 2 vs 20 entries with meta + terms
+        $cat = $termRepo->create('category', 'Perf', 'perf');
+        for ($i = 1; $i <= 2; $i++) {
+            $this->createPostViaHttp($kernel, $csrfAdmin, [
+                'title' => 'Perf Entry ' . $i,
+                'status' => 'published',
+                'terms' => ['category' => [(string) $cat->id]],
+            ]);
+        }
+
+        $query = new EntryQuery($conn, $entryRepo);
+        $conn->clearQueryLog();
+        $batch2 = $query->newQuery()->type('post')->status(Entry::STATUS_PUBLISHED)->withRelations(true, true, true)->get();
+        $queries2 = count($conn->queryLog());
+        $this->assertCount(2, $batch2);
+
+        for ($i = 3; $i <= 20; $i++) {
+            $this->createPostViaHttp($kernel, $csrfAdmin, [
+                'title' => 'Perf Entry ' . $i,
+                'status' => 'published',
+                'terms' => ['category' => [(string) $cat->id]],
+            ]);
+        }
+
+        $conn->clearQueryLog();
+        $batch20 = $query->newQuery()->type('post')->status(Entry::STATUS_PUBLISHED)->withRelations(true, true, true)->get();
+        $queries20 = count($conn->queryLog());
+        $this->assertCount(20, $batch20);
+        $this->assertSame($queries2, $queries20, 'EntryQuery must execute identical SQL count for 2 vs 20 entries (0 N+1).');
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    private function createPostViaHttp(Kernel $kernel, string $csrf, array $fields): int
+    {
+        $body = array_merge([
+            '_csrf_token' => $csrf,
+            'title' => 'Post de test',
+            'status' => 'draft',
+            'content_json' => '{"version":1,"blocks":[]}',
+        ], $fields);
+
+        $res = $kernel->handle(Request::create('POST', '/admin/content/post', body: $body));
+        $this->assertSame(302, $res->status(), 'Expected 302 redirect after creating post.');
+        preg_match('#/(\d+)/edit$#', (string) $res->header('Location'), $m);
+        $this->assertNotEmpty($m[1] ?? '', 'Expected redirect Location containing entry ID.');
+
+        return (int) $m[1];
+    }
+
+    private function extractTbody(string $html): string
+    {
+        if (preg_match('#<tbody\b[^>]*>.*?</tbody>#si', $html, $matches) === 1) {
+            return $matches[0];
+        }
+
+        return '';
+    }
+
     private function createApp(string $authenticateAs = 'admin'): Application
     {
         $app = new Application(dirname(__DIR__, 2), loadEnv: false);
@@ -443,25 +847,29 @@ final class AdminContentHttpTest extends TestCase
         $connection = new Connection(['prefix' => 'pc_'], pdo: $pdo);
         $app->container()->instance(Connection::class, $connection);
 
-        // Seed 3 users: 1=Admin, 2=Contributor, 3=Editor
+        // Seed 4 users: 1=Admin, 2=Contributor, 3=Editor, 4=Author
         $now = '2026-11-15 12:00:00';
         $hash = password_hash('Prime!Secret#2026', PASSWORD_BCRYPT);
         $pdo->exec("INSERT INTO pc_roles (id, slug, name, description, is_system, created_at, updated_at) VALUES (1, 'administrator', 'Administrateur', 'Tout', 1, '{$now}', '{$now}')");
         $pdo->exec("INSERT INTO pc_roles (id, slug, name, description, is_system, created_at, updated_at) VALUES (2, 'contributor', 'Contributeur', 'Brouillons', 1, '{$now}', '{$now}')");
         $pdo->exec("INSERT INTO pc_roles (id, slug, name, description, is_system, created_at, updated_at) VALUES (3, 'editor', 'Éditeur', 'Contenus', 1, '{$now}', '{$now}')");
+        $pdo->exec("INSERT INTO pc_roles (id, slug, name, description, is_system, created_at, updated_at) VALUES (4, 'author', 'Auteur', 'Propres contenus', 1, '{$now}', '{$now}')");
         $pdo->exec("INSERT INTO pc_role_capabilities (role_id, capability) VALUES (1, '*')");
         $pdo->exec("INSERT INTO pc_role_capabilities (role_id, capability) VALUES (2, 'dashboard.view'), (2, 'content.view'), (2, 'content.create'), (2, 'content.edit_own')");
         $pdo->exec("INSERT INTO pc_role_capabilities (role_id, capability) VALUES (3, 'dashboard.view'), (3, 'content.view'), (3, 'content.create'), (3, 'content.edit_own'), (3, 'content.edit_any'), (3, 'content.publish'), (3, 'content.delete_own'), (3, 'content.delete_any')");
+        $pdo->exec("INSERT INTO pc_role_capabilities (role_id, capability) VALUES (4, 'dashboard.view'), (4, 'content.view'), (4, 'content.create'), (4, 'content.edit_own'), (4, 'content.publish'), (4, 'content.delete_own')");
 
         $stmt = $pdo->prepare('INSERT INTO pc_users (id, email, password_hash, display_name, status, locale, session_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)');
         $stmt->execute([1, 'admin@prime.test', $hash, 'Camille Admin', 'active', 'fr', $now, $now]);
         $stmt->execute([2, 'contrib@prime.test', $hash, 'Lucas Contrib', 'active', 'fr', $now, $now]);
         $stmt->execute([3, 'editor@prime.test', $hash, 'Clara Editor', 'active', 'fr', $now, $now]);
-        $pdo->exec('INSERT INTO pc_user_roles (user_id, role_id) VALUES (1, 1), (2, 2), (3, 3)');
+        $stmt->execute([4, 'author@prime.test', $hash, 'Hugo Auteur', 'active', 'fr', $now, $now]);
+        $pdo->exec('INSERT INTO pc_user_roles (user_id, role_id) VALUES (1, 1), (2, 2), (3, 3), (4, 4)');
 
         $userId = match ($authenticateAs) {
             'contributor' => 2,
             'editor' => 3,
+            'author' => 4,
             default => 1,
         };
         $this->loginAs($app, $userId);
