@@ -158,9 +158,9 @@ final class DemoDashboardData
                 'url' => '/admin/content/post/create',
             ],
             [
-                'title' => 'Ouvrir les médias',
-                'description' => 'Images et documents',
-                'icon' => 'image',
+                'title' => 'Importer un média',
+                'description' => 'Images, PDF et documents',
+                'icon' => 'upload',
                 'accent' => 'sky',
                 'url' => '/admin/media',
             ],
@@ -185,7 +185,7 @@ final class DemoDashboardData
             [
                 'label' => 'Version de Prime CMS',
                 'value' => Application::VERSION,
-                'badge' => 'Phase 6',
+                'badge' => 'Phase 7',
                 'variant' => 'brand',
             ],
             [

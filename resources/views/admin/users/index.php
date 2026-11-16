@@ -189,6 +189,8 @@ if ($canCreate) {
                                     <div class="pc-user-cell">
                                         <?= $this->raw($this->insert('admin::components/avatar', [
                                             'initials' => $user->initials(),
+                                            'src' => $avatarUrls[$user->id] ?? null,
+                                            'alt' => $user->displayName,
                                             'size' => 'md',
                                             'accent' => $user->avatarAccent(),
                                         ])) ?>

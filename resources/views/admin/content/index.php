@@ -222,7 +222,19 @@ if ($canCreate) {
                                     >
                                 </td>
                                 <td data-prime-label="Titre">
-                                    <div class="pc-entry-title-cell">
+                                    <?php $thumb = is_array($featuredThumbs[$entry->id] ?? null) ? $featuredThumbs[$entry->id] : null; ?>
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <?php if ($thumb !== null): ?>
+                                            <img
+                                                class="pc-content-thumb"
+                                                src="<?= $this->e((string) $thumb['url']) ?>"
+                                                alt="<?= $this->e((string) $thumb['alt']) ?>"
+                                                width="40"
+                                                height="40"
+                                                loading="lazy"
+                                            >
+                                        <?php endif; ?>
+                                        <div class="pc-entry-title-cell">
                                         <?php if ($canEditRow || $isPendingReadOnly): ?>
                                             <a href="<?= $this->e($editUrl) ?>" class="pc-entry-title-link">
                                                 <?php if ($depth > 0): ?>
@@ -248,6 +260,7 @@ if ($canCreate) {
                                                 <span>En édition par <?= $this->e($lockHolder !== null ? $lockHolder->displayName : ($lock->userName !== '' ? $lock->userName : 'un utilisateur')) ?></span>
                                             </span>
                                         <?php endif; ?>
+                                        </div>
                                     </div>
                                 </td>
                                 <td data-prime-label="Statut">

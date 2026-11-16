@@ -314,6 +314,8 @@ declare(strict_types=1);
                         >
                             <?= $this->raw($this->insert('admin::components/avatar', [
                                 'initials' => $currentUser['initials'],
+                                'src' => $currentUser['avatarUrl'] ?? null,
+                                'alt' => $currentUser['name'],
                                 'size' => 'sm',
                                 'accent' => $currentUser['accent'] ?? 'brand',
                             ])) ?>

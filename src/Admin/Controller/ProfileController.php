@@ -16,6 +16,8 @@ use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Http\Session;
 use Prime\Kernel\Application;
+use Prime\Media\MediaRepository;
+use Prime\Media\MediaUsageRepository;
 use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
@@ -53,6 +55,8 @@ final class ProfileController
         private readonly Connection $connection,
         private readonly PasswordPolicy $passwordPolicy,
         private readonly Hasher $hasher,
+        private readonly ?MediaRepository $media = null,
+        private readonly ?MediaUsageRepository $mediaUsage = null,
     ) {
     }
 
@@ -98,6 +102,30 @@ final class ProfileController
             $errors['current_password_email'] = 'Saisissez votre mot de passe actuel pour confirmer le changement d\'adresse e-mail.';
         }
 
+        // Optional avatar selection from Media Library (`avatar_media_id`)
+        $avatarProvided = $request->body('avatar_media_id') !== null;
+        $avatarMediaId = $user->avatarMediaId;
+        if ($avatarProvided) {
+            $rawAvatar = trim((string) $request->body('avatar_media_id', ''));
+            if ($rawAvatar === '' || $rawAvatar === '0') {
+                $avatarMediaId = null;
+            } elseif (ctype_digit($rawAvatar) && (int) $rawAvatar > 0) {
+                $candidateId = (int) $rawAvatar;
+                if ($this->media !== null) {
+                    $avatarMedia = $this->media->find($candidateId);
+                    if ($avatarMedia === null || !$avatarMedia->isImage()) {
+                        $errors['avatar_media_id'] = 'L’avatar sélectionné doit être une image valide de la médiathèque.';
+                    } else {
+                        $avatarMediaId = $candidateId;
+                    }
+                } else {
+                    $avatarMediaId = $candidateId;
+                }
+            } else {
+                $errors['avatar_media_id'] = 'Identifiant d’avatar invalide.';
+            }
+        }
+
         if ($errors !== []) {
             return Response::html($this->renderProfile($request, $user, 'info', infoErrors: $errors, oldInfo: [
                 'display_name' => $displayName,
@@ -106,11 +134,27 @@ final class ProfileController
             ]), 422);
         }
 
-        $this->users->updateFields($user->id, [
+        $fieldsToUpdate = [
             'display_name' => $displayName,
             'email' => $email,
             'locale' => $locale,
-        ]);
+        ];
+        if ($avatarProvided) {
+            $fieldsToUpdate['avatar_media_id'] = $avatarMediaId;
+        }
+
+        $this->users->updateFields($user->id, $fieldsToUpdate);
+
+        if ($avatarProvided && $this->mediaUsage !== null) {
+            try {
+                $this->mediaUsage->sync(
+                    'user',
+                    $user->id,
+                    $avatarMediaId !== null ? ['avatar' => [$avatarMediaId]] : [],
+                );
+            } catch (Throwable) {
+            }
+        }
 
         $this->auth->resetCache();
         $this->context->flashToast('Vos informations personnelles ont été enregistrées.', 'success');
@@ -322,8 +366,24 @@ final class ProfileController
         $pendingSetup = $this->session->get(self::SESSION_2FA_PENDING_SECRET);
         $recoveryOnce = $this->session->getFlash(self::FLASH_RECOVERY_CODES);
 
+        $avatarInitialJson = '[]';
+        if ($user->avatarMediaId !== null && $this->media !== null) {
+            try {
+                $avatarMedia = $this->media->find($user->avatarMediaId);
+                if ($avatarMedia !== null) {
+                    $encoded = json_encode([$avatarMedia->toArray()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
+                    if (is_string($encoded)) {
+                        $avatarInitialJson = $encoded;
+                    }
+                }
+            } catch (Throwable) {
+            }
+        }
+
         $data = $this->context->build($request, 'Mon profil', [
             'profileUser' => $user,
+            'avatarInitialJson' => $avatarInitialJson,
+            'canPickAvatar' => $user->can('media.view'),
             'activeTab' => $activeTab,
             'localeOptions' => self::LOCALE_OPTIONS,
             'oldInfo' => $oldInfo ?? [

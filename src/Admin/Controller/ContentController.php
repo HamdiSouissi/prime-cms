@@ -35,7 +35,11 @@ use Prime\Http\Exception\NotFoundException;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Kernel\Application;
+use Prime\Media\Media;
+use Prime\Media\MediaRepository;
+use Prime\Media\MediaUsageExtractor;
 use Prime\View\View;
+use Throwable;
 
 /**
  * Dynamic administration controller for all registered content types (`/admin/content/{type}`).
@@ -64,6 +68,7 @@ final class ContentController
         private readonly RevisionRepository $revisions,
         private readonly EntryLockRepository $locks,
         private readonly UserRepository $users,
+        private readonly ?MediaRepository $media = null,
     ) {
     }
 
@@ -173,9 +178,12 @@ final class ContentController
         $canPublish = $this->service->canPublish($user, $contentType);
         $canDelete = $user->can($contentType->capability('delete_any')) || $user->can($contentType->capability('delete_own'));
 
+        $featuredThumbs = $this->batchLoadFeaturedThumbs($items);
+
         $html = $this->view->render('admin::content/index', $this->context->build($request, $contentType->label('plural'), [
             'contentType' => $contentType,
             'entries' => $items,
+            'featuredThumbs' => $featuredThumbs,
             'total' => $result['total'],
             'page' => $result['page'],
             'perPage' => $result['per_page'],
@@ -865,9 +873,18 @@ final class ContentController
             $metaValues = array_merge($metaValues, $oldInput['fields']);
         }
 
-        // Resolve existing labels for `entry` relation custom fields
+        // Resolve existing labels for `entry` relation custom fields & batch-load `media` custom fields + featured image
         $relatedEntryLabels = [];
         $allGroups = $this->fields->forContentType($contentType->name);
+        $neededMediaIds = [];
+
+        $featuredMediaId = array_key_exists('featured_media_id', $oldInput)
+            ? $this->optionalInt($oldInput['featured_media_id'])
+            : ($entry?->featuredMediaId());
+        if ($featuredMediaId !== null) {
+            $neededMediaIds[$featuredMediaId] = true;
+        }
+
         foreach ($allGroups as $group) {
             foreach ($group->fields as $field) {
                 if ($field->type === 'entry') {
@@ -878,7 +895,29 @@ final class ContentController
                             $relatedEntryLabels[$field->name] = sprintf('#%d — %s', $relEntry->id, $relEntry->title);
                         }
                     }
+                } elseif ($field->type === 'media') {
+                    foreach (MediaUsageExtractor::extractIdsFromValue($metaValues[$field->name] ?? null) as $mId) {
+                        $neededMediaIds[$mId] = true;
+                    }
                 }
+            }
+        }
+
+        $loadedMediaById = $this->batchLoadMediaMap(array_keys($neededMediaIds));
+        $featuredMedia = $featuredMediaId !== null ? ($loadedMediaById[$featuredMediaId] ?? null) : null;
+        $fieldMediaItems = [];
+        foreach ($allGroups as $group) {
+            foreach ($group->fields as $field) {
+                if ($field->type !== 'media') {
+                    continue;
+                }
+                $resolvedList = [];
+                foreach (MediaUsageExtractor::extractIdsFromValue($metaValues[$field->name] ?? null) as $mId) {
+                    if (isset($loadedMediaById[$mId])) {
+                        $resolvedList[] = $loadedMediaById[$mId]->toArray();
+                    }
+                }
+                $fieldMediaItems[$field->name] = $resolvedList;
             }
         }
 
@@ -987,6 +1026,9 @@ final class ContentController
             ],
             'metaValues' => $metaValues,
             'relatedEntryLabels' => $relatedEntryLabels,
+            'featuredMediaId' => $featuredMediaId,
+            'featuredMediaJson' => $this->encodeJsonArray($featuredMedia !== null ? [$featuredMedia->toArray()] : []),
+            'fieldMediaItems' => $fieldMediaItems,
             'mainFieldGroups' => $mainFieldGroups,
             'sidebarFieldGroups' => $sidebarFieldGroups,
             'taxonomyPanels' => $taxonomyPanels,
@@ -1097,7 +1139,9 @@ final class ContentController
             }
         }
 
-        return [
+        $featuredRaw = $request->body('featured_media_id');
+
+        $payload = [
             'title' => trim((string) $request->body('title', '')),
             'slug' => trim((string) $request->body('slug', '')),
             'excerpt' => trim((string) $request->body('excerpt', '')),
@@ -1111,6 +1155,12 @@ final class ContentController
             'new_terms' => $newTerms,
             'fields' => $fields,
         ];
+
+        if ($contentType->supports('thumbnail') && $featuredRaw !== null) {
+            $payload['featured_media_id'] = $this->optionalInt($featuredRaw);
+        }
+
+        return $payload;
     }
 
     /**
@@ -1201,5 +1251,73 @@ final class ContentController
         }
 
         return $map;
+    }
+
+    /**
+     * Batch-resolve featured thumbnails (`entry_id => {url, alt}`) with zero N+1 queries.
+     *
+     * @param list<Entry> $entries
+     * @return array<int, array{url: string, alt: string}>
+     */
+    private function batchLoadFeaturedThumbs(array $entries): array
+    {
+        if ($this->media === null || $entries === []) {
+            return [];
+        }
+
+        $mediaIds = [];
+        foreach ($entries as $entry) {
+            $fid = $entry->featuredMediaId();
+            if ($fid !== null) {
+                $mediaIds[$fid] = true;
+            }
+        }
+        if ($mediaIds === []) {
+            return [];
+        }
+
+        $loaded = $this->batchLoadMediaMap(array_keys($mediaIds));
+        $thumbs = [];
+        foreach ($entries as $entry) {
+            $fid = $entry->featuredMediaId();
+            if ($fid !== null && isset($loaded[$fid]) && $loaded[$fid]->isImage()) {
+                $thumbs[$entry->id] = [
+                    'url' => $loaded[$fid]->thumbnailUrl(),
+                    'alt' => $loaded[$fid]->altText !== '' ? $loaded[$fid]->altText : $entry->title,
+                ];
+            }
+        }
+
+        return $thumbs;
+    }
+
+    /**
+     * @param list<int> $ids
+     * @return array<int, Media>
+     */
+    private function batchLoadMediaMap(array $ids): array
+    {
+        if ($this->media === null || $ids === []) {
+            return [];
+        }
+
+        try {
+            return $this->media->findByIds($ids);
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     */
+    private function encodeJsonArray(array $items): string
+    {
+        $encoded = json_encode(
+            $items,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP,
+        );
+
+        return is_string($encoded) ? $encoded : '[]';
     }
 }

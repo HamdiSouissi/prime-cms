@@ -12,6 +12,8 @@ use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Kernel\ServiceProvider;
+use Prime\Media\MediaRepository;
+use Prime\Media\MediaUsageRepository;
 use Prime\Security\HtmlSanitizer;
 
 /**
@@ -46,8 +48,12 @@ final class ContentServiceProvider extends ServiceProvider
 
         $c->singleton(BlockRegistry::class, static function () use ($c): BlockRegistry {
             $hooks = $c->has(Hooks::class) ? $c->get(Hooks::class) : null;
+            $media = $c->has(MediaRepository::class) ? $c->get(MediaRepository::class) : null;
 
-            return new BlockRegistry($hooks instanceof Hooks ? $hooks : null);
+            return new BlockRegistry(
+                $hooks instanceof Hooks ? $hooks : null,
+                $media instanceof MediaRepository ? $media : null,
+            );
         });
 
         $c->singleton(Renderer::class, static function () use ($c): Renderer {
@@ -133,6 +139,9 @@ final class ContentServiceProvider extends ServiceProvider
 
             $revisionsMax = (int) $app->config()->get('content.revisions_max', 25);
             $interval = (int) $app->config()->get('content.scheduler_interval_seconds', 60);
+            $mediaUsage = $c->has(MediaUsageRepository::class) ? $c->get(MediaUsageRepository::class) : null;
+            $fields = $c->has(FieldRegistry::class) ? $c->get(FieldRegistry::class) : null;
+            $media = $c->has(MediaRepository::class) ? $c->get(MediaRepository::class) : null;
 
             return new EntryService(
                 entries: $entries,
@@ -148,6 +157,9 @@ final class ContentServiceProvider extends ServiceProvider
                 revisionsMax: max(0, $revisionsMax),
                 schedulerStampPath: $app->storagePath('cache/content_scheduler.ts'),
                 schedulerIntervalSeconds: max(10, $interval),
+                mediaUsage: $mediaUsage instanceof MediaUsageRepository ? $mediaUsage : null,
+                fields: $fields instanceof FieldRegistry ? $fields : null,
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
     }

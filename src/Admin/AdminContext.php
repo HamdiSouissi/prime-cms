@@ -20,6 +20,7 @@ use Prime\Http\Request;
 use Prime\Http\Session;
 use Prime\Kernel\Application;
 use Prime\Log\Logger;
+use Prime\Media\MediaRepository;
 use Throwable;
 
 /**
@@ -41,6 +42,7 @@ final class AdminContext
         private readonly ?ContentTypeRegistry $contentTypes = null,
         private readonly ?TaxonomyRegistry $taxonomies = null,
         private readonly ?EntryRepository $entries = null,
+        private readonly ?MediaRepository $media = null,
     ) {
     }
 
@@ -344,7 +346,7 @@ final class AdminContext
     }
 
     /**
-     * @return array{id: ?int, name: string, role: string, email: string, initials: string, accent: string, isAdmin: bool, canSettings: bool}
+     * @return array{id: ?int, name: string, role: string, email: string, initials: string, accent: string, avatarUrl: ?string, isAdmin: bool, canSettings: bool}
      */
     private function formatCurrentUser(?User $user): array
     {
@@ -356,9 +358,22 @@ final class AdminContext
                 'email' => '',
                 'initials' => 'IN',
                 'accent' => 'brand',
+                'avatarUrl' => null,
                 'isAdmin' => false,
                 'canSettings' => false,
             ];
+        }
+
+        $avatarUrl = null;
+        if ($user->avatarMediaId !== null && $this->media !== null) {
+            try {
+                $avatarMedia = $this->media->find($user->avatarMediaId);
+                if ($avatarMedia !== null && $avatarMedia->isImage()) {
+                    $avatarUrl = $avatarMedia->thumbnailUrl();
+                }
+            } catch (Throwable) {
+                $avatarUrl = null;
+            }
         }
 
         return [
@@ -368,6 +383,7 @@ final class AdminContext
             'email' => $user->email,
             'initials' => $user->initials(),
             'accent' => $user->avatarAccent(),
+            'avatarUrl' => $avatarUrl,
             'isAdmin' => $user->isAdministrator(),
             'canSettings' => $user->can('settings.manage'),
         ];

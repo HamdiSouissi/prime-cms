@@ -21,6 +21,9 @@ use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Kernel\Application;
 use Prime\Log\Logger;
+use Prime\Media\Media;
+use Prime\Media\MediaHelper;
+use Prime\Media\MediaRepository;
 use Prime\View\Icon;
 use Prime\View\View;
 use Throwable;
@@ -62,6 +65,7 @@ final class DashboardController
         private readonly ?EntryRepository $entries = null,
         private readonly ?UserRepository $users = null,
         private readonly ?ContentTypeRegistry $types = null,
+        private readonly ?MediaRepository $media = null,
     ) {
     }
 
@@ -206,6 +210,19 @@ final class DashboardController
             return null;
         }
 
+        $mediaCount = 0;
+        $mediaBytes = 0;
+        $mediaImages = 0;
+        if ($this->media !== null) {
+            try {
+                $mediaStats = $this->media->stats();
+                $mediaCount = $mediaStats['total_count'];
+                $mediaBytes = $mediaStats['total_bytes'] + $mediaStats['variants_bytes'];
+                $mediaImages = $mediaStats['by_kind'][Media::KIND_IMAGE]['count'] ?? 0;
+            } catch (Throwable) {
+            }
+        }
+
         return [
             [
                 'label' => 'Pages publiées',
@@ -229,12 +246,12 @@ final class DashboardController
             ],
             [
                 'label' => 'Médias',
-                'value' => '0',
+                'value' => (string) $mediaCount,
                 'icon' => 'image',
                 'accent' => 'sky',
-                'trend' => 'Phase 7',
-                'trendDirection' => 'flat',
-                'hint' => 'Médiathèque à venir',
+                'trend' => MediaHelper::formatBytes($mediaBytes),
+                'trendDirection' => $mediaCount > 0 ? 'up' : 'flat',
+                'hint' => sprintf('%d image%s · Médiathèque active', $mediaImages, $mediaImages > 1 ? 's' : ''),
                 'url' => '/admin/media',
             ],
             [

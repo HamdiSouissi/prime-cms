@@ -215,7 +215,7 @@ export class PrimeEditor {
       const def = this.registry.get(block.type);
       wrapper.setAttribute('aria-label', `Bloc ${index + 1} : ${def ? def.title : block.type}`);
 
-      // Drag and drop handlers
+      // Drag and drop handlers (block reorder OR direct external image upload)
       wrapper.addEventListener('dragover', (e) => {
         e.preventDefault();
         wrapper.classList.add('is-drag-over');
@@ -226,8 +226,14 @@ export class PrimeEditor {
         wrapper.classList.remove('is-drag-over');
         if (this.dragSourceIndex !== null && this.dragSourceIndex !== index) {
           this.moveBlock(this.dragSourceIndex, index);
+          this.dragSourceIndex = null;
+          return;
         }
         this.dragSourceIndex = null;
+        const droppedFiles = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith('image/'));
+        if (droppedFiles.length > 0) {
+          void this.uploadAndInsertImageFiles(droppedFiles, index);
+        }
       });
 
       // Left gutter: "+" inserter & drag/actions handle
@@ -463,6 +469,13 @@ export class PrimeEditor {
       return;
     }
 
+    const imageFiles = Array.from(clipboard.files || []).filter((f) => f.type.startsWith('image/'));
+    if (imageFiles.length > 0) {
+      event.preventDefault();
+      void this.uploadAndInsertImageFiles(imageFiles, index);
+      return;
+    }
+
     const html = clipboard.getData('text/html');
     const plain = clipboard.getData('text/plain');
     const parsed = html ? parsePastedHtmlToBlocks(html) : parsePlainTextToBlocks(plain);
@@ -520,6 +533,60 @@ export class PrimeEditor {
     }
 
     this.afterMutation(plan.focusIndex, `Bloc ${def.title} inséré.`, false);
+  }
+
+  async uploadAndInsertImageFiles(files, afterIndex) {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+      || document.querySelector('input[name="_token"]')?.value
+      || '';
+    const uploaded = [];
+
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/admin/media/api/upload', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrf,
+          },
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok && data?.media) {
+          uploaded.push(data.media);
+        } else {
+          window.Prime?.toast?.(data?.message || `Échec du téléversement de ${file.name}.`, 'danger');
+        }
+      } catch {
+        window.Prime?.toast?.(`Erreur réseau lors du téléversement de ${file.name}.`, 'danger');
+      }
+    }
+
+    if (uploaded.length === 0) {
+      return;
+    }
+
+    const newBlocks = uploaded.map((m) =>
+      createDefaultBlock('image', {
+        id: generateBlockId(),
+        data: {
+          mediaId: Number(m.id),
+          url: m.url || '',
+          alt: m.alt_text || m.title || m.original_filename || 'Image importée',
+          decorative: false,
+          caption: m.caption || '',
+          alignment: 'normal',
+        },
+      }),
+    );
+
+    const insertAt = Math.min(this.blocks.length, Math.max(0, afterIndex + 1));
+    this.blocks.splice(insertAt, 0, ...newBlocks);
+    this.afterMutation(insertAt, `${newBlocks.length} image(s) téléversée(s) et insérée(s).`);
+    window.Prime?.toast?.(`${newBlocks.length} image(s) ajoutée(s) depuis le presse-papiers.`, 'success');
   }
 
   moveBlock(fromIndex, toIndex) {

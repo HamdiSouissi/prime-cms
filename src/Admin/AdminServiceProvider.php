@@ -89,6 +89,9 @@ final class AdminServiceProvider extends ServiceProvider
             $entries = $this->app->container()->has(EntryRepository::class)
                 ? $this->app->get(EntryRepository::class)
                 : null;
+            $media = $this->app->container()->has(MediaRepository::class)
+                ? $this->app->get(MediaRepository::class)
+                : null;
 
             return new AdminContext(
                 $this->app,
@@ -101,10 +104,15 @@ final class AdminServiceProvider extends ServiceProvider
                 $contentTypes instanceof ContentTypeRegistry ? $contentTypes : null,
                 $taxonomies instanceof TaxonomyRegistry ? $taxonomies : null,
                 $entries instanceof EntryRepository ? $entries : null,
+                $media instanceof MediaRepository ? $media : null,
             );
         });
 
         $container->singleton(ContentController::class, function (): ContentController {
+            $media = $this->app->container()->has(MediaRepository::class)
+                ? $this->app->get(MediaRepository::class)
+                : null;
+
             return new ContentController(
                 app: $this->app,
                 view: $this->app->get(View::class),
@@ -122,6 +130,7 @@ final class AdminServiceProvider extends ServiceProvider
                 revisions: $this->app->get(RevisionRepository::class),
                 locks: $this->app->get(EntryLockRepository::class),
                 users: $this->app->get(UserRepository::class),
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
 
@@ -179,6 +188,7 @@ final class AdminServiceProvider extends ServiceProvider
             $entries = $this->app->container()->has(EntryRepository::class) ? $this->app->get(EntryRepository::class) : null;
             $users = $this->app->container()->has(UserRepository::class) ? $this->app->get(UserRepository::class) : null;
             $types = $this->app->container()->has(ContentTypeRegistry::class) ? $this->app->get(ContentTypeRegistry::class) : null;
+            $media = $this->app->container()->has(MediaRepository::class) ? $this->app->get(MediaRepository::class) : null;
 
             return new DashboardController(
                 app: $this->app,
@@ -191,10 +201,14 @@ final class AdminServiceProvider extends ServiceProvider
                 entries: $entries instanceof EntryRepository ? $entries : null,
                 users: $users instanceof UserRepository ? $users : null,
                 types: $types instanceof ContentTypeRegistry ? $types : null,
+                media: $media instanceof MediaRepository ? $media : null,
             );
         });
 
         $container->singleton(UserController::class, function (): UserController {
+            $media = $this->app->container()->has(MediaRepository::class) ? $this->app->get(MediaRepository::class) : null;
+            $mediaUsage = $this->app->container()->has(MediaUsageRepository::class) ? $this->app->get(MediaUsageRepository::class) : null;
+
             return new UserController(
                 app: $this->app,
                 view: $this->app->get(View::class),
@@ -207,6 +221,8 @@ final class AdminServiceProvider extends ServiceProvider
                 twoFactor: $this->app->get(TwoFactorService::class),
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
+                media: $media instanceof MediaRepository ? $media : null,
+                mediaUsage: $mediaUsage instanceof MediaUsageRepository ? $mediaUsage : null,
             );
         });
 
@@ -221,6 +237,9 @@ final class AdminServiceProvider extends ServiceProvider
         });
 
         $container->singleton(ProfileController::class, function (): ProfileController {
+            $media = $this->app->container()->has(MediaRepository::class) ? $this->app->get(MediaRepository::class) : null;
+            $mediaUsage = $this->app->container()->has(MediaUsageRepository::class) ? $this->app->get(MediaUsageRepository::class) : null;
+
             return new ProfileController(
                 app: $this->app,
                 view: $this->app->get(View::class),
@@ -233,6 +252,8 @@ final class AdminServiceProvider extends ServiceProvider
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
                 hasher: $this->app->get(Hasher::class),
+                media: $media instanceof MediaRepository ? $media : null,
+                mediaUsage: $mediaUsage instanceof MediaUsageRepository ? $mediaUsage : null,
             );
         });
     }

@@ -206,6 +206,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     'group' => $group,
                     'metaValues' => $metaValues,
                     'relatedEntryLabels' => $relatedEntryLabels,
+                    'fieldMediaItems' => $fieldMediaItems ?? [],
                     'errors' => $errors,
                 ])) ?>
             <?php endforeach; ?>
@@ -300,6 +301,41 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 </div>
             </section>
 
+            <?php if ($contentType->supports('thumbnail')): ?>
+                <section class="pc-inspector-card">
+                    <h2 class="pc-inspector-card__title">
+                        <span>Image à la une</span>
+                        <?= $this->raw($this->icon('image', 16)) ?>
+                    </h2>
+                    <div
+                        class="pc-media-field"
+                        data-prime-media-field
+                        data-prime-media-multiple="0"
+                        data-prime-media-kinds="image"
+                        data-prime-media-title="Choisir une image à la une"
+                    >
+                        <script type="application/json" data-prime-field-initial><?= $this->raw((string) ($featuredMediaJson ?? '[]')) ?></script>
+                        <input
+                            type="hidden"
+                            name="featured_media_id"
+                            value="<?= $this->e($featuredMediaId !== null ? (string) $featuredMediaId : '') ?>"
+                            data-prime-field-input
+                        >
+                        <div class="pc-media-field__preview" data-prime-field-preview hidden></div>
+                        <div class="pc-media-field__buttons">
+                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-field-pick>
+                                <?= $this->raw($this->icon('image', 14)) ?>
+                                <span>Choisir une image</span>
+                            </button>
+                            <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-field-clear hidden>Retirer</button>
+                        </div>
+                        <?php if (isset($errors['featured_media_id'])): ?>
+                            <span class="pc-field__error"><?= $this->e($errors['featured_media_id']) ?></span>
+                        <?php endif; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
             <?php if ($contentType->supports('excerpt')): ?>
                 <section class="pc-inspector-card">
                     <h2 class="pc-inspector-card__title">Extrait</h2>
@@ -384,6 +420,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     'group' => $group,
                     'metaValues' => $metaValues,
                     'relatedEntryLabels' => $relatedEntryLabels,
+                    'fieldMediaItems' => $fieldMediaItems ?? [],
                     'errors' => $errors,
                 ])) ?>
             <?php endforeach; ?>

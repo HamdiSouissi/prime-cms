@@ -7,6 +7,8 @@ use Prime\Kernel\Application;
 use Prime\Kernel\Config;
 use Prime\Kernel\Env;
 use Prime\Log\Logger;
+use Prime\Media\Media;
+use Prime\Media\MediaHelper;
 use Prime\Security\Csrf;
 use Prime\Settings\Settings;
 use Prime\View\Icon;
@@ -201,5 +203,39 @@ if (!function_exists('csrf_field')) {
         $csrf = Application::getInstance()->get(Csrf::class);
 
         return $csrf->field();
+    }
+}
+
+if (!function_exists('media_url')) {
+    /**
+     * Generate the public URL of a media or one of its generated variants (`thumbnail`, `medium`, `large`).
+     */
+    function media_url(int|Media|null $media, ?string $variant = null, ?string $format = null): ?string
+    {
+        return MediaHelper::url($media, $variant, $format);
+    }
+}
+
+if (!function_exists('media_srcset')) {
+    /**
+     * Build a responsive `srcset` attribute string for an image media.
+     *
+     * @param 'original'|'webp'|null $format
+     */
+    function media_srcset(int|Media|null $media, ?string $format = null): string
+    {
+        return MediaHelper::srcset($media, $format);
+    }
+}
+
+if (!function_exists('media_image')) {
+    /**
+     * Render an accessible responsive `<picture>` / `<img>` HTML tag for an image media.
+     *
+     * @param array<string, mixed> $attrs
+     */
+    function media_image(int|Media|null $media, array $attrs = []): string
+    {
+        return MediaHelper::image($media, $attrs);
     }
 }

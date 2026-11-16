@@ -67,6 +67,40 @@ declare(strict_types=1);
                         <span><?= $this->e($field->label) ?></span>
                     </label>
 
+                <?php elseif ($field->type === 'media'): ?>
+                    <?php
+                    $resolvedFieldMedia = is_array($fieldMediaItems[$field->name] ?? null) ? $fieldMediaItems[$field->name] : [];
+                    $initialMediaJson = json_encode($resolvedFieldMedia, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
+                    $mediaValStr = is_array($val)
+                        ? implode(',', array_map(static fn (mixed $v): string => (string) $v, $val))
+                        : $strVal;
+                    $kindsAttr = implode(',', $field->mediaKinds);
+                    ?>
+                    <div
+                        class="pc-media-field"
+                        data-prime-media-field
+                        data-prime-media-multiple="<?= $field->multiple ? '1' : '0' ?>"
+                        data-prime-media-kinds="<?= $this->e($kindsAttr) ?>"
+                        data-prime-media-title="<?= $this->e($field->label) ?>"
+                    >
+                        <script type="application/json" data-prime-field-initial><?= $this->raw(is_string($initialMediaJson) ? $initialMediaJson : '[]') ?></script>
+                        <input
+                            id="<?= $this->e($inputId) ?>"
+                            type="hidden"
+                            name="<?= $this->e($inputName) ?>"
+                            value="<?= $this->e($mediaValStr) ?>"
+                            data-prime-field-input
+                        >
+                        <div class="pc-media-field__preview" data-prime-field-preview hidden></div>
+                        <div class="pc-media-field__buttons">
+                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-field-pick>
+                                <?= $this->raw($this->icon('image', 14)) ?>
+                                <span><?= $field->multiple ? 'Choisir des médias' : 'Choisir un média' ?></span>
+                            </button>
+                            <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-field-clear hidden>Retirer</button>
+                        </div>
+                    </div>
+
                 <?php elseif ($field->type === 'entry'): ?>
                     <?php
                     $allowedTypes = implode(',', $field->entryTypes);

@@ -22,6 +22,8 @@ use Prime\Http\Exception\NotFoundException;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Kernel\Application;
+use Prime\Media\MediaRepository;
+use Prime\Media\MediaUsageRepository;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
 use Prime\Validation\Validator;
@@ -54,6 +56,8 @@ final class UserController
         private readonly TwoFactorService $twoFactor,
         private readonly Connection $connection,
         private readonly PasswordPolicy $passwordPolicy,
+        private readonly ?MediaRepository $media = null,
+        private readonly ?MediaUsageRepository $mediaUsage = null,
     ) {
     }
 
@@ -80,12 +84,30 @@ final class UserController
         $actor = $this->auth->user($request);
 
         $relativeDates = [];
+        $avatarMediaIds = [];
         foreach ($pagination['items'] as $item) {
             $relativeDates[$item->id] = self::formatRelativeUtc($item->lastLoginAt);
+            if ($item->avatarMediaId !== null) {
+                $avatarMediaIds[$item->avatarMediaId] = true;
+            }
+        }
+
+        $avatarUrls = [];
+        if ($avatarMediaIds !== [] && $this->media !== null) {
+            try {
+                $loadedAvatars = $this->media->findByIds(array_keys($avatarMediaIds));
+                foreach ($pagination['items'] as $item) {
+                    if ($item->avatarMediaId !== null && isset($loadedAvatars[$item->avatarMediaId]) && $loadedAvatars[$item->avatarMediaId]->isImage()) {
+                        $avatarUrls[$item->id] = $loadedAvatars[$item->avatarMediaId]->thumbnailUrl();
+                    }
+                }
+            } catch (Throwable) {
+            }
         }
 
         $data = $this->context->build($request, 'Utilisateurs', [
             'pagination' => $pagination,
+            'avatarUrls' => $avatarUrls,
             'allRoles' => $allRoles,
             'filters' => [
                 'search' => $search,
@@ -407,6 +429,12 @@ final class UserController
         }
 
         $this->users->delete($target->id);
+        if ($this->mediaUsage !== null) {
+            try {
+                $this->mediaUsage->deleteForEntity('user', $target->id);
+            } catch (Throwable) {
+            }
+        }
         $this->context->flashToast(sprintf('Le compte « %s » a été supprimé.', $target->displayName), 'success');
 
         return Response::redirect('/admin/users', 302);

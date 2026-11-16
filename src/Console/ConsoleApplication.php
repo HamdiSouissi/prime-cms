@@ -20,6 +20,9 @@ use Prime\Console\Commands\InstallCommand;
 use Prime\Console\Commands\ListCommand;
 use Prime\Console\Commands\MakeMigrationCommand;
 use Prime\Console\Commands\MakePluginCommand;
+use Prime\Console\Commands\MediaCleanupCommand;
+use Prime\Console\Commands\MediaLinkCommand;
+use Prime\Console\Commands\MediaRegenerateCommand;
 use Prime\Console\Commands\MigrateCommand;
 use Prime\Console\Commands\MigrateFreshCommand;
 use Prime\Console\Commands\MigrateResetCommand;
@@ -52,6 +55,10 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Install\Installer;
 use Prime\Kernel\Application;
+use Prime\Media\MediaConfig;
+use Prime\Media\MediaRepository;
+use Prime\Media\UploadService;
+use Prime\Media\UploadsGuard;
 use Prime\Plugins\PluginInstaller;
 use Prime\Plugins\PluginManager;
 use Prime\Security\PasswordPolicy;
@@ -224,6 +231,21 @@ final class ConsoleApplication
             $this->register(new ContentPurgeTrashCommand($this->app, $entryService));
             $this->register(new ContentRerenderCommand($entryService));
             $this->register(new ContentTypesCommand($contentTypes, $taxonomies));
+        }
+
+        if ($this->app->container()->has(MediaRepository::class) && $this->app->container()->has(UploadService::class)) {
+            /** @var MediaRepository $mediaRepo */
+            $mediaRepo = $this->app->get(MediaRepository::class);
+            /** @var UploadService $uploadService */
+            $uploadService = $this->app->get(UploadService::class);
+            /** @var MediaConfig $mediaConfig */
+            $mediaConfig = $this->app->get(MediaConfig::class);
+            /** @var UploadsGuard $uploadsGuard */
+            $uploadsGuard = $this->app->get(UploadsGuard::class);
+
+            $this->register(new MediaRegenerateCommand($mediaRepo, $uploadService, $mediaConfig));
+            $this->register(new MediaLinkCommand($uploadsGuard));
+            $this->register(new MediaCleanupCommand($mediaRepo, $mediaConfig));
         }
 
         $this->register(new MakePluginCommand($this->app));
