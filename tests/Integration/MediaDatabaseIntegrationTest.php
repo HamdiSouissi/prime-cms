@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Prime\Tests\Integration;
 
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Group;
 use Prime\Auth\RoleRepository;
 use Prime\Auth\User;
@@ -144,15 +143,19 @@ final class MediaDatabaseIntegrationTest extends DatabaseTestCase
         $grandChild = $folderRepo->create('Photos HD', $child->id);
 
         // Rename & move
-        $renamed = $folderRepo->update($child->id, 'Édition 2026', $root->id);
-        $this->assertNotNull($renamed);
+        $renamed = $folderRepo->update($child->id, 'Édition 2026', true, $root->id);
         $this->assertSame('Édition 2026', $renamed->name);
 
-        // Circular parent must throw InvalidArgumentException
+        $movedToRoot = $folderRepo->update($grandChild->id, null, true, null);
+        $this->assertNull($movedToRoot->parentId);
+        $movedBack = $folderRepo->update($grandChild->id, null, true, $child->id);
+        $this->assertSame($child->id, $movedBack->parentId);
+
+        // Circular parent must throw MediaValidationException
         $cycleRejected = false;
         try {
-            $folderRepo->update($root->id, 'Presse', $grandChild->id);
-        } catch (InvalidArgumentException) {
+            $folderRepo->update($root->id, 'Presse', true, $grandChild->id);
+        } catch (MediaValidationException) {
             $cycleRejected = true;
         }
         $this->assertTrue($cycleRejected);
