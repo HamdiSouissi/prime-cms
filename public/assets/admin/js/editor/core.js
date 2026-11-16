@@ -4,6 +4,13 @@
 
 import { registerCoreBlocks } from './blocks.js';
 import { HistoryStack } from './history.js';
+import {
+  resolveBlockArrowNavigation,
+  resolveInsertionFocus,
+  resolvePrimaryFocusSelector,
+  resolveTitleKeyNavigation,
+  resolveUndoRedoFocusIndex,
+} from './navigation.js';
 import { parsePastedHtmlToBlocks, parsePlainTextToBlocks } from './paste.js';
 import { defaultBlockRegistry } from './registry.js';
 import {
@@ -42,10 +49,13 @@ export class PrimeEditor {
     this.redoBtn = document.querySelector('[data-prime-editor-redo]');
     this.addRootBtn = rootEl.querySelector('[data-prime-editor-add]');
     this.autosaveStatusEl = document.querySelector('[data-prime-autosave-status]');
+    this.titleInput = document.querySelector('[data-prime-content-title]');
     this.form = rootEl.closest('form');
 
-    const rawCaps = (rootEl.dataset.capabilities || '').split(',').map((s) => s.trim()).filter(Boolean);
-    this.capabilities = new Set(rawCaps);
+    this.config = this.readConfig(rootEl);
+    const configCaps = Array.isArray(this.config.capabilities) ? this.config.capabilities.map((s) => String(s).trim()).filter(Boolean) : [];
+    const dataCaps = (rootEl.dataset.capabilities || '').split(',').map((s) => s.trim()).filter(Boolean);
+    this.capabilities = new Set(configCaps.length > 0 ? configCaps : dataCaps);
     this.registry = defaultBlockRegistry;
 
     const initialDoc = deserializeDocument(this.textarea ? this.textarea.value : '');
@@ -74,7 +84,42 @@ export class PrimeEditor {
     });
   }
 
+  readConfig(rootEl) {
+    const scriptEl = rootEl.querySelector('script[data-prime-editor-config]');
+    if (!scriptEl) {
+      return {};
+    }
+    try {
+      const parsed = JSON.parse(scriptEl.textContent || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
   bindGlobalEvents() {
+    if (this.titleInput instanceof HTMLInputElement) {
+      this.titleInput.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
+          return;
+        }
+        const nav = resolveTitleKeyNavigation(e.key, this.blocks.length);
+        if (nav.action === 'none') {
+          return;
+        }
+        e.preventDefault();
+        if (nav.action === 'create_and_focus_first') {
+          this.blocks.push(createDefaultBlock('paragraph'));
+          this.afterMutation(0, 'Paragraphe prêt.', false);
+          return;
+        }
+        this.focusBlock(nav.index, nav.atEnd);
+      });
+      this.titleInput.addEventListener('input', () => {
+        this.updateStats();
+      });
+    }
+
     if (this.undoBtn) {
       this.undoBtn.addEventListener('click', () => this.undo());
     }
@@ -96,7 +141,12 @@ export class PrimeEditor {
         return;
       }
 
-      if (mod && e.key.toLowerCase() === 'z' && this.root.contains(document.activeElement)) {
+      const activeInEditor =
+        this.root.contains(document.activeElement) ||
+        document.activeElement === this.undoBtn ||
+        document.activeElement === this.redoBtn;
+
+      if (mod && e.key.toLowerCase() === 'z' && activeInEditor) {
         e.preventDefault();
         if (e.shiftKey) {
           this.redo();
@@ -105,7 +155,7 @@ export class PrimeEditor {
         }
         return;
       }
-      if (mod && e.key.toLowerCase() === 'y' && this.root.contains(document.activeElement)) {
+      if (mod && e.key.toLowerCase() === 'y' && activeInEditor) {
         e.preventDefault();
         this.redo();
       }
@@ -147,7 +197,7 @@ export class PrimeEditor {
     }
   }
 
-  renderAll(focusIndex = null, focusAtEnd = false) {
+  renderAll(focusIndex = null, focusAtEnd = false, focusOpts = null) {
     if (!this.canvas) {
       return;
     }
@@ -240,8 +290,14 @@ export class PrimeEditor {
         const rendered = def.render({
           id: block.id,
           index,
+          blockCount: this.blocks.length,
           data: block.data,
           capabilities: this.capabilities,
+          isCaretAtEdge: (el, edge) => this.isCaretAtEdge(el, edge),
+          focusBlock: (targetIdx, atEnd = false) => this.focusBlock(targetIdx, atEnd),
+          focusTitle: (atEnd = true) => this.focusTitle(atEnd),
+          focusSubElement: (targetIdx, selector, matchIndex, atEnd = false) =>
+            this.focusBlock(targetIdx, atEnd, { selector, matchIndex }),
           updateData: (patch, opts = {}) => {
             block.data = { ...block.data, ...patch };
             this.dirty = true;
@@ -253,7 +309,10 @@ export class PrimeEditor {
               this.scheduleHistoryPush();
             }
             if (opts.rerender) {
-              this.renderAll(index);
+              const subFocus = opts.focusSelector
+                ? { selector: opts.focusSelector, matchIndex: opts.focusMatchIndex ?? 0 }
+                : null;
+              this.renderAll(index, Boolean(opts.focusAtEnd), subFocus);
             }
           },
           handleSlashTrigger: (editableEl) => {
@@ -286,7 +345,7 @@ export class PrimeEditor {
     });
 
     if (focusIndex !== null) {
-      this.focusBlock(focusIndex, focusAtEnd);
+      this.focusBlock(focusIndex, focusAtEnd, focusOpts);
     }
   }
 
@@ -378,13 +437,22 @@ export class PrimeEditor {
       return;
     }
 
-    // ArrowUp / ArrowDown across block boundaries
-    if (event.key === 'ArrowUp' && index > 0 && this.isCaretAtEdge(editableEl, 'start')) {
-      event.preventDefault();
-      this.focusBlock(index - 1, true);
-    } else if (event.key === 'ArrowDown' && index < this.blocks.length - 1 && this.isCaretAtEdge(editableEl, 'end')) {
-      event.preventDefault();
-      this.focusBlock(index + 1, false);
+    // ArrowUp / ArrowDown across block boundaries (and ArrowUp at start of first block back into title)
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      const nav = resolveBlockArrowNavigation({
+        key: event.key,
+        blockIndex: index,
+        blockCount: this.blocks.length,
+        atStart: this.isCaretAtEdge(editableEl, 'start'),
+        atEnd: this.isCaretAtEdge(editableEl, 'end'),
+      });
+      if (nav.action === 'focus_title') {
+        event.preventDefault();
+        this.focusTitle(true);
+      } else if (nav.action === 'focus_block') {
+        event.preventDefault();
+        this.focusBlock(nav.index, nav.atEnd);
+      }
     }
   }
 
@@ -435,16 +503,22 @@ export class PrimeEditor {
       data: typeof def.defaultData === 'function' ? def.defaultData() : {},
     });
 
-    if (ctx && ctx.mode === 'replace') {
-      this.blocks.splice(ctx.index, 1, newBlock);
-      this.afterMutation(ctx.index, `Bloc ${def.title} inséré.`);
-    } else if (ctx && ctx.mode === 'after') {
-      this.blocks.splice(ctx.index + 1, 0, newBlock);
-      this.afterMutation(ctx.index + 1, `Bloc ${def.title} inséré.`);
+    const plan = resolveInsertionFocus({
+      mode: ctx?.mode || 'append',
+      contextIndex: ctx?.index ?? this.blocks.length - 1,
+      blockCount: this.blocks.length,
+      insertedType: def.type,
+    });
+
+    const inserted = plan.appendTrailingParagraph ? [newBlock, createDefaultBlock('paragraph')] : [newBlock];
+
+    if (plan.replaceExisting) {
+      this.blocks.splice(plan.insertIndex, 1, ...inserted);
     } else {
-      this.blocks.push(newBlock);
-      this.afterMutation(this.blocks.length - 1, `Bloc ${def.title} ajouté.`);
+      this.blocks.splice(plan.insertIndex, 0, ...inserted);
     }
+
+    this.afterMutation(plan.focusIndex, `Bloc ${def.title} inséré.`, false);
   }
 
   moveBlock(fromIndex, toIndex) {
@@ -485,12 +559,52 @@ export class PrimeEditor {
     }
   }
 
-  focusBlock(index, atEnd = false) {
+  focusTitle(atEnd = true) {
+    if (!(this.titleInput instanceof HTMLInputElement)) {
+      return;
+    }
+    this.titleInput.focus();
+    const pos = atEnd ? this.titleInput.value.length : 0;
+    try {
+      this.titleInput.setSelectionRange(pos, pos);
+    } catch {
+      // Ignore selection range errors on unsupported input types
+    }
+  }
+
+  getActiveBlockIndex() {
+    const active = document.activeElement;
+    if (!(active instanceof Element)) {
+      return null;
+    }
+    const blockEl = active.closest('[data-block-index]');
+    if (!(blockEl instanceof HTMLElement)) {
+      return null;
+    }
+    const parsed = Number.parseInt(blockEl.dataset.blockIndex || '', 10);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  focusBlock(index, atEnd = false, focusOpts = null) {
     const blockEl = this.canvas?.querySelector(`[data-block-index="${index}"]`);
     if (!blockEl) {
       return;
     }
-    const target = blockEl.querySelector('.pc-ed-richtext, input, textarea');
+
+    const blockType = blockEl.getAttribute('data-block-type') || '';
+    let target = null;
+
+    if (focusOpts && focusOpts.selector) {
+      const matches = blockEl.querySelectorAll(focusOpts.selector);
+      const matchIdx = Math.max(0, Math.min(focusOpts.matchIndex ?? 0, matches.length - 1));
+      target = matches[matchIdx] || null;
+    }
+
+    if (!target) {
+      const primarySelector = resolvePrimaryFocusSelector(blockType);
+      target = blockEl.querySelector(primarySelector) || blockEl.querySelector('.pc-ed-richtext, textarea, input:not([type="hidden"])');
+    }
+
     if (!(target instanceof HTMLElement)) {
       return;
     }
@@ -504,10 +618,20 @@ export class PrimeEditor {
         sel.removeAllRanges();
         sel.addRange(range);
       }
+    } else if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+      const pos = atEnd ? target.value.length : 0;
+      try {
+        target.setSelectionRange(pos, pos);
+      } catch {
+        // Ignore on non-selectable input types
+      }
     }
   }
 
   isCaretAtEdge(el, edge) {
+    if (stripHtml(el.innerHTML) === '') {
+      return true;
+    }
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) {
       return false;
@@ -530,19 +654,25 @@ export class PrimeEditor {
 
   pushHistoryNow() {
     window.clearTimeout(this.historyTimer);
+    this.historyTimer = null;
     this.history.push(this.blocks);
     this.updateHistoryButtons();
   }
 
   undo() {
+    if (this.historyTimer !== null) {
+      this.pushHistoryNow();
+    }
     const prev = this.history.undo();
     if (!prev) {
       return;
     }
+    const activeIdx = this.getActiveBlockIndex();
     this.blocks = prev;
     this.dirty = true;
     this.syncTextarea();
-    this.renderAll();
+    const focusIdx = resolveUndoRedoFocusIndex(activeIdx, this.blocks.length);
+    this.renderAll(focusIdx, true);
     this.updateStats();
     this.updateHistoryButtons();
     this.announce('Action annulée.');
@@ -553,10 +683,12 @@ export class PrimeEditor {
     if (!next) {
       return;
     }
+    const activeIdx = this.getActiveBlockIndex();
     this.blocks = next;
     this.dirty = true;
     this.syncTextarea();
-    this.renderAll();
+    const focusIdx = resolveUndoRedoFocusIndex(activeIdx, this.blocks.length);
+    this.renderAll(focusIdx, true);
     this.updateStats();
     this.updateHistoryButtons();
     this.announce('Action rétablie.');
@@ -590,22 +722,25 @@ export class PrimeEditor {
     if (!this.form) {
       return;
     }
+    this.syncTextarea();
+    this.dirty = false;
     const primaryBtn = this.form.querySelector('[data-prime-primary-save]');
     if (primaryBtn instanceof HTMLButtonElement && !primaryBtn.disabled) {
       primaryBtn.click();
     } else {
-      this.syncTextarea();
       this.form.requestSubmit();
     }
   }
 
   initAutosaveAndLocks() {
-    const autosaveUrl = this.root.dataset.autosaveUrl || '';
-    const heartbeatUrl = this.root.dataset.lockHeartbeatUrl || '';
-    const releaseUrl = this.root.dataset.lockReleaseUrl || '';
+    const autosaveUrl = String(this.config.autosaveUrl || this.root.dataset.autosaveUrl || '');
+    const autosaveIntervalMs = Number(this.config.autosaveIntervalMs || 30000);
+    const heartbeatUrl = String(this.config.heartbeatUrl || this.root.dataset.lockHeartbeatUrl || '');
+    const heartbeatIntervalMs = Number(this.config.heartbeatIntervalMs || 30000);
+    const releaseUrl = String(this.config.releaseUrl || this.root.dataset.lockReleaseUrl || '');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-    // 30-second autosave for existing entries when dirty
+    // Periodic autosave for existing entries when dirty
     if (autosaveUrl) {
       this.autosaveTimer = window.setInterval(async () => {
         if (!this.dirty) {
@@ -626,7 +761,7 @@ export class PrimeEditor {
             body: JSON.stringify({
               title,
               excerpt,
-              content: this.textarea?.value || '{"version":1,"blocks":[]}',
+              content_json: this.textarea?.value || '{"version":1,"blocks":[]}',
             }),
           });
           if (res.ok && this.autosaveStatusEl) {
@@ -638,10 +773,10 @@ export class PrimeEditor {
         } catch {
           // Silent retry on next interval
         }
-      }, 30000);
+      }, autosaveIntervalMs);
     }
 
-    // 30-second edit lock heartbeat
+    // Periodic edit lock heartbeat (only shows lock-lost banner when lock is genuinely lost)
     if (heartbeatUrl) {
       this.heartbeatTimer = window.setInterval(async () => {
         try {
@@ -652,24 +787,26 @@ export class PrimeEditor {
               'X-CSRF-Token': csrfToken,
             },
           });
-          if (!res.ok) {
-            return;
+          let payload = {};
+          try {
+            payload = await res.json();
+          } catch {
+            payload = {};
           }
-          const payload = await res.json();
-          if (payload.status === 'lost') {
-            this.handleLockLost(payload.locked_by || 'un autre utilisateur');
+          if (res.status === 409 || payload.locked_by_other === true || payload.status === 'lost') {
+            this.handleLockLost(payload.holder || payload.locked_by || 'un autre utilisateur');
           }
         } catch {
           // Transient network error ignored
         }
-      }, 30000);
+      }, heartbeatIntervalMs);
     }
 
     // Release lock cleanly on navigation away
     if (releaseUrl && csrfToken) {
       window.addEventListener('pagehide', () => {
         if (navigator.sendBeacon) {
-          const body = new URLSearchParams({ _token: csrfToken });
+          const body = new URLSearchParams({ _csrf_token: csrfToken });
           navigator.sendBeacon(releaseUrl, body);
         }
       });
@@ -683,7 +820,9 @@ export class PrimeEditor {
     const banner = document.querySelector('[data-prime-lock-lost-banner]');
     if (banner instanceof HTMLElement) {
       const msgEl = banner.querySelector('[data-prime-lock-lost-user]');
-      if (msgEl) msgEl.textContent = userName;
+      if (msgEl) {
+        msgEl.textContent = `${userName} a pris le contrôle de ce contenu.`;
+      }
       banner.hidden = false;
     }
 

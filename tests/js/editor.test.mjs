@@ -6,6 +6,15 @@ import assert from 'node:assert/strict';
 import { describe, test } from './run.mjs';
 
 import { HistoryStack } from '../../public/assets/admin/js/editor/history.js';
+import {
+  resolveBlockArrowNavigation,
+  resolveInsertionFocus,
+  resolveListItemKeyAction,
+  resolvePrimaryFocusSelector,
+  resolveTitleKeyNavigation,
+  resolveUndoRedoFocusIndex,
+  shouldBlockGlobalSlashShortcut,
+} from '../../public/assets/admin/js/editor/navigation.js';
 import { parsePastedHtmlToBlocks, parsePlainTextToBlocks } from '../../public/assets/admin/js/editor/paste.js';
 import { EditorBlockRegistry } from '../../public/assets/admin/js/editor/registry.js';
 import {
@@ -252,6 +261,10 @@ describe('EditorBlockRegistry (Extensibility)', () => {
     const forAdmin = reg.search('', new Set(['content.unfiltered_html']));
     assert.equal(forAdmin.length, 2);
 
+    // Wildcard admin capability `*` also unlocks restricted blocks
+    const forSuperAdmin = reg.search('', new Set(['*']));
+    assert.equal(forSuperAdmin.length, 2);
+
     // Keyword search matches
     const hits = reg.search('spotlight', new Set());
     assert.equal(hits.length, 1);
@@ -261,3 +274,177 @@ describe('EditorBlockRegistry (Extensibility)', () => {
     assert.throws(() => reg.registerBlock({ type: 'INVALID!', title: 'Bad', render: () => ({}) }));
   });
 });
+
+describe('Keyboard Navigation, Focus Resolution & Slash Shortcut Guard (C3)', () => {
+  test('title Enter and ArrowDown focus first block or create one when canvas is empty', () => {
+    assert.deepEqual(resolveTitleKeyNavigation('Enter', 3), { action: 'focus_block', index: 0, atEnd: false });
+    assert.deepEqual(resolveTitleKeyNavigation('ArrowDown', 1), { action: 'focus_block', index: 0, atEnd: false });
+    assert.deepEqual(resolveTitleKeyNavigation('Enter', 0), { action: 'create_and_focus_first', index: 0, atEnd: false });
+    assert.deepEqual(resolveTitleKeyNavigation('ArrowDown', 0), { action: 'create_and_focus_first', index: 0, atEnd: false });
+    assert.deepEqual(resolveTitleKeyNavigation('ArrowUp', 2), { action: 'none', index: -1, atEnd: false });
+    assert.deepEqual(resolveTitleKeyNavigation('a', 2), { action: 'none', index: -1, atEnd: false });
+  });
+
+  test('ArrowUp at start of first block returns to title; boundary arrows jump between blocks', () => {
+    assert.deepEqual(
+      resolveBlockArrowNavigation({ key: 'ArrowUp', blockIndex: 0, blockCount: 3, atStart: true, atEnd: false }),
+      { action: 'focus_title', index: -1, atEnd: true },
+    );
+    assert.deepEqual(
+      resolveBlockArrowNavigation({ key: 'ArrowUp', blockIndex: 0, blockCount: 3, atStart: false, atEnd: false }),
+      { action: 'none', index: -1, atEnd: false },
+    );
+    assert.deepEqual(
+      resolveBlockArrowNavigation({ key: 'ArrowUp', blockIndex: 2, blockCount: 3, atStart: true, atEnd: false }),
+      { action: 'focus_block', index: 1, atEnd: true },
+    );
+    assert.deepEqual(
+      resolveBlockArrowNavigation({ key: 'ArrowDown', blockIndex: 1, blockCount: 3, atStart: false, atEnd: true }),
+      { action: 'focus_block', index: 2, atEnd: false },
+    );
+    assert.deepEqual(
+      resolveBlockArrowNavigation({ key: 'ArrowDown', blockIndex: 2, blockCount: 3, atStart: false, atEnd: true }),
+      { action: 'none', index: -1, atEnd: false },
+    );
+  });
+
+  test('list item keyboard navigation inserts, removes, and moves cleanly across items and blocks', () => {
+    assert.deepEqual(
+      resolveListItemKeyAction({
+        key: 'Enter',
+        shiftKey: false,
+        itemIndex: 0,
+        itemCount: 1,
+        isEmpty: false,
+        atStart: false,
+        atEnd: true,
+        blockIndex: 2,
+        blockCount: 3,
+      }),
+      { action: 'insert_item', itemIndex: 1, blockIndex: 2, atEnd: false },
+    );
+
+    assert.deepEqual(
+      resolveListItemKeyAction({
+        key: 'Enter',
+        shiftKey: true,
+        itemIndex: 0,
+        itemCount: 1,
+        isEmpty: false,
+        atStart: false,
+        atEnd: true,
+        blockIndex: 2,
+        blockCount: 3,
+      }),
+      { action: 'none', itemIndex: 0, blockIndex: 2, atEnd: false },
+    );
+
+    assert.deepEqual(
+      resolveListItemKeyAction({
+        key: 'Backspace',
+        itemIndex: 1,
+        itemCount: 2,
+        isEmpty: true,
+        atStart: true,
+        atEnd: true,
+        blockIndex: 2,
+        blockCount: 3,
+      }),
+      { action: 'remove_item', itemIndex: 0, blockIndex: 2, atEnd: true },
+    );
+
+    // ArrowUp on first item of block 0 returns to title
+    assert.deepEqual(
+      resolveListItemKeyAction({
+        key: 'ArrowUp',
+        itemIndex: 0,
+        itemCount: 2,
+        isEmpty: false,
+        atStart: true,
+        atEnd: false,
+        blockIndex: 0,
+        blockCount: 2,
+      }),
+      { action: 'focus_title', itemIndex: -1, blockIndex: -1, atEnd: true },
+    );
+
+    // ArrowDown on last item jumps to next block
+    assert.deepEqual(
+      resolveListItemKeyAction({
+        key: 'ArrowDown',
+        itemIndex: 1,
+        itemCount: 2,
+        isEmpty: false,
+        atStart: false,
+        atEnd: true,
+        blockIndex: 0,
+        blockCount: 2,
+      }),
+      { action: 'focus_block', itemIndex: -1, blockIndex: 1, atEnd: false },
+    );
+  });
+
+  test('slash menu insertion computes replace/after/append focus and appends paragraph after separator', () => {
+    assert.deepEqual(
+      resolveInsertionFocus({ mode: 'replace', contextIndex: 1, blockCount: 2, insertedType: 'heading' }),
+      { insertIndex: 1, replaceExisting: true, focusIndex: 1, appendTrailingParagraph: false },
+    );
+    assert.deepEqual(
+      resolveInsertionFocus({ mode: 'after', contextIndex: 0, blockCount: 2, insertedType: 'list' }),
+      { insertIndex: 1, replaceExisting: false, focusIndex: 1, appendTrailingParagraph: false },
+    );
+    assert.deepEqual(
+      resolveInsertionFocus({ mode: 'replace', contextIndex: 1, blockCount: 2, insertedType: 'separator' }),
+      { insertIndex: 1, replaceExisting: true, focusIndex: 2, appendTrailingParagraph: true },
+    );
+    assert.deepEqual(
+      resolveInsertionFocus({ mode: 'append', contextIndex: 0, blockCount: 3, insertedType: 'code' }),
+      { insertIndex: 3, replaceExisting: false, focusIndex: 3, appendTrailingParagraph: false },
+    );
+  });
+
+  test('resolves primary focus selectors and clamps undo/redo focus safely', () => {
+    assert.equal(resolvePrimaryFocusSelector('paragraph'), '.pc-ed-p-input');
+    assert.equal(resolvePrimaryFocusSelector('heading'), '.pc-ed-h-input');
+    assert.equal(resolvePrimaryFocusSelector('list'), '.pc-ed-list-input');
+    assert.equal(resolvePrimaryFocusSelector('code'), '.pc-ed-code-textarea');
+    assert.match(resolvePrimaryFocusSelector('custom/block'), /\.pc-ed-richtext/);
+
+    assert.equal(resolveUndoRedoFocusIndex(2, 4), 2);
+    assert.equal(resolveUndoRedoFocusIndex(5, 2), 1);
+    assert.equal(resolveUndoRedoFocusIndex(null, 3), 2);
+    assert.equal(resolveUndoRedoFocusIndex(0, 0), null);
+  });
+
+  test('global slash command-palette shortcut is blocked in inputs, contenteditable, and editor root', () => {
+    const mockEl = ({ tagName = 'DIV', isContentEditable = false, attrs = {}, matchClosest = false } = {}) => ({
+      nodeType: 1,
+      tagName,
+      isContentEditable,
+      getAttribute: (k) => (Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null),
+      closest: () => (matchClosest ? {} : null),
+    });
+
+    assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'INPUT' })), true);
+    assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'TEXTAREA' })), true);
+    assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'SELECT' })), true);
+    assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'P', isContentEditable: true })), true);
+    assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'DIV', attrs: { contenteditable: 'true' } })), true);
+    assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'DIV', attrs: { contenteditable: '' } })), true);
+    assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'DIV', matchClosest: true })), true);
+
+    // Text node nested inside an editable element must also block `/`
+    const textNode = { nodeType: 3, parentElement: mockEl({ tagName: 'P', isContentEditable: true }) };
+    assert.equal(shouldBlockGlobalSlashShortcut(textNode), true);
+
+    // Active element inside editor blocks `/` even if event.target is body
+    const bodyEl = mockEl({ tagName: 'BODY' });
+    const editorEl = mockEl({ tagName: 'DIV', matchClosest: true });
+    assert.equal(shouldBlockGlobalSlashShortcut(bodyEl, editorEl), true);
+
+    // Outside any editable context (e.g., admin dashboard body/link), `/` remains allowed
+    assert.equal(shouldBlockGlobalSlashShortcut(bodyEl, bodyEl), false);
+    assert.equal(shouldBlockGlobalSlashShortcut(mockEl({ tagName: 'BUTTON' }), bodyEl), false);
+  });
+});
+

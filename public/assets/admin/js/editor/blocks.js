@@ -2,6 +2,7 @@
  * Prime Editor — All 11 core block implementations registered on `defaultBlockRegistry`.
  */
 
+import { resolveListItemKeyAction } from './navigation.js';
 import { defaultBlockRegistry } from './registry.js';
 import { escapeHtml, parseEmbedUrl, sanitizeInlineHtml, slugify, stripHtml } from './utils.js';
 
@@ -31,6 +32,7 @@ function createIconSvg(name, size = 16) {
 function createRichTextEl({ tag = 'div', className = '', html = '', placeholder = '', ariaLabel = '', onChange, onKeyDown, onPaste }) {
   const el = document.createElement(tag);
   el.className = `pc-ed-richtext ${className}`.trim();
+  el.setAttribute('contenteditable', 'true');
   el.contentEditable = 'true';
   el.dataset.placeholder = placeholder;
   el.setAttribute('role', 'textbox');
@@ -221,16 +223,71 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
             items[idx].text = html;
             ctx.updateData({ style, items });
           },
-          onKeyDown: (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+          onKeyDown: (e, el) => {
+            const nav = resolveListItemKeyAction({
+              key: e.key,
+              shiftKey: e.shiftKey,
+              itemIndex: idx,
+              itemCount: items.length,
+              isEmpty: stripHtml(el.innerHTML) === '',
+              atStart: ctx.isCaretAtEdge ? ctx.isCaretAtEdge(el, 'start') : false,
+              atEnd: ctx.isCaretAtEdge ? ctx.isCaretAtEdge(el, 'end') : false,
+              blockIndex: ctx.index,
+              blockCount: ctx.blockCount ?? 1,
+            });
+
+            if (nav.action === 'insert_item') {
               e.preventDefault();
-              items.splice(idx + 1, 0, { text: '', children: [] });
-              ctx.updateData({ style, items }, { rerender: true, recordHistory: true });
-            } else if (e.key === 'Backspace' && stripHtml(items[idx].text) === '' && items.length > 1) {
+              items.splice(nav.itemIndex, 0, { text: '', children: [] });
+              ctx.updateData(
+                { style, items },
+                {
+                  rerender: true,
+                  recordHistory: true,
+                  focusSelector: '.pc-ed-list-items > .pc-ed-list-item > .pc-ed-list-row > .pc-ed-list-input',
+                  focusMatchIndex: nav.itemIndex,
+                  focusAtEnd: false,
+                },
+              );
+              return;
+            }
+            if (nav.action === 'remove_item') {
               e.preventDefault();
               items.splice(idx, 1);
-              ctx.updateData({ style, items }, { rerender: true, recordHistory: true });
+              ctx.updateData(
+                { style, items },
+                {
+                  rerender: true,
+                  recordHistory: true,
+                  focusSelector: '.pc-ed-list-items > .pc-ed-list-item > .pc-ed-list-row > .pc-ed-list-input',
+                  focusMatchIndex: nav.itemIndex,
+                  focusAtEnd: true,
+                },
+              );
+              return;
             }
+            if (nav.action === 'focus_item') {
+              e.preventDefault();
+              ctx.focusSubElement?.(
+                ctx.index,
+                '.pc-ed-list-items > .pc-ed-list-item > .pc-ed-list-row > .pc-ed-list-input',
+                nav.itemIndex,
+                nav.atEnd,
+              );
+              return;
+            }
+            if (nav.action === 'focus_title') {
+              e.preventDefault();
+              ctx.focusTitle?.(true);
+              return;
+            }
+            if (nav.action === 'focus_block') {
+              e.preventDefault();
+              ctx.focusBlock?.(nav.blockIndex, nav.atEnd);
+              return;
+            }
+
+            ctx.handleRichKeyDown(e, el, { allowSplit: false });
           },
         });
 

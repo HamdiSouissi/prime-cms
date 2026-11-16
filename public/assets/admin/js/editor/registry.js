@@ -78,7 +78,12 @@ export class EditorBlockRegistry {
   search(query, allowedCapabilities = null) {
     const needle = String(query || '').trim().toLowerCase();
     return this.list().filter((block) => {
-      if (block.requiresCapability && allowedCapabilities && !allowedCapabilities.has(block.requiresCapability)) {
+      if (
+        block.requiresCapability &&
+        allowedCapabilities &&
+        !allowedCapabilities.has('*') &&
+        !allowedCapabilities.has(block.requiresCapability)
+      ) {
         return false;
       }
       if (!needle) {
