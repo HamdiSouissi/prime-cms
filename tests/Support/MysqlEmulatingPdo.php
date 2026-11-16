@@ -48,6 +48,10 @@ final class MysqlEmulatingPdo extends PDO
             $query = (string) preg_replace('/,\s*FULLTEXT\s+KEY\s+`[^`]+`\s*\([^)]+\)/i', '', $query);
             $query = (string) preg_replace('/,\s*UNIQUE\s+KEY\s+`[^`]+`\s*\(([^)]+)\)/i', ', UNIQUE ($1)', $query);
             $query = (string) preg_replace('/,\s*INDEX\s+`[^`]+`\s*\([^)]+\)/i', '', $query);
+        } elseif (stripos($query, 'ALTER TABLE') !== false) {
+            // SQLite supports only single ADD COLUMN without inline ADD INDEX / ADD CONSTRAINT
+            $query = (string) preg_replace('/\bUNSIGNED\b/i', '', $query);
+            $query = (string) preg_replace('/,\s*ADD\s+(?:INDEX|UNIQUE\s+KEY|FULLTEXT\s+KEY|CONSTRAINT)\s+.*$/is', '', $query);
         }
 
         return parent::prepare($query, $options);

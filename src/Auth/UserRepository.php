@@ -445,6 +445,7 @@ final class UserRepository
                 updatedAt: isset($row['updated_at']) ? (string) $row['updated_at'] : null,
                 roles: $userRoles,
                 capabilities: array_keys($capabilities),
+                avatarMediaId: isset($row['avatar_media_id']) && $row['avatar_media_id'] !== '' ? (int) $row['avatar_media_id'] : null,
             );
         }
 
