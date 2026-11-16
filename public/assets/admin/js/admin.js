@@ -6,6 +6,10 @@
 import { initAdminUsers } from './admin-users.js';
 import { initAdminPlugins } from './plugins.js';
 import { initContentAdmin } from './content-admin.js';
+import { initCustomizer } from './customizer.js';
+import { initMenusAdmin } from './menus-admin.js';
+import { initSeoPreview } from './seo-preview.js';
+import { initZonesAdmin, registerDynamicBlock } from './zones-admin.js';
 import { editorApi, initPrimeEditor } from './editor/core.js';
 import { initMediaLibrary } from './media/library.js';
 import { initMediaFields, mediaApi } from './media/picker.js';
@@ -143,7 +147,12 @@ function bootstrap() {
   initAdminUsers();
   initAdminPlugins();
   initContentAdmin();
-  initPrimeEditor();
+  registerDynamicBlock();
+  const editors = initPrimeEditor();
+  initZonesAdmin(editors);
+  initCustomizer();
+  initMenusAdmin();
+  initSeoPreview();
   initMediaLibrary();
   initMediaFields();
 }

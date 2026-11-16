@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HelloPrime;
 
+use Closure;
 use HelloPrime\Controller\HelloPrimeController;
 use Prime\Admin\AdminContext;
 use Prime\Admin\Menu\AdminMenu;
@@ -12,6 +13,8 @@ use Prime\Admin\Notice;
 use Prime\Auth\Auth;
 use Prime\Auth\User;
 use Prime\Content\ContentType;
+use Prime\Content\Entry;
+use Prime\Content\EntryQuery;
 use Prime\Content\EntryRepository;
 use Prime\Content\Fields\Field;
 use Prime\Content\Fields\FieldGroup;
@@ -245,6 +248,74 @@ final class Plugin extends AbstractPlugin
                 $context->logger()->info(sprintf('Hello Prime : nouveau média détecté (#%d — %s)', $media->id, $media->originalName));
             }
         });
+
+        // 14. Register dynamic block `hello_testimonial` via `blocks.dynamic` (Phase 8 L12 + Revue 1 C2)
+        $context->hooks()->filter('blocks.dynamic', function (mixed $blocks) use ($context): mixed {
+            if (!is_array($blocks)) {
+                return $blocks;
+            }
+
+            $blocks['hello_testimonial'] = [
+                'label' => 'Témoignage au hasard (Hello Prime)',
+                'description' => 'Affiche un témoignage client publié tiré au sort.',
+                'defaults' => [
+                    'title' => 'Témoignage client',
+                    'min_rating' => 1,
+                    'show_stars' => true,
+                    'style' => 'card',
+                ],
+                'fields' => [
+                    [
+                        'name' => 'title',
+                        'type' => 'text',
+                        'label' => 'Titre affiché',
+                        'placeholder' => 'Témoignage client',
+                        'default' => 'Témoignage client',
+                    ],
+                    [
+                        'name' => 'min_rating',
+                        'type' => 'number',
+                        'label' => 'Note minimale (1 à 5)',
+                        'min' => 1,
+                        'max' => 5,
+                        'step' => 1,
+                        'default' => 1,
+                    ],
+                    [
+                        'name' => 'show_stars',
+                        'type' => 'toggle',
+                        'label' => 'Afficher les étoiles',
+                        'default' => true,
+                    ],
+                    [
+                        'name' => 'style',
+                        'type' => 'select',
+                        'label' => 'Style d’affichage',
+                        'options' => [
+                            ['value' => 'card', 'label' => 'Carte complète'],
+                            ['value' => 'compact', 'label' => 'Compact'],
+                        ],
+                        'default' => 'card',
+                    ],
+                ],
+                'render' => $this->createTestimonialRenderer($context),
+            ];
+
+            return $blocks;
+        });
+
+        // 15. Provide fallback archive template `archive/testimonial.php` via `site.template_paths` (Phase 8 L12)
+        $pluginTemplatesDir = dirname(__DIR__) . '/templates';
+        $context->hooks()->filter('site.template_paths', static function (mixed $paths) use ($pluginTemplatesDir): mixed {
+            if (!is_array($paths)) {
+                return $paths;
+            }
+            if (is_dir($pluginTemplatesDir) && !in_array($pluginTemplatesDir, $paths, true)) {
+                $paths[] = $pluginTemplatesDir;
+            }
+
+            return $paths;
+        });
     }
 
     public function activate(PluginContext $context): void
@@ -294,5 +365,81 @@ final class Plugin extends AbstractPlugin
         }
 
         $context->logger()->info('Plugin Hello Prime désinstallé : nettoyage complet terminé.');
+    }
+
+    /**
+     * Build the typed dynamic block renderer closure for `hello_testimonial`.
+     *
+     * @return Closure(array<string, mixed>): string
+     */
+    private function createTestimonialRenderer(PluginContext $context): Closure
+    {
+        return static function (array $attrs) use ($context): string {
+            if (!$context->app()->container()->has(EntryQuery::class)) {
+                return '';
+            }
+
+            try {
+                /** @var EntryQuery $query */
+                $query = $context->app()->get(EntryQuery::class);
+                $items = $query->newQuery()
+                    ->type(self::CPT_TESTIMONIAL)
+                    ->orderBy('published_at', 'DESC')
+                    ->limit(25)
+                    ->get();
+                if ($items === []) {
+                    return '';
+                }
+
+                $minRating = is_numeric($attrs['min_rating'] ?? null)
+                    ? max(1, min(5, (int) $attrs['min_rating']))
+                    : 1;
+                $eligible = array_values(array_filter(
+                    $items,
+                    static function (Entry $item) use ($minRating): bool {
+                        $raw = $item->meta('rating');
+                        $r = is_numeric($raw) ? (int) $raw : 5;
+
+                        return $r >= $minRating;
+                    },
+                ));
+                $pool = $eligible !== [] ? $eligible : $items;
+
+                $chosen = $pool[random_int(0, count($pool) - 1)];
+                $e = static fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $heading = is_string($attrs['title'] ?? null) ? trim($attrs['title']) : '';
+                $rawShowStars = $attrs['show_stars'] ?? true;
+                $showStars = $rawShowStars !== false && $rawShowStars !== '0' && $rawShowStars !== 0;
+                $style = ($attrs['style'] ?? 'card') === 'compact' ? 'compact' : 'card';
+
+                $rawRole = $chosen->meta('author_role');
+                $role = is_string($rawRole) ? trim($rawRole) : '';
+                $rawRating = $chosen->meta('rating');
+                $rating = is_numeric($rawRating) ? max(1, min(5, (int) $rawRating)) : 5;
+                $stars = str_repeat('★', $rating) . str_repeat('☆', 5 - $rating);
+                $quote = $chosen->excerpt !== null && trim($chosen->excerpt) !== ''
+                    ? trim($chosen->excerpt)
+                    : trim($chosen->contentText);
+
+                $modifier = $style === 'compact' ? ' aurora-testimonial--compact' : '';
+                $html = '<section class="prime-dyn prime-dyn--hello-testimonial aurora-testimonial' . $modifier . '">';
+                if ($heading !== '') {
+                    $html .= '<h3 class="prime-dyn__title">' . $e($heading) . '</h3>';
+                }
+                if ($showStars) {
+                    $html .= '<div class="aurora-testimonial__stars" aria-label="Note : ' . $rating . ' sur 5">' . $stars . '</div>';
+                }
+                $html .= '<blockquote class="aurora-testimonial__quote">' . $e($quote) . '</blockquote>';
+                $html .= '<footer class="aurora-testimonial__author">' . $e($chosen->title);
+                if ($role !== '') {
+                    $html .= '<span class="aurora-testimonial__role">' . $e($role) . '</span>';
+                }
+                $html .= '</footer></section>';
+
+                return $html;
+            } catch (Throwable) {
+                return '';
+            }
+        };
     }
 }

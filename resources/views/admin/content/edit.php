@@ -72,7 +72,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
     <div class="pc-editor-sheet">
         <h1 style="margin-bottom:12px;"><?= $this->e($entry->title) ?></h1>
-        <p class="pc-text-sm pc-text-muted" style="margin-bottom:18px;">Permalien : <code>/<?= $this->e($entry->slug) ?></code> · Mis à jour le <?= $this->e($entry->updatedAt) ?> UTC</p>
+        <p class="pc-text-sm pc-text-muted" style="margin-bottom:18px;">Permalien : <code><?= $this->e($entry->url()) ?></code> · Mis à jour le <?= $this->e($entry->updatedAt) ?> UTC</p>
         <div class="pc-preview-body">
             <?= $this->raw($entry->contentHtml !== '' ? $entry->contentHtml : '<p class="pc-text-muted">Aucun contenu saisi.</p>') ?>
         </div>
@@ -110,6 +110,12 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
         <div class="pc-editor-topbar__right">
             <?php if ($isEdit && $entry !== null): ?>
+                <?php if ($entry->status === \Prime\Content\Entry::STATUS_PUBLISHED): ?>
+                    <a href="<?= $this->e($entry->url()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-view-public>
+                        <?= $this->raw($this->icon('external-link', 16)) ?>
+                        <span>Voir</span>
+                    </a>
+                <?php endif; ?>
                 <a href="<?= $this->e($entry->previewUrl()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--secondary pc-btn--sm">
                     <?= $this->raw($this->icon('eye', 16)) ?>
                     <span>Aperçu</span>
@@ -262,7 +268,13 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                             placeholder="genere-automatiquement"
                             data-prime-content-slug
                         >
-                        <span class="pc-text-xs pc-text-muted">Aperçu : /<span data-prime-slug-preview><?= $this->e($form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu') ?></span></span>
+                        <?php
+                            $previewPattern = is_string($urlPreviewPattern ?? null) ? $urlPreviewPattern : '/__PRIME_SLUG__';
+                            $previewInitial = is_string($urlPreviewInitial ?? null)
+                                ? $urlPreviewInitial
+                                : str_replace('__PRIME_SLUG__', $form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu', $previewPattern);
+                        ?>
+                        <span class="pc-text-xs pc-text-muted">Aperçu : <code data-prime-slug-preview data-prime-url-pattern="<?= $this->e($previewPattern) ?>"><?= $this->e($previewInitial) ?></code></span>
                         <?php if (isset($errors['slug'])): ?>
                             <span class="pc-field__error"><?= $this->e($errors['slug']) ?></span>
                         <?php endif; ?>
@@ -424,6 +436,100 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     'errors' => $errors,
                 ])) ?>
             <?php endforeach; ?>
+
+            <?php if (!empty($themeTemplates)): ?>
+                <section class="pc-inspector-card">
+                    <h2 class="pc-inspector-card__title">Modèle de page</h2>
+                    <div class="pc-field">
+                        <label class="pc-sr-only" for="pc-entry-template">Modèle de thème</label>
+                        <select id="pc-entry-template" name="template" class="pc-select">
+                            <option value="">Modèle par défaut du thème</option>
+                            <?php foreach ($themeTemplates as $tplSlug => $tplLabel): ?>
+                                <option value="<?= $this->e((string) $tplSlug) ?>"<?= ($form['template'] ?? '') === $tplSlug ? ' selected' : '' ?>>
+                                    <?= $this->e((string) $tplLabel) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </section>
+            <?php endif; ?>
+
+            <section class="pc-inspector-card" data-prime-seo-panel data-prime-site-name="<?= $this->e((string) ($siteName ?? '')) ?>" data-prime-seo-sep="<?= $this->e((string) ($seoSeparator ?? '—')) ?>">
+                <details>
+                    <summary class="pc-inspector-card__title">Référencement (SEO)</summary>
+                    <div class="pc-stack pc-stack--sm">
+                        <div class="pc-serp-preview" aria-label="Aperçu moteur de recherche">
+                            <span class="pc-serp-preview__url"><?= $this->e($entry !== null ? $entry->url() : '/' . ($form['slug'] !== '' ? $form['slug'] : 'nouveau-contenu')) ?></span>
+                            <span class="pc-serp-preview__title" data-prime-serp-title><?= $this->e(($seoForm['title'] ?? '') !== '' ? $seoForm['title'] : ($form['title'] !== '' ? $form['title'] : 'Sans titre')) ?></span>
+                            <span class="pc-serp-preview__desc" data-prime-serp-description><?= $this->e(($seoForm['description'] ?? '') !== '' ? $seoForm['description'] : ($form['excerpt'] !== '' ? $form['excerpt'] : 'Aperçu de la méta-description dans les résultats de recherche.')) ?></span>
+                        </div>
+
+                        <div class="pc-field">
+                            <label class="pc-label" for="pc-seo-title">
+                                Titre SEO <span class="pc-seo-counter" data-prime-seo-title-count>0 / 60</span>
+                            </label>
+                            <input
+                                id="pc-seo-title"
+                                type="text"
+                                name="seo[title]"
+                                value="<?= $this->e((string) ($seoForm['title'] ?? '')) ?>"
+                                maxlength="180"
+                                class="pc-input"
+                                placeholder="Laisser vide pour le titre du contenu"
+                                data-prime-seo-title
+                            >
+                        </div>
+
+                        <div class="pc-field">
+                            <label class="pc-label" for="pc-seo-desc">
+                                Méta-description <span class="pc-seo-counter" data-prime-seo-desc-count>0 / 160</span>
+                            </label>
+                            <textarea
+                                id="pc-seo-desc"
+                                name="seo[description]"
+                                rows="3"
+                                maxlength="320"
+                                class="pc-textarea"
+                                placeholder="Résumé affiché dans Google et sur les réseaux sociaux"
+                                data-prime-seo-description
+                            ><?= $this->e((string) ($seoForm['description'] ?? '')) ?></textarea>
+                        </div>
+
+                        <div class="pc-field">
+                            <label class="pc-label" for="pc-seo-canonical">URL canonique (optionnelle)</label>
+                            <input
+                                id="pc-seo-canonical"
+                                type="text"
+                                name="seo[canonical]"
+                                value="<?= $this->e((string) ($seoForm['canonical'] ?? '')) ?>"
+                                class="pc-input"
+                                placeholder="https://... ou /chemin"
+                            >
+                            <?php if (isset($errors['seo_canonical'])): ?>
+                                <span class="pc-field__error"><?= $this->e($errors['seo_canonical']) ?></span>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="pc-field">
+                            <label class="pc-label" for="pc-seo-image-id">Image de partage (ID média Open Graph)</label>
+                            <input
+                                id="pc-seo-image-id"
+                                type="number"
+                                min="0"
+                                name="seo[image_id]"
+                                value="<?= $this->e((string) ($seoForm['image_id'] ?? '')) ?>"
+                                class="pc-input"
+                                placeholder="Par défaut : image mise en avant"
+                            >
+                        </div>
+
+                        <label class="pc-checkbox">
+                            <input type="checkbox" name="seo[noindex]" value="1"<?= !empty($seoForm['noindex']) ? ' checked' : '' ?>>
+                            <span>Exclure des moteurs de recherche (<code>noindex</code>)</span>
+                        </label>
+                    </div>
+                </details>
+            </section>
 
             <?php if ($isEdit && $entry !== null && $recentRevisions !== []): ?>
                 <section class="pc-inspector-card">

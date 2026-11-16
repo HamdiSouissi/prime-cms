@@ -41,7 +41,20 @@ final class User
         public readonly array $roles = [],
         public readonly array $capabilities = [],
         public readonly ?int $avatarMediaId = null,
+        public readonly ?string $username = null,
+        public readonly ?string $bio = null,
     ) {
+    }
+
+    public function authorSlug(): string
+    {
+        if ($this->username !== null && trim($this->username) !== '') {
+            return trim($this->username);
+        }
+
+        $slug = \Prime\Support\Str::slug($this->displayName, '-', 80);
+
+        return $slug !== '' ? $slug : 'auteur-' . $this->id;
     }
 
     public function isActive(): bool

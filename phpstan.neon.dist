@@ -3,6 +3,13 @@ parameters:
     paths:
         - src
         - bootstrap
+        - content/themes
+        - content/plugins/hello-prime
+    excludePaths:
+        - content/themes/*/templates/*
+        - content/themes/*/partials/*
+        - content/plugins/hello-prime/views/*
+        - content/plugins/hello-prime/templates/*
     bootstrapFiles:
         - bootstrap/autoload.php
     tmpDir: .phpstan-cache

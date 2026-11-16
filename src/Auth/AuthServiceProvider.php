@@ -113,10 +113,9 @@ final class AuthServiceProvider extends ServiceProvider
         });
 
         $container->singleton(Auth::class, function () use ($app, $container): Auth {
-            $this->authInstantiated = true;
             $cfg = $app->config()->get('auth', []);
 
-            return new Auth(
+            $auth = new Auth(
                 connection: $container->get(Connection::class),
                 users: $container->get(UserRepository::class),
                 session: $container->get(Session::class),
@@ -128,6 +127,9 @@ final class AuthServiceProvider extends ServiceProvider
                 config: is_array($cfg) ? $cfg : [],
                 hasher: $container->get(Hasher::class),
             );
+            $this->authInstantiated = true;
+
+            return $auth;
         });
     }
 

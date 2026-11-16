@@ -105,8 +105,12 @@ final class Capabilities
         ],
 
         // Apparence, Extensions, Réglages
+        'themes.manage' => [
+            'label' => 'Gérer les thèmes, la personnalisation, les menus et les zones',
+            'group' => 'Apparence',
+        ],
         'appearance.manage' => [
-            'label' => 'Gérer les thèmes, menus et apparence',
+            'label' => 'Gérer les thèmes, menus et apparence (hérité)',
             'group' => 'Apparence',
         ],
         'plugins.manage' => [

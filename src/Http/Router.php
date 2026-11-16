@@ -23,6 +23,11 @@ final class Router
     private array $routes = [];
 
     /**
+     * Optional fallback route dispatched only when no explicit route matches the path.
+     */
+    private ?Route $fallbackRoute = null;
+
+    /**
      * Active group stack for nested prefixes, middlewares, and name prefixes.
      *
      * @var list<array{prefix: string, middleware: list<string|MiddlewareInterface>, name: string}>
@@ -172,7 +177,42 @@ final class Router
             throw new MethodNotAllowedException(array_values(array_unique($allowedMethods)));
         }
 
+        if ($this->fallbackRoute !== null && $this->fallbackRoute->matchesMethod($method)) {
+            return [
+                'route' => $this->fallbackRoute,
+                'params' => ['path' => ltrim($path, '/')],
+            ];
+        }
+
         throw new NotFoundException(sprintf('Aucune route ne correspond au chemin "%s".', $path));
+    }
+
+    /**
+     * Register a fallback catch-all route evaluated only after all explicit routes fail to match.
+     *
+     * @param callable|array{0: class-string, 1: string} $handler
+     * @param list<string> $methods
+     * @param list<string|MiddlewareInterface> $middleware
+     */
+    public function setFallback(
+        callable|array $handler,
+        array $methods = ['GET', 'HEAD'],
+        array $middleware = [],
+    ): Route {
+        $this->fallbackRoute = new Route(
+            methods: $methods,
+            path: '/',
+            handler: $handler,
+            middleware: $middleware,
+            name: 'site.fallback',
+        );
+
+        return $this->fallbackRoute;
+    }
+
+    public function fallback(): ?Route
+    {
+        return $this->fallbackRoute;
     }
 
     /**

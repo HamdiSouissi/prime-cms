@@ -81,6 +81,31 @@ ob_start();
         ])) ?>
 
         <?= $this->raw($this->insert('admin::components/field', [
+            'id' => 'profile-username',
+            'name' => 'username',
+            'label' => 'Identifiant public (URL d’auteur)',
+            'type' => 'text',
+            'value' => (string) ($oldInfo['username'] ?? ''),
+            'help' => 'Utilisé pour votre page auteur publique : /auteur/' . $profileUser->authorSlug(),
+            'error' => $infoErrors['username'] ?? null,
+        ])) ?>
+
+        <div class="pc-field">
+            <label class="pc-label" for="profile-bio">Biographie publique</label>
+            <textarea
+                id="profile-bio"
+                name="bio"
+                rows="3"
+                maxlength="1000"
+                class="pc-textarea"
+                placeholder="Courte présentation affichée sur votre page auteur et sous vos articles…"
+            ><?= $this->e((string) ($oldInfo['bio'] ?? '')) ?></textarea>
+            <?php if (isset($infoErrors['bio'])): ?>
+                <span class="pc-field__error"><?= $this->e($infoErrors['bio']) ?></span>
+            <?php endif; ?>
+        </div>
+
+        <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'profile-email',
             'name' => 'email',
             'label' => 'Adresse e-mail',

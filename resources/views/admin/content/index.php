@@ -303,6 +303,9 @@ if ($canCreate) {
                                             <?php elseif ($isPendingReadOnly): ?>
                                                 <a href="<?= $this->e($editUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">Consulter</a>
                                             <?php endif; ?>
+                                            <?php if ($entry->status === \Prime\Content\Entry::STATUS_PUBLISHED): ?>
+                                                <a href="<?= $this->e($entry->url()) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener">Voir</a>
+                                            <?php endif; ?>
                                             <a href="<?= $this->e($previewUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener">Aperçu</a>
                                             <?php if ($canCreate): ?>
                                                 <button

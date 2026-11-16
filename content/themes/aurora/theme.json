@@ -1,0 +1,192 @@
+{
+  "slug": "aurora",
+  "name": "Aurora",
+  "version": "1.0.0",
+  "description": "Thème éditorial par défaut de Prime CMS : sobre, rapide, accessible (WCAG AA) et sans dépendance externe.",
+  "author": {
+    "name": "Prime CMS",
+    "url": "https://github.com/HamdiSouissi/prime-cms"
+  },
+  "license": "proprietary",
+  "requires": {
+    "prime": ">=0.8.0",
+    "php": ">=8.2"
+  },
+  "main": "Aurora\\Theme",
+  "namespace": "Aurora\\",
+  "menus": {
+    "primary": "Navigation principale",
+    "footer": "Pied de page"
+  },
+  "zones": {
+    "sidebar": {
+      "label": "Barre latérale",
+      "description": "Colonne latérale affichée sur le blog, les archives et les articles lorsqu'elle contient des blocs."
+    },
+    "footer_1": {
+      "label": "Pied de page — Colonne 1",
+      "description": "Première colonne du pied de page (présentation ou coordonnées)."
+    },
+    "footer_2": {
+      "label": "Pied de page — Colonne 2",
+      "description": "Deuxième colonne du pied de page (liens utiles ou catégories)."
+    },
+    "footer_3": {
+      "label": "Pied de page — Colonne 3",
+      "description": "Troisième colonne du pied de page (derniers articles ou recherche)."
+    }
+  },
+  "templates": {
+    "page": {
+      "full-width": "Pleine largeur",
+      "landing": "Page d'atterrissage"
+    }
+  },
+  "image_sizes": {
+    "hero": {
+      "width": 1600,
+      "height": 900,
+      "crop": true
+    },
+    "card": {
+      "width": 800,
+      "height": 500,
+      "crop": true
+    }
+  },
+  "options": {
+    "sections": {
+      "colors": {
+        "label": "Couleurs",
+        "description": "Palette principale du site. Le corail par défaut (#C9441F) respecte le contraste WCAG AA."
+      },
+      "typography": {
+        "label": "Typographie",
+        "description": "Polices locales chargées directement depuis le serveur (zéro ressource externe)."
+      },
+      "layout": {
+        "label": "Mise en page",
+        "description": "Largeur maximale du contenu et affichage des éléments d'article."
+      },
+      "header": {
+        "label": "En-tête",
+        "description": "Comportement de la barre de navigation et de la recherche."
+      },
+      "footer": {
+        "label": "Pied de page",
+        "description": "Mentions affichées en bas de chaque page."
+      }
+    },
+    "fields": {
+      "accent_color": {
+        "section": "colors",
+        "type": "color",
+        "label": "Couleur d'accentuation",
+        "default": "#C9441F",
+        "css_var": "--aurora-accent"
+      },
+      "bg_color": {
+        "section": "colors",
+        "type": "color",
+        "label": "Couleur d'arrière-plan",
+        "default": "#FAF9F7",
+        "css_var": "--aurora-bg"
+      },
+      "surface_color": {
+        "section": "colors",
+        "type": "color",
+        "label": "Couleur des cartes",
+        "default": "#FFFFFF",
+        "css_var": "--aurora-surface"
+      },
+      "text_color": {
+        "section": "colors",
+        "type": "color",
+        "label": "Couleur du texte principal",
+        "default": "#171717",
+        "css_var": "--aurora-ink"
+      },
+      "font_heading": {
+        "section": "typography",
+        "type": "font",
+        "label": "Police des titres",
+        "default": "jakarta",
+        "choices": {
+          "jakarta": "Plus Jakarta Sans (Éditorial)",
+          "inter": "Inter (Neutre)",
+          "serif": "Georgia / Serif classique"
+        },
+        "css_var": "--aurora-font-heading",
+        "css_map": {
+          "jakarta": "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif",
+          "inter": "'Inter', system-ui, sans-serif",
+          "serif": "Georgia, 'Times New Roman', serif"
+        }
+      },
+      "font_body": {
+        "section": "typography",
+        "type": "font",
+        "label": "Police du texte courant",
+        "default": "inter",
+        "choices": {
+          "inter": "Inter (Par défaut)",
+          "jakarta": "Plus Jakarta Sans",
+          "system": "Police système native"
+        },
+        "css_var": "--aurora-font-body",
+        "css_map": {
+          "inter": "'Inter', system-ui, -apple-system, sans-serif",
+          "jakarta": "'Plus Jakarta Sans', system-ui, sans-serif",
+          "system": "system-ui, -apple-system, 'Segoe UI', sans-serif"
+        }
+      },
+      "container_width": {
+        "section": "layout",
+        "type": "range",
+        "label": "Largeur maximale du site (px)",
+        "default": 1160,
+        "min": 960,
+        "max": 1400,
+        "step": 20,
+        "css_var": "--aurora-container",
+        "css_unit": "px"
+      },
+      "show_sidebar": {
+        "section": "layout",
+        "type": "toggle",
+        "label": "Afficher la barre latérale quand elle contient des blocs",
+        "default": true
+      },
+      "show_author_box": {
+        "section": "layout",
+        "type": "toggle",
+        "label": "Afficher l'encart auteur sous les articles",
+        "default": true
+      },
+      "show_related": {
+        "section": "layout",
+        "type": "toggle",
+        "label": "Afficher les articles similaires",
+        "default": true
+      },
+      "header_sticky": {
+        "section": "header",
+        "type": "toggle",
+        "label": "Fixer l'en-tête au défilement",
+        "default": true
+      },
+      "show_header_search": {
+        "section": "header",
+        "type": "toggle",
+        "label": "Afficher le bouton de recherche dans l'en-tête",
+        "default": true
+      },
+      "footer_text": {
+        "section": "footer",
+        "type": "textarea",
+        "label": "Texte de pied de page",
+        "default": "Propulsé par Prime CMS."
+      }
+    }
+  }
+}

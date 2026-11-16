@@ -56,8 +56,9 @@ final class AdminDashboardTest extends TestCase
             '/admin/media',
             '/admin/appearance',
             '/admin/appearance/themes',
+            '/admin/appearance/customizer',
             '/admin/appearance/menus',
-            '/admin/appearance/widgets',
+            '/admin/appearance/zones',
             '/admin/plugins',
             '/admin/users',
             '/admin/users/create',
@@ -66,7 +67,9 @@ final class AdminDashboardTest extends TestCase
             '/admin/profile',
             '/admin/settings',
             '/admin/settings/general',
+            '/admin/settings/reading',
             '/admin/settings/permalinks',
+            '/admin/settings/seo',
             '/admin/settings/security',
             '/admin/settings/emails',
         ];
@@ -90,6 +93,10 @@ final class AdminDashboardTest extends TestCase
         $legacyArticles = $kernel->handle(Request::create('GET', '/admin/articles'));
         $this->assertSame(302, $legacyArticles->status());
         $this->assertSame('/admin/content/post', $legacyArticles->header('Location'));
+
+        $legacyWidgets = $kernel->handle(Request::create('GET', '/admin/appearance/widgets'));
+        $this->assertSame(302, $legacyWidgets->status());
+        $this->assertSame('/admin/appearance/zones', $legacyWidgets->header('Location'));
     }
 
     public function testStyleguideRequiresBothLocalEnvAndAdministratorRole(): void
@@ -304,13 +311,8 @@ final class AdminDashboardTest extends TestCase
         $kernel = $app->get(Kernel::class);
 
         $expectedPhases = [
-            '/admin/appearance' => 'Phase 8',
-            '/admin/appearance/themes' => 'Phase 8',
-            '/admin/appearance/menus' => 'Phase 8',
-            '/admin/appearance/widgets' => 'Phase 8',
             '/admin/settings' => 'Phase 9',
             '/admin/settings/general' => 'Phase 9',
-            '/admin/settings/permalinks' => 'Phase 9',
             '/admin/settings/security' => 'Phase 9',
             '/admin/settings/emails' => 'Phase 9',
         ];
@@ -324,6 +326,15 @@ final class AdminDashboardTest extends TestCase
                 sprintf('Expected %s to announce %s.', $path, $expectedPhase),
             );
         }
+
+        // Phase 8 real Appearance & Site Settings UI screens
+        $this->assertStringContainsString('Aurora', $kernel->handle(Request::create('GET', '/admin/appearance/themes'))->body());
+        $this->assertStringContainsString('Personnaliser', $kernel->handle(Request::create('GET', '/admin/appearance/customizer'))->body());
+        $this->assertStringContainsString('Menus de navigation', $kernel->handle(Request::create('GET', '/admin/appearance/menus'))->body());
+        $this->assertStringContainsString('Zones de blocs', $kernel->handle(Request::create('GET', '/admin/appearance/zones'))->body());
+        $this->assertStringContainsString('Lecture', $kernel->handle(Request::create('GET', '/admin/settings/reading'))->body());
+        $this->assertStringContainsString('Permaliens', $kernel->handle(Request::create('GET', '/admin/settings/permalinks'))->body());
+        $this->assertStringContainsString('Référencement', $kernel->handle(Request::create('GET', '/admin/settings/seo'))->body());
 
         // Styleguide row actions reflect Phase 6 editing and accurate demo duplicate text.
         $styleguideBody = $kernel->handle(Request::create('GET', '/admin/styleguide'))->body();
@@ -409,6 +420,13 @@ final class AdminDashboardTest extends TestCase
             '/admin/content/post/create',
             '/admin/taxonomies/category',
             '/admin/media',
+            '/admin/appearance/themes',
+            '/admin/appearance/customizer',
+            '/admin/appearance/menus',
+            '/admin/appearance/zones',
+            '/admin/settings/reading',
+            '/admin/settings/permalinks',
+            '/admin/settings/seo',
             '/admin/settings/security',
         ];
 
@@ -456,7 +474,7 @@ final class AdminDashboardTest extends TestCase
         // In-memory SQLite fixture implementing the auth/roles schema for fast unit/shell HTTP tests.
         $pdo = new PDO('sqlite::memory:');
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE pc_users (id INTEGER PRIMARY KEY AUTOINCREMENT, email VARCHAR(191) UNIQUE, password_hash VARCHAR(255), display_name VARCHAR(191), status VARCHAR(20), locale VARCHAR(10), avatar_media_id INTEGER NULL, last_login_at DATETIME NULL, session_version INTEGER DEFAULT 1, two_factor_secret TEXT NULL, two_factor_recovery_codes TEXT NULL, two_factor_confirmed_at DATETIME NULL, two_factor_last_step INTEGER NULL, password_changed_at DATETIME NULL, created_at DATETIME, updated_at DATETIME)');
+        $pdo->exec('CREATE TABLE pc_users (id INTEGER PRIMARY KEY AUTOINCREMENT, email VARCHAR(191) UNIQUE, username VARCHAR(80) NULL UNIQUE, bio TEXT NULL, password_hash VARCHAR(255), display_name VARCHAR(191), status VARCHAR(20), locale VARCHAR(10), avatar_media_id INTEGER NULL, last_login_at DATETIME NULL, session_version INTEGER DEFAULT 1, two_factor_secret TEXT NULL, two_factor_recovery_codes TEXT NULL, two_factor_confirmed_at DATETIME NULL, two_factor_last_step INTEGER NULL, password_changed_at DATETIME NULL, created_at DATETIME, updated_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_roles (id INTEGER PRIMARY KEY AUTOINCREMENT, slug VARCHAR(191) UNIQUE, name VARCHAR(191), description TEXT NULL, is_system INTEGER DEFAULT 0, created_at DATETIME, updated_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_role_capabilities (role_id INTEGER, capability VARCHAR(100), PRIMARY KEY (role_id, capability))');
         $pdo->exec('CREATE TABLE pc_user_roles (user_id INTEGER, role_id INTEGER, PRIMARY KEY (user_id, role_id))');
@@ -472,6 +490,12 @@ final class AdminDashboardTest extends TestCase
         $pdo->exec('CREATE TABLE pc_media_folders (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(120) NOT NULL, slug VARCHAR(140) NOT NULL, parent_id INTEGER NULL, created_by INTEGER NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)');
         $pdo->exec('CREATE TABLE pc_media (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid CHAR(36) NOT NULL UNIQUE, folder_id INTEGER NULL, uploaded_by INTEGER NULL, disk VARCHAR(32) NOT NULL DEFAULT \'local\', path VARCHAR(500) NOT NULL, filename VARCHAR(255) NOT NULL, original_filename VARCHAR(255) NOT NULL, mime_type VARCHAR(120) NOT NULL, extension VARCHAR(20) NOT NULL, kind VARCHAR(20) NOT NULL, size_bytes INTEGER NOT NULL, width INTEGER NULL, height INTEGER NULL, duration_seconds INTEGER NULL, focal_x DECIMAL(5,4) NOT NULL DEFAULT 0.5000, focal_y DECIMAL(5,4) NOT NULL DEFAULT 0.5000, variants LONGTEXT NULL, metadata LONGTEXT NULL, title VARCHAR(255) NOT NULL DEFAULT \'\', alt_text VARCHAR(255) NOT NULL DEFAULT \'\', caption TEXT NULL, description TEXT NULL, sha256 CHAR(64) NOT NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)');
         $pdo->exec('CREATE TABLE pc_media_usage (media_id INTEGER NOT NULL, entity_type VARCHAR(40) NOT NULL, entity_id INTEGER NOT NULL, field_name VARCHAR(80) NOT NULL, created_at DATETIME NOT NULL, PRIMARY KEY (media_id, entity_type, entity_id, field_name))');
+        $pdo->exec('CREATE TABLE pc_settings (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(191) NOT NULL UNIQUE, value LONGTEXT NULL, autoload INTEGER NOT NULL DEFAULT 1, created_at DATETIME NULL, updated_at DATETIME NULL)');
+        $pdo->exec('CREATE TABLE pc_menus (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(150) NOT NULL, slug VARCHAR(120) NOT NULL UNIQUE, location VARCHAR(80) NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)');
+        $pdo->exec('CREATE TABLE pc_menu_items (id INTEGER PRIMARY KEY AUTOINCREMENT, menu_id INTEGER NOT NULL, parent_id INTEGER NOT NULL DEFAULT 0, position INTEGER NOT NULL DEFAULT 0, type VARCHAR(20) NOT NULL DEFAULT \'url\', target_id INTEGER NULL, url VARCHAR(500) NULL, label VARCHAR(255) NOT NULL DEFAULT \'\', target VARCHAR(16) NOT NULL DEFAULT \'_self\', css_class VARCHAR(255) NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)');
+        $pdo->exec('CREATE TABLE pc_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, theme VARCHAR(80) NOT NULL, slug VARCHAR(80) NOT NULL, content LONGTEXT NOT NULL, content_html LONGTEXT NOT NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, UNIQUE(theme, slug))');
+        $pdo->exec('CREATE TABLE pc_redirects (id INTEGER PRIMARY KEY AUTOINCREMENT, source_path VARCHAR(255) NOT NULL UNIQUE, target_path VARCHAR(255) NOT NULL, status_code INTEGER NOT NULL DEFAULT 301, hits INTEGER NOT NULL DEFAULT 0, last_hit_at DATETIME NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)');
+        $pdo->exec('CREATE TABLE pc_media_zone_usage (media_id INTEGER NOT NULL, zone_id INTEGER NOT NULL, context VARCHAR(100) NOT NULL DEFAULT \'zone_block\', PRIMARY KEY (media_id, zone_id, context))');
 
         $now = '2026-11-15 12:00:00';
         $pdo->exec("INSERT INTO pc_roles (id, slug, name, description, is_system, created_at, updated_at) VALUES (1, 'administrator', 'Administrateur', 'Accès complet', 1, '{$now}', '{$now}')");

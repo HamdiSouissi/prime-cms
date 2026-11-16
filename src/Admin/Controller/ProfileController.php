@@ -20,6 +20,7 @@ use Prime\Media\MediaRepository;
 use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
+use Prime\Site\ReservedSlugValidator;
 use Prime\Validation\Validator;
 use Prime\View\View;
 use Throwable;
@@ -73,6 +74,10 @@ final class ProfileController
         $email = UserRepository::normalizeEmail((string) $request->body('email', ''));
         $locale = trim((string) $request->body('locale', $user->locale));
         $currentPassword = (string) $request->body('current_password_email', '');
+        $usernameProvided = $request->body('username') !== null;
+        $username = $usernameProvided ? strtolower(trim((string) $request->body('username', ''))) : ($user->username ?? '');
+        $bioProvided = $request->body('bio') !== null;
+        $bio = $bioProvided ? trim((string) $request->body('bio', '')) : ($user->bio ?? '');
 
         $validator = Validator::make(
             data: [
@@ -94,6 +99,23 @@ final class ProfileController
         );
 
         $errors = $validator->errors();
+
+        if ($usernameProvided && $username !== '') {
+            if (preg_match('/^[a-z0-9](?:[a-z0-9_-]{1,38}[a-z0-9])?$/', $username) !== 1) {
+                $errors['username'] = 'L\'identifiant public doit contenir 3 à 40 caractères (lettres minuscules, chiffres, tirets ou underscores).';
+            } elseif ((new ReservedSlugValidator())->isReserved($username)) {
+                $errors['username'] = 'Cet identifiant public est réservé par le système.';
+            } else {
+                $existing = $this->users->findByAuthorSlug($username);
+                if ($existing !== null && $existing->id !== $user->id) {
+                    $errors['username'] = 'Cet identifiant public est déjà utilisé par un autre auteur.';
+                }
+            }
+        }
+
+        if ($bioProvided && mb_strlen($bio) > 1000) {
+            $errors['bio'] = 'La biographie ne doit pas dépasser 1000 caractères.';
+        }
 
         $emailChanged = $email !== $user->email;
         if ($emailChanged && !$this->verifyCurrentPassword($user->id, $currentPassword)) {
@@ -129,6 +151,8 @@ final class ProfileController
                 'display_name' => $displayName,
                 'email' => $email,
                 'locale' => $locale,
+                'username' => $username,
+                'bio' => $bio,
             ]), 422);
         }
 
@@ -137,6 +161,12 @@ final class ProfileController
             'email' => $email,
             'locale' => $locale,
         ];
+        if ($usernameProvided) {
+            $fieldsToUpdate['username'] = $username !== '' ? $username : null;
+        }
+        if ($bioProvided) {
+            $fieldsToUpdate['bio'] = $bio !== '' ? $bio : null;
+        }
         if ($avatarProvided) {
             $fieldsToUpdate['avatar_media_id'] = $avatarMediaId;
         }
@@ -377,6 +407,8 @@ final class ProfileController
                 'display_name' => $user->displayName,
                 'email' => $user->email,
                 'locale' => $user->locale,
+                'username' => $user->username ?? '',
+                'bio' => $user->bio ?? '',
             ],
             'infoErrors' => $infoErrors,
             'passwordErrors' => $passwordErrors,

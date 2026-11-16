@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Theme block zones management view (`GET /admin/appearance/zones`).
+ *
+ * @var \Prime\View\TemplateContext $this
+ * @var array<string, array{label: string, description: string}> $declaredZones
+ * @var array<string, int> $zoneCounts
+ * @var string $selectedSlug
+ * @var ?array{label: string, description: string} $selectedZone
+ * @var string $zoneContentJson
+ * @var string $editorConfigJson
+ * @var list<array{name: string, label: string, description: string, defaults: array<string, mixed>, fields: list<array<string, mixed>>}> $dynamicCatalog
+ * @var list<array{label: string, url: ?string}> $breadcrumbs
+ */
+$this->layout('admin::layouts/app');
+?>
+<?php $this->start('content'); ?>
+
+<?= $this->raw($this->insert('admin::components/page-header', [
+    'title' => 'Zones de blocs',
+    'subtitle' => 'Composez la barre latérale et le pied de page avec Prime Editor et les blocs dynamiques.',
+    'breadcrumbs' => $breadcrumbs,
+])) ?>
+
+<?php if ($declaredZones === []): ?>
+    <div class="pc-empty-state">
+        <p class="pc-empty-state__title">Aucune zone déclarée</p>
+        <p class="pc-empty-state__desc">Le thème actif ne déclare aucune zone de blocs dans son fichier <code>theme.json</code>.</p>
+    </div>
+<?php else: ?>
+    <div class="pc-zones-layout" data-prime-zones-page>
+        <aside class="pc-card" aria-label="Liste des zones du thème">
+            <div class="pc-card__header">
+                <h2 class="pc-card__title">Zones du thème</h2>
+            </div>
+            <nav class="pc-zones-nav" aria-label="Choisir une zone à modifier">
+                <?php foreach ($declaredZones as $zSlug => $zMeta): ?>
+                    <?php $active = $zSlug === $selectedSlug; ?>
+                    <a
+                        href="/admin/appearance/zones?zone=<?= $this->e(rawurlencode($zSlug)) ?>"
+                        class="pc-zones-nav__item<?= $active ? ' is-active' : '' ?>"
+                        <?= $active ? 'aria-current="page"' : '' ?>
+                    >
+                        <span class="pc-zones-nav__label"><?= $this->e($zMeta['label']) ?></span>
+                        <span class="pc-badge pc-badge--neutral"><?= $this->e((string) ($zoneCounts[$zSlug] ?? 0)) ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </nav>
+
+            <?php if ($dynamicCatalog !== []): ?>
+                <div class="pc-card__body pc-zones-dyn-panel">
+                    <h3 class="pc-text-xs pc-font-semibold pc-text-muted">Blocs dynamiques disponibles</h3>
+                    <div class="pc-stack pc-stack--xs">
+                        <?php foreach ($dynamicCatalog as $dyn): ?>
+                            <button
+                                type="button"
+                                class="pc-btn pc-btn--secondary pc-btn--sm pc-zones-dyn-btn"
+                                data-prime-zone-add-dynamic="<?= $this->e($dyn['name']) ?>"
+                                data-prime-zone-dyn-defaults="<?= $this->e(json_encode($dyn['defaults'], JSON_UNESCAPED_UNICODE) ?: '{}') ?>"
+                            >
+                                <?= $this->raw($this->icon('plus', 14)) ?>
+                                <span><?= $this->e($dyn['label']) ?></span>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </aside>
+
+        <section class="pc-card">
+            <?php if ($selectedZone !== null): ?>
+                <header class="pc-card__header">
+                    <div>
+                        <h2 class="pc-card__title"><?= $this->e($selectedZone['label']) ?></h2>
+                        <?php if ($selectedZone['description'] !== ''): ?>
+                            <p class="pc-text-xs pc-text-muted"><?= $this->e($selectedZone['description']) ?></p>
+                        <?php endif; ?>
+                    </div>
+                </header>
+
+                <form method="post" action="/admin/appearance/zones/<?= $this->e(rawurlencode($selectedSlug)) ?>/save" class="pc-card__body pc-stack pc-stack--md" data-prime-zone-form>
+                    <?= $this->raw($this->csrfField()) ?>
+                    <div class="pc-ed-root" data-prime-editor>
+                        <script type="application/json" data-prime-editor-config><?= $this->raw($editorConfigJson) ?></script>
+                        <textarea name="content_json" hidden data-prime-editor-input><?= $this->e($zoneContentJson) ?></textarea>
+                        <div class="pc-ed-canvas" data-prime-editor-canvas></div>
+                        <div class="pc-ed-add-bar">
+                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-editor-add>
+                                <?= $this->raw($this->icon('plus', 16)) ?>
+                                <span>Ajouter un bloc</span>
+                            </button>
+                        </div>
+                        <div class="pc-sr-only" aria-live="polite" data-prime-editor-live></div>
+                    </div>
+
+                    <div class="pc-zones-footer">
+                        <button type="submit" class="pc-btn pc-btn--primary">Enregistrer la zone</button>
+                    </div>
+                </form>
+            <?php endif; ?>
+        </section>
+    </div>
+<?php endif; ?>
+
+<?php $this->stop(); ?>

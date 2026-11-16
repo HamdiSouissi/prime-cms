@@ -64,6 +64,11 @@ final class EntryService
     ) {
     }
 
+    public function contentTypes(): ContentTypeRegistry
+    {
+        return $this->types;
+    }
+
     /**
      * Check whether `$user` can create entries of `$type`.
      */
@@ -358,6 +363,7 @@ final class EntryService
         $this->syncEntryMediaUsage($updated);
 
         $this->hooks->emit('content.saved', $updated, false, $actor);
+        $this->hooks->emit('content.updated', $updated, $existing, $actor);
 
         if ($existing->status !== $updated->status) {
             $this->hooks->emit('content.status_changed', $updated, $existing->status, $updated->status, $actor);
@@ -813,6 +819,18 @@ final class EntryService
             }
         }
 
+        $filtered = $this->hooks->apply('content.reserved_slugs', $reserved);
+        if (is_array($filtered)) {
+            foreach ($filtered as $item) {
+                if (is_string($item)) {
+                    $slug = strtolower(trim($item));
+                    if ($slug !== '' && !in_array($slug, $reserved, true)) {
+                        $reserved[] = $slug;
+                    }
+                }
+            }
+        }
+
         return $reserved;
     }
 
@@ -926,16 +944,17 @@ final class EntryService
             $menuOrder = is_numeric($input['menu_order'] ?? null)
                 ? (int) $input['menu_order']
                 : ($existing !== null ? $existing->menuOrder : 0);
+        }
 
-            $rawTemplate = isset($input['template']) && is_string($input['template'])
-                ? trim($input['template'])
-                : ($existing !== null && $existing->template !== null ? $existing->template : '');
-            if ($rawTemplate !== '') {
-                if (preg_match('/^[a-z0-9_-]{1,100}$/', $rawTemplate) !== 1) {
-                    $errors['template'][] = 'Le nom du modèle est invalide.';
-                } else {
-                    $template = $rawTemplate;
-                }
+        // Template selection is available on any content type when declared by the active theme
+        $rawTemplate = array_key_exists('template', $input)
+            ? (is_string($input['template']) ? trim($input['template']) : '')
+            : ($existing !== null && $existing->template !== null ? $existing->template : '');
+        if ($rawTemplate !== '') {
+            if (preg_match('/^[a-z0-9_-]{1,100}$/', $rawTemplate) !== 1) {
+                $errors['template'][] = 'Le nom du modèle est invalide.';
+            } else {
+                $template = $rawTemplate;
             }
         }
 
@@ -950,6 +969,24 @@ final class EntryService
 
         // 6. Slug (unique per (type, parent_id), reserved root slugs protected)
         $rawSlug = isset($input['slug']) && is_string($input['slug']) ? trim($input['slug']) : '';
+        if ($rawSlug !== '') {
+            $normalizedExplicit = strtolower(trim($rawSlug, " /\t\n\r"));
+            $slugifiedExplicit = Str::slug($rawSlug, '-', 180);
+            $appliesReserved = ($type->name === 'page' && $parentId === 0);
+            if (!$appliesReserved && $type->name === 'post') {
+                $appliesReserved = (bool) $this->hooks->apply('content.post_uses_root_slug', false);
+            }
+            if ($appliesReserved) {
+                $reserved = $this->reservedRootSlugs();
+                if (
+                    in_array($normalizedExplicit, $reserved, true)
+                    || in_array($slugifiedExplicit, $reserved, true)
+                    || (str_starts_with($normalizedExplicit, 'sitemap-') && str_ends_with($normalizedExplicit, '.xml'))
+                ) {
+                    $errors['slug'][] = sprintf('Le permalien « %s » est réservé par Prime CMS.', $rawSlug);
+                }
+            }
+        }
         $desiredSlug = $rawSlug !== '' ? $rawSlug : ($existing !== null && $existing->slug !== '' ? $existing->slug : $title);
         $slug = $this->generateUniqueSlug($type->name, $desiredSlug, $parentId, $existing?->id);
 
@@ -993,6 +1030,38 @@ final class EntryService
                 }
             }
             $meta = $fieldValidation['values'];
+        }
+
+        // 9b. Per-entry SEO metadata (`seo` payload)
+        if (array_key_exists('seo', $input) && is_array($input['seo'])) {
+            $seoIn = $input['seo'];
+            if (array_key_exists('title', $seoIn)) {
+                $seoTitle = is_scalar($seoIn['title']) ? trim(strip_tags((string) $seoIn['title'])) : '';
+                $meta['seo_title'] = mb_substr($seoTitle, 0, 180);
+            }
+            if (array_key_exists('description', $seoIn)) {
+                $seoDesc = is_scalar($seoIn['description']) ? trim(strip_tags((string) $seoIn['description'])) : '';
+                $meta['seo_description'] = mb_substr($seoDesc, 0, 320);
+            }
+            if (array_key_exists('canonical', $seoIn)) {
+                $seoCan = is_scalar($seoIn['canonical']) ? trim((string) $seoIn['canonical']) : '';
+                if ($seoCan !== '') {
+                    $validCan = str_starts_with($seoCan, '/')
+                        || preg_match('#^https?://[^\s<>"\']+$#i', $seoCan) === 1;
+                    if (!$validCan || str_starts_with($seoCan, '//')) {
+                        $errors['seo_canonical'][] = 'L\'URL canonique doit être une URL http(s):// ou un chemin commençant par "/".';
+                    } else {
+                        $meta['seo_canonical'] = mb_substr($seoCan, 0, 500);
+                    }
+                } else {
+                    $meta['seo_canonical'] = '';
+                }
+            }
+            $meta['seo_noindex'] = !empty($seoIn['noindex']) && !in_array(strtolower((string) $seoIn['noindex']), ['0', 'false', 'off', ''], true) ? '1' : '0';
+            if (array_key_exists('image_id', $seoIn)) {
+                $imgId = is_numeric($seoIn['image_id']) && (int) $seoIn['image_id'] > 0 ? (int) $seoIn['image_id'] : '';
+                $meta['seo_image_id'] = (string) $imgId;
+            }
         }
 
         // Optional featured image (`featured_media_id`) and legacy `_thumbnail_url` if supported

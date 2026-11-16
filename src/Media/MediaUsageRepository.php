@@ -7,17 +7,21 @@ namespace Prime\Media;
 use Prime\Content\Entry;
 use Prime\Content\Fields\FieldRegistry;
 use Prime\Database\Connection;
+use Throwable;
 
 /**
- * Tracks where media items are referenced across content entries (`pc_media_usage`):
+ * Tracks where media items are referenced across content entries (`pc_media_usage`)
+ * and theme block zones (`pc_media_zone_usage`):
  * - `thumbnail` (featured image)
  * - `block` (Prime Editor image, gallery, file, audio, video blocks)
  * - `field:<name>` (custom `media` fields)
+ * - `zone_block` (Prime Editor blocks inside a theme zone)
  */
 final class MediaUsageRepository
 {
     public const CONTEXT_THUMBNAIL = 'thumbnail';
     public const CONTEXT_BLOCK = 'block';
+    public const CONTEXT_ZONE_BLOCK = 'zone_block';
     public const CONTEXT_FIELD_PREFIX = 'field:';
 
     public function __construct(
@@ -95,6 +99,54 @@ final class MediaUsageRepository
     }
 
     /**
+     * Recalculate and replace all media usages for a theme block zone (`pc_media_zone_usage`).
+     *
+     * @param array<string, mixed> $document
+     */
+    public function syncForZoneDocument(int $zoneId, array $document): void
+    {
+        $mediaIds = self::extractMediaIdsFromDocument($document);
+        $validIds = [];
+
+        if ($mediaIds !== []) {
+            $existingRows = $this->db->table('media')
+                ->select(['id'])
+                ->whereIn('id', $mediaIds)
+                ->get();
+            foreach ($existingRows as $row) {
+                $validIds[(int) $row['id']] = true;
+            }
+        }
+
+        $this->db->transaction(function () use ($zoneId, $mediaIds, $validIds): void {
+            $this->db->table('media_zone_usage')
+                ->where('zone_id', '=', $zoneId)
+                ->delete();
+
+            foreach ($mediaIds as $mid) {
+                if (!isset($validIds[$mid])) {
+                    continue;
+                }
+                $this->db->table('media_zone_usage')->insert([
+                    'media_id' => $mid,
+                    'zone_id' => $zoneId,
+                    'context' => self::CONTEXT_ZONE_BLOCK,
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Remove all usage rows for a theme zone.
+     */
+    public function deleteForZone(int $zoneId): void
+    {
+        $this->db->table('media_zone_usage')
+            ->where('zone_id', '=', $zoneId)
+            ->delete();
+    }
+
+    /**
      * Return all entries (and user avatars) currently referencing a media item.
      *
      * @return list<array{entry_id: int, context: string, context_label: string, title: string, type: string, status: string, edit_url: string}>
@@ -154,6 +206,38 @@ final class MediaUsageRepository
             ];
         }
 
+        try {
+            $zoneUsageTable = $this->db->prefixed('media_zone_usage');
+            $zonesTable = $this->db->prefixed('zones');
+            $zoneRows = $this->db->select(
+                sprintf(
+                    'SELECT zu.`zone_id`, zu.`context`, z.`theme`, z.`slug`
+                     FROM `%s` zu
+                     INNER JOIN `%s` z ON z.`id` = zu.`zone_id`
+                     WHERE zu.`media_id` = ?
+                     ORDER BY z.`theme` ASC, z.`slug` ASC',
+                    $zoneUsageTable,
+                    $zonesTable,
+                ),
+                [$mediaId],
+            );
+
+            foreach ($zoneRows as $zRow) {
+                $zSlug = (string) $zRow['slug'];
+                $results[] = [
+                    'entry_id' => (int) $zRow['zone_id'],
+                    'context' => (string) $zRow['context'],
+                    'context_label' => self::contextLabel((string) $zRow['context']),
+                    'title' => sprintf('Zone « %s » (%s)', $zSlug, (string) $zRow['theme']),
+                    'type' => 'zone',
+                    'status' => 'published',
+                    'edit_url' => '/admin/appearance/zones?zone=' . rawurlencode($zSlug),
+                ];
+            }
+        } catch (Throwable) {
+            // Table may not exist yet on pre-Phase-8 test schemas.
+        }
+
         return $results;
     }
 
@@ -202,7 +286,49 @@ final class MediaUsageRepository
             $counts[$mid] = ($counts[$mid] ?? 0) + (int) $row['cnt'];
         }
 
+        try {
+            $zoneUsageTable = $this->db->prefixed('media_zone_usage');
+            $zoneRows = $this->db->select(
+                sprintf(
+                    'SELECT `media_id`, COUNT(*) AS `cnt` FROM `%s` WHERE `media_id` IN (%s) GROUP BY `media_id`',
+                    $zoneUsageTable,
+                    $placeholders,
+                ),
+                $ids,
+            );
+            foreach ($zoneRows as $row) {
+                $mid = (int) $row['media_id'];
+                $counts[$mid] = ($counts[$mid] ?? 0) + (int) $row['cnt'];
+            }
+        } catch (Throwable) {
+            // Table may not exist yet on pre-Phase-8 test schemas.
+        }
+
         return $counts;
+    }
+
+    /**
+     * Extract all unique media IDs referenced inside a Prime Editor document's blocks.
+     *
+     * @param array<string, mixed> $document
+     * @return list<int>
+     */
+    public static function extractMediaIdsFromDocument(array $document): array
+    {
+        $ids = [];
+        $blocks = is_array($document['blocks'] ?? null) ? $document['blocks'] : [];
+        foreach ($blocks as $block) {
+            if (!is_array($block) || !is_array($block['data'] ?? null)) {
+                continue;
+            }
+            /** @var array<string, mixed> $data */
+            $data = $block['data'];
+            foreach (self::extractMediaIdsFromBlockData($data) as $mid) {
+                $ids[] = $mid;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**
@@ -261,6 +387,9 @@ final class MediaUsageRepository
         }
         if ($context === self::CONTEXT_BLOCK) {
             return 'Contenu (bloc)';
+        }
+        if ($context === self::CONTEXT_ZONE_BLOCK) {
+            return 'Zone de thème (bloc)';
         }
         if (str_starts_with($context, self::CONTEXT_FIELD_PREFIX)) {
             return 'Champ « ' . substr($context, strlen(self::CONTEXT_FIELD_PREFIX)) . ' »';

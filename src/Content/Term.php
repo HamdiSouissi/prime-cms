@@ -41,4 +41,28 @@ final readonly class Term
             updatedAt: (string) ($row['updated_at'] ?? ''),
         );
     }
+
+    /**
+     * Resolve the public URL of this taxonomy term via `UrlGenerator`.
+     */
+    public function url(): string
+    {
+        if (\Prime\Kernel\Application::hasInstance()) {
+            $container = \Prime\Kernel\Application::getInstance()->container();
+            if ($container->has(\Prime\Site\UrlGenerator::class)) {
+                /** @var \Prime\Site\UrlGenerator $generator */
+                $generator = $container->get(\Prime\Site\UrlGenerator::class);
+
+                return $generator->termUrl($this);
+            }
+        }
+
+        $base = match ($this->taxonomy) {
+            'category' => 'categorie',
+            'tag' => 'etiquette',
+            default => $this->taxonomy,
+        };
+
+        return '/' . rawurlencode($base) . '/' . rawurlencode($this->slug);
+    }
 }

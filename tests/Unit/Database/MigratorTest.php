@@ -68,8 +68,13 @@ final class MigratorTest extends TestCase
         $this->assertArrayHasKey('2026_11_15_000016_create_media_table', $discovered);
         $this->assertArrayHasKey('2026_11_15_000017_create_media_usage_table', $discovered);
         $this->assertArrayHasKey('2026_11_15_000018_add_avatar_media_id_to_users_table', $discovered);
+        $this->assertArrayHasKey('2026_11_15_000019_create_redirects_table', $discovered);
+        $this->assertArrayHasKey('2026_11_15_000020_create_menus_tables', $discovered);
+        $this->assertArrayHasKey('2026_11_15_000021_create_zones_and_zone_media_usage_tables', $discovered);
+        $this->assertArrayHasKey('2026_11_15_000022_add_themes_manage_capability', $discovered);
+        $this->assertArrayHasKey('2026_11_15_000023_add_author_slug_and_bio_to_users_table', $discovered);
         $this->assertArrayHasKey('2026_11_16_000001_create_plugin_demo_table', $discovered);
-        $this->assertCount(19, $discovered);
+        $this->assertCount(24, $discovered);
 
         // Verify each core migration file returns a valid Migration instance.
         foreach ($discovered as $path) {

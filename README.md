@@ -2,7 +2,7 @@
 
 **Prime CMS** est un système de gestion de contenu (CMS) 100 % original écrit en **PHP 8.2+ natif**, sans framework et avec **zéro dépendance au runtime**.
 
-> Version actuelle : **0.7.0** (Phase 7 — Médiathèque : upload sécurisé, GD/WebP, bibliothèque, sélecteur réutilisable & intégration complète)
+> Version actuelle : **0.8.0** (Phase 8 — Thèmes et rendu du site : moteur de thèmes, thème éditorial Aurora, Personnaliseur live, menus, zones de blocs dynamiques, permaliens, redirections 301 & SEO natif)
 > Référence complète d'architecture et de conventions : [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 ---
@@ -27,11 +27,13 @@ docker compose up -d
 1. Ouvrir [http://localhost:8080](http://localhost:8080) : tant que le site n'est pas installé, Prime CMS redirige automatiquement vers l'assistant `/install`.
 2. Suivre les 7 étapes de l'assistant web (ou installer en une commande via `docker compose exec app php bin/prime install ...`).
 3. Une fois installé, les routes `/install*` retournent `404` et le site est accessible :
-   - **Accueil** : [http://localhost:8080](http://localhost:8080)
+   - **Site public (thème Aurora)** : [http://localhost:8080](http://localhost:8080) (articles `/blog/{slug}`, pages, taxonomies, auteur, recherche `/recherche`, `/sitemap.xml`, `/robots.txt`)
    - **Santé (JSON)** : [http://localhost:8080/health](http://localhost:8080/health)
    - **Connexion administration** : [http://localhost:8080/admin/login](http://localhost:8080/admin/login)
    - **Tableau de bord (authentifié)** : [http://localhost:8080/admin](http://localhost:8080/admin)
-   - **Contenus & Taxonomies** : `/admin/content/page`, `/admin/content/post`, `/admin/taxonomies/category`, `/admin/taxonomies/tag` (éditeur de blocs natif **Prime Editor**, image à la une, champs `media`, révisions/diff, autosave, verrous d'édition et aperçu sécurisé)
+   - **Apparence** : `/admin/appearance/themes` (thèmes & installation ZIP), `/admin/appearance/customizer` (aperçu en direct), `/admin/appearance/menus` (arborescence 3 niveaux), `/admin/appearance/zones` (zones de blocs & blocs dynamiques)
+   - **Réglages du site** : `/admin/settings/reading` (page d'accueil & pagination), `/admin/settings/permalinks` (structures d'URL & redirections 301), `/admin/settings/seo` (métadonnées globales, Open Graph, sitemaps & robots.txt)
+   - **Contenus & Taxonomies** : `/admin/content/page`, `/admin/content/post`, `/admin/taxonomies/category`, `/admin/taxonomies/tag` (éditeur de blocs natif **Prime Editor**, panneau SEO + aperçu SERP, modèles de page, image à la une, champs `media`, révisions/diff, autosave, verrous d'édition et aperçu dans le thème actif)
    - **Médiathèque** : `/admin/media` (upload parallèle drag & drop, traitement GD/WebP, dossiers hiérarchiques, point focal, suivi des utilisations et sélecteur réutilisable)
    - **Plugins** : `/admin/plugins` (incluant le plugin de référence `hello-prime`)
    - **Utilisateurs, rôles & profil** : `/admin/users`, `/admin/roles`, `/admin/profile`
@@ -104,6 +106,9 @@ php bin/prime content:rerender [--type=...]  # Re-génère content_html et conte
 php bin/prime media:regenerate [options]     # Régénère les variantes GD et WebP (--id, --variant, --force)
 php bin/prime media:link                     # Crée ou vérifie le symlink public/uploads et .htaccess
 php bin/prime media:cleanup [--dry-run]      # Nettoie les fichiers orphelins dans content/uploads/
+php bin/prime themes:list                    # Liste les thèmes détectés, statut et compatibilité
+php bin/prime themes:activate <slug>         # Active un thème valide et publie ses assets
+php bin/prime themes:publish [slug]          # Republie les assets et le CSS d'options du thème
 ```
 
 ---
@@ -159,6 +164,8 @@ prime-cms/
 - [`docs/content.md`](docs/content.md) — Types de contenus (CPT), taxonomies, champs personnalisés, `EntryService`, `EntryQuery`, révisions et verrous
 - [`docs/editor.md`](docs/editor.md) — Prime Editor (format JSON v1, 15 blocs natifs, `HtmlSanitizer`, CSP aperçu et blocs de plugins)
 - [`docs/media.md`](docs/media.md) — Médiathèque (pipeline upload sécurisé, GD/WebP, point focal, sélecteur `Prime.media.open()`, helpers responsive et CLI)
+- [`docs/themes.md`](docs/themes.md) — Système de thèmes, `theme.json`, héritage parent/enfant, hiérarchie de templates, Personnaliseur, thème Aurora et CLI `themes:*`
+- [`docs/seo.md`](docs/seo.md) — Rendu public, permaliens, redirections 301, menus, zones de blocs dynamiques, SEO, sitemaps XML et `robots.txt`
 - [`docs/design-system.md`](docs/design-system.md) — Guide complet du design system, des composants, icônes et modules JS
 - [`docs/hooks.md`](docs/hooks.md) — Référence de tous les hooks (événements et filtres)
 - [`docs/nginx.conf.example`](docs/nginx.conf.example) — Exemple de configuration Nginx

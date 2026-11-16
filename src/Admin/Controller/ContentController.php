@@ -38,6 +38,11 @@ use Prime\Kernel\Application;
 use Prime\Media\Media;
 use Prime\Media\MediaRepository;
 use Prime\Media\MediaUsageRepository;
+use Prime\Site\Http\SiteController;
+use Prime\Site\Seo\SeoSettings;
+use Prime\Site\UrlGenerator;
+use Prime\Site\Zone\DynamicBlockRegistry;
+use Prime\Themes\ThemeManager;
 use Prime\View\View;
 use Throwable;
 
@@ -69,6 +74,11 @@ final class ContentController
         private readonly EntryLockRepository $locks,
         private readonly UserRepository $users,
         private readonly ?MediaRepository $media = null,
+        private readonly ?ThemeManager $themes = null,
+        private readonly ?SeoSettings $seoSettings = null,
+        private readonly ?SiteController $siteController = null,
+        private readonly ?UrlGenerator $urls = null,
+        private readonly ?DynamicBlockRegistry $dynamicBlocks = null,
     ) {
     }
 
@@ -680,6 +690,14 @@ final class ContentController
             }
         }
 
+        if ($previewRevision === null && $this->siteController !== null) {
+            try {
+                return $this->siteController->renderEntryPreview($request, $entry);
+            } catch (Throwable) {
+                // Fallback to standalone admin preview if site rendering is unavailable
+            }
+        }
+
         $author = $entry->authorId !== null ? $this->users->find($entry->authorId) : null;
         $allowUnfiltered = $author !== null && $author->can('content.unfiltered_html');
         $decoded = $this->renderer->decode($previewJson) ?? Renderer::emptyDocument();
@@ -866,6 +884,26 @@ final class ContentController
         $formMenuOrder = isset($oldInput['menu_order']) && is_int($oldInput['menu_order'])
             ? $oldInput['menu_order']
             : ($entry !== null ? $entry->menuOrder : 0);
+        $formTemplate = is_string($oldInput['template'] ?? null)
+            ? $oldInput['template']
+            : ($entry !== null && $entry->template !== null ? $entry->template : '');
+
+        $oldSeo = is_array($oldInput['seo'] ?? null) ? $oldInput['seo'] : [];
+        $seoForm = [
+            'title' => is_string($oldSeo['title'] ?? null) ? $oldSeo['title'] : (string) ($entry?->meta('seo_title', '') ?? ''),
+            'description' => is_string($oldSeo['description'] ?? null) ? $oldSeo['description'] : (string) ($entry?->meta('seo_description', '') ?? ''),
+            'canonical' => is_string($oldSeo['canonical'] ?? null) ? $oldSeo['canonical'] : (string) ($entry?->meta('seo_canonical', '') ?? ''),
+            'image_id' => array_key_exists('image_id', $oldSeo)
+                ? (string) ($oldSeo['image_id'] ?? '')
+                : (string) ($entry?->meta('seo_image_id', '') ?? ''),
+            'noindex' => array_key_exists('noindex', $oldSeo)
+                ? !empty($oldSeo['noindex'])
+                : !empty($entry?->meta('seo_noindex', false)),
+        ];
+
+        $themeTemplates = $this->themes !== null ? $this->themes->templatesFor($contentType->name) : [];
+        $seoSeparator = $this->seoSettings !== null ? $this->seoSettings->separator() : '—';
+        $siteName = (string) $this->app->config()->get('app.name', 'Prime CMS');
 
         // Custom fields metadata values
         $metaValues = $entry !== null ? $entry->meta : [];
@@ -1001,7 +1039,12 @@ final class ContentController
             'heartbeatIntervalMs' => max(15, (int) $this->app->config()->get('content.lock_heartbeat_seconds', 30)) * 1000,
             'releaseUrl' => $entry !== null ? sprintf('/admin/content/%s/%d/lock/release', $contentType->name, $entry->id) : '',
             'pluginBlocks' => $pluginBlocks,
+            'dynamicBlocks' => $this->dynamicBlocks !== null ? $this->dynamicBlocks->catalog() : [],
         ];
+
+        $urlPreviewPattern = $this->buildUrlPreviewPattern($contentType, $entry, $formParentId, $formPublishedAt);
+        $previewSlugSample = $formSlug !== '' ? $formSlug : 'nouveau-contenu';
+        $urlPreviewInitial = str_replace('__PRIME_SLUG__', $previewSlugSample, $urlPreviewPattern);
 
         $editorConfigJson = json_encode(
             $editorConfig,
@@ -1013,6 +1056,8 @@ final class ContentController
             'contentType' => $contentType,
             'entry' => $entry,
             'isEdit' => $isEdit,
+            'urlPreviewPattern' => $urlPreviewPattern,
+            'urlPreviewInitial' => $urlPreviewInitial,
             'form' => [
                 'title' => $formTitle,
                 'slug' => $formSlug,
@@ -1023,7 +1068,12 @@ final class ContentController
                 'author_id' => $formAuthorId,
                 'parent_id' => $formParentId,
                 'menu_order' => $formMenuOrder,
+                'template' => $formTemplate,
             ],
+            'seoForm' => $seoForm,
+            'themeTemplates' => $themeTemplates,
+            'seoSeparator' => $seoSeparator,
+            'siteName' => $siteName,
             'metaValues' => $metaValues,
             'relatedEntryLabels' => $relatedEntryLabels,
             'featuredMediaId' => $featuredMediaId,
@@ -1141,6 +1191,8 @@ final class ContentController
 
         $featuredRaw = $request->body('featured_media_id');
 
+        $templateRaw = trim((string) $request->body('template', ''));
+
         $payload = [
             'title' => trim((string) $request->body('title', '')),
             'slug' => trim((string) $request->body('slug', '')),
@@ -1151,10 +1203,30 @@ final class ContentController
             'author_id' => $authorId,
             'parent_id' => $contentType->hierarchical ? $parentId : 0,
             'menu_order' => max(0, (int) $request->body('menu_order', '0')),
+            'template' => $templateRaw !== '' ? $templateRaw : null,
             'terms' => $terms,
             'new_terms' => $newTerms,
             'fields' => $fields,
         ];
+
+        $rawSeo = $request->body('seo');
+        if (is_array($rawSeo)) {
+            $payload['seo'] = [
+                'title' => trim((string) ($rawSeo['title'] ?? '')),
+                'description' => trim((string) ($rawSeo['description'] ?? '')),
+                'canonical' => trim((string) ($rawSeo['canonical'] ?? '')),
+                'image_id' => $this->optionalInt($rawSeo['image_id'] ?? null),
+                'noindex' => in_array($rawSeo['noindex'] ?? null, [true, 1, '1', 'true', 'on'], true),
+            ];
+        } elseif ($request->body('seo_title') !== null || $request->body('seo_description') !== null) {
+            $payload['seo'] = [
+                'title' => trim((string) $request->body('seo_title', '')),
+                'description' => trim((string) $request->body('seo_description', '')),
+                'canonical' => trim((string) $request->body('seo_canonical', '')),
+                'image_id' => $this->optionalInt($request->body('seo_image_id')),
+                'noindex' => $request->body('seo_noindex') === '1',
+            ];
+        }
 
         if ($contentType->supports('thumbnail') && $featuredRaw !== null) {
             $payload['featured_media_id'] = $this->optionalInt($featuredRaw);
@@ -1306,6 +1378,62 @@ final class ContentController
         } catch (Throwable) {
             return [];
         }
+    }
+
+    /**
+     * Build a live URL preview template (with `__PRIME_SLUG__` placeholder) using `UrlGenerator`.
+     */
+    private function buildUrlPreviewPattern(
+        ContentType $contentType,
+        ?Entry $entry,
+        int $parentId,
+        string $publishedAt,
+    ): string {
+        $nowUtc = gmdate('Y-m-d H:i:s');
+        $fallbackDate = $entry !== null
+            ? ($entry->publishedAt ?? $entry->createdAt)
+            : $nowUtc;
+        $effectiveDate = trim($publishedAt) !== ''
+            ? str_replace('T', ' ', trim($publishedAt))
+            : $fallbackDate;
+
+        $probe = new Entry(
+            id: $entry !== null ? $entry->id : 0,
+            type: $contentType->name,
+            status: $entry !== null ? $entry->status : Entry::STATUS_PUBLISHED,
+            title: $entry !== null ? $entry->title : '',
+            slug: '__PRIME_SLUG__',
+            excerpt: null,
+            content: '{}',
+            contentHtml: '',
+            contentText: '',
+            authorId: $entry?->authorId,
+            parentId: max(0, $parentId),
+            menuOrder: 0,
+            template: $entry?->template,
+            publishedAt: $effectiveDate,
+            previousStatus: null,
+            trashedAt: null,
+            createdAt: $entry !== null ? $entry->createdAt : $nowUtc,
+            updatedAt: $entry !== null ? $entry->updatedAt : $nowUtc,
+        );
+
+        if ($this->urls !== null) {
+            return $this->urls->entryUrl($probe);
+        }
+
+        if ($contentType->name === 'page') {
+            return '/__PRIME_SLUG__';
+        }
+        if ($contentType->name === 'post') {
+            return '/blog/__PRIME_SLUG__';
+        }
+
+        $base = ($contentType->rewriteBase !== null && $contentType->rewriteBase !== '')
+            ? trim($contentType->rewriteBase, '/')
+            : $contentType->name;
+
+        return '/' . $base . '/__PRIME_SLUG__';
     }
 
     /**
