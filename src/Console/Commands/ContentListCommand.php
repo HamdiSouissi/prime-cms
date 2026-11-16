@@ -44,15 +44,15 @@ final class ContentListCommand implements CommandInterface
             $q = $this->query->newQuery()->includeFuture(true)->orderBy('updated_at', 'DESC')->limit($limit);
 
             if ($type !== '') {
-                $q->type($type);
+                $q = $q->type($type);
             }
             if ($status !== '') {
-                $q->status($status);
+                $q = $q->status($status);
             } else {
-                $q->anyStatus(includeTrash: true);
+                $q = $q->anyStatus(includeTrash: true);
             }
             if ($search !== '') {
-                $q->search($search);
+                $q = $q->search($search);
             }
 
             $entries = $q->get();

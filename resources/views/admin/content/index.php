@@ -13,12 +13,16 @@ declare(strict_types=1);
  * @var int $totalPages
  * @var array<string, int> $counts
  * @var int $allTotal
- * @var array{status: string, q: string, author: ?int, term: string, sort: string, dir: string} $filters
+ * @var array{status: string, q: string, author: ?int, term: string, month: string, sort: string, dir: string} $filters
+ * @var list<string> $availableMonths
  * @var array<int, \Prime\Auth\User> $authorsMap
  * @var array<int, \Prime\Content\EntryLock> $locksMap
  * @var array<int, int> $depths
  * @var list<array{value: string, label: string}> $filterTerms
  * @var list<\Prime\Content\Taxonomy> $associatedTaxonomies
+ * @var array<int, bool> $editableMap
+ * @var array<int, bool> $deletableMap
+ * @var int $currentUserId
  * @var bool $canCreate
  * @var bool $canPublish
  * @var bool $canDelete
@@ -116,6 +120,17 @@ if ($canCreate) {
             </select>
         <?php endif; ?>
 
+        <?php if ($availableMonths !== []): ?>
+            <select name="month" class="pc-select" aria-label="Filtrer par mois">
+                <option value="">Tous les mois</option>
+                <?php foreach ($availableMonths as $ym): ?>
+                    <option value="<?= $this->e($ym) ?>"<?= $filters['month'] === $ym ? ' selected' : '' ?>>
+                        <?= $this->e($ym) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        <?php endif; ?>
+
         <select name="sort" class="pc-select" aria-label="Trier par">
             <option value="updated_at"<?= $filters['sort'] === 'updated_at' ? ' selected' : '' ?>>Dernière modification</option>
             <option value="published_at"<?= $filters['sort'] === 'published_at' ? ' selected' : '' ?>>Date de publication</option>
@@ -127,7 +142,7 @@ if ($canCreate) {
 
         <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm">Filtrer</button>
 
-        <?php if ($filters['q'] !== '' || $filters['author'] !== null || $filters['term'] !== ''): ?>
+        <?php if ($filters['q'] !== '' || $filters['author'] !== null || $filters['term'] !== '' || $filters['month'] !== ''): ?>
             <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm">Réinitialiser</a>
         <?php endif; ?>
     </form>
@@ -192,6 +207,9 @@ if ($canCreate) {
                             $depth = $depths[$entry->id] ?? 0;
                             $editUrl = $entry->editUrl();
                             $previewUrl = $entry->previewUrl();
+                            $canEditRow = $editableMap[$entry->id] ?? false;
+                            $canDeleteRow = $deletableMap[$entry->id] ?? false;
+                            $isPendingReadOnly = !$canEditRow && $entry->status === 'pending' && $entry->authorId === $currentUserId;
                             ?>
                             <tr>
                                 <td>
@@ -205,13 +223,25 @@ if ($canCreate) {
                                 </td>
                                 <td data-prime-label="Titre">
                                     <div class="pc-entry-title-cell">
-                                        <a href="<?= $this->e($editUrl) ?>" class="pc-entry-title-link">
-                                            <?php if ($depth > 0): ?>
-                                                <span class="pc-entry-indent"><?= $this->e(str_repeat('— ', $depth)) ?></span>
-                                            <?php endif; ?>
-                                            <span><?= $this->e($entry->title) ?></span>
-                                        </a>
+                                        <?php if ($canEditRow || $isPendingReadOnly): ?>
+                                            <a href="<?= $this->e($editUrl) ?>" class="pc-entry-title-link">
+                                                <?php if ($depth > 0): ?>
+                                                    <span class="pc-entry-indent"><?= $this->e(str_repeat('— ', $depth)) ?></span>
+                                                <?php endif; ?>
+                                                <span><?= $this->e($entry->title) ?></span>
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="pc-entry-title-link">
+                                                <?php if ($depth > 0): ?>
+                                                    <span class="pc-entry-indent"><?= $this->e(str_repeat('— ', $depth)) ?></span>
+                                                <?php endif; ?>
+                                                <span><?= $this->e($entry->title) ?></span>
+                                            </span>
+                                        <?php endif; ?>
                                         <span class="pc-entry-slug">/<?= $this->e($entry->slug) ?></span>
+                                        <?php if ($isPendingReadOnly): ?>
+                                            <span class="pc-text-xs pc-text-muted">Soumis pour relecture (non modifiable tant qu’en attente)</span>
+                                        <?php endif; ?>
                                         <?php if ($lock !== null): ?>
                                             <span class="pc-entry-lock-pill">
                                                 <?= $this->raw($this->icon('lock', 12)) ?>
@@ -239,12 +269,12 @@ if ($canCreate) {
                                 <td data-prime-label="Actions">
                                     <div class="pc-row-actions">
                                         <?php if ($isTrash): ?>
-                                            <button
-                                                type="submit"
-                                                form="pc-restore-<?= $this->e((string) $entry->id) ?>"
-                                                class="pc-btn pc-btn--secondary pc-btn--sm"
-                                            >Restaurer</button>
-                                            <?php if ($canDelete): ?>
+                                            <?php if ($canDeleteRow): ?>
+                                                <button
+                                                    type="submit"
+                                                    form="pc-restore-<?= $this->e((string) $entry->id) ?>"
+                                                    class="pc-btn pc-btn--secondary pc-btn--sm"
+                                                >Restaurer</button>
                                                 <button
                                                     type="button"
                                                     class="pc-btn pc-btn--danger pc-btn--sm"
@@ -255,7 +285,11 @@ if ($canCreate) {
                                                 >Supprimer</button>
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <a href="<?= $this->e($editUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">Modifier</a>
+                                            <?php if ($canEditRow): ?>
+                                                <a href="<?= $this->e($editUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">Modifier</a>
+                                            <?php elseif ($isPendingReadOnly): ?>
+                                                <a href="<?= $this->e($editUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">Consulter</a>
+                                            <?php endif; ?>
                                             <a href="<?= $this->e($previewUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener">Aperçu</a>
                                             <?php if ($canCreate): ?>
                                                 <button
@@ -264,7 +298,7 @@ if ($canCreate) {
                                                     class="pc-btn pc-btn--ghost pc-btn--sm"
                                                 >Dupliquer</button>
                                             <?php endif; ?>
-                                            <?php if ($canDelete): ?>
+                                            <?php if ($canDeleteRow): ?>
                                                 <button
                                                     type="submit"
                                                     form="pc-trash-<?= $this->e((string) $entry->id) ?>"

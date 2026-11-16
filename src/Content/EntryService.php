@@ -7,6 +7,7 @@ namespace Prime\Content;
 use DateTimeImmutable;
 use DateTimeZone;
 use Prime\Auth\User;
+use Prime\Content\Exception\ContentConflictException;
 use Prime\Content\Exception\ContentException;
 use Prime\Content\Exception\ContentForbiddenException;
 use Prime\Content\Exception\ContentLockedException;
@@ -76,9 +77,10 @@ final class EntryService
             return false;
         }
 
-        // Contributors (who lack `publish` and `edit_any`) can only edit their drafts / pending items.
+        // Contributors (who lack `publish` and `edit_any`) can only edit their own drafts;
+        // once submitted (`pending`) or published, the entry becomes non-editable for them.
         if (
-            in_array($entry->status, [Entry::STATUS_PUBLISHED, Entry::STATUS_SCHEDULED, Entry::STATUS_PRIVATE], true)
+            in_array($entry->status, [Entry::STATUS_PENDING, Entry::STATUS_PUBLISHED, Entry::STATUS_SCHEDULED, Entry::STATUS_PRIVATE], true)
             && !$user->can($type->capability('publish'))
         ) {
             return false;
@@ -540,7 +542,8 @@ final class EntryService
     }
 
     /**
-     * Permanently delete an entry (and all its meta, revisions, terms links, and locks).
+     * Permanently delete a trashed entry (and all its meta, revisions, terms links, and locks).
+     * Refuses permanent deletion of entries that are not already in the trash (HTTP 409).
      */
     public function delete(int $entryId, User $actor): void
     {
@@ -552,6 +555,12 @@ final class EntryService
         $type = $this->requireType($existing->type);
         if (!$this->canDelete($actor, $existing, $type)) {
             throw new ContentForbiddenException('Vous n\'avez pas la permission de supprimer définitivement ce contenu.');
+        }
+
+        if ($existing->status !== Entry::STATUS_TRASH) {
+            throw new ContentConflictException(
+                'Ce contenu doit d’abord être placé dans la corbeille avant de pouvoir être supprimé définitivement.',
+            );
         }
 
         $termIds = $existing->termIds();

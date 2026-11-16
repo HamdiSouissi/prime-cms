@@ -16,6 +16,7 @@ use Prime\Content\EntryLockRepository;
 use Prime\Content\EntryQuery;
 use Prime\Content\EntryRepository;
 use Prime\Content\EntryService;
+use Prime\Content\Exception\ContentConflictException;
 use Prime\Content\Exception\ContentException;
 use Prime\Content\Exception\ContentForbiddenException;
 use Prime\Content\Exception\ContentLockedException;
@@ -83,9 +84,14 @@ final class ContentController
             $statusParam = 'all';
         }
 
-        $search = trim((string) $request->query('q', ''));
+        $qParam = trim((string) $request->query('q', ''));
+        $search = $qParam !== '' ? $qParam : trim((string) $request->query('search', ''));
         $authorFilter = $this->optionalInt($request->query('author'));
         $termFilter = trim((string) $request->query('term', ''));
+        $monthFilter = trim((string) $request->query('month', ''));
+        if ($monthFilter !== '' && preg_match('/^\d{4}-\d{2}$/', $monthFilter) !== 1) {
+            $monthFilter = '';
+        }
         $sort = trim((string) $request->query('sort', 'updated_at'));
         $direction = strtolower(trim((string) $request->query('dir', 'desc'))) === 'asc' ? 'ASC' : 'DESC';
         $page = max(1, (int) $request->query('page', '1'));
@@ -93,31 +99,37 @@ final class ContentController
 
         $q = $this->query->newQuery()
             ->type($contentType->name)
-            ->includeFuture(true);
+            ->includeFuture(true)
+            ->visibleInAdminFor($user, $contentType);
 
         if ($statusParam === 'all') {
-            $q->anyStatus(includeTrash: false);
+            $q = $q->anyStatus(includeTrash: false);
         } else {
-            $q->status($statusParam);
+            $q = $q->status($statusParam);
         }
 
         if ($search !== '') {
-            $q->search($search);
+            $q = $q->search($search);
         }
         if ($authorFilter !== null) {
-            $q->author($authorFilter);
+            $q = $q->author($authorFilter);
+        }
+        if ($monthFilter !== '') {
+            $q = $q->month($monthFilter);
         }
         if ($termFilter !== '' && str_contains($termFilter, ':')) {
             [$taxSlug, $termIdStr] = explode(':', $termFilter, 2);
             if ($this->taxonomies->has($taxSlug) && ctype_digit($termIdStr) && (int) $termIdStr > 0) {
-                $q->whereTerm($taxSlug, (int) $termIdStr);
+                $q = $q->whereTerm($taxSlug, (int) $termIdStr);
             }
         }
 
-        $q->orderBy($sort, $direction);
+        $q = $q->orderBy($sort, $direction);
         $result = $q->paginate($page, $perPage);
 
-        $counts = $this->entries->countByStatus($contentType->name);
+        $visibleAuthorId = $user->can($contentType->capability('edit_any')) ? null : $user->id;
+        $counts = $this->entries->countByStatus($contentType->name, $visibleAuthorId);
+        $availableMonths = $this->entries->availableMonths($contentType->name, $visibleAuthorId);
         $allTotal = ($counts[Entry::STATUS_PUBLISHED] ?? 0)
             + ($counts[Entry::STATUS_DRAFT] ?? 0)
             + ($counts[Entry::STATUS_PENDING] ?? 0)
@@ -129,6 +141,14 @@ final class ContentController
 
         $authorsMap = $this->loadAuthorsMap();
         $locksMap = $this->locks->activeForEntries($entryIds);
+
+        // Per-row permission flags so UI accurately reflects editability (e.g. contributor pending entries)
+        $editableMap = [];
+        $deletableMap = [];
+        foreach ($items as $item) {
+            $editableMap[$item->id] = $this->service->canEdit($user, $item, $contentType);
+            $deletableMap[$item->id] = $this->service->canDelete($user, $item, $contentType);
+        }
 
         // Depth map for hierarchical types
         $depths = [];
@@ -167,14 +187,19 @@ final class ContentController
                 'q' => $search,
                 'author' => $authorFilter,
                 'term' => $termFilter,
+                'month' => $monthFilter,
                 'sort' => $sort,
                 'dir' => strtolower($direction),
             ],
+            'availableMonths' => $availableMonths,
             'authorsMap' => $authorsMap,
             'locksMap' => $locksMap,
             'depths' => $depths,
             'filterTerms' => $filterTerms,
             'associatedTaxonomies' => $associatedTaxonomies,
+            'editableMap' => $editableMap,
+            'deletableMap' => $deletableMap,
+            'currentUserId' => $user->id,
             'canCreate' => $canCreate,
             'canPublish' => $canPublish,
             'canDelete' => $canDelete,
@@ -216,10 +241,13 @@ final class ContentController
 
         try {
             $entry = $this->service->create($contentType->name, $input, $user);
+            $isPendingSubmission = $entry->status === Entry::STATUS_PENDING && !$this->service->canPublish($user, $contentType);
             $this->context->flashToast(
-                sprintf('« %s » a été enregistré.', $entry->title),
+                $isPendingSubmission
+                    ? sprintf('« %s » a été soumis pour relecture.', $entry->title)
+                    : sprintf('« %s » a été enregistré.', $entry->title),
                 'success',
-                $contentType->label('singular') . ' créé',
+                $isPendingSubmission ? 'Soumis pour relecture' : $contentType->label('singular') . ' créé',
             );
 
             return Response::redirect($entry->editUrl());
@@ -244,6 +272,16 @@ final class ContentController
         $contentType = $this->requireContentType($type);
         $user = $this->requireUser($request);
         $entry = $this->requireEntry($contentType->name, $id);
+
+        // Contributor viewing their own submitted (`pending`) entry sees a clear read-only notice.
+        $isPendingLocked = $entry->authorId === $user->id
+            && $entry->status === Entry::STATUS_PENDING
+            && !$this->service->canPublish($user, $contentType)
+            && !$user->can($contentType->capability('edit_any'));
+
+        if ($isPendingLocked) {
+            return $this->renderEditor($request, $contentType, $user, $entry, [], [], 200, true);
+        }
 
         if (!$this->service->canEdit($user, $entry, $contentType)) {
             throw new ForbiddenException('Vous ne disposez pas des droits nécessaires pour modifier ce contenu.');
@@ -273,11 +311,18 @@ final class ContentController
 
         try {
             $updated = $this->service->update($entry->id, $input, $user);
-            $this->locks->acquire($updated->id, $user->id, force: false);
+            $isPendingSubmission = $updated->status === Entry::STATUS_PENDING && !$this->service->canPublish($user, $contentType);
+            if ($isPendingSubmission) {
+                $this->locks->release($updated->id, $user->id);
+            } else {
+                $this->locks->acquire($updated->id, $user->id, force: false);
+            }
             $this->context->flashToast(
-                sprintf('« %s » a été mis à jour.', $updated->title),
+                $isPendingSubmission
+                    ? sprintf('« %s » a été soumis pour relecture et ne peut plus être modifié tant qu’il est en attente.', $updated->title)
+                    : sprintf('« %s » a été mis à jour.', $updated->title),
                 'success',
-                'Modifications enregistrées',
+                $isPendingSubmission ? 'Soumis pour relecture' : 'Modifications enregistrées',
             );
 
             return Response::redirect($updated->editUrl());
@@ -463,6 +508,8 @@ final class ContentController
             $this->context->flashToast(sprintf('« %s » a été supprimé définitivement.', $entry->title), 'success');
         } catch (ContentForbiddenException $exception) {
             throw new ForbiddenException($exception->getMessage());
+        } catch (ContentConflictException $exception) {
+            return $this->conflictResponse($request, $exception->getMessage());
         } catch (ContentException $exception) {
             $this->context->flashToast($exception->getMessage(), 'danger');
         }
@@ -518,6 +565,19 @@ final class ContentController
             return Response::redirect($contentType->adminListUrl());
         }
 
+        // Permanent bulk deletion is strictly reserved for entries already in the trash (HTTP 409).
+        if ($action === 'delete') {
+            foreach ($ids as $entryId) {
+                $entry = $this->entries->find($entryId, withRelations: false);
+                if ($entry !== null && $entry->type === $contentType->name && $entry->status !== Entry::STATUS_TRASH) {
+                    return $this->conflictResponse(
+                        $request,
+                        'La suppression définitive est réservée aux contenus déjà placés dans la corbeille.',
+                    );
+                }
+            }
+        }
+
         $processed = 0;
         $errors = 0;
         foreach ($ids as $entryId) {
@@ -536,6 +596,8 @@ final class ContentController
                     default => throw new ContentException('Action groupée inconnue.'),
                 };
                 $processed++;
+            } catch (ContentConflictException $exception) {
+                return $this->conflictResponse($request, $exception->getMessage());
             } catch (ContentException) {
                 $errors++;
             }
@@ -742,7 +804,7 @@ final class ContentController
             ->limit(20);
 
         if ($query !== '') {
-            $q->search($query);
+            $q = $q->search($query);
         }
 
         $items = [];
@@ -774,6 +836,7 @@ final class ContentController
         array $oldInput,
         array $errors,
         int $statusCode = 200,
+        bool $isPendingLocked = false,
     ): Response {
         $isEdit = $entry !== null;
         $formTitle = is_string($oldInput['title'] ?? null) ? $oldInput['title'] : ($entry !== null ? $entry->title : '');
@@ -934,7 +997,8 @@ final class ContentController
             'errors' => $errors,
             'canPublish' => $this->service->canPublish($user, $contentType),
             'canEditOthers' => $user->can($contentType->capability('edit_any')),
-            'canDelete' => $entry !== null && $this->service->canDelete($user, $entry, $contentType),
+            'canDelete' => $entry !== null && !$isPendingLocked && $this->service->canDelete($user, $entry, $contentType),
+            'isPendingLocked' => $isPendingLocked,
             'primaryCtaInContent' => true,
             'editorConfigJson' => is_string($editorConfigJson) ? $editorConfigJson : '{}',
             'breadcrumbs' => [
@@ -953,6 +1017,18 @@ final class ContentController
         $html = $this->view->render('admin::content/edit', $contextData);
 
         return Response::html($html, $statusCode);
+    }
+
+    /**
+     * Build an explicit HTTP 409 Conflict response (JSON when requested, crisp 409 HTML otherwise).
+     */
+    private function conflictResponse(Request $request, string $message): Response
+    {
+        if (str_contains((string) $request->header('Accept', ''), 'application/json')) {
+            return Response::json(['ok' => false, 'message' => $message], 409);
+        }
+
+        return Response::html($this->view->render('errors.409', ['message' => $message]), 409);
     }
 
     /**

@@ -51,6 +51,8 @@ final class EntryQuery
 
     private ?User $privateViewer = null;
 
+    private ?int $adminVisibleAuthorId = null;
+
     private ?int $authorId = null;
 
     private ?int $parentId = null;
@@ -158,6 +160,18 @@ final class EntryQuery
     {
         $clone = clone $this;
         $clone->privateViewer = $user;
+
+        return $clone;
+    }
+
+    /**
+     * Restrict admin listing visibility for users who lack `edit_any` (contributors / authors):
+     * they only see their own entries (any status) plus published entries from other authors.
+     */
+    public function visibleInAdminFor(User $user, ContentType $type): self
+    {
+        $clone = clone $this;
+        $clone->adminVisibleAuthorId = $user->can($type->capability('edit_any')) ? null : $user->id;
 
         return $clone;
     }
@@ -413,7 +427,14 @@ final class EntryQuery
             $bindings = [...$bindings, ...$this->statuses];
         }
 
-        // 3. Author, parent, month
+        // 3. Admin per-role visibility (contributors / authors see own entries + published entries)
+        if ($this->adminVisibleAuthorId !== null) {
+            $clauses[] = '(e.author_id = ? OR e.status = ?)';
+            $bindings[] = $this->adminVisibleAuthorId;
+            $bindings[] = Entry::STATUS_PUBLISHED;
+        }
+
+        // 4. Author, parent, month
         if ($this->authorId !== null) {
             $clauses[] = 'e.author_id = ?';
             $bindings[] = $this->authorId;

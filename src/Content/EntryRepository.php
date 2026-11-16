@@ -269,16 +269,25 @@ final class EntryRepository
 
     /**
      * Count entries by status for a given content type (in a single GROUP BY query).
+     * When `$visibleToAuthorId` is provided (contributors/authors without `edit_any`),
+     * counts only entries owned by that author plus published entries.
      *
      * @return array<string, int>
      */
-    public function countByStatus(string $type): array
+    public function countByStatus(string $type, ?int $visibleToAuthorId = null): array
     {
         $table = $this->db->prefix() . 'entries';
-        $rows = $this->db->select(
-            sprintf('SELECT status, COUNT(*) AS cnt FROM `%s` WHERE type = ? GROUP BY status', $table),
-            [$type],
-        );
+        if ($visibleToAuthorId !== null) {
+            $rows = $this->db->select(
+                sprintf('SELECT status, COUNT(*) AS cnt FROM `%s` WHERE type = ? AND (author_id = ? OR status = ?) GROUP BY status', $table),
+                [$type, $visibleToAuthorId, Entry::STATUS_PUBLISHED],
+            );
+        } else {
+            $rows = $this->db->select(
+                sprintf('SELECT status, COUNT(*) AS cnt FROM `%s` WHERE type = ? GROUP BY status', $table),
+                [$type],
+            );
+        }
 
         $counts = [
             'all' => 0,
@@ -309,13 +318,21 @@ final class EntryRepository
      *
      * @return list<string>
      */
-    public function availableMonths(string $type): array
+    public function availableMonths(string $type, ?int $visibleToAuthorId = null): array
     {
-        $rows = $this->db->table('entries')
-            ->select(['published_at', 'created_at'])
-            ->where('type', '=', $type)
-            ->orderBy('created_at', 'DESC')
-            ->get();
+        $table = $this->db->prefix() . 'entries';
+        if ($visibleToAuthorId !== null) {
+            $rows = $this->db->select(
+                sprintf('SELECT published_at, created_at FROM `%s` WHERE type = ? AND (author_id = ? OR status = ?) ORDER BY created_at DESC', $table),
+                [$type, $visibleToAuthorId, Entry::STATUS_PUBLISHED],
+            );
+        } else {
+            $rows = $this->db->table('entries')
+                ->select(['published_at', 'created_at'])
+                ->where('type', '=', $type)
+                ->orderBy('created_at', 'DESC')
+                ->get();
+        }
 
         $months = [];
         foreach ($rows as $row) {

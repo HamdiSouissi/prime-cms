@@ -23,16 +23,61 @@ declare(strict_types=1);
  * @var bool $canPublish
  * @var bool $canEditOthers
  * @var bool $canDelete
+ * @var bool $isPendingLocked
  * @var string $editorConfigJson
  */
 $this->layout('admin::layouts/app');
 
+$isPendingLocked = !empty($isPendingLocked);
 $baseUrl = $contentType->adminListUrl();
 $formAction = $isEdit && $entry !== null ? sprintf('%s/%d', $baseUrl, $entry->id) : $baseUrl;
-$primaryLabel = $isEdit ? 'Mettre à jour' : ($canPublish ? 'Publier' : 'Enregistrer');
+$primaryLabel = !$canPublish
+    ? 'Soumettre pour relecture'
+    : ($isEdit ? 'Mettre à jour' : 'Publier');
+$primaryTargetStatus = !$canPublish
+    ? 'pending'
+    : (!$isEdit ? 'published' : '');
 $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($form['published_at'], 0, 16)) : '';
 ?>
 <?php $this->start('content'); ?>
+
+<?php if ($isPendingLocked && $entry !== null): ?>
+    <div class="pc-alert pc-alert--info" role="status" data-prime-pending-locked-banner style="margin-bottom:16px;">
+        <span class="pc-alert__icon" aria-hidden="true"><?= $this->raw($this->icon('clock', 18)) ?></span>
+        <div class="pc-alert__body">
+            <p class="pc-alert__title">Contenu soumis pour relecture — modification verrouillée</p>
+            <p class="pc-alert__text">Ce contenu est actuellement en attente de validation éditoriale. Vous ne pouvez plus le modifier tant qu’un éditeur ou un administrateur ne l’a pas examiné.</p>
+        </div>
+    </div>
+
+    <div class="pc-editor-topbar">
+        <div class="pc-editor-topbar__left">
+            <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm">
+                <?= $this->raw($this->icon('chevron-left', 16)) ?>
+                <span><?= $this->e($contentType->label('plural')) ?></span>
+            </a>
+            <?= $this->raw($this->insert('admin::components/badge', [
+                'label' => 'En attente de relecture',
+                'variant' => 'warning',
+                'dot' => true,
+            ])) ?>
+        </div>
+        <div class="pc-editor-topbar__right">
+            <a href="<?= $this->e($entry->previewUrl()) ?>" target="_blank" rel="noopener" class="pc-btn pc-btn--primary pc-btn--sm">
+                <?= $this->raw($this->icon('eye', 16)) ?>
+                <span>Voir l’aperçu</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="pc-editor-sheet">
+        <h1 style="margin-bottom:12px;"><?= $this->e($entry->title) ?></h1>
+        <p class="pc-text-sm pc-text-muted" style="margin-bottom:18px;">Permalien : <code>/<?= $this->e($entry->slug) ?></code> · Mis à jour le <?= $this->e($entry->updatedAt) ?> UTC</p>
+        <div class="pc-preview-body">
+            <?= $this->raw($entry->contentHtml !== '' ? $entry->contentHtml : '<p class="pc-text-muted">Aucun contenu saisi.</p>') ?>
+        </div>
+    </div>
+<?php else: ?>
 
 <form method="post" action="<?= $this->e($formAction) ?>" id="pc-content-editor-form">
     <?= $this->raw($this->csrfField()) ?>
@@ -89,7 +134,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                 type="submit"
                 class="pc-btn pc-btn--primary pc-btn--sm"
                 data-prime-primary-save
-                <?php if (!$isEdit && $canPublish): ?>data-prime-submit-status="published"<?php endif; ?>
+                <?php if ($primaryTargetStatus !== ''): ?>data-prime-submit-status="<?= $this->e($primaryTargetStatus) ?>"<?php endif; ?>
             >
                 <?= $this->raw($this->icon('check', 16)) ?>
                 <span><?= $this->e($primaryLabel) ?></span>
@@ -377,6 +422,8 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
     <form id="pc-editor-trash-form" method="post" action="<?= $this->e(sprintf('%s/%d/trash', $baseUrl, $entry->id)) ?>" hidden>
         <?= $this->raw($this->csrfField()) ?>
     </form>
+<?php endif; ?>
+
 <?php endif; ?>
 
 <?php $this->stop(); ?>
