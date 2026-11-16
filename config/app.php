@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Prime\Admin\AdminServiceProvider;
 use Prime\Auth\AuthServiceProvider;
+use Prime\Cache\CacheServiceProvider;
+use Prime\Cache\Http\PageCacheMiddleware;
 use Prime\Content\ContentServiceProvider;
 use Prime\Database\DatabaseServiceProvider;
 use Prime\Http\Middleware\RedirectIfNotInstalled;
@@ -38,6 +40,7 @@ return [
         ViewServiceProvider::class,
         DatabaseServiceProvider::class,
         SettingsServiceProvider::class,
+        CacheServiceProvider::class,
         MailServiceProvider::class,
         HttpServiceProvider::class,
         AuthServiceProvider::class,
@@ -54,6 +57,7 @@ return [
         SecurityHeaders::class,
         TrailingSlash::class,
         RedirectIfNotInstalled::class,
+        PageCacheMiddleware::class,
     ],
 
     'route_middleware' => [
