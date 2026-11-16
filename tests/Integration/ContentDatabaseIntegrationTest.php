@@ -260,6 +260,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $entryRepo = $stack['entryRepo'];
         $termRepo = $stack['termRepo'];
         $query = $stack['query'];
+        $postType = $stack['postType'];
         $contributor = $stack['users']['contributor'];
         $author = $stack['users']['author'];
         $admin = $stack['users']['admin'];
@@ -328,11 +329,11 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame(1, $adminCounts[Entry::STATUS_PRIVATE]);
         $this->assertSame(1, $adminCounts[Entry::STATUS_TRASH]);
 
-        $allRows = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($admin)->get();
+        $allRows = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($admin, $postType)->get();
         $this->assertCount($adminCounts['all'], $allRows);
 
         foreach (Entry::ALL_STATUSES as $st) {
-            $tabRows = $query->newQuery()->type('post')->includeFuture(true)->status($st)->visibleInAdminFor($admin)->get();
+            $tabRows = $query->newQuery()->type('post')->includeFuture(true)->status($st)->visibleInAdminFor($admin, $postType)->get();
             $this->assertCount($adminCounts[$st], $tabRows, "Row count mismatch for admin tab [{$st}]");
         }
 
@@ -345,7 +346,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame(0, $contribCounts[Entry::STATUS_PRIVATE]);
         $this->assertSame(0, $contribCounts[Entry::STATUS_TRASH]);
 
-        $contribAll = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($contributor)->get();
+        $contribAll = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($contributor, $postType)->get();
         $this->assertCount($contribCounts['all'], $contribAll);
         $contribIds = array_map(static fn (Entry $e): int => $e->id, $contribAll);
         sort($contribIds);
@@ -356,7 +357,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         // Author visibility: sees own draft + published entry (not admin's draft/private or contributor's pending)
         $authorCounts = $entryRepo->countByStatus('post', $author->id);
         $this->assertSame(2, $authorCounts['all']);
-        $authorAll = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($author)->get();
+        $authorAll = $query->newQuery()->type('post')->includeFuture(true)->anyStatus(includeTrash: false)->visibleInAdminFor($author, $postType)->get();
         $this->assertCount($authorCounts['all'], $authorAll);
 
         // 3. Search, taxonomy, author, and month filters narrow list results accurately
@@ -844,6 +845,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
      *   revRepo: RevisionRepository,
      *   lockRepo: EntryLockRepository,
      *   query: EntryQuery,
+     *   postType: ContentType,
      *   users: array{admin: User, editor: User, author: User, contributor: User}
      * }
      */
@@ -902,11 +904,12 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
         $taxonomies = new TaxonomyRegistry($hooks);
         $fields = new FieldRegistry($hooks);
 
-        $types->register(new ContentType(
+        $postType = new ContentType(
             name: 'post',
             labels: ['singular' => 'Article', 'plural' => 'Articles'],
             taxonomies: ['category', 'tag'],
-        ));
+        );
+        $types->register($postType);
         $taxonomies->register(new Taxonomy(
             name: 'category',
             labels: ['singular' => 'Catégorie', 'plural' => 'Catégories'],
@@ -957,6 +960,7 @@ final class ContentDatabaseIntegrationTest extends DatabaseTestCase
             'revRepo' => $revRepo,
             'lockRepo' => $lockRepo,
             'query' => new EntryQuery($this->connection, $entryRepo),
+            'postType' => $postType,
             'users' => $users,
         ];
     }
