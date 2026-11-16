@@ -37,4 +37,5 @@ return [
     'components/plugins.css',
     'components/content.css',
     'components/editor.css',
+    'components/media.css',
 ];

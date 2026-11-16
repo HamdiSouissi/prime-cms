@@ -7,6 +7,8 @@ import { initAdminUsers } from './admin-users.js';
 import { initAdminPlugins } from './plugins.js';
 import { initContentAdmin } from './content-admin.js';
 import { editorApi, initPrimeEditor } from './editor/core.js';
+import { initMediaLibrary } from './media/library.js';
+import { initMediaFields, mediaApi } from './media/picker.js';
 import { initCommandPalette, openCommandPalette } from './command-palette.js';
 import { closeDrawer, initDrawers, openDrawer } from './drawer.js';
 import { initDropdowns } from './dropdown.js';
@@ -142,6 +144,8 @@ function bootstrap() {
   initAdminPlugins();
   initContentAdmin();
   initPrimeEditor();
+  initMediaLibrary();
+  initMediaFields();
 }
 
 window.Prime = Object.freeze({
@@ -152,6 +156,7 @@ window.Prime = Object.freeze({
   openDrawer,
   closeDrawer,
   editor: editorApi,
+  media: mediaApi,
 });
 
 if (document.readyState === 'loading') {

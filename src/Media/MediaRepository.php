@@ -133,9 +133,9 @@ final class MediaRepository
         $sortExpr = $allowedSorts[$sortKey] ?? 'm.`created_at`';
         $dir = strtoupper((string) ($filters['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
 
-        $mediaTable = $this->db->tableName('media');
-        $usageTable = $this->db->tableName('media_usage');
-        $usersTable = $this->db->tableName('users');
+        $mediaTable = $this->db->prefixed('media');
+        $usageTable = $this->db->prefixed('media_usage');
+        $usersTable = $this->db->prefixed('users');
 
         $where = [];
         $bindings = [];
@@ -335,7 +335,7 @@ final class MediaRepository
      */
     public function availableMonths(): array
     {
-        $mediaTable = $this->db->tableName('media');
+        $mediaTable = $this->db->prefixed('media');
         $rows = $this->db->select(
             sprintf('SELECT DISTINCT SUBSTR(`created_at`, 1, 7) AS `ym` FROM `%s` WHERE `created_at` IS NOT NULL ORDER BY `ym` DESC', $mediaTable),
         );
@@ -377,9 +377,9 @@ final class MediaRepository
      */
     public function stats(): array
     {
-        $mediaTable = $this->db->tableName('media');
-        $usageTable = $this->db->tableName('media_usage');
-        $usersTable = $this->db->tableName('users');
+        $mediaTable = $this->db->prefixed('media');
+        $usageTable = $this->db->prefixed('media_usage');
+        $usersTable = $this->db->prefixed('users');
 
         $rows = $this->db->select(
             sprintf('SELECT `kind`, COUNT(*) AS `cnt`, COALESCE(SUM(`size_bytes`), 0) AS `bytes` FROM `%s` GROUP BY `kind`', $mediaTable),

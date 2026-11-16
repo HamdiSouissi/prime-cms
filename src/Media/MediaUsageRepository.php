@@ -91,8 +91,8 @@ final class MediaUsageRepository
      */
     public function findByMedia(int $mediaId): array
     {
-        $usageTable = $this->db->tableName('media_usage');
-        $entriesTable = $this->db->tableName('entries');
+        $usageTable = $this->db->prefixed('media_usage');
+        $entriesTable = $this->db->prefixed('entries');
 
         $rows = $this->db->select(
             sprintf(
@@ -140,7 +140,7 @@ final class MediaUsageRepository
         }
 
         $placeholders = implode(', ', array_fill(0, count($ids), '?'));
-        $usageTable = $this->db->tableName('media_usage');
+        $usageTable = $this->db->prefixed('media_usage');
 
         $rows = $this->db->select(
             sprintf(

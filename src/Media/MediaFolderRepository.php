@@ -286,7 +286,7 @@ final class MediaFolderRepository
      */
     private function mediaCountsByFolder(): array
     {
-        $mediaTable = $this->db->tableName('media');
+        $mediaTable = $this->db->prefixed('media');
         $rows = $this->db->select(
             sprintf('SELECT `folder_id`, COUNT(*) AS `cnt` FROM `%s` WHERE `folder_id` IS NOT NULL GROUP BY `folder_id`', $mediaTable),
         );

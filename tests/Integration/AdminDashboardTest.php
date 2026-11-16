@@ -304,7 +304,6 @@ final class AdminDashboardTest extends TestCase
         $kernel = $app->get(Kernel::class);
 
         $expectedPhases = [
-            '/admin/media' => 'Phase 7',
             '/admin/appearance' => 'Phase 8',
             '/admin/appearance/themes' => 'Phase 8',
             '/admin/appearance/menus' => 'Phase 8',
@@ -409,6 +408,7 @@ final class AdminDashboardTest extends TestCase
             '/admin/content/page',
             '/admin/content/post/create',
             '/admin/taxonomies/category',
+            '/admin/media',
             '/admin/settings/security',
         ];
 
@@ -456,7 +456,7 @@ final class AdminDashboardTest extends TestCase
         // In-memory SQLite fixture implementing the auth/roles schema for fast unit/shell HTTP tests.
         $pdo = new PDO('sqlite::memory:');
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE pc_users (id INTEGER PRIMARY KEY AUTOINCREMENT, email VARCHAR(191) UNIQUE, password_hash VARCHAR(255), display_name VARCHAR(191), status VARCHAR(20), locale VARCHAR(10), last_login_at DATETIME NULL, session_version INTEGER DEFAULT 1, two_factor_secret TEXT NULL, two_factor_recovery_codes TEXT NULL, two_factor_confirmed_at DATETIME NULL, two_factor_last_step INTEGER NULL, password_changed_at DATETIME NULL, created_at DATETIME, updated_at DATETIME)');
+        $pdo->exec('CREATE TABLE pc_users (id INTEGER PRIMARY KEY AUTOINCREMENT, email VARCHAR(191) UNIQUE, password_hash VARCHAR(255), display_name VARCHAR(191), status VARCHAR(20), locale VARCHAR(10), avatar_media_id INTEGER NULL, last_login_at DATETIME NULL, session_version INTEGER DEFAULT 1, two_factor_secret TEXT NULL, two_factor_recovery_codes TEXT NULL, two_factor_confirmed_at DATETIME NULL, two_factor_last_step INTEGER NULL, password_changed_at DATETIME NULL, created_at DATETIME, updated_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_roles (id INTEGER PRIMARY KEY AUTOINCREMENT, slug VARCHAR(191) UNIQUE, name VARCHAR(191), description TEXT NULL, is_system INTEGER DEFAULT 0, created_at DATETIME, updated_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_role_capabilities (role_id INTEGER, capability VARCHAR(100), PRIMARY KEY (role_id, capability))');
         $pdo->exec('CREATE TABLE pc_user_roles (user_id INTEGER, role_id INTEGER, PRIMARY KEY (user_id, role_id))');
@@ -469,6 +469,9 @@ final class AdminDashboardTest extends TestCase
         $pdo->exec('CREATE TABLE pc_term_relationships (entry_id INTEGER, term_id INTEGER, term_order INTEGER DEFAULT 0, PRIMARY KEY (entry_id, term_id))');
         $pdo->exec('CREATE TABLE pc_revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, entry_id INTEGER, author_id INTEGER NULL, is_autosave INTEGER DEFAULT 0, title VARCHAR(255), excerpt TEXT NULL, content LONGTEXT, meta LONGTEXT, created_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_entry_locks (entry_id INTEGER PRIMARY KEY, user_id INTEGER, acquired_at DATETIME, heartbeat_at DATETIME)');
+        $pdo->exec('CREATE TABLE pc_media_folders (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(120) NOT NULL, slug VARCHAR(140) NOT NULL, parent_id INTEGER NULL, created_by INTEGER NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)');
+        $pdo->exec('CREATE TABLE pc_media (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid CHAR(36) NOT NULL UNIQUE, folder_id INTEGER NULL, uploaded_by INTEGER NULL, disk VARCHAR(32) NOT NULL DEFAULT \'local\', path VARCHAR(500) NOT NULL, filename VARCHAR(255) NOT NULL, original_filename VARCHAR(255) NOT NULL, mime_type VARCHAR(120) NOT NULL, extension VARCHAR(20) NOT NULL, kind VARCHAR(20) NOT NULL, size_bytes INTEGER NOT NULL, width INTEGER NULL, height INTEGER NULL, duration_seconds INTEGER NULL, focal_x DECIMAL(5,4) NOT NULL DEFAULT 0.5000, focal_y DECIMAL(5,4) NOT NULL DEFAULT 0.5000, variants LONGTEXT NULL, metadata LONGTEXT NULL, title VARCHAR(255) NOT NULL DEFAULT \'\', alt_text VARCHAR(255) NOT NULL DEFAULT \'\', caption TEXT NULL, description TEXT NULL, sha256 CHAR(64) NOT NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)');
+        $pdo->exec('CREATE TABLE pc_media_usage (media_id INTEGER NOT NULL, entity_type VARCHAR(40) NOT NULL, entity_id INTEGER NOT NULL, field_name VARCHAR(80) NOT NULL, created_at DATETIME NOT NULL, PRIMARY KEY (media_id, entity_type, entity_id, field_name))');
 
         $now = '2026-11-15 12:00:00';
         $pdo->exec("INSERT INTO pc_roles (id, slug, name, description, is_system, created_at, updated_at) VALUES (1, 'administrator', 'Administrateur', 'Accès complet', 1, '{$now}', '{$now}')");
