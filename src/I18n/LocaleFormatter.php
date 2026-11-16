@@ -285,14 +285,27 @@ final class LocaleFormatter
             return $translated;
         }
 
-        if (extension_loaded('intl') && class_exists(\Locale::class)) {
-            $name = \Locale::getDisplayName($this->translator->localeTag($locale), $this->translator->localeTag($inLocale));
-            if (is_string($name) && $name !== '') {
-                return $name;
-            }
+        $intlName = $this->intlDisplayName($this->translator->localeTag($locale), $this->translator->localeTag($inLocale));
+        if ($intlName !== null) {
+            return $intlName;
         }
 
         return strtoupper($normalized);
+    }
+
+    /**
+     * Locale name as spelled by the ICU runtime, or `null` when ICU is missing or silent.
+     */
+    private function intlDisplayName(string $localeTag, string $inTag): ?string
+    {
+        if (!extension_loaded('intl') || !class_exists(\Locale::class)) {
+            return null;
+        }
+
+        /** @var string|false $name `false` when the tag cannot be widened, as documented by ICU */
+        $name = \Locale::getDisplayName($localeTag, $inTag);
+
+        return is_string($name) && $name !== '' ? $name : null;
     }
 
     /**
@@ -386,6 +399,7 @@ final class LocaleFormatter
     }
 
     /**
+     * @param array<int, string> $englishDefaults Fallback names used when the catalogue has no translation
      * @return array<int, string>
      */
     private function names(string $type, string $context, ?string $locale, array $englishDefaults): array
@@ -435,11 +449,11 @@ final class LocaleFormatter
                 'narrow' => 'MMMMM',
                 default => 'MMMM',
             }
-            : match ($context) {
-                'abbreviated' => 'EEE',
-                'narrow' => 'EEEEE',
-                default => 'EEEE',
-            };
+        : match ($context) {
+            'abbreviated' => 'EEE',
+            'narrow' => 'EEEEE',
+            default => 'EEEE',
+        };
 
         $count = $type === 'months' ? 12 : 7;
         $base = $type === 'months' ? 1 : 0;
@@ -561,7 +575,9 @@ final class LocaleFormatter
                 continue;
             }
 
-            $result .= $moment->format($char) !== '' ? $moment->format($char) : $char;
+            // `DateTimeImmutable::format()` echoes unknown pattern characters verbatim, so the
+            // result is never empty and needs no fallback.
+            $result .= $moment->format($char);
         }
 
         return str_replace("\0", '', $result);

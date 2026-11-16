@@ -46,6 +46,23 @@ final class PageCache
     ];
 
     /**
+     * Route prefixes that must never be served from the page cache.
+     *
+     * @var list<string>
+     */
+    private const UNCACHEABLE_PATHS = [
+        '/admin',
+        '/install',
+        '/recherche',
+        '/search',
+        '/health',
+        '/sitemap.xml',
+        '/robots.txt',
+        '/uploads',
+        '/assets',
+    ];
+
+    /**
      * @var Closure(): int
      */
     private readonly Closure $clock;
@@ -116,18 +133,14 @@ final class PageCache
             }
         }
 
+        // Never cache administration, installation, search, preview, feeds, sitemap or the
+        // diagnostic endpoint: they are either private, parameterised, or must always reflect
+        // live state (the `/health` report changes with the debug flag and the environment).
         $path = $this->normalizePath($request->path());
-        if (
-            $path === '/admin'
-            || str_starts_with($path, '/admin/')
-            || $path === '/install'
-            || str_starts_with($path, '/install/')
-            || $path === '/recherche'
-            || str_starts_with($path, '/recherche/')
-            || $path === '/search'
-            || str_starts_with($path, '/search/')
-        ) {
-            return false;
+        foreach (self::UNCACHEABLE_PATHS as $prefix) {
+            if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
+                return false;
+            }
         }
 
         // Strict query whitelist: only `page` (positive integer) is allowed.

@@ -21,9 +21,12 @@ final class HttpKernelTest extends TestCase
 {
     private string $tempLogDir;
 
+    private string $pageCacheDir;
+
     protected function setUp(): void
     {
         $this->tempLogDir = sys_get_temp_dir() . '/prime_int_logs_' . uniqid('', true);
+        $this->pageCacheDir = sys_get_temp_dir() . '/prime_int_pages_' . uniqid('', true);
     }
 
     protected function tearDown(): void
@@ -36,6 +39,24 @@ final class HttpKernelTest extends TestCase
                 }
             }
             rmdir($this->tempLogDir);
+        }
+
+        if (is_dir($this->pageCacheDir)) {
+            // `scandir` instead of a `GLOB_BRACE` glob: the brace flag is not portable
+            // (php-wasm rejects it), and dotfiles must be removed too.
+            $entries = scandir($this->pageCacheDir);
+            foreach ($entries === false ? [] : $entries as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+                $path = $this->pageCacheDir . '/' . $entry;
+                if (is_dir($path)) {
+                    @rmdir($path);
+                } else {
+                    @unlink($path);
+                }
+            }
+            @rmdir($this->pageCacheDir);
         }
     }
 
@@ -359,6 +380,9 @@ final class HttpKernelTest extends TestCase
         $app = new Application(dirname(__DIR__, 2), loadEnv: false);
         $app->config()->set('app.debug', $debug);
         $app->config()->set('logging.path', $this->tempLogDir);
+        // Each booted app gets its own page cache directory: a production response cached by
+        // one test must never be replayed to the debug app of the next one.
+        $app->config()->set('cache.page.directory', $this->pageCacheDir);
         $app->boot();
 
         $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {

@@ -52,7 +52,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
         $ran = $migrator->run();
-        $this->assertCount(23, $ran);
+        $this->assertCount($this->coreMigrationCount(), $ran);
 
         $this->assertTrue($schema->hasTable('menus'));
         $this->assertTrue($schema->hasTable('menu_items'));
@@ -148,7 +148,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
 
         // 5. Full rollback of all 23 migrations leaves clean DB
         $rolledBack = $migrator->rollback(1);
-        $this->assertCount(23, $rolledBack);
+        $this->assertCount($this->coreMigrationCount(), $rolledBack);
         $this->assertFalse($schema->hasTable('menus'));
         $this->assertFalse($schema->hasTable('zones'));
         $this->assertFalse($schema->hasTable('redirects'));
@@ -159,7 +159,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
     {
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
-        $this->assertCount(23, $migrator->run());
+        $this->assertCount($this->coreMigrationCount(), $migrator->run());
 
         $app = new Application(dirname(__DIR__, 2), loadEnv: false, registerErrorHandler: false);
         $app->config()->set('app.env', 'testing');

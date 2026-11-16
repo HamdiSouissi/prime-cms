@@ -27,8 +27,6 @@ final class LanguageChecker
 
     /**
      * @param list<string> $scanPaths Directories scanned for translation key usages
-     */
-    /**
      * @param list<string>|null $locales Restrict the analysis to these locales (null = every shipped locale)
      */
     public function __construct(
@@ -47,14 +45,14 @@ final class LanguageChecker
     public function locales(): array
     {
         if ($this->locales !== null) {
-            return array_values($this->locales);
+            return $this->locales;
         }
 
         $locales = [];
         $entries = is_dir($this->langPath) ? (@scandir($this->langPath) ?: []) : [];
 
         foreach ($entries as $entry) {
-            if (!is_string($entry) || $entry === '.' || $entry === '..') {
+            if ($entry === '.' || $entry === '..') {
                 continue;
             }
 
@@ -99,7 +97,8 @@ final class LanguageChecker
                 $referenceLine = $this->raw($this->reference, $key);
                 $localeLine = $this->raw($locale, $key);
 
-                if ($localeLine === null) {
+                // A key missing from the reference catalogue is reported by the missing-key pass.
+                if ($localeLine === null || $referenceLine === null) {
                     continue;
                 }
 

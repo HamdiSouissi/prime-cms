@@ -106,19 +106,14 @@ final class LangCheckCommand implements CommandInterface
 
         $output->writeln('');
 
-        if ($errors === 0 && $warnings === 0) {
-            $output->writeln('Catalogue de traduction cohérent.');
+        $output->writeln(match (true) {
+            $errors === 0 && $warnings === 0 => 'Catalogue de traduction cohérent.',
+            default => sprintf('%d erreur(s), %d avertissement(s).', $errors, $warnings),
+        });
 
-            return self::SUCCESS;
-        }
+        $failed = $errors !== 0 || ($strict && $warnings !== 0);
 
-        $output->writeln(sprintf('%d erreur(s), %d avertissement(s).', $errors, $warnings));
-
-        if ($errors > 0 || ($strict && $warnings > 0)) {
-            return self::FAILURE;
-        }
-
-        return self::SUCCESS;
+        return $failed ? self::FAILURE : self::SUCCESS;
     }
 
     /**

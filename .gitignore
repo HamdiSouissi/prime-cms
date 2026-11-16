@@ -57,3 +57,6 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Local dev harness (PHP/Composer unavailable in this sandbox)
+/.arena-tools/

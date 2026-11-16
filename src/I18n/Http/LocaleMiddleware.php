@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Prime\I18n\Http;
 
-use Prime\Auth\Auth;
 use Prime\Auth\User;
+use Prime\Auth\UserRepository;
 use Prime\Hooks\Hooks;
 use Prime\Http\Middleware\MiddlewareInterface;
 use Prime\Http\Request;
 use Prime\Http\Response;
+use Prime\Http\Session;
 use Prime\I18n\LocaleFormatter;
 use Prime\I18n\Translator;
 use Prime\Settings\Settings;
@@ -22,16 +23,26 @@ use Throwable;
  * language setting (`language.admin` / `language.site`) → `language.fallback` → `app.locale`.
  * The resolved locale is exposed to the rest of the pipeline through the `locale` request
  * attribute (used by the page cache key) and the request scope is restored afterwards.
+ *
+ * The middleware only depends on lightweight services: it reads the session identifier
+ * directly instead of resolving the authentication guard, because the guard eagerly builds
+ * the 2FA encrypter (which requires `APP_KEY`) and the rate limiter. Building those on every
+ * public page — or on a fresh install where `.env` has no key yet — would make the whole
+ * site fail just to choose a language.
  */
 final class LocaleMiddleware implements MiddlewareInterface
 {
     public const ATTRIBUTE = 'locale';
 
+    /** Session key written by the authentication guard at login (mirrors `Auth::SESSION_USER_ID`). */
+    private const SESSION_USER_ID = '_auth.user_id';
+
     public function __construct(
         private readonly Translator $translator,
         private readonly LocaleFormatter $formatter,
         private readonly ?Settings $settings = null,
-        private readonly ?Auth $auth = null,
+        private readonly ?Session $session = null,
+        private readonly ?UserRepository $users = null,
         private readonly ?Hooks $hooks = null,
     ) {
     }
@@ -70,17 +81,10 @@ final class LocaleMiddleware implements MiddlewareInterface
         $path = '/' . trim($request->path(), '/');
         $isAdmin = $path === '/admin' || str_starts_with($path, '/admin/');
 
-        if ($isAdmin && $this->auth !== null) {
-            try {
-                $user = $this->auth->user($request);
-                if ($user instanceof User) {
-                    $locale = $this->translator->normalize($user->locale);
-                    if ($locale !== '' && $this->translator->isSupported($locale)) {
-                        return $locale;
-                    }
-                }
-            } catch (Throwable) {
-                // Session or database unavailable: fall back to the site language.
+        if ($isAdmin) {
+            $preferred = $this->userLocale();
+            if ($preferred !== null) {
+                return $preferred;
             }
         }
 
@@ -95,6 +99,33 @@ final class LocaleMiddleware implements MiddlewareInterface
         }
 
         return $this->translator->locale();
+    }
+
+    /**
+     * Locale explicitly chosen by the signed-in visitor (profile preference).
+     */
+    private function userLocale(): ?string
+    {
+        if ($this->session === null || $this->users === null) {
+            return null;
+        }
+
+        try {
+            $userId = $this->session->get(self::SESSION_USER_ID);
+            if (!is_int($userId) && !(is_string($userId) && ctype_digit($userId))) {
+                return null;
+            }
+
+            $user = $this->users->find((int) $userId);
+            if (!$user instanceof User || $user->status !== 'active') {
+                return null;
+            }
+
+            return $this->isUsable($user->locale) ? $user->locale : null;
+        } catch (Throwable) {
+            // Session or database unavailable: fall back to the configured language.
+            return null;
+        }
     }
 
     /**

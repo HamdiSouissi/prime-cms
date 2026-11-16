@@ -23,13 +23,14 @@ final class LanguageCheckerTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (glob($this->fixture . '/{lang/*/*.php,views/*.php}', GLOB_BRACE) ?: [] as $file) {
-            @unlink((string) $file);
+        // Explicit directories instead of a `GLOB_BRACE` glob: the brace flag is not portable.
+        foreach ([$this->fixture . '/lang/fr', $this->fixture . '/lang/en', $this->fixture . '/views'] as $dir) {
+            foreach (glob($dir . '/*.php') ?: [] as $file) {
+                @unlink($file);
+            }
+            @rmdir($dir);
         }
-
-        foreach (array_reverse(glob($this->fixture . '/{lang/fr,lang/en,lang,views}', GLOB_BRACE) ?: []) as $dir) {
-            @rmdir((string) $dir);
-        }
+        @rmdir($this->fixture . '/lang');
 
         @rmdir($this->fixture);
         Validator::setTranslator(null);

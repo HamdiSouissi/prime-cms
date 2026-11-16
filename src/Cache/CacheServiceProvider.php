@@ -47,15 +47,20 @@ final class CacheServiceProvider extends ServiceProvider
             $ttl = (int) ($persisted['page_ttl'] ?? $app->config()->get('cache.page.ttl', 600));
             $hooks = $c->has(Hooks::class) ? $c->get(Hooks::class) : null;
 
+            $directory = $app->config()->get('cache.page.directory');
+            if (!is_string($directory) || trim($directory) === '') {
+                $directory = $app->storagePath('cache/pages');
+            }
+
             return new PageCache(
-                directory: $app->storagePath('cache/pages'),
+                directory: $directory,
                 enabled: $enabled,
                 defaultTtl: $ttl,
                 hooks: $hooks instanceof Hooks ? $hooks : null,
             );
         });
 
-        $c->singleton(CacheManager::class, static function () use ($app, $c): CacheManager {
+        $c->singleton(CacheManager::class, static function () use ($c): CacheManager {
             /** @var CacheInterface $data */
             $data = $c->get(CacheInterface::class);
             /** @var PageCache $pages */

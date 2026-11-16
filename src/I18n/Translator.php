@@ -297,7 +297,7 @@ final class Translator
         foreach ($this->paths as $path) {
             $entries = @scandir($path) ?: [];
             foreach ($entries as $entry) {
-                if (!is_string($entry) || $entry === '.' || $entry === '..' || !is_dir($path . '/' . $entry)) {
+                if ($entry === '.' || $entry === '..' || !is_dir($path . '/' . $entry)) {
                     continue;
                 }
                 if ($this->groupFiles($entry) !== []) {
@@ -307,7 +307,7 @@ final class Translator
         }
 
         foreach ($this->registered as $locale => $messages) {
-            if (is_string($locale) && $messages !== []) {
+            if ($messages !== []) {
                 $locales[$locale] = true;
             }
         }
@@ -692,7 +692,7 @@ final class Translator
 
         $registered = $this->registered[$locale] ?? [];
         foreach ($registered as $group => $value) {
-            if (is_string($group) && (is_array($value) || is_string($value))) {
+            if (is_array($value) || is_string($value)) {
                 $groups[$group] = true;
             }
         }
