@@ -314,8 +314,12 @@ final class SitemapGenerator
                 $rawUrl = ($media !== null && $media->isImage())
                     ? $media->url()
                     : (is_string($data['url'] ?? null) ? trim($data['url']) : '');
-                $alt = is_string($data['alt'] ?? null) ? $data['alt'] : ($media?->alt ?? '');
-                $caption = is_string($data['caption'] ?? null) ? $data['caption'] : ($media?->caption ?? '');
+                $alt = is_string($data['alt'] ?? null)
+                    ? $data['alt']
+                    : ($media !== null ? $media->alt : '');
+                $caption = is_string($data['caption'] ?? null)
+                    ? $data['caption']
+                    : ($media !== null && $media->caption !== null ? $media->caption : '');
                 $item = $this->buildImageNode($rawUrl, $alt, $caption, $seen);
                 if ($item !== null) {
                     $images[] = $item;
@@ -333,8 +337,12 @@ final class SitemapGenerator
                     $rawUrl = ($media !== null && $media->isImage())
                         ? $media->url()
                         : (is_string($galleryItem['url'] ?? null) ? trim($galleryItem['url']) : '');
-                    $alt = is_string($galleryItem['alt'] ?? null) ? $galleryItem['alt'] : ($media?->alt ?? '');
-                    $caption = is_string($galleryItem['caption'] ?? null) ? $galleryItem['caption'] : ($media?->caption ?? '');
+                    $alt = is_string($galleryItem['alt'] ?? null)
+                        ? $galleryItem['alt']
+                        : ($media !== null ? $media->alt : '');
+                    $caption = is_string($galleryItem['caption'] ?? null)
+                        ? $galleryItem['caption']
+                        : ($media !== null && $media->caption !== null ? $media->caption : '');
                     $item = $this->buildImageNode($rawUrl, $alt, $caption, $seen);
                     if ($item !== null) {
                         $images[] = $item;

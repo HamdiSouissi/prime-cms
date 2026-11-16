@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HelloPrime;
 
+use Closure;
 use HelloPrime\Controller\HelloPrimeController;
 use Prime\Admin\AdminContext;
 use Prime\Admin\Menu\AdminMenu;
@@ -249,77 +250,10 @@ final class Plugin extends AbstractPlugin
         });
 
         // 14. Register dynamic block `hello_testimonial` via `blocks.dynamic` (Phase 8 L12 + Revue 1 C2)
-        $context->hooks()->filter('blocks.dynamic', static function (mixed $blocks) use ($context): mixed {
+        $context->hooks()->filter('blocks.dynamic', function (mixed $blocks) use ($context): mixed {
             if (!is_array($blocks)) {
                 return $blocks;
             }
-            /** @var \Closure(array<string, mixed>): string $renderTestimonial */
-            $renderTestimonial = static function (array $attrs) use ($context): string {
-                if (!$context->app()->container()->has(EntryQuery::class)) {
-                    return '';
-                }
-                try {
-                    /** @var EntryQuery $query */
-                    $query = $context->app()->get(EntryQuery::class);
-                    $items = $query->newQuery()
-                        ->type(self::CPT_TESTIMONIAL)
-                        ->orderBy('published_at', 'DESC')
-                        ->limit(25)
-                        ->get();
-                    if ($items === []) {
-                        return '';
-                    }
-
-                    $minRating = is_numeric($attrs['min_rating'] ?? null)
-                        ? max(1, min(5, (int) $attrs['min_rating']))
-                        : 1;
-                    $eligible = array_values(array_filter(
-                        $items,
-                        static function (Entry $item) use ($minRating): bool {
-                            $raw = $item->meta('rating');
-                            $r = is_numeric($raw) ? (int) $raw : 5;
-
-                            return $r >= $minRating;
-                        },
-                    ));
-                    $pool = $eligible !== [] ? $eligible : $items;
-
-                    $chosen = $pool[random_int(0, count($pool) - 1)];
-                    $e = static fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                    $heading = is_string($attrs['title'] ?? null) ? trim($attrs['title']) : '';
-                    $rawShowStars = $attrs['show_stars'] ?? true;
-                    $showStars = $rawShowStars !== false && $rawShowStars !== '0' && $rawShowStars !== 0;
-                    $style = ($attrs['style'] ?? 'card') === 'compact' ? 'compact' : 'card';
-
-                    $rawRole = $chosen->meta('author_role');
-                    $role = is_string($rawRole) ? trim($rawRole) : '';
-                    $rawRating = $chosen->meta('rating');
-                    $rating = is_numeric($rawRating) ? max(1, min(5, (int) $rawRating)) : 5;
-                    $stars = str_repeat('★', $rating) . str_repeat('☆', 5 - $rating);
-                    $quote = $chosen->excerpt !== null && trim($chosen->excerpt) !== ''
-                        ? trim($chosen->excerpt)
-                        : trim($chosen->contentText);
-
-                    $modifier = $style === 'compact' ? ' aurora-testimonial--compact' : '';
-                    $html = '<section class="prime-dyn prime-dyn--hello-testimonial aurora-testimonial' . $modifier . '">';
-                    if ($heading !== '') {
-                        $html .= '<h3 class="prime-dyn__title">' . $e($heading) . '</h3>';
-                    }
-                    if ($showStars) {
-                        $html .= '<div class="aurora-testimonial__stars" aria-label="Note : ' . $rating . ' sur 5">' . $stars . '</div>';
-                    }
-                    $html .= '<blockquote class="aurora-testimonial__quote">' . $e($quote) . '</blockquote>';
-                    $html .= '<footer class="aurora-testimonial__author">' . $e($chosen->title);
-                    if ($role !== '') {
-                        $html .= '<span class="aurora-testimonial__role">' . $e($role) . '</span>';
-                    }
-                    $html .= '</footer></section>';
-
-                    return $html;
-                } catch (Throwable) {
-                    return '';
-                }
-            };
 
             $blocks['hello_testimonial'] = [
                 'label' => 'Témoignage au hasard (Hello Prime)',
@@ -364,7 +298,7 @@ final class Plugin extends AbstractPlugin
                         'default' => 'card',
                     ],
                 ],
-                'render' => $renderTestimonial,
+                'render' => $this->createTestimonialRenderer($context),
             ];
 
             return $blocks;
@@ -431,5 +365,81 @@ final class Plugin extends AbstractPlugin
         }
 
         $context->logger()->info('Plugin Hello Prime désinstallé : nettoyage complet terminé.');
+    }
+
+    /**
+     * Build the typed dynamic block renderer closure for `hello_testimonial`.
+     *
+     * @return Closure(array<string, mixed>): string
+     */
+    private function createTestimonialRenderer(PluginContext $context): Closure
+    {
+        return static function (array $attrs) use ($context): string {
+            if (!$context->app()->container()->has(EntryQuery::class)) {
+                return '';
+            }
+
+            try {
+                /** @var EntryQuery $query */
+                $query = $context->app()->get(EntryQuery::class);
+                $items = $query->newQuery()
+                    ->type(self::CPT_TESTIMONIAL)
+                    ->orderBy('published_at', 'DESC')
+                    ->limit(25)
+                    ->get();
+                if ($items === []) {
+                    return '';
+                }
+
+                $minRating = is_numeric($attrs['min_rating'] ?? null)
+                    ? max(1, min(5, (int) $attrs['min_rating']))
+                    : 1;
+                $eligible = array_values(array_filter(
+                    $items,
+                    static function (Entry $item) use ($minRating): bool {
+                        $raw = $item->meta('rating');
+                        $r = is_numeric($raw) ? (int) $raw : 5;
+
+                        return $r >= $minRating;
+                    },
+                ));
+                $pool = $eligible !== [] ? $eligible : $items;
+
+                $chosen = $pool[random_int(0, count($pool) - 1)];
+                $e = static fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $heading = is_string($attrs['title'] ?? null) ? trim($attrs['title']) : '';
+                $rawShowStars = $attrs['show_stars'] ?? true;
+                $showStars = $rawShowStars !== false && $rawShowStars !== '0' && $rawShowStars !== 0;
+                $style = ($attrs['style'] ?? 'card') === 'compact' ? 'compact' : 'card';
+
+                $rawRole = $chosen->meta('author_role');
+                $role = is_string($rawRole) ? trim($rawRole) : '';
+                $rawRating = $chosen->meta('rating');
+                $rating = is_numeric($rawRating) ? max(1, min(5, (int) $rawRating)) : 5;
+                $stars = str_repeat('★', $rating) . str_repeat('☆', 5 - $rating);
+                $quote = $chosen->excerpt !== null && trim($chosen->excerpt) !== ''
+                    ? trim($chosen->excerpt)
+                    : trim($chosen->contentText);
+
+                $modifier = $style === 'compact' ? ' aurora-testimonial--compact' : '';
+                $html = '<section class="prime-dyn prime-dyn--hello-testimonial aurora-testimonial' . $modifier . '">';
+                if ($heading !== '') {
+                    $html .= '<h3 class="prime-dyn__title">' . $e($heading) . '</h3>';
+                }
+                if ($showStars) {
+                    $html .= '<div class="aurora-testimonial__stars" aria-label="Note : ' . $rating . ' sur 5">' . $stars . '</div>';
+                }
+                $html .= '<blockquote class="aurora-testimonial__quote">' . $e($quote) . '</blockquote>';
+                $html .= '<footer class="aurora-testimonial__author">' . $e($chosen->title);
+                if ($role !== '') {
+                    $html .= '<span class="aurora-testimonial__role">' . $e($role) . '</span>';
+                }
+                $html .= '</footer></section>';
+
+                return $html;
+            } catch (Throwable) {
+                return '';
+            }
+        };
     }
 }

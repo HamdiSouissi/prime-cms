@@ -1390,15 +1390,18 @@ final class ContentController
         string $publishedAt,
     ): string {
         $nowUtc = gmdate('Y-m-d H:i:s');
+        $fallbackDate = $entry !== null
+            ? ($entry->publishedAt ?? $entry->createdAt)
+            : $nowUtc;
         $effectiveDate = trim($publishedAt) !== ''
             ? str_replace('T', ' ', trim($publishedAt))
-            : ($entry?->publishedAt ?? $entry?->createdAt ?? $nowUtc);
+            : $fallbackDate;
 
         $probe = new Entry(
-            id: $entry?->id ?? 0,
+            id: $entry !== null ? $entry->id : 0,
             type: $contentType->name,
-            status: $entry?->status ?? Entry::STATUS_PUBLISHED,
-            title: $entry?->title ?? '',
+            status: $entry !== null ? $entry->status : Entry::STATUS_PUBLISHED,
+            title: $entry !== null ? $entry->title : '',
             slug: '__PRIME_SLUG__',
             excerpt: null,
             content: '{}',
@@ -1411,8 +1414,8 @@ final class ContentController
             publishedAt: $effectiveDate,
             previousStatus: null,
             trashedAt: null,
-            createdAt: $entry?->createdAt ?? $nowUtc,
-            updatedAt: $entry?->updatedAt ?? $nowUtc,
+            createdAt: $entry !== null ? $entry->createdAt : $nowUtc,
+            updatedAt: $entry !== null ? $entry->updatedAt : $nowUtc,
         );
 
         if ($this->urls !== null) {
@@ -1426,7 +1429,9 @@ final class ContentController
             return '/blog/__PRIME_SLUG__';
         }
 
-        $base = $contentType->rewriteBase !== '' ? trim($contentType->rewriteBase, '/') : $contentType->name;
+        $base = ($contentType->rewriteBase !== null && $contentType->rewriteBase !== '')
+            ? trim($contentType->rewriteBase, '/')
+            : $contentType->name;
 
         return '/' . $base . '/__PRIME_SLUG__';
     }

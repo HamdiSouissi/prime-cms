@@ -319,7 +319,10 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         // 1. Public contexts + visibility + Aurora assets & options CSS
         $aurora = $themes->active();
         $this->assertNotNull($aurora->manifest);
-        $savedOpts = $themeOptions->save($aurora->manifest, ['accent_color' => '#2563EB']);
+        $savedOpts = $themeOptions->save(
+            $aurora->manifest,
+            array_merge($themeOptions->all($aurora->manifest), ['accent_color' => '#2563EB']),
+        );
         $this->assertNotNull($savedOpts['css_url']);
 
         $homeRes = $kernel->handle(Request::create('GET', '/'));
