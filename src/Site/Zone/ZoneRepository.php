@@ -241,22 +241,14 @@ final class ZoneRepository
         $chunks = [];
         $staticBuffer = [];
 
-        $flushStatic = function () use (&$staticBuffer, &$chunks): void {
-            if ($staticBuffer === []) {
-                return;
-            }
-            $chunks[] = $this->renderer->renderHtml(['version' => 1, 'blocks' => $staticBuffer], null, allowUnfilteredHtml: true);
-            $staticBuffer = [];
-        };
-
         foreach ($doc['blocks'] as $block) {
-            if (!is_array($block)) {
-                continue;
-            }
             $type = is_string($block['type'] ?? null) ? $block['type'] : '';
 
             if ($type === 'dynamic' && $dynamicBlocks !== null) {
-                $flushStatic();
+                if ($staticBuffer !== []) {
+                    $chunks[] = $this->renderer->renderHtml(['version' => 1, 'blocks' => $staticBuffer], null, allowUnfilteredHtml: true);
+                    $staticBuffer = [];
+                }
                 $data = is_array($block['data'] ?? null) ? $block['data'] : [];
                 $name = is_string($data['name'] ?? null) ? trim($data['name']) : '';
                 $attrs = is_array($data['attrs'] ?? null) ? $data['attrs'] : $data;
@@ -269,8 +261,11 @@ final class ZoneRepository
                 continue;
             }
 
-            if ($dynamicBlocks !== null && $dynamicBlocks->has($type)) {
-                $flushStatic();
+            if ($type !== '' && $dynamicBlocks !== null && $dynamicBlocks->has($type)) {
+                if ($staticBuffer !== []) {
+                    $chunks[] = $this->renderer->renderHtml(['version' => 1, 'blocks' => $staticBuffer], null, allowUnfilteredHtml: true);
+                    $staticBuffer = [];
+                }
                 $attrs = is_array($block['data'] ?? null) ? $block['data'] : [];
                 $rendered = $dynamicBlocks->render($type, $attrs);
                 if ($rendered !== '') {
@@ -282,7 +277,9 @@ final class ZoneRepository
             $staticBuffer[] = $block;
         }
 
-        $flushStatic();
+        if ($staticBuffer !== []) {
+            $chunks[] = $this->renderer->renderHtml(['version' => 1, 'blocks' => $staticBuffer], null, allowUnfilteredHtml: true);
+        }
 
         return implode("\n", array_filter($chunks, static fn (string $s): bool => $s !== ''));
     }

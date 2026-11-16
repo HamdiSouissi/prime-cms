@@ -132,9 +132,7 @@ final class DynamicBlockRegistry
         $merged = array_merge($def['defaults'], $attrs);
 
         try {
-            $html = ($def['render'])($merged);
-
-            return is_string($html) ? $html : '';
+            return ($def['render'])($merged);
         } catch (Throwable) {
             return '';
         }

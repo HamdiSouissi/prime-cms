@@ -449,7 +449,7 @@ final class SiteView
             $q->type('post');
         }
 
-        if (isset($args['taxonomy'], $args['term_id']) && is_string($args['taxonomy']) && is_int($args['term_id'])) {
+        if (isset($args['taxonomy'], $args['term_id'])) {
             $q->whereTerm($args['taxonomy'], $args['term_id']);
         }
 
@@ -457,7 +457,7 @@ final class SiteView
         $direction = is_string($args['direction'] ?? null) ? $args['direction'] : 'DESC';
         $q->orderBy($orderBy, $direction);
 
-        $limit = isset($args['limit']) && is_int($args['limit']) ? max(1, min(50, $args['limit'])) : 6;
+        $limit = isset($args['limit']) ? max(1, min(50, $args['limit'])) : 6;
         $q->limit($limit);
 
         return $this->entryFactory->makeMany($q->get());

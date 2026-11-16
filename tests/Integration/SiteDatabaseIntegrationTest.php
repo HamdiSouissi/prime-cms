@@ -12,6 +12,7 @@ use Prime\Database\Schema\Schema;
 use Prime\Editor\BlockRegistry;
 use Prime\Editor\Renderer;
 use Prime\Media\MediaUsageRepository;
+use Prime\Security\HtmlSanitizer;
 use Prime\Site\Menu\MenuRepository;
 use Prime\Site\PermalinkSettings;
 use Prime\Site\RedirectRepository;
@@ -103,7 +104,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame(0, $this->connection->table('menu_items')->where('menu_id', '=', $menuId)->count());
 
         // 3. ZoneRepository + MediaUsageRepository zone tracking
-        $renderer = new Renderer(new BlockRegistry());
+        $renderer = new Renderer(new BlockRegistry(), new HtmlSanitizer());
         $usage = new MediaUsageRepository($this->connection);
         $zones = new ZoneRepository($this->connection, $renderer, $usage);
 

@@ -475,14 +475,14 @@ final class EntryView
                 continue;
             }
             if ($ch === 'F') {
-                $out .= self::FRENCH_MONTHS[$monthIdx] ?? $dt->format('F');
+                $out .= self::FRENCH_MONTHS[$monthIdx];
             } elseif ($ch === 'M') {
-                $full = self::FRENCH_MONTHS[$monthIdx] ?? $dt->format('M');
+                $full = self::FRENCH_MONTHS[$monthIdx];
                 $out .= mb_substr($full, 0, 4, 'UTF-8') . '.';
             } elseif ($ch === 'l') {
-                $out .= self::FRENCH_DAYS[$dayIdx] ?? $dt->format('l');
+                $out .= self::FRENCH_DAYS[$dayIdx];
             } elseif ($ch === 'D') {
-                $full = self::FRENCH_DAYS[$dayIdx] ?? $dt->format('D');
+                $full = self::FRENCH_DAYS[$dayIdx];
                 $out .= mb_substr($full, 0, 3, 'UTF-8') . '.';
             } else {
                 $out .= $dt->format($ch);

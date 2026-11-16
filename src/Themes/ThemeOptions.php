@@ -394,7 +394,8 @@ final class ThemeOptions
 
             $dest = $faviconDir . DIRECTORY_SEPARATOR . $filename;
             if (@imagepng($canvas, $dest, 6)) {
-                $hash = substr((string) sha1_file($dest), 0, 8);
+                $rawHash = sha1_file($dest);
+                $hash = is_string($rawHash) && $rawHash !== '' ? substr($rawHash, 0, 8) : '';
                 $generated[$size] = '/assets/site/favicons/' . $filename . ($hash !== '' ? '?v=' . $hash : '');
             }
             imagedestroy($canvas);
