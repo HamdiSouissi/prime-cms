@@ -170,7 +170,8 @@ final class SettingsField
         }
 
         foreach ($this->attributes as $key => $value) {
-            if (is_string($key) && is_scalar($value)) {
+            // The attributes bag is keyed by HTML attribute names; only scalars can be rendered.
+            if (is_scalar($value)) {
                 $attributes[$key] = $value;
             }
         }
@@ -205,9 +206,10 @@ final class SettingsField
     }
 
     /**
-     * Accept both the `['required', 'max:120']` list shape and the `['required' => '', 'max' => 120]` map.
+     * Accept both the `['required', 'max:120']` list shape and the `['required' => '', 'max' => 120]`
+     * map, plus the `required|max:120` string form a plugin may hand over instead.
      *
-     * @param array<array-key, mixed>|string $rules
+     * @param mixed $rules
      *
      * @return array<string, mixed>
      */

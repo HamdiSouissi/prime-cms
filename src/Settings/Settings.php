@@ -50,13 +50,13 @@ final class Settings
     private array $missing = [];
 
     /**
-     * @param CacheInterface|null $cache  Optional PSR-16 style store used by {@see self::remember()}
-     * @param Encrypter|null      $crypt  Used to seal `secret` settings (`pc_settings.value` stays opaque)
+     * @param CacheInterface|null $dataCache Optional PSR-16 style store used by {@see self::remember()}
+     * @param Encrypter|null      $crypt     Used to seal `secret` settings (`pc_settings.value` stays opaque)
      */
     public function __construct(
         private readonly Connection $connection,
         private readonly ?Hooks $hooks = null,
-        private readonly ?CacheInterface $cache2 = null,
+        private readonly ?CacheInterface $dataCache = null,
         private readonly ?Encrypter $crypt = null,
     ) {
     }
@@ -349,15 +349,16 @@ final class Settings
      */
     public function remember(string $key, ?int $ttl, Closure $loader): mixed
     {
-        if ($this->cache2 === null) {
+        if ($this->dataCache === null) {
             return $loader();
         }
 
-        return $this->cache2->namespace('settings')->remember($key, $ttl, $loader);
+        return $this->dataCache->namespace('settings')->remember($key, $ttl, $loader);
     }
 
     /**
-     * @param array<array-key, mixed> $default
+     * @param Closure(): array<array-key, mixed> $loader
+     * @param array<array-key, mixed>            $default
      *
      * @return array<array-key, mixed>
      */
@@ -373,7 +374,7 @@ final class Settings
      */
     private function invalidateRemembered(): void
     {
-        $this->cache2?->namespace('settings')->flush();
+        $this->dataCache?->namespace('settings')->flush();
     }
 
     private function requireEncrypter(): Encrypter

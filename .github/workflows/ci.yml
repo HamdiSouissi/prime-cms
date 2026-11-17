@@ -276,16 +276,26 @@ jobs:
           set -o pipefail
           trap 'printf "::error::phase9 ligne %s (statut %s)\n" "$LINENO" "$?"' ERR
 
-          # Full page cache: MISS on a cold URL, HIT once warm, MISS again after a purge.
-          curl -sf -o /dev/null -D - http://localhost:8080/blog | grep -qi "^X-Prime-Cache: MISS"
-          curl -sf -o /dev/null -D - http://localhost:8080/blog | grep -qi "^X-Prime-Cache: HIT"
-          docker compose exec -T app php bin/prime cache:clear --pages | grep -q "Cache de pages vidé"
-          curl -sf -o /dev/null -D - http://localhost:8080/blog | grep -qi "^X-Prime-Cache: MISS"
+          # `prime9_cache <attendu> <url>` pastes the response headers into an annotation when the page
+          # cache does not answer as expected: this shell is the only place that can see the container.
+          prime9_cache() {
+            headers=$(curl -s -o /dev/null -D - "$2")
+            if ! printf '%s' "$headers" | grep -qi "^X-Prime-Cache: $1"; then
+              printf '::error::phase9 cache %s attendu sur %s — %s\n' "$1" "$2" "$(printf '%s' "$headers" | tr '\r\n' '  ' | cut -c1-400)"
+              exit 1
+            fi
+          }
 
-          # Phase 9 — targeted purge: publishing must drop the archive copy that lists the new post.
+          # Full page cache: cold after a purge, warm on the next hit, cold again after `cache:clear`.
+          docker compose exec -T app php bin/prime cache:clear --pages | grep -q "Cache de pages vidé"
+          prime9_cache MISS http://localhost:8080/
+          prime9_cache HIT http://localhost:8080/
+
+          # Targeted purge: publishing must drop the copies that list the new post, then serve them fresh.
           docker compose exec -T app php bin/prime content:create --type=post --title="Purge Cible" --status=published --body="Article publié pour vérifier la purge ciblée du cache." | grep -q "Purge Cible"
-          curl -sf -o /dev/null -D - http://localhost:8080/blog | grep -qi "^X-Prime-Cache: MISS"
-          curl -sf http://localhost:8080/blog/purge-cible | grep -q "Purge Cible"
+          prime9_cache MISS http://localhost:8080/
+          curl -sf http://localhost:8080/ | grep -q "Purge Cible"
+          prime9_cache HIT http://localhost:8080/
 
           # Phase 9 — registry, queue, scheduler and mail log on the live database (migrations 24 & 25).
           docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000025_create_jobs_table"

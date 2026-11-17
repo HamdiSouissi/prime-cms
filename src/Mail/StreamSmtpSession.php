@@ -139,7 +139,7 @@ final class StreamSmtpSession implements SmtpSessionInterface
             $error = error_get_last();
 
             throw SmtpException::connectionFailed(
-                $error !== null && isset($error['message']) ? (string) $error['message'] : 'connexion fermée par le serveur',
+                $error !== null ? (string) $error['message'] : 'connexion fermée par le serveur',
             );
         }
 
@@ -177,11 +177,11 @@ final class StreamSmtpSession implements SmtpSessionInterface
     {
         $meta = stream_get_meta_data($this->stream);
 
-        if (isset($meta['timed_out']) && $meta['timed_out'] === true) {
+        if ($meta['timed_out'] === true) {
             throw SmtpException::connectionFailed(sprintf('délai de %d s dépassé pendant la %s', $this->timeout, $phase));
         }
 
-        if (isset($meta['eof']) && $meta['eof'] === true && feof($this->stream)) {
+        if ($meta['eof'] === true && feof($this->stream)) {
             throw SmtpException::connectionFailed(sprintf('connexion interrompue pendant la %s', $phase));
         }
     }

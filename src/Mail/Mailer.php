@@ -252,7 +252,6 @@ final class Mailer implements MailerInterface
      * `mail.message` lets a plugin rewrite recipients, inject a footer, or attach a signature — the
      * single extension point every message passes through, queue or not.
      *
-     * @param array{to: string, subject: string, html: string, text: string, reply_to: string, cc: list<string>, bcc: list<string>, from_address: string, from_name: string}|array<string, mixed> $payload
      */
     private function applyFilters(Message $message, ?string $template): Message
     {
@@ -263,7 +262,7 @@ final class Mailer implements MailerInterface
         $payload = self::payload($message, $template, []);
         unset($payload['template'], $payload['data']);
 
-        /** @var array<string, mixed> $filtered */
+        // A filter may hand back anything; anything but an array means the message is left alone.
         $filtered = $this->hooks->apply('mail.message', $payload, $template);
         if (!is_array($filtered)) {
             return $message;

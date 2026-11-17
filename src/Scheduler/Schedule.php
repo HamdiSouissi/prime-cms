@@ -153,6 +153,8 @@ final class Schedule
     }
 
     /**
+     * @param array<string, string> $lastRuns Last tick per task name, as kept by `SchedulerRunner`
+     *
      * @return list<string>
      */
     public function dueNames(?DateTimeImmutable $now = null, array $lastRuns = []): array
