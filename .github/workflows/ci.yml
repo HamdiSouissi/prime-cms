@@ -95,9 +95,31 @@ jobs:
           PY
 
       - name: Run unit and HTTP test suite (PHPUnit 11)
-        run: vendor/bin/phpunit --exclude-group database
+        run: |
+          set -o pipefail
+          # Same reasoning as the database job: a finished log cannot be read from here, so every
+          # failing test case is echoed into its own annotation with the assertion message attached.
+          if ! php -d memory_limit=1G vendor/bin/phpunit --exclude-group database --log-junit /tmp/junit.xml; then
+            php -r '
+              $xml = simplexml_load_file("/tmp/junit.xml");
+              if ($xml === false) { echo "::error::phpunit sans JUnit exploitable (suite interrompue ?)\n"; exit(1); }
+              $count = 0;
+              foreach ($xml->xpath("//testcase[failure or error]") as $case) {
+                  if ($count++ >= 9) { echo "::error::… et davantage de tests en échec\n"; break; }
+                  $msg = trim((string) ($case->failure ?? $case->error));
+                  $msg = str_replace(["\r", "\n"], ["", " | "], substr($msg, 0, 800));
+                  echo "::error title=" . $case["class"] . "::" . $case["name"] . " — " . $msg . "\n";
+              }
+              if ($count === 0) { echo "::error::aucun testcase fautif dans le JUnit : erreur de bootstrap ?\n"; }
+              exit(1);
+            '
+            exit 1
+          fi
 
       - name: Check translation catalogues (no missing key, no hard-coded copy)
+        # always() : une suite de tests rouge ne doit pas masquer l'état des catalogues, qui se
+        # vérifient indépendamment — l'étape peut échouer aussi, le job reste rouge.
+        if: always()
         run: |-
           set -o pipefail
           if ! php bin/prime lang:check --strict 2>&1 | tee /tmp/lang.log; then
@@ -326,17 +348,88 @@ jobs:
           set -o pipefail
           trap 'printf "::error::phase9 ligne %s (statut %s)\n" "$LINENO" "$?"' ERR
 
-          # `prime9_cache <attendu> <url>` reads back the X-Prime-Cache header the container answered.
-          # On a mismatch it turns everything only this shell can see — the header names, the state of
-          # storage/cache/pages, the settings row — into annotations, since the container's own log is
-          # out of reach from the Actions UI.
+          # `prime9_note <texte>` rend une réponse du conteneur présentable dans une annotation : une seule
+          # ligne, et « % » échappé, puisque le parseur de workflow commands y verrait une séquence.
+          prime9_note() {
+            printf '%s' "$1" | tr '\r\n' '  ' | cut -c1-600 | sed 's/%/%25/g'
+          }
+
+          # `prime9_match <libellé> <motif> <texte>` cherche dans une VARIABLE, jamais dans un tube vivant :
+          # `curl … | grep -q` se ferme dès sa première ligne trouvée, curl reçoit un SIGPIPE, et
+          # `set -o pipefail` transforme ça en un exit 23 qui ne ressemble à rien d'autre qu'à une panne.
+          # Le -E est un choix, pas un réflexe : les motifs viennent de l'ERE (`\(` y est un parenthèse
+          # littérale), et un here-string ne peut pas se fermer trop tôt.
+          prime9_match() {
+            if ! grep -qE -- "$2" <<< "$3"; then
+              printf '::error::phase9 %s : «%s» absent de la réponse (%s octets) : %s\n' "$1" "$(prime9_note "$2")" "${#3}" "$(prime9_note "$3")"
+              exit 1
+            fi
+          }
+
+          # `prime9_cli <libellé> <motif> <arguments de bin/prime…>` : une assertion sur la CLI du conteneur,
+          # qui cite sa réponse brute quand le motif manque — même raison d'être que `prime9_cache`.
+          prime9_cli() {
+            local label=$1 pattern=$2 out status=0
+            shift 2
+            out=$(docker compose exec -T app php bin/prime "$@" 2>&1) || status=$?
+            if [ $status -ne 0 ]; then
+              printf '::error::phase9 %s (statut %s) : %s\n' "$label" "$status" "$(prime9_note "$out")"
+              exit 1
+            fi
+            if [ -n "$pattern" ]; then
+              prime9_match "$label" "$pattern" "$out"
+            fi
+          }
+
+          # `prime9_page <libellé> <motif> <url>` : la même idée côté serveur web, avec la session admin.
+          # `prime9_public` est son jumeau sans cookie — indispensable quand on interroge le cache de pages
+          # ou la langue du site : un administrateur connecté n est pas le visiteur dont on lit la réponse.
+          prime9_page() {
+            local label=$1 pattern=$2 url=$3
+            shift 3
+            prime9_fetch "$label" "$pattern" "$url" -b "$COOKIE_JAR" "$@"
+          }
+
+          prime9_public() {
+            local label=$1 pattern=$2 url=$3
+            shift 3
+            prime9_fetch "$label" "$pattern" "$url" "$@"
+          }
+
+          prime9_fetch() {
+            local label=$1 pattern=$2 url=$3 body status=0
+            shift 3
+            body=$(curl -s "$@" "$url" 2>&1) || status=$?
+            if [ $status -ne 0 ]; then
+              printf '::error::phase9 %s : curl statut %s sur %s\n' "$label" "$status" "$url"
+              exit 1
+            fi
+            prime9_match "$label" "$pattern" "$body"
+          }
+
+          # `prime9_code <libellé> <HTTP attendu> <url> [arguments curl…]` répond sur le code seul.
+          prime9_code() {
+            local label=$1 expected=$2 url=$3 code
+            shift 3
+            code=$(curl -s -o /dev/null -w '%{http_code}' -b "$COOKIE_JAR" -c "$COOKIE_JAR" "$@" "$url")
+            if [ "$code" != "$expected" ]; then
+              printf '::error::phase9 %s : HTTP %s attendu sur %s, le conteneur a répondu %s\n' "$label" "$expected" "$url" "$code"
+              exit 1
+            fi
+          }
+
+          # `prime9_cache <en-tête attendu> <url>` relit l'état du cache de pages. Sur un désaccord, tout ce
+          # que seul ce shell peut voir — en-têtes, répertoire, réglage — part en annotations, puisque les logs
+          # du conteneur sont hors de portée depuis l'interface d'Actions.
           prime9_cache() {
-            got=$(curl -s -o /dev/null -D - "$2" | tr -d '\r' | grep -i '^X-Prime-Cache:' | head -n 1 | cut -d: -f2- | tr -d ' ' || true)
-            if [ "$got" = "$1" ]; then
+            local expected=$1 url=$2 heads got
+            heads=$(curl -s -o /dev/null -D - "$url" 2>&1 | tr -d '\r')
+            got=$(awk -F': *' 'tolower($1) == "x-prime-cache" { gsub(/[ \r]/, "", $2); last = $2 } END { printf "%s", last }' <<< "$heads")
+            if [ "$got" = "$expected" ]; then
               return 0
             fi
-            printf '::error::phase9 cache : «%s» attendu sur %s, le conteneur a dit «%s»\n' "$1" "$2" "${got:-aucun en-tête}"
-            printf '::error::phase9 cache entêtes : %s\n' "$(curl -s -o /dev/null -D - "$2" | tr -d '\r' | awk 'NR > 1 {printf "%s ", $1}' | cut -c1-300 || true)"
+            printf '::error::phase9 cache : «%s» attendu sur %s, le conteneur a dit «%s»\n' "$expected" "$url" "${got:-aucun en-tête}"
+            printf '::error::phase9 cache entêtes : %s\n' "$(awk 'NR > 1 { printf "%s ", $1 }' <<< "$heads" | cut -c1-300)"
             printf '::error::phase9 cache répertoire : %s\n' "$(docker compose exec -T app sh -c 'ls -ld storage/cache/pages; ls storage/cache/pages | wc -l; cat storage/cache/config.json' 2>&1 | tr '\n' ' ' | cut -c1-300 || true)"
             printf '::error::phase9 cache réglage : %s\n' "$(docker compose exec -T app php bin/prime settings:get cache.page_enabled 2>&1 | tr '\n' ' ' | cut -c1-200 || true)"
             exit 1
@@ -350,78 +443,67 @@ jobs:
 
           # The CLI purge counting that entry back is the proof it was really written on disk, and not
           # only answered with a friendly header.
-          docker compose exec -T app php bin/prime cache:clear --pages | grep -qE "vidé \([1-9][0-9]* page"
+          prime9_cli "purge du cache de pages" 'vidé \([1-9][0-9]* page' cache:clear --pages
           prime9_cache MISS http://localhost:8080/
           prime9_cache HIT http://localhost:8080/
 
           # Targeted purge: publishing drops the home copy that lists the new post, and the fresh render shows it.
-          docker compose exec -T app php bin/prime content:create --type=post --title="Purge Cible" --status=published --body="Article publié pour vérifier la purge ciblée du cache." | grep -q "Purge Cible"
+          prime9_cli "publication depuis la CLI" 'Purge Cible' content:create --type=post --title="Purge Cible" --status=published --body="Article publié pour vérifier la purge ciblée du cache."
           prime9_cache MISS http://localhost:8080/
-          curl -sf http://localhost:8080/ | grep -q "Purge Cible"
+          prime9_public "accueil après publication" 'Purge Cible' http://localhost:8080/
           prime9_cache HIT http://localhost:8080/
 
-          # `prime9_cli <libellé> <motif> <arguments de bin/prime…>` runs a CLI assertion and quotes what
-          # the container answered when the pattern is missing — same reason `prime9_cache` exists.
-          prime9_cli() {
-            label=$1; pattern=$2; shift 2
-            status=0
-            out=$(docker compose exec -T app php bin/prime "$@" 2>&1) || status=$?
-            if [ $status -ne 0 ] || { [ -n "$pattern" ] && ! printf '%s' "$out" | grep -q "$pattern"; }; then
-              printf '::error::phase9 %s (statut %s) : %s\n' "$label" "$status" "$(printf '%s' "$out" | tr '\n' ' ' | cut -c1-700)"
-              exit 1
-            fi
-          }
-
           # Phase 9 — registry, queue, scheduler and mail log on the live database (migrations 24 & 25).
-          prime9_cli "migrations 24 et 25" "2026_11_15_000025_create_jobs_table" migrate:status
+          prime9_cli "migrations 24 et 25" '2026_11_15_000025_create_jobs_table' migrate:status
           prime9_cli "registre des réglages" '"name": "mail.driver"' settings:list --json
           prime9_cli "file d attente" '"pending"' queue:status --json
-          prime9_cli "worker de la file" "" queue:work --once
+          prime9_cli "worker de la file" '' queue:work --once
           prime9_cli "tâches déclarées" '"name"' schedule:run --list --json
-          prime9_cli "horloge du planifieur" "Aucune tâche à exécuter\|tâche(s) examinée" schedule:run
+          prime9_cli "horloge du planifieur" 'Aucune tâche à exécuter|tâche' schedule:run
           prime9_cli "test d envoi" '"ok": true' mail:test --to=verify@prime-docker.test --json
-          prime9_cli "journal des envois" "verify@prime-docker.test" mail:logs --json
+          prime9_cli "journal des envois" 'verify@prime-docker.test' mail:logs --json
 
           # The same session, in English: the per-user language wins over `language.admin`, so the
           # preference is saved through the profile form and the admin must follow it immediately.
-          PROFILE_HTML=$(curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" http://localhost:8080/admin/profile)
-          PROFILE_CSRF=$(printf '%s' "$PROFILE_HTML" | sed -n 's/.*name="_csrf_token" value="\([^"]*\)".*/\1/p' | head -n 1)
-          test -n "$PROFILE_CSRF"
-          test "$(curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" -o /dev/null -w '%{http_code}' \
-            -X POST http://localhost:8080/admin/profile/info \
+          PROFILE_HTML=$(curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" http://localhost:8080/admin/profile 2>&1)
+          PROFILE_CSRF=$(sed -n 's/.*name="_csrf_token"[^>]*value="\([^"]*\)".*/\1/p' <<< "$PROFILE_HTML" | head -n 1)
+          if [ -z "$PROFILE_CSRF" ]; then
+            printf '::error::phase9 jeton du profil : aucun champ _csrf_token dans /admin/profile (%s octets) : %s\n' "${#PROFILE_HTML}" "$(prime9_note "$PROFILE_HTML")"
+            exit 1
+          fi
+          prime9_code "enregistrement de la langue" 302 http://localhost:8080/admin/profile/info -X POST \
             --data-urlencode "_csrf_token=$PROFILE_CSRF" \
             --data-urlencode "display_name=Admin Docker" \
             --data-urlencode "email=admin@prime-docker.test" \
-            --data-urlencode "locale=en")" = "302"
-          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Dashboard"
-          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/settings/performance | grep -q "Page cache"
+            --data-urlencode "locale=en"
+          prime9_page "tableau de bord en anglais" 'Dashboard' http://localhost:8080/admin
+          prime9_page "réglages du cache en anglais" 'Page cache' http://localhost:8080/admin/settings/performance
 
           # A site visitor follows `language.site`, whatever the administrator reads: the document
           # language is rendered from the locale the middleware resolved for this request.
-          curl -sf http://localhost:8080/ | grep -q '<html lang="fr"'
-          docker compose exec -T app php bin/prime settings:set language.site '"en"'
-          curl -sf http://localhost:8080/ | grep -q '<html lang="en"'
-          docker compose exec -T app php bin/prime settings:set language.site '"fr"'
-          curl -sf http://localhost:8080/ | grep -q '<html lang="fr"'
+          prime9_public "langue du site, français" '<html lang="fr"' http://localhost:8080/
+          prime9_cli "réglage language.site en anglais" '' settings:set language.site '"en"'
+          prime9_public "langue du site, anglais" '<html lang="en"' http://localhost:8080/
+          prime9_cli "réglage language.site français" '' settings:set language.site '"fr"'
+          prime9_public "langue du site, retour au français" '<html lang="fr"' http://localhost:8080/
 
           # Back to French for the account, so the rest of the suite keeps its wording.
-          test "$(curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" -o /dev/null -w '%{http_code}' \
-            -X POST http://localhost:8080/admin/profile/info \
+          prime9_code "retour du profil en français" 302 http://localhost:8080/admin/profile/info -X POST \
             --data-urlencode "_csrf_token=$PROFILE_CSRF" \
             --data-urlencode "display_name=Admin Docker" \
             --data-urlencode "email=admin@prime-docker.test" \
-            --data-urlencode "locale=fr")" = "302"
-          curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Tableau de bord"
+            --data-urlencode "locale=fr"
+          prime9_page "tableau de bord en français" 'Tableau de bord' http://localhost:8080/admin
+
+          prime9_code "page inconnue" 404 http://localhost:8080/inconnu
+
+          MODULES=$(docker compose exec -T app php -m 2>&1)
+          for ext in mbstring pdo_mysql gd exif; do
+            prime9_match "extension PHP $ext" "$ext" "$MODULES"
+          done
 
           trap - ERR
           rm -f "$COOKIE_JAR"
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inconnu)" = "404"
-
-          docker compose exec -T app php -m | grep -iq "mbstring"
-          docker compose exec -T app php -m | grep -iq "pdo_mysql"
-          docker compose exec -T app php -m | grep -iq "gd"
-          docker compose exec -T app php -m | grep -iq "exif"
-
       - name: Tear down stack
         if: always()
         run: docker compose down -v
