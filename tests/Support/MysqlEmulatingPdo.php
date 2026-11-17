@@ -15,9 +15,9 @@ use PDOStatement;
  */
 final class MysqlEmulatingPdo extends PDO
 {
-    public function __construct(private readonly string $conflictColumn = 'name')
+    public function __construct(private readonly string $conflictColumn = 'name', string $dsn = 'sqlite::memory:')
     {
-        parent::__construct('sqlite::memory:');
+        parent::__construct($dsn);
         $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     }

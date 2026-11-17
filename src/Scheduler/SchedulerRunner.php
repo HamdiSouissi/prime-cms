@@ -40,6 +40,7 @@ final class SchedulerRunner
      */
     public function run(?int $now = null, bool $force = false): array
     {
+        $this->beat($now ?? time());
         $moment = (new DateTimeImmutable('@' . ($now ?? time())))->setTimezone(new DateTimeZone('UTC'));
         $moment = $moment->setTime((int) $moment->format('G'), (int) $moment->format('i'), 0);
         $results = [];
@@ -60,6 +61,38 @@ final class SchedulerRunner
         }
 
         return $results;
+    }
+
+    /**
+     * Run a single task right away, whatever its schedule says (« Exécuter maintenant »).
+     *
+     * @return array{name: string, status: string, tick: ?string, duration_ms: int, error: ?string}|null `null` when no task has that name
+     */
+    public function runOne(string $name, ?int $now = null): ?array
+    {
+        if (!$this->schedule->has($name)) {
+            return null;
+        }
+
+        $moment = (new DateTimeImmutable('@' . ($now ?? time())))->setTimezone(new DateTimeZone('UTC'));
+        $moment = $moment->setTime((int) $moment->format('G'), (int) $moment->format('i'), 0);
+        $result = $this->runTask($this->schedule->get($name), $moment);
+        $this->hooks?->emit('scheduler.ran', [$result], true);
+
+        return $result;
+    }
+
+    /**
+     * Unix time of the last scheduler pass (cron, worker or visitor fallback), `null` if it never ran.
+     *
+     * The admin screen compares it with the clock to warn when cron has silently stopped.
+     */
+    public function lastHeartbeat(): ?int
+    {
+        $file = $this->path('heartbeat');
+        $stamp = is_readable($file) ? trim((string) @file_get_contents($file)) : '';
+
+        return preg_match('/^\d{9,11}$/', $stamp) === 1 ? (int) $stamp : null;
     }
 
     /**
@@ -190,6 +223,12 @@ final class SchedulerRunner
         }
 
         return (new DateTimeImmutable('@' . (int) $stamp))->setTimezone(new DateTimeZone('UTC'));
+    }
+
+    private function beat(int $now): void
+    {
+        $this->ensureDirectory();
+        @file_put_contents($this->path('heartbeat'), (string) $now, LOCK_EX);
     }
 
     private function writeLastRun(ScheduledTask $task, DateTimeImmutable $tick): void

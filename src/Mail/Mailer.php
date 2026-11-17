@@ -153,12 +153,12 @@ final class Mailer implements MailerInterface
      */
     public function test(string $to, ?string $subject = null): array
     {
-        $subject = $subject ?? sprintf('[%s] Test d’envoi', $this->config->fromName());
+        $subject = $subject ?? t('core.mail.test.subject', ['name' => $this->config->fromName()]);
         $message = new Message(
             to: $to,
             subject: $subject,
             html: $this->testHtml($subject),
-            text: "Ceci est un e-mail de test.\n\nSi vous le lisez, l’envoi d’e-mails de Prime CMS fonctionne.\n",
+            text: t('core.mail.test.text') . "\n",
         );
 
         try {
@@ -169,9 +169,99 @@ final class Mailer implements MailerInterface
 
         return [
             'ok' => true,
-            'message' => sprintf('E-mail envoyé à %s via %s.', $to, $this->transportName()),
+            'message' => t('admin.mail.test_sent', ['to' => $to, 'transport' => $this->transportName()]),
             'log_id' => $this->logs !== null ? $this->logs->count() : null,
         ];
+    }
+
+    /**
+     * Send a logged message again (« Renvoyer » in the e-mail log).
+     *
+     * Only messages built from a template can be rebuilt — the log never stores bodies — and only
+     * when nothing was redacted: a password-reset link is never kept, so it cannot be replayed.
+     *
+     * @param array<string, mixed> $row A row returned by {@see MailLogRepository::find()}
+     *
+     * @return array{ok: bool, message: string}
+     */
+    public function resend(array $row): array
+    {
+        $recipient = trim((string) ($row['recipient'] ?? ''));
+        $template = is_string($row['template'] ?? null) ? (string) $row['template'] : '';
+
+        if (!self::canResend($row) || $recipient === '') {
+            return ['ok' => false, 'message' => t('admin.mail.resend_unavailable')];
+        }
+
+        if ($template === 'test') {
+            $result = $this->test($recipient);
+
+            return ['ok' => $result['ok'], 'message' => $result['message']];
+        }
+
+        $metadata = is_array($row['metadata'] ?? null) ? $row['metadata'] : [];
+        /** @var array<string, mixed> $data */
+        $data = is_array($metadata['data'] ?? null) ? $metadata['data'] : [];
+
+        try {
+            $this->dispatch($this->render($template, $recipient, (string) ($row['subject'] ?? ''), $data), $template, $data);
+        } catch (Throwable $exception) {
+            return ['ok' => false, 'message' => $exception->getMessage()];
+        }
+
+        return ['ok' => true, 'message' => t('admin.mail.resent', ['to' => $recipient])];
+    }
+
+    /**
+     * Whether a log row carries enough to rebuild its message.
+     *
+     * @param array<string, mixed> $row
+     */
+    public static function canResend(array $row): bool
+    {
+        $template = is_string($row['template'] ?? null) ? (string) $row['template'] : '';
+        if ($template === '') {
+            return false;
+        }
+
+        $metadata = is_array($row['metadata'] ?? null) ? $row['metadata'] : [];
+        $data = is_array($metadata['data'] ?? null) ? $metadata['data'] : [];
+
+        return empty($data['redacted']);
+    }
+
+    /**
+     * Strip anything that could act as a credential (reset links, tokens, codes) before it is logged.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    public static function redact(array $data): array
+    {
+        $redacted = false;
+        $walk = static function (array $values) use (&$walk, &$redacted): array {
+            foreach ($values as $key => $value) {
+                if (is_string($key) && preg_match('/token|password|secret|code|url|link|signature|key/i', $key) === 1) {
+                    $values[$key] = '[masqué]';
+                    $redacted = true;
+                } elseif (is_array($value)) {
+                    $values[$key] = $walk($value);
+                } elseif (is_string($value) && preg_match('#https?://\S*[?&](token|signature|code)=#i', $value) === 1) {
+                    $values[$key] = '[masqué]';
+                    $redacted = true;
+                }
+            }
+
+            return $values;
+        };
+
+        $clean = $walk($data);
+        if ($redacted) {
+            $clean['redacted'] = true;
+        }
+
+        return $clean;
     }
 
     /**
@@ -184,11 +274,11 @@ final class Mailer implements MailerInterface
         $problem = null;
 
         if (!$this->config->isSmtpConfigured()) {
-            $problem = 'Le serveur SMTP est incomplet : hôte, port et identifiants sont nécessaires.';
+            $problem = t('admin.mail.problems.smtp_incomplete');
         } elseif ($this->config->driver() === MailConfig::DRIVER_NATIVE && !function_exists('mail')) {
-            $problem = 'La fonction mail() de PHP est désactivée sur ce serveur : choisissez une autre méthode d\'envoi.';
+            $problem = t('admin.mail.problems.mail_disabled');
         } elseif ($this->config->usesSmtp() && !SmtpTransport::isAvailable()) {
-            $problem = 'Les fonctions réseau de PHP sont désactivées : SMTP est indisponible sur ce serveur.';
+            $problem = t('admin.mail.problems.network_disabled');
         }
 
         return [
@@ -298,7 +388,7 @@ final class Mailer implements MailerInterface
                 $message,
                 $status,
                 $transport,
-                ['data' => $template !== null ? $data : [], 'message_id' => $message->messageId],
+                ['data' => $template !== null ? self::redact($data) : [], 'message_id' => $message->messageId],
                 $error,
                 $template,
                 $jobId,
@@ -314,6 +404,6 @@ final class Mailer implements MailerInterface
     private function testHtml(string $subject): string
     {
         return '<h1 style="font-size:20px;margin:0 0 12px;">' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</h1>'
-            . '<p style="margin:0;">Ceci est un e-mail de test envoyé par Prime CMS. Si vous le lisez, la configuration d’envoi fonctionne.</p>';
+            . '<p style="margin:0;">' . htmlspecialchars(t('core.mail.test.html'), ENT_QUOTES, 'UTF-8') . '</p>';
     }
 }

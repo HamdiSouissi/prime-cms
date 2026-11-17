@@ -299,6 +299,10 @@ return [
         'permissions_a_verifier' => 'Permissions to check',
     ],
     'in_category' => 'In :category',
+    'maintenance' => [
+        'message' => 'We are performing scheduled maintenance. The site will be back very soon — thank you for your patience.',
+        'title' => 'Down for maintenance',
+    ],
     'no_excerpt' => 'No excerpt yet.',
     'not_found' => [
         'heading' => 'Nothing here',

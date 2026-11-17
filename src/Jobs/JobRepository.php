@@ -296,6 +296,32 @@ final class JobRepository
     }
 
     /**
+     * Jobs still waiting (available, delayed or reserved), oldest first — the « File d'attente » tab.
+     *
+     * @return list<Job>
+     */
+    public function pending(int $limit = 50): array
+    {
+        $rows = $this->db->select(
+            sprintf(
+                'SELECT * FROM `%s` WHERE `failed_at` IS NULL ORDER BY `available_at` ASC, `id` ASC LIMIT %d',
+                $this->table(),
+                max(1, min(500, $limit)),
+            ),
+        );
+
+        return array_map(static fn (array $row): Job => Job::fromRow($row), $rows);
+    }
+
+    /**
+     * Remove one job, whatever its state. Returns whether a row was deleted.
+     */
+    public function delete(int $jobId): bool
+    {
+        return $this->db->delete(sprintf('DELETE FROM `%s` WHERE `id` = ?', $this->table()), [$jobId]) > 0;
+    }
+
+    /**
      * Distinct queues that currently hold work.
      *
      * @return list<string>

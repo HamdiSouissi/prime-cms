@@ -474,6 +474,11 @@ return [
     'mail' => [
         'direct_link' => 'Direct link:',
         'greeting' => 'Hello :name,',
+        'test' => [
+            'html' => 'This is a test email sent by Prime CMS. If you can read it, the delivery settings work.',
+            'subject' => '[:name] Test email',
+            'text' => 'This is a test email. If you can read it, Prime CMS email delivery works.',
+        ],
     ],
     'media' => [
         'kinds' => [
@@ -536,6 +541,388 @@ return [
         ],
     ],
     'saving' => 'Saving…',
+    'scheduler' => [
+        'tasks' => [
+            'content_publish_scheduled' => 'Publishes content whose scheduled date has come.',
+            'content_purge_trash' => 'Empties the trash according to the retention period (Settings › General).',
+            'jobs_prune' => 'Recovers expired reservations and prunes old failures.',
+            'mail_prune_log' => 'Applies the email log retention.',
+        ],
+    ],
+    'settings' => [
+        'fields' => [
+            'advanced' => [
+                'debug_bar' => [
+                    'label' => 'Debug bar (administrators only)',
+                ],
+                'maintenance' => [
+                    'label' => 'Maintenance mode',
+                ],
+                'maintenance_message' => [
+                    'label' => 'Maintenance message',
+                ],
+            ],
+            'cache' => [
+                'assets' => [
+                    'label' => 'Minify and bundle the admin CSS',
+                ],
+                'driver' => [
+                    'label' => 'Cache engine',
+                    'options' => [
+                        'apcu' => 'APCu (shared memory)',
+                        'file' => 'Files (storage/cache)',
+                    ],
+                ],
+                'page_enabled' => [
+                    'label' => 'Page cache',
+                ],
+                'page_ttl' => [
+                    'label' => 'Cache lifetime (seconds)',
+                ],
+            ],
+            'general' => [
+                'date_format' => [
+                    'label' => 'Date format',
+                ],
+                'privacy' => [
+                    'description' => 'When this is on, the public site is reserved for signed-in users.',
+                    'label' => 'Site visibility',
+                ],
+                'start_of_week' => [
+                    'label' => 'Week starts on',
+                    'options' => [
+                        '0' => 'Sunday',
+                        '1' => 'Monday',
+                        '2' => 'Tuesday',
+                        '3' => 'Wednesday',
+                        '4' => 'Thursday',
+                        '5' => 'Friday',
+                        '6' => 'Saturday',
+                    ],
+                ],
+                'time_format' => [
+                    'label' => 'Time format',
+                ],
+                'timezone' => [
+                    'label' => 'Time zone',
+                ],
+            ],
+            'language' => [
+                'admin' => [
+                    'description' => 'Empty: each user gets the language set in their profile.',
+                    'label' => 'Admin language',
+                ],
+                'detect_browser' => [
+                    'label' => 'Follow the browser language on the public site',
+                ],
+                'fallback' => [
+                    'label' => 'Fallback language',
+                ],
+                'per_user' => [
+                    'label' => 'Let users choose their language',
+                ],
+                'site' => [
+                    'label' => 'Site language',
+                ],
+            ],
+            'mail' => [
+                'driver' => [
+                    'label' => 'Delivery method',
+                    'options' => [
+                        'log' => 'Log only (nothing is sent)',
+                        'native' => 'PHP mail() function',
+                        'queue' => 'Queued SMTP',
+                        'smtp' => 'SMTP server',
+                    ],
+                ],
+                'encryption' => [
+                    'label' => 'Encryption',
+                    'options' => [
+                        'none' => 'None',
+                        'ssl' => 'SSL (implicit)',
+                        'tls' => 'STARTTLS',
+                    ],
+                ],
+                'from_address' => [
+                    'label' => 'Sender address',
+                ],
+                'from_name' => [
+                    'label' => 'Sender name',
+                ],
+                'host' => [
+                    'label' => 'SMTP host',
+                ],
+                'log_days' => [
+                    'label' => 'Keep the log for (days)',
+                ],
+                'log_enabled' => [
+                    'label' => 'Log sent emails',
+                ],
+                'password' => [
+                    'label' => 'SMTP password',
+                ],
+                'port' => [
+                    'label' => 'SMTP port',
+                ],
+                'reply_to' => [
+                    'label' => 'Reply-to address',
+                ],
+                'timeout' => [
+                    'label' => 'Timeout (seconds)',
+                ],
+                'username' => [
+                    'label' => 'SMTP username',
+                ],
+                'verify_tls' => [
+                    'label' => 'Verify the server certificate',
+                ],
+            ],
+            'media' => [
+                'image_sizes' => [
+                    'label' => 'Image sizes',
+                ],
+            ],
+            'permalinks' => [
+                'author_base' => [
+                    'label' => 'Author base',
+                ],
+                'category_base' => [
+                    'label' => 'Category base',
+                ],
+                'post_structure' => [
+                    'label' => 'Post structure',
+                    'options' => [
+                        '__p__post_id_' => 'Numeric',
+                        '_blog__postname_' => 'Post name',
+                        '_blog__year___month___postname_' => 'Month and name',
+                        '_blog__year___monthnum___day___postname_' => 'Day and name',
+                    ],
+                ],
+                'search_base' => [
+                    'label' => 'Search base',
+                ],
+                'tag_base' => [
+                    'label' => 'Tag base',
+                ],
+                'trailing_slash' => [
+                    'label' => 'End URLs with /',
+                ],
+            ],
+            'reading' => [
+                'excerpt_length' => [
+                    'label' => 'Excerpt length (words)',
+                ],
+                'feed_items' => [
+                    'label' => 'Items per feed',
+                ],
+                'feed_mode' => [
+                    'label' => 'Feed content',
+                    'options' => [
+                        'excerpt' => 'Excerpt',
+                        'full' => 'Full text',
+                    ],
+                ],
+                'front_mode' => [
+                    'label' => 'Your home page shows',
+                    'options' => [
+                        'page' => 'A static page',
+                        'posts' => 'Your latest posts',
+                    ],
+                ],
+                'front_page_id' => [
+                    'label' => 'Home page',
+                ],
+                'posts_page_id' => [
+                    'label' => 'Posts page',
+                ],
+                'posts_per_page' => [
+                    'label' => 'Posts per page',
+                ],
+            ],
+            'scheduler' => [
+                'enabled' => [
+                    'label' => 'Enable the scheduler',
+                ],
+                'fallback' => [
+                    'description' => 'Useful when no system cron job can be configured.',
+                    'label' => 'Run on visitor requests',
+                ],
+                'interval' => [
+                    'label' => 'Minimum interval between runs (seconds)',
+                ],
+                'queue_tries' => [
+                    'label' => 'Attempts per queued job',
+                ],
+                'queue_ttl_minutes' => [
+                    'label' => 'Give up on a job after (minutes)',
+                ],
+            ],
+            'security' => [
+                'force_logout_all' => [
+                    'label' => 'Sign out every session when the password changes',
+                ],
+                'invite_token_minutes' => [
+                    'label' => 'Invitation validity (minutes)',
+                ],
+                'login_lockout_minutes' => [
+                    'label' => 'Lockout window (minutes)',
+                ],
+                'login_max_attempts' => [
+                    'label' => 'Sign-in attempts before lockout',
+                ],
+                'password_block_common' => [
+                    'label' => 'Block common passwords',
+                ],
+                'password_min_length' => [
+                    'label' => 'Minimum password length',
+                ],
+                'password_require_mixed_case' => [
+                    'label' => 'Upper and lower case letters',
+                ],
+                'password_require_number' => [
+                    'label' => 'At least one digit',
+                ],
+                'password_require_special' => [
+                    'label' => 'At least one special character',
+                ],
+                'remember_days' => [
+                    'label' => '“Remember me” cookie lifetime (days)',
+                ],
+                'reset_token_minutes' => [
+                    'label' => 'Password reset link validity (minutes)',
+                ],
+                'session_absolute_lifetime' => [
+                    'description' => '0: no absolute limit; only inactivity counts.',
+                    'label' => 'Absolute session lifetime (minutes)',
+                ],
+                'session_lifetime' => [
+                    'label' => 'Session lifetime (minutes)',
+                ],
+                'two_factor_challenge_minutes' => [
+                    'label' => 'TOTP challenge lifetime (minutes)',
+                ],
+                'two_factor_enabled' => [
+                    'description' => 'Master switch: when off, no account has to enrol, even if roles are listed below. A locked-out administrator costs more than an optional second factor.',
+                    'label' => 'Enforce two-factor authentication',
+                ],
+                'two_factor_issuer' => [
+                    'label' => 'TOTP issuer',
+                ],
+                'two_factor_required_roles' => [
+                    'label' => 'Roles that must use two-factor authentication',
+                ],
+            ],
+            'seo' => [
+                'default_description' => [
+                    'label' => 'Default meta description',
+                ],
+                'default_image_id' => [
+                    'label' => 'Default sharing image',
+                ],
+                'global_noindex' => [
+                    'label' => 'Ask search engines not to index',
+                ],
+                'robots_custom' => [
+                    'label' => 'Custom robots.txt',
+                ],
+                'separator' => [
+                    'label' => 'Separator',
+                    'options' => [
+                        '-' => 'Hyphen -',
+                        '_' => 'Vertical bar |',
+                        '__' => 'Guillemet »',
+                        '___' => 'En dash —',
+                    ],
+                ],
+                'sitemap_enabled' => [
+                    'label' => 'XML sitemap',
+                ],
+                'title_template' => [
+                    'label' => 'Title template',
+                ],
+            ],
+            'site' => [
+                'admin_email' => [
+                    'label' => 'Administration email',
+                ],
+                'description' => [
+                    'label' => 'Description',
+                ],
+                'icon_id' => [
+                    'label' => 'Site icon',
+                ],
+                'logo_id' => [
+                    'label' => 'Logo',
+                ],
+                'name' => [
+                    'label' => 'Site title',
+                ],
+                'tagline' => [
+                    'label' => 'Tagline',
+                ],
+            ],
+            'writing' => [
+                'autosave_minutes' => [
+                    'label' => 'Autosave (minutes)',
+                ],
+                'default_category' => [
+                    'label' => 'Default category',
+                ],
+                'revisions' => [
+                    'label' => 'Keep revisions',
+                ],
+                'trash_days' => [
+                    'label' => 'Empty the trash after (days)',
+                ],
+            ],
+        ],
+        'sections' => [
+            'advanced' => [
+                'description' => 'Technical options for administrators',
+                'label' => 'Advanced',
+            ],
+            'general' => [
+                'description' => 'Site identity, time settings and visibility',
+                'label' => 'General',
+            ],
+            'languages' => [
+                'description' => 'Site and admin languages, translation catalogues',
+                'label' => 'Languages',
+            ],
+            'mail' => [
+                'description' => 'Delivery, templates and notification log',
+                'label' => 'Emails',
+            ],
+            'performance' => [
+                'description' => 'Data cache, page cache and purge',
+                'label' => 'Performance',
+            ],
+            'permalinks' => [
+                'description' => 'Structure of public URLs',
+                'label' => 'Permalinks',
+            ],
+            'reading' => [
+                'description' => 'Home page, feeds and content display',
+                'label' => 'Reading',
+            ],
+            'scheduler' => [
+                'description' => 'Scheduler, queue and automations',
+                'label' => 'Scheduled tasks',
+            ],
+            'security' => [
+                'description' => 'Passwords, sessions, two-factor authentication and rate limiting',
+                'label' => 'Security',
+            ],
+            'seo' => [
+                'description' => 'Titles, sitemap and social sharing',
+                'label' => 'SEO',
+            ],
+            'writing' => [
+                'description' => 'Formats, default categories and trash',
+                'label' => 'Writing',
+            ],
+        ],
+    ],
     'statuses' => [
         'active' => 'Active',
         'completed' => 'Completed',

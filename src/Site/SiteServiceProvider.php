@@ -269,6 +269,7 @@ final class SiteServiceProvider extends ServiceProvider
                 }
             }
 
+            $settings = $c->has(Settings::class) ? $c->get(Settings::class) : null;
             return new SiteController(
                 resolver: $c->get(UrlResolver::class),
                 renderer: $c->get(SiteRenderer::class),
@@ -281,6 +282,7 @@ final class SiteServiceProvider extends ServiceProvider
                 entryService: $entryService instanceof EntryService ? $entryService : null,
                 urls: $c->get(UrlGenerator::class),
                 auth: $auth,
+                settings: $settings instanceof Settings ? $settings : null,
             );
         });
     }

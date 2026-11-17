@@ -106,10 +106,11 @@ final class SchedulerServiceProvider extends ServiceProvider
                 static function () use ($c): void {
                     /** @var EntryService $entries */
                     $entries = $c->get(EntryService::class);
-                    $entries->purgeTrash(30);
+                    $settings = $c->has(Settings::class) ? $c->get(Settings::class) : null;
+                    $entries->purgeTrash($settings instanceof Settings ? $settings->getInt('writing.trash_days', 30, 1, 365) : 30);
                 },
                 '30 3 * * *',
-                'Vide la corbeille de plus de 30 jours.',
+                'Vide la corbeille selon la durée de rétention.',
             );
         }
 

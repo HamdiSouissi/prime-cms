@@ -221,7 +221,8 @@ final class Translator
         }
 
         $segments = explode('|', $line);
-        $template = trim($segments[min($this->pluralIndex($number), count($segments) - 1)]);
+        $template = self::explicitSegment($segments, $number)
+            ?? trim((string) preg_replace('/^\s*(\{-?\d+\}|\[-?\d+,\s*(\*|-?\d+)\])\s*/', '', $segments[min($this->pluralIndex($number), count($segments) - 1)]));
 
         $replace = array_merge([
             ':count' => $this->formatCount($number),
@@ -229,6 +230,34 @@ final class Translator
         ], $replace);
 
         return $this->applyReplacements($template, $replace, $locale);
+    }
+
+    /**
+     * Pick the variant whose explicit marker matches the count — `{0}`, `{1}`, `[2,*]`, `[2,4]` —
+     * the same forms the admin JS understands, so one catalogue line serves both sides.
+     *
+     * @param list<string> $segments
+     */
+    private static function explicitSegment(array $segments, int|float $number): ?string
+    {
+        foreach ($segments as $segment) {
+            if (preg_match('/^\s*\{(-?\d+)\}\s*(.*)$/s', $segment, $m) === 1) {
+                if ((float) $m[1] === (float) $number) {
+                    return trim($m[2]);
+                }
+                continue;
+            }
+
+            if (preg_match('/^\s*\[(-?\d+),\s*(\*|-?\d+)\]\s*(.*)$/s', $segment, $m) === 1) {
+                $min = (float) $m[1];
+                $max = $m[2] === '*' ? INF : (float) $m[2];
+                if ($number >= $min && $number <= $max) {
+                    return trim($m[3]);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

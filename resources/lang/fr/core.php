@@ -474,6 +474,11 @@ return [
     'mail' => [
         'direct_link' => 'Lien direct :',
         'greeting' => 'Bonjour :name,',
+        'test' => [
+            'html' => 'Ceci est un e-mail de test envoyé par Prime CMS. Si vous le lisez, la configuration d\'envoi fonctionne.',
+            'subject' => '[:name] Test d\'envoi',
+            'text' => 'Ceci est un e-mail de test. Si vous le lisez, l\'envoi d\'e-mails de Prime CMS fonctionne.',
+        ],
     ],
     'media' => [
         'kinds' => [
@@ -536,6 +541,388 @@ return [
         ],
     ],
     'saving' => 'Enregistrement…',
+    'scheduler' => [
+        'tasks' => [
+            'content_publish_scheduled' => 'Publie les contenus arrivés à échéance.',
+            'content_purge_trash' => 'Vide la corbeille selon la durée de rétention (Réglages › Général).',
+            'jobs_prune' => 'Récupère les réservations expirées et purge les échecs anciens.',
+            'mail_prune_log' => 'Applique la rétention du journal des e-mails.',
+        ],
+    ],
+    'settings' => [
+        'fields' => [
+            'advanced' => [
+                'debug_bar' => [
+                    'label' => 'Barre de débogage (administrateurs uniquement)',
+                ],
+                'maintenance' => [
+                    'label' => 'Mode maintenance',
+                ],
+                'maintenance_message' => [
+                    'label' => 'Message de maintenance',
+                ],
+            ],
+            'cache' => [
+                'assets' => [
+                    'label' => 'Minifier et concaténer le CSS de l’administration',
+                ],
+                'driver' => [
+                    'label' => 'Moteur de cache',
+                    'options' => [
+                        'apcu' => 'APCu (mémoire partagée)',
+                        'file' => 'Fichiers (storage/cache)',
+                    ],
+                ],
+                'page_enabled' => [
+                    'label' => 'Cache des pages',
+                ],
+                'page_ttl' => [
+                    'label' => 'Durée de vie du cache (secondes)',
+                ],
+            ],
+            'general' => [
+                'date_format' => [
+                    'label' => 'Format de date',
+                ],
+                'privacy' => [
+                    'description' => 'Quand ce réglage est activé, le site public est réservé aux utilisateurs connectés.',
+                    'label' => 'Visibilité du site',
+                ],
+                'start_of_week' => [
+                    'label' => 'Premier jour de la semaine',
+                    'options' => [
+                        '0' => 'Dimanche',
+                        '1' => 'Lundi',
+                        '2' => 'Mardi',
+                        '3' => 'Mercredi',
+                        '4' => 'Jeudi',
+                        '5' => 'Vendredi',
+                        '6' => 'Samedi',
+                    ],
+                ],
+                'time_format' => [
+                    'label' => 'Format d’heure',
+                ],
+                'timezone' => [
+                    'label' => 'Fuseau horaire',
+                ],
+            ],
+            'language' => [
+                'admin' => [
+                    'description' => 'Vide : chaque utilisateur utilise la langue de son profil.',
+                    'label' => 'Langue d’administration',
+                ],
+                'detect_browser' => [
+                    'label' => 'Suivre la langue du navigateur sur le site public',
+                ],
+                'fallback' => [
+                    'label' => 'Langue de secours',
+                ],
+                'per_user' => [
+                    'label' => 'Langue personnalisable par utilisateur',
+                ],
+                'site' => [
+                    'label' => 'Langue du site',
+                ],
+            ],
+            'mail' => [
+                'driver' => [
+                    'label' => 'Méthode d’envoi',
+                    'options' => [
+                        'log' => 'Journal de bord (aucun envoi réel)',
+                        'native' => 'Fonction mail() de PHP',
+                        'queue' => 'File d’attente SMTP',
+                        'smtp' => 'Serveur SMTP',
+                    ],
+                ],
+                'encryption' => [
+                    'label' => 'Chiffrement',
+                    'options' => [
+                        'none' => 'Aucun',
+                        'ssl' => 'SSL (implicite)',
+                        'tls' => 'STARTTLS',
+                    ],
+                ],
+                'from_address' => [
+                    'label' => 'Adresse de l’expéditeur',
+                ],
+                'from_name' => [
+                    'label' => 'Nom de l’expéditeur',
+                ],
+                'host' => [
+                    'label' => 'Hôte SMTP',
+                ],
+                'log_days' => [
+                    'label' => 'Conserver le journal (jours)',
+                ],
+                'log_enabled' => [
+                    'label' => 'Journaliser les envois',
+                ],
+                'password' => [
+                    'label' => 'Mot de passe SMTP',
+                ],
+                'port' => [
+                    'label' => 'Port SMTP',
+                ],
+                'reply_to' => [
+                    'label' => 'Adresse de réponse',
+                ],
+                'timeout' => [
+                    'label' => 'Délai d’expiration (secondes)',
+                ],
+                'username' => [
+                    'label' => 'Identifiant SMTP',
+                ],
+                'verify_tls' => [
+                    'label' => 'Vérifier le certificat du serveur',
+                ],
+            ],
+            'media' => [
+                'image_sizes' => [
+                    'label' => 'Tailles d’image',
+                ],
+            ],
+            'permalinks' => [
+                'author_base' => [
+                    'label' => 'Préfixe des auteurs',
+                ],
+                'category_base' => [
+                    'label' => 'Préfixe des catégories',
+                ],
+                'post_structure' => [
+                    'label' => 'Structure des articles',
+                    'options' => [
+                        '__p__post_id_' => 'Numérique',
+                        '_blog__postname_' => 'Nom de l’article',
+                        '_blog__year___month___postname_' => 'Mois et nom',
+                        '_blog__year___monthnum___day___postname_' => 'Jour et nom',
+                    ],
+                ],
+                'search_base' => [
+                    'label' => 'Préfixe de recherche',
+                ],
+                'tag_base' => [
+                    'label' => 'Préfixe des étiquettes',
+                ],
+                'trailing_slash' => [
+                    'label' => 'Termine les URL par /',
+                ],
+            ],
+            'reading' => [
+                'excerpt_length' => [
+                    'label' => 'Longueur de l’extrait (mots)',
+                ],
+                'feed_items' => [
+                    'label' => 'Éléments par flux',
+                ],
+                'feed_mode' => [
+                    'label' => 'Contenu du flux',
+                    'options' => [
+                        'excerpt' => 'Extrait',
+                        'full' => 'Texte complet',
+                    ],
+                ],
+                'front_mode' => [
+                    'label' => 'Sur la page d’accueil',
+                    'options' => [
+                        'page' => 'Une page fixe',
+                        'posts' => 'Vos derniers articles',
+                    ],
+                ],
+                'front_page_id' => [
+                    'label' => 'Page d’accueil',
+                ],
+                'posts_page_id' => [
+                    'label' => 'Page des articles',
+                ],
+                'posts_per_page' => [
+                    'label' => 'Articles par page',
+                ],
+            ],
+            'scheduler' => [
+                'enabled' => [
+                    'label' => 'Activer le planificateur',
+                ],
+                'fallback' => [
+                    'description' => 'Utile quand aucune tâche cron système n’est configurable.',
+                    'label' => 'Exécuter au passage des visiteurs',
+                ],
+                'interval' => [
+                    'label' => 'Intervalle minimal entre deux exécutions (secondes)',
+                ],
+                'queue_tries' => [
+                    'label' => 'Tentatives par tâche en file',
+                ],
+                'queue_ttl_minutes' => [
+                    'label' => 'Abandonner une tâche après (minutes)',
+                ],
+            ],
+            'security' => [
+                'force_logout_all' => [
+                    'label' => 'Fermer toutes les sessions au changement de mot de passe',
+                ],
+                'invite_token_minutes' => [
+                    'label' => 'Validité d’une invitation (minutes)',
+                ],
+                'login_lockout_minutes' => [
+                    'label' => 'Fenêtre de blocage (minutes)',
+                ],
+                'login_max_attempts' => [
+                    'label' => 'Tentatives de connexion avant blocage',
+                ],
+                'password_block_common' => [
+                    'label' => 'Bloquer les mots de passe courants',
+                ],
+                'password_min_length' => [
+                    'label' => 'Longueur minimale des mots de passe',
+                ],
+                'password_require_mixed_case' => [
+                    'label' => 'Majuscules et minuscules',
+                ],
+                'password_require_number' => [
+                    'label' => 'Au moins un chiffre',
+                ],
+                'password_require_special' => [
+                    'label' => 'Au moins un caractère spécial',
+                ],
+                'remember_days' => [
+                    'label' => 'Durée du cookie « Se souvenir de moi » (jours)',
+                ],
+                'reset_token_minutes' => [
+                    'label' => 'Validité d’un lien de réinitialisation (minutes)',
+                ],
+                'session_absolute_lifetime' => [
+                    'description' => '0 : aucune limite absolue ; seule l’inactivité est prise en compte.',
+                    'label' => 'Durée absolue de la session (minutes)',
+                ],
+                'session_lifetime' => [
+                    'label' => 'Durée de vie de la session (minutes)',
+                ],
+                'two_factor_challenge_minutes' => [
+                    'label' => 'Durée du défi TOTP (minutes)',
+                ],
+                'two_factor_enabled' => [
+                    'description' => 'Interrupteur maître : éteint, aucun compte n’est tenu de s’inscrire, même si des rôles sont listés ci-dessous. Un administrateur verrouillé dehors est plus coûteux qu’un double facteur optionnel.',
+                    'label' => 'Autoriser la double authentification',
+                ],
+                'two_factor_issuer' => [
+                    'label' => 'Émetteur TOTP',
+                ],
+                'two_factor_required_roles' => [
+                    'label' => 'Rôles soumis à la double authentification',
+                ],
+            ],
+            'seo' => [
+                'default_description' => [
+                    'label' => 'Méta-description par défaut',
+                ],
+                'default_image_id' => [
+                    'label' => 'Image de partage par défaut',
+                ],
+                'global_noindex' => [
+                    'label' => 'Demander aux moteurs de ne pas indexer',
+                ],
+                'robots_custom' => [
+                    'label' => 'robots.txt personnalisé',
+                ],
+                'separator' => [
+                    'label' => 'Séparateur',
+                    'options' => [
+                        '-' => 'Trait d’union -',
+                        '_' => 'Barre verticale |',
+                        '__' => 'Guillemet »',
+                        '___' => 'Tiret demi-cadratin —',
+                    ],
+                ],
+                'sitemap_enabled' => [
+                    'label' => 'Sitemap XML',
+                ],
+                'title_template' => [
+                    'label' => 'Modèle de titre',
+                ],
+            ],
+            'site' => [
+                'admin_email' => [
+                    'label' => 'E-mail d’administration',
+                ],
+                'description' => [
+                    'label' => 'Description',
+                ],
+                'icon_id' => [
+                    'label' => 'Icône du site',
+                ],
+                'logo_id' => [
+                    'label' => 'Logo',
+                ],
+                'name' => [
+                    'label' => 'Titre du site',
+                ],
+                'tagline' => [
+                    'label' => 'Sous-titre',
+                ],
+            ],
+            'writing' => [
+                'autosave_minutes' => [
+                    'label' => 'Enregistrement automatique (minutes)',
+                ],
+                'default_category' => [
+                    'label' => 'Catégorie par défaut',
+                ],
+                'revisions' => [
+                    'label' => 'Conserver les révisions',
+                ],
+                'trash_days' => [
+                    'label' => 'Vider la corbeille après (jours)',
+                ],
+            ],
+        ],
+        'sections' => [
+            'advanced' => [
+                'description' => 'Options techniques réservées aux administrateurs',
+                'label' => 'Avancé',
+            ],
+            'general' => [
+                'description' => 'Identité du site, horaires et visibilité',
+                'label' => 'Général',
+            ],
+            'languages' => [
+                'description' => 'Langue du site, de l’administration et catalogues de traduction',
+                'label' => 'Langues',
+            ],
+            'mail' => [
+                'description' => 'Envoi, gabarits et journal des notifications',
+                'label' => 'E-mails',
+            ],
+            'performance' => [
+                'description' => 'Cache de données, cache de pages et purge',
+                'label' => 'Performance',
+            ],
+            'permalinks' => [
+                'description' => 'Structure des adresses publiques',
+                'label' => 'Permaliens',
+            ],
+            'reading' => [
+                'description' => 'Page d’accueil, flux et affichage des contenus',
+                'label' => 'Lecture',
+            ],
+            'scheduler' => [
+                'description' => 'Planificateur, file d’attente et automatisations',
+                'label' => 'Tâches planifiées',
+            ],
+            'security' => [
+                'description' => 'Mots de passe, sessions, double authentification et limitation de débit',
+                'label' => 'Sécurité',
+            ],
+            'seo' => [
+                'description' => 'Titres, sitemap et partage social',
+                'label' => 'Référencement',
+            ],
+            'writing' => [
+                'description' => 'Formats, catégories par défaut et corbeille',
+                'label' => 'Écriture',
+            ],
+        ],
+    ],
     'statuses' => [
         'active' => 'Actif',
         'completed' => 'Terminé',

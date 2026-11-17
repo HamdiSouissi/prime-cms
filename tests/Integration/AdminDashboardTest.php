@@ -65,7 +65,12 @@ final class AdminDashboardTest extends TestCase
             '/admin/roles',
             '/admin/roles/create',
             '/admin/profile',
-            '/admin/settings',
+            '/admin/settings/general',
+            '/admin/settings/security',
+            '/admin/settings/emails',
+            '/admin/tools/scheduler',
+            '/admin/tools/queue',
+            '/admin/tools/system',
             '/admin/settings/reading',
             '/admin/settings/permalinks',
             '/admin/settings/seo',
@@ -312,21 +317,10 @@ final class AdminDashboardTest extends TestCase
         /** @var Kernel $kernel */
         $kernel = $app->get(Kernel::class);
 
-        // `/admin/settings` is still the Phase 9 hub; the individual settings screens that
-        // ship in Phase 9 have their own pages (General, Security, E-mails, Performance…).
-        $expectedPhases = [
-            '/admin/settings' => 'Phase 9',
-        ];
-
-        foreach ($expectedPhases as $path => $expectedPhase) {
-            $response = $kernel->handle(Request::create('GET', $path));
-            $this->assertSame(200, $response->status(), sprintf('Expected 200 for %s.', $path));
-            $this->assertStringContainsString(
-                $expectedPhase,
-                $response->body(),
-                sprintf('Expected %s to announce %s.', $path, $expectedPhase),
-            );
-        }
+        // Phase 9: `/admin/settings` lands on the first registry-driven screen.
+        $hub = $kernel->handle(Request::create('GET', '/admin/settings'));
+        $this->assertSame(302, $hub->status());
+        $this->assertSame('/admin/settings/general', $hub->header('Location'));
 
         // Phase 8 real Appearance & Site Settings UI screens
         $this->assertStringContainsString('Aurora', $kernel->handle(Request::create('GET', '/admin/appearance/themes'))->body());

@@ -194,7 +194,7 @@ final class SettingsFormProcessor
         if ($field->type === 'url' && is_string($value) && $value !== '' && filter_var($value, FILTER_VALIDATE_URL) === false) {
             // `Prime\Validation\Validator` has no `url` rule, so the shape is checked here with the
             // same filter the REST endpoints use: a mistyped scheme is refused, never stored.
-            return t('validation.url', [':label' => $field->label]);
+            return t('validation.url', [':label' => SettingsText::label($field)]);
         }
 
         $topRules = $rules;
@@ -206,7 +206,7 @@ final class SettingsFormProcessor
         $validator = Validator::make(
             data: [$field->name => $value],
             rules: [$field->name => self::ruleSpecs($topRules)],
-            labels: [$field->name => $field->label],
+            labels: [$field->name => SettingsText::label($field)],
         );
 
         $errors = $validator->errors();
@@ -230,7 +230,7 @@ final class SettingsFormProcessor
             $itemValidator = Validator::make(
                 data: [$field->name => $item],
                 rules: [$field->name => self::ruleSpecs($itemRules)],
-                labels: [$field->name => $field->label],
+                labels: [$field->name => SettingsText::label($field)],
             );
 
             if ($itemValidator->fails()) {
@@ -311,14 +311,14 @@ final class SettingsFormProcessor
 
         if (is_numeric($min) && $value < (float) $min) {
             return t('validation.min_numeric', [
-                ':label' => $field->label,
+                ':label' => SettingsText::label($field),
                 ':min' => self::formatBound($min),
             ]);
         }
 
         if (is_numeric($max) && $value > (float) $max) {
             return t('validation.max_numeric', [
-                ':label' => $field->label,
+                ':label' => SettingsText::label($field),
                 ':max' => self::formatBound($max),
             ]);
         }
@@ -329,7 +329,7 @@ final class SettingsFormProcessor
             if (count($bounds) === 2 && is_numeric($bounds[0]) && is_numeric($bounds[1])
                 && ($value < (float) $bounds[0] || $value > (float) $bounds[1])) {
                 return t('validation.between_numeric', [
-                    ':label' => $field->label,
+                    ':label' => SettingsText::label($field),
                     ':min' => self::formatBound($bounds[0]),
                     ':max' => self::formatBound($bounds[1]),
                 ]);

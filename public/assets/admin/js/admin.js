@@ -10,6 +10,7 @@ import { initContentAdmin } from './content-admin.js';
 import { initCustomizer } from './customizer.js';
 import { initMenusAdmin } from './menus-admin.js';
 import { initSeoPreview } from './seo-preview.js';
+import { initSettingsAdmin } from './settings-admin.js';
 import { initZonesAdmin, registerDynamicBlock } from './zones-admin.js';
 import { editorApi, initPrimeEditor } from './editor/core.js';
 import { initMediaLibrary } from './media/library.js';
@@ -156,6 +157,7 @@ function bootstrap() {
   initCustomizer();
   initMenusAdmin();
   initSeoPreview();
+  initSettingsAdmin();
   initMediaLibrary();
   initMediaFields();
 }

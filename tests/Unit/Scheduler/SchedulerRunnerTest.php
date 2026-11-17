@@ -318,7 +318,27 @@ final class SchedulerRunnerTest extends TestCase
         $this->assertSame([], $runner->run($this->timestamp(self::TUESDAY_0803)));
         $this->assertSame([], $runner->lastRuns());
         $this->assertSame([], $runner->dueNames($this->timestamp(self::TUESDAY_0803)));
-        $this->assertSame([], glob($this->stampDirectory . '/*') ?: []);
+        // Only the scheduler heartbeat remains: the pass happened, no task left a stamp.
+        $this->assertSame([$this->stampDirectory . '/heartbeat'], glob($this->stampDirectory . '/*') ?: []);
+        $this->assertSame($this->timestamp(self::TUESDAY_0803), $runner->lastHeartbeat());
+    }
+
+    public function testRunOneExecutesATaskImmediatelyAndUnknownNamesReturnNull(): void
+    {
+        $ran = 0;
+        $schedule = new Schedule();
+        $schedule->call('leap', static function () use (&$ran): void {
+            ++$ran;
+        }, '0 0 31 2 *');
+
+        $runner = $this->runner($schedule);
+
+        $this->assertNull($runner->runOne('missing'));
+        $result = $runner->runOne('leap', $this->timestamp(self::TUESDAY_0803));
+        $this->assertNotNull($result);
+        $this->assertSame('ran', $result['status']);
+        $this->assertSame(1, $ran);
+        $this->assertArrayHasKey('leap', $runner->lastRuns());
     }
 
     public function testDueNamesAndLastRunsDescribeTheSchedule(): void

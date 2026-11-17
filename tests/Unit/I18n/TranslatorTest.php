@@ -141,6 +141,17 @@ final class TranslatorTest extends TestCase
         $this->assertSame('4 media items', $english->choice('admin.media.count', 4));
     }
 
+    public function testChoiceHonoursExplicitCountMarkersSharedWithTheAdminJs(): void
+    {
+        $translator = $this->translator('fr');
+
+        $this->assertSame('Aucune tâche enregistrée', $translator->choice('admin.tools.scheduler.tasks_count', 0));
+        $this->assertSame('Une tâche enregistrée', $translator->choice('admin.tools.scheduler.tasks_count', 1));
+        $this->assertSame('4 tâches enregistrées', $translator->choice('admin.tools.scheduler.tasks_count', 4));
+        // A line with only some explicit forms falls back to the plural rule, markers stripped.
+        $this->assertSame('3 éléments sélectionnés', $translator->choice('admin.js.bulk.selected', 3));
+    }
+
     public function testThemesAndPluginsCanExtendOrOverrideTheCatalogue(): void
     {
         file_put_contents(

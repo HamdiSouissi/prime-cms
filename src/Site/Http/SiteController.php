@@ -40,6 +40,7 @@ final class SiteController
         private readonly ?EntryService $entryService = null,
         private readonly ?UrlGenerator $urls = null,
         private readonly ?Auth $auth = null,
+        private readonly ?\Prime\Settings\Settings $settings = null,
     ) {
     }
 
@@ -66,6 +67,11 @@ final class SiteController
 
         if ($this->themes->discover() === []) {
             throw new NotFoundException('Page introuvable.');
+        }
+
+        $gate = $this->accessGate($request);
+        if ($gate !== null) {
+            return $gate;
         }
 
         $isCustomizerPreview = $this->applyCustomizerPreviewIfAuthorized($request);
@@ -102,6 +108,55 @@ final class SiteController
                 $this->themeOptions->setPreviewOverrides(null);
             }
         }
+    }
+
+    /**
+     * « Mode maintenance » (503 for everyone but administrators) and « Visibilité du site »
+     * (public site reserved to signed-in users), both from the « Général » settings screen.
+     */
+    private function accessGate(Request $request): ?Response
+    {
+        if ($this->settings === null) {
+            return null;
+        }
+
+        try {
+            $maintenance = $this->settings->getBool('advanced.maintenance', false);
+            $private = $this->settings->getBool('general.privacy', false);
+            $message = trim($this->settings->getString('advanced.maintenance_message', ''));
+            $siteName = $this->settings->getString('site.name', 'Prime CMS');
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($maintenance && !($this->auth?->can('settings.manage', $request) ?? false)) {
+            return Response::html($this->maintenancePage($siteName, $message), 503)
+                ->withHeader('Retry-After', '600')
+                ->withHeader('Cache-Control', 'no-store, private')
+                ->withHeader('X-Robots-Tag', 'noindex');
+        }
+
+        if ($private && !($this->auth?->check($request) ?? false)) {
+            return Response::redirect('/admin/login', 302)->withHeader('Cache-Control', 'no-store, private');
+        }
+
+        return null;
+    }
+
+    private function maintenancePage(string $siteName, string $message): string
+    {
+        $locale = function_exists('current_locale') ? current_locale() : 'fr';
+        $title = t('site.maintenance.title');
+        $body = $message !== '' ? $message : t('site.maintenance.message');
+        $e = static fn (string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+
+        return '<!DOCTYPE html><html lang="' . $e($locale) . '"><head><meta charset="utf-8">'
+            . '<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">'
+            . '<title>' . $e($title . ' — ' . $siteName) . '</title></head>'
+            . '<body style="margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;background:#FAF8F6;color:#1A1D29">'
+            . '<main style="max-width:520px;padding:32px;text-align:center"><p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#C9441F">' . $e($siteName) . '</p>'
+            . '<h1 style="margin:0 0 12px;font-size:28px">' . $e($title) . '</h1>'
+            . '<p style="margin:0;line-height:1.6;color:#3A3F52">' . nl2br($e($body)) . '</p></main></body></html>';
     }
 
     /**

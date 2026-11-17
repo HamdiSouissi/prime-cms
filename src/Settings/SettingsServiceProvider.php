@@ -93,7 +93,7 @@ final class SettingsServiceProvider extends ServiceProvider
                 $options = [];
 
                 foreach ($roles->all() as $role) {
-                    $options[$role->slug] = $role->name;
+                    $options[$role->slug] = $role->label();
                 }
 
                 return $options;

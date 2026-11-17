@@ -299,6 +299,10 @@ return [
         'permissions_a_verifier' => 'Permissions à vérifier',
     ],
     'in_category' => 'Dans :category',
+    'maintenance' => [
+        'message' => 'Nous effectuons une opération de maintenance. Le site sera de retour très bientôt, merci de votre patience.',
+        'title' => 'Site en maintenance',
+    ],
     'no_excerpt' => 'Aucun extrait pour le moment.',
     'not_found' => [
         'heading' => 'Rien à voir ici',
