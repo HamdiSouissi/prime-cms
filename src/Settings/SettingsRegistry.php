@@ -114,12 +114,19 @@ final class SettingsRegistry
     /**
      * Declare sections and fields at once (the `settings.register` contract used by extensions).
      *
-     * @param array<int|string, array<string, mixed>> $sections
-     * @param array<int|string, array<string, mixed>> $fields
+     * Both bags come straight from a plugin manifest or `config/settings.php`, so nothing about them is
+     * guaranteed: an entry that is not a definition map is skipped instead of blowing up the boot.
+     *
+     * @param array<int|string, mixed> $sections
+     * @param array<int|string, mixed> $fields
      */
     public function register(array $sections, array $fields, ?string $owner = null): void
     {
         foreach ($sections as $id => $section) {
+            if (!is_array($section)) {
+                continue;
+            }
+
             // A list-shaped payload has to carry its own id; a map is keyed by it.
             if (is_int($id) && isset($section['id']) && is_scalar($section['id'])) {
                 $this->section((string) $section['id'], $section);
@@ -132,6 +139,11 @@ final class SettingsRegistry
         }
 
         foreach ($fields as $field) {
+            if (!is_array($field)) {
+                continue;
+            }
+
+            /** @var array<string, mixed> $field */
             $this->add($field, $owner);
         }
     }

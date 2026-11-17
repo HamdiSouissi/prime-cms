@@ -366,7 +366,7 @@ jobs:
             label=$1; pattern=$2; shift 2
             status=0
             out=$(docker compose exec -T app php bin/prime "$@" 2>&1) || status=$?
-            if [ $status -ne 0 ] || ! printf '%s' "$out" | grep -q "$pattern"; then
+            if [ $status -ne 0 ] || { [ -n "$pattern" ] && ! printf '%s' "$out" | grep -q "$pattern"; }; then
               printf '::error::phase9 %s (statut %s) : %s\n' "$label" "$status" "$(printf '%s' "$out" | tr '\n' ' ' | cut -c1-700)"
               exit 1
             fi
