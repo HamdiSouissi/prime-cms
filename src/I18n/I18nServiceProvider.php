@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Prime\I18n;
 
-use Prime\Auth\Auth;
+use Prime\Auth\UserRepository;
 use Prime\Cache\CacheInterface;
 use Prime\Hooks\Hooks;
 use Prime\Http\Kernel;
 use Prime\Http\Middleware\MiddlewareInterface;
 use Prime\Http\Middleware\PassthroughMiddleware;
+use Prime\Http\Session;
 use Prime\I18n\Http\LocaleMiddleware;
 use Prime\Install\InstallCheckerInterface;
 use Prime\Kernel\Container;
@@ -135,14 +136,16 @@ final class I18nServiceProvider extends ServiceProvider
                 $installed = $checker instanceof InstallCheckerInterface && $checker->isInstalled();
 
                 $settings = $installed && $container->has(Settings::class) ? $container->get(Settings::class) : null;
-                $auth = $installed && $container->has(Auth::class) ? $container->get(Auth::class) : null;
+                $session = $installed && $container->has(Session::class) ? $container->get(Session::class) : null;
+                $users = $installed && $container->has(UserRepository::class) ? $container->get(UserRepository::class) : null;
                 $hooks = $container->has(Hooks::class) ? $container->get(Hooks::class) : null;
 
                 return new LocaleMiddleware(
                     $translator,
                     $formatter,
                     $settings instanceof Settings ? $settings : null,
-                    $auth instanceof Auth ? $auth : null,
+                    $session instanceof Session ? $session : null,
+                    $users instanceof UserRepository ? $users : null,
                     $hooks instanceof Hooks ? $hooks : null,
                 );
             } catch (Throwable) {

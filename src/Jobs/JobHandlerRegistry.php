@@ -34,18 +34,12 @@ final class JobHandlerRegistry
             throw new InvalidArgumentException(sprintf('Nom de traitement de tâche invalide : « %s ».', $name));
         }
 
-        if (is_string($handler)) {
-            if (!class_exists($handler) || !is_subclass_of($handler, JobHandlerInterface::class, true)) {
-                throw new InvalidArgumentException(sprintf(
-                    'Le traitement « %s » doit implémenter %s.',
-                    $handler,
-                    JobHandlerInterface::class,
-                ));
-            }
-        } elseif (!is_callable($handler) && !$handler instanceof JobHandlerInterface) {
+        // A class name must carry the interface; anything else is already typed as a callable or a
+        // handler, and `resolve()` turns whatever cannot run into a job failure instead of a fatal.
+        if (is_string($handler) && (!class_exists($handler) || !is_subclass_of($handler, JobHandlerInterface::class, true))) {
             throw new InvalidArgumentException(sprintf(
-                'Le traitement « %s » doit être appelable ou implémenter %s.',
-                $name,
+                'Le traitement « %s » doit implémenter %s.',
+                $handler,
                 JobHandlerInterface::class,
             ));
         }
@@ -66,7 +60,7 @@ final class JobHandlerRegistry
         $names = array_keys($this->handlers);
         sort($names);
 
-        return array_values($names);
+        return $names;
     }
 
     /**

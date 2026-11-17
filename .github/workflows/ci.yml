@@ -271,19 +271,20 @@ jobs:
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/taxonomies/testimonial_source | grep -q "Sources"
           docker compose exec -T app php bin/prime plugin:deactivate hello-prime | grep -q "désactivé"
 
-          # Phase 9 — full page cache: MISS on a cold URL, HIT once warm, MISS again after a purge.
-          curl -sf -o /dev/null -D /tmp/prime-cache-1 http://localhost:8080/blog
-          grep -qi "^X-Prime-Cache: MISS" /tmp/prime-cache-1
-          curl -sf -o /dev/null -D /tmp/prime-cache-2 http://localhost:8080/blog
-          grep -qi "^X-Prime-Cache: HIT" /tmp/prime-cache-2
+          # Phase 9 — the checks below report the line that failed: this step runs inside the
+          # container's own network, so a failing assertion must say which one without a log dive.
+          set -o pipefail
+          trap 'printf "::error::phase9 ligne %s (statut %s)\n" "$LINENO" "$?"' ERR
+
+          # Full page cache: MISS on a cold URL, HIT once warm, MISS again after a purge.
+          curl -sf -o /dev/null -D - http://localhost:8080/blog | grep -qi "^X-Prime-Cache: MISS"
+          curl -sf -o /dev/null -D - http://localhost:8080/blog | grep -qi "^X-Prime-Cache: HIT"
           docker compose exec -T app php bin/prime cache:clear --pages | grep -q "Cache de pages vidé"
-          curl -sf -o /dev/null -D /tmp/prime-cache-3 http://localhost:8080/blog
-          grep -qi "^X-Prime-Cache: MISS" /tmp/prime-cache-3
+          curl -sf -o /dev/null -D - http://localhost:8080/blog | grep -qi "^X-Prime-Cache: MISS"
 
           # Phase 9 — targeted purge: publishing must drop the archive copy that lists the new post.
           docker compose exec -T app php bin/prime content:create --type=post --title="Purge Cible" --status=published --body="Article publié pour vérifier la purge ciblée du cache." | grep -q "Purge Cible"
-          curl -sf -o /dev/null -D /tmp/prime-cache-4 http://localhost:8080/blog
-          grep -qi "^X-Prime-Cache: MISS" /tmp/prime-cache-4
+          curl -sf -o /dev/null -D - http://localhost:8080/blog | grep -qi "^X-Prime-Cache: MISS"
           curl -sf http://localhost:8080/blog/purge-cible | grep -q "Purge Cible"
 
           # Phase 9 — registry, queue, scheduler and mail log on the live database (migrations 24 & 25).
@@ -296,14 +297,39 @@ jobs:
           docker compose exec -T app php bin/prime mail:test --to=verify@prime-docker.test --json | grep -q '"ok": true'
           docker compose exec -T app php bin/prime mail:logs --json | grep -q "verify@prime-docker.test"
 
-          # Phase 9 — the same session reads the administration in English, then back in French.
-          docker compose exec -T app php bin/prime settings:set language.admin '"en"'
+          # The same session, in English: the per-user language wins over `language.admin`, so the
+          # preference is saved through the profile form and the admin must follow it immediately.
+          PROFILE_HTML=$(curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" http://localhost:8080/admin/profile)
+          PROFILE_CSRF=$(printf '%s' "$PROFILE_HTML" | sed -n 's/.*name="_csrf_token" value="\([^"]*\)".*/\1/p' | head -n 1)
+          test -n "$PROFILE_CSRF"
+          test "$(curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" -o /dev/null -w '%{http_code}' \
+            -X POST http://localhost:8080/admin/profile/info \
+            --data-urlencode "_csrf_token=$PROFILE_CSRF" \
+            --data-urlencode "display_name=Admin Docker" \
+            --data-urlencode "email=admin@prime-docker.test" \
+            --data-urlencode "locale=en")" = "302"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Dashboard"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin/settings/performance | grep -q "Page cache"
-          docker compose exec -T app php bin/prime settings:set language.admin '""'
+
+          # A site visitor follows `language.site`, whatever the administrator reads: the document
+          # language is rendered from the locale the middleware resolved for this request.
+          curl -sf http://localhost:8080/ | grep -q '<html lang="fr"'
+          docker compose exec -T app php bin/prime settings:set language.site '"en"'
+          curl -sf http://localhost:8080/ | grep -q '<html lang="en"'
+          docker compose exec -T app php bin/prime settings:set language.site '"fr"'
+          curl -sf http://localhost:8080/ | grep -q '<html lang="fr"'
+
+          # Back to French for the account, so the rest of the suite keeps its wording.
+          test "$(curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" -o /dev/null -w '%{http_code}' \
+            -X POST http://localhost:8080/admin/profile/info \
+            --data-urlencode "_csrf_token=$PROFILE_CSRF" \
+            --data-urlencode "display_name=Admin Docker" \
+            --data-urlencode "email=admin@prime-docker.test" \
+            --data-urlencode "locale=fr")" = "302"
           curl -sf -b "$COOKIE_JAR" http://localhost:8080/admin | grep -q "Tableau de bord"
 
-          rm -f "$COOKIE_JAR" /tmp/prime-cache-1 /tmp/prime-cache-2 /tmp/prime-cache-3 /tmp/prime-cache-4
+          trap - ERR
+          rm -f "$COOKIE_JAR"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inconnu)" = "404"
 
           docker compose exec -T app php -m | grep -iq "mbstring"

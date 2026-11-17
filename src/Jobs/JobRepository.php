@@ -271,7 +271,7 @@ final class JobRepository
             'reserved' => (int) ($row['reserved'] ?? 0),
             'failed' => (int) ($row['failed'] ?? 0),
             'delayed' => (int) ($row['delayed'] ?? 0),
-            'oldest_pending' => isset($row['oldest']) && $row['oldest'] !== null ? (string) $row['oldest'] : null,
+            'oldest_pending' => is_string($row['oldest'] ?? null) && $row['oldest'] !== '' ? (string) $row['oldest'] : null,
         ];
     }
 
@@ -302,7 +302,7 @@ final class JobRepository
     {
         $rows = $this->db->select(sprintf('SELECT DISTINCT `queue` FROM `%s` ORDER BY `queue` ASC', $this->table()));
 
-        return array_values(array_map(static fn (array $row): string => (string) $row['queue'], $rows));
+        return array_map(static fn (array $row): string => (string) $row['queue'], $rows);
     }
 
     /**
@@ -341,7 +341,7 @@ final class JobRepository
     private static function encode(array $payload): string
     {
         try {
-            return json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return '{}';
         }

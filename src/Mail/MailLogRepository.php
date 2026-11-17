@@ -106,6 +106,9 @@ final class MailLogRepository
         return array_map([$this, 'hydrate'], $query->get());
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function find(int $id): ?array
     {
         $row = $this->db->table(self::TABLE)->find($id);
