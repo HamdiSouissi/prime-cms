@@ -19,6 +19,9 @@ use Prime\Console\Commands\DbCheckCommand;
 use Prime\Console\Commands\InstallCommand;
 use Prime\Console\Commands\LangCheckCommand;
 use Prime\Console\Commands\ListCommand;
+use Prime\Console\Commands\MailLogsCommand;
+use Prime\Console\Commands\MailPruneCommand;
+use Prime\Console\Commands\MailTestCommand;
 use Prime\Console\Commands\MakeMigrationCommand;
 use Prime\Console\Commands\MakePluginCommand;
 use Prime\Console\Commands\MediaCleanupCommand;
@@ -66,6 +69,8 @@ use Prime\Install\Installer;
 use Prime\Jobs\JobQueue;
 use Prime\Jobs\JobRepository;
 use Prime\Kernel\Application;
+use Prime\Mail\Mailer;
+use Prime\Mail\MailLogRepository;
 use Prime\Media\MediaConfig;
 use Prime\Media\MediaRepository;
 use Prime\Media\UploadService;
@@ -198,6 +203,19 @@ final class ConsoleApplication
             $this->register(new QueueWorkCommand($queue, $jobs));
             $this->register(new QueueStatusCommand($jobs));
             $this->register(new QueueRetryCommand($jobs));
+        }
+
+        if ($this->app->container()->has(Mailer::class)) {
+            /** @var Mailer $mailer */
+            $mailer = $this->app->get(Mailer::class);
+            $logs = $this->app->container()->has(MailLogRepository::class) ? $this->app->get(MailLogRepository::class) : null;
+
+            $this->register(new MailTestCommand($mailer));
+
+            if ($logs instanceof MailLogRepository) {
+                $this->register(new MailLogsCommand($logs));
+                $this->register(new MailPruneCommand($logs, $mailer->config()->logDays()));
+            }
         }
 
         if ($this->app->container()->has(Settings::class)) {

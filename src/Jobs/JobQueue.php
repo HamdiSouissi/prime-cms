@@ -155,7 +155,7 @@ final class JobQueue
             'error' => $error,
         ]);
 
-        if ($job->exhausted()) {
+        if ($job->exhausted() || $exception instanceof UnrecoverableJobException) {
             $this->jobs->markFailed($job->id, $error);
             $this->hooks?->emit('job.failed', $job, $error);
 

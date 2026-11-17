@@ -19,6 +19,7 @@ use Prime\Kernel\Application;
 use Prime\Kernel\Container;
 use Prime\Kernel\ServiceProvider;
 use Prime\Log\Logger;
+use Prime\Mail\MailLogRepository;
 use Prime\Settings\Settings;
 use RuntimeException;
 use Throwable;
@@ -129,6 +130,26 @@ final class SchedulerServiceProvider extends ServiceProvider
                 },
                 '15 * * * *',
                 'Récupère les réservations expirées et purge les échecs anciens.',
+            );
+        }
+
+        if ($c->has(MailLogRepository::class)) {
+            // `mail.log_days` is a promise the settings screen makes; a promise nobody keeps is a
+            // table that grows for ever, so the retention is applied here rather than by hand.
+            $schedule->call(
+                'mail.prune_log',
+                static function () use ($c): void {
+                    /** @var MailLogRepository $logs */
+                    $logs = $c->get(MailLogRepository::class);
+                    $settings = $c->has(Settings::class) ? $c->get(Settings::class) : null;
+                    $days = $settings instanceof Settings
+                        ? $settings->getInt('mail.log_days', 30, 1, 365)
+                        : 30;
+
+                    $logs->prune($days);
+                },
+                '45 3 * * *',
+                'Applique la rétention du journal des e-mails.',
             );
         }
     }

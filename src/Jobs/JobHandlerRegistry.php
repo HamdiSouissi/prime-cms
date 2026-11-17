@@ -29,7 +29,6 @@ final class JobHandlerRegistry
      * @param callable|class-string<JobHandlerInterface>|JobHandlerInterface $handler
      */
     public function register(string $name, callable|object|string $handler): void
-
     {
         if (preg_match('/^[a-z0-9][a-z0-9_.\-]{0,190}$/', $name) !== 1) {
             throw new InvalidArgumentException(sprintf('Nom de traitement de tâche invalide : « %s ».', $name));

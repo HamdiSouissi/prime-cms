@@ -9,6 +9,7 @@ use Prime\Admin\Notices;
 use Prime\Auth\Auth;
 use Prime\Auth\RoleRepository;
 use Prime\Auth\UserRepository;
+use Prime\Cache\PageCache;
 use Prime\Content\Entry;
 use Prime\Content\EntryService;
 use Prime\Content\Exception\ContentValidationException;
@@ -471,6 +472,13 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
             ], $admin);
         }
 
+        // The page cache would answer one of the two requests from disk without touching MySQL, and
+        // `0 === 0` proves nothing about N+1: pin it off for the measurement, then restore it.
+        $pageCache = $app->get(PageCache::class);
+        $this->assertInstanceOf(PageCache::class, $pageCache);
+        $cacheWasEnabled = $pageCache->isEnabled();
+        $pageCache->setEnabled(false);
+
         $kernel->handle(Request::create('GET', '/blog'));
         $this->connection->enableQueryLog(true);
         $this->connection->clearQueryLog();
@@ -495,7 +503,9 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame(200, $res30->status());
         $q30 = count($this->connection->queryLog());
         $this->connection->enableQueryLog(false);
+        $pageCache->setEnabled($cacheWasEnabled);
 
+        $this->assertGreaterThan(0, $q10, 'les deux mesures doivent lire la base pour être comparables');
         $this->assertSame($q10, $q30, sprintf('Expected constant query count on real DB, got %d vs %d.', $q10, $q30));
         $this->assertNotNull($notices);
         $this->assertNotNull($settings);
