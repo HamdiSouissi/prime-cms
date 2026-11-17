@@ -141,10 +141,21 @@ final class SchedulerServiceProvider extends ServiceProvider
     {
         return static function (string $commandLine) use ($app): void {
             $argv = ['prime', ...preg_split('/\s+/', trim($commandLine)) ?: []];
-            $exit = (new ConsoleApplication($app))->run($argv, new ConsoleOutput(false));
+
+            // Buffered on purpose: a tick can happen inside a visitor request (the fallback), where
+            // everything the command prints would land in the page instead of the log.
+            $output = new ConsoleOutput(true);
+            $exit = (new ConsoleApplication($app))->run($argv, $output);
 
             if ($exit !== 0) {
-                throw new RuntimeException(sprintf('La commande « %s » a échoué (code %d).', $commandLine, $exit));
+                $log = trim($output->stderr() . ' ' . $output->stdout());
+
+                throw new RuntimeException(rtrim(sprintf(
+                    'La commande « %s » a échoué (code %d). %s',
+                    $commandLine,
+                    $exit,
+                    $log === '' ? '' : substr($log, -400),
+                )));
             }
         };
     }

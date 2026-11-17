@@ -59,7 +59,7 @@ final class SettingsFormProcessorTest extends TestCase
         ], 'core');
 
         $result = $this->processor()->process('general', [
-            'site.name' => "  Prime <script>alert(1)</script> CMS padding extra  ",
+            'site.name' => '  Prime <script>alert(1)</script> CMS padding extra  ',
             'site.tagline' => '',
             'site.email' => '  Admin@Example.Fr ',
             'site.url' => 'example.com/blog/',

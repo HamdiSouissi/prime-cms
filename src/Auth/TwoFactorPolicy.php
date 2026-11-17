@@ -13,6 +13,10 @@ use Throwable;
  * The roles list lives in `security.two_factor_required_roles` so an administrator can force 2FA
  * for every privileged account; enforcement then happens in the `auth` middleware, which keeps the
  * user authenticated but redirects them to their profile until 2FA (or a saved bypass) is set up.
+ *
+ * Nothing is enforced until `security.two_factor_enabled` is switched on: locking the sole
+ * administrator behind a device they have not paired yet is the one failure mode a CMS cannot
+ * recover from by clicking around, so the master switch is opt-in and defaults to off.
  */
 final class TwoFactorPolicy
 {
@@ -39,7 +43,7 @@ final class TwoFactorPolicy
     public function __construct(?Settings $settings = null)
     {
         $roles = [];
-        $enabled = true;
+        $enabled = false;
         $issuer = 'Prime CMS';
 
         if ($settings !== null) {
@@ -54,7 +58,7 @@ final class TwoFactorPolicy
                     }
                 }
 
-                $enabled = $settings->getBool(self::SETTING_ENABLED, true);
+                $enabled = $settings->getBool(self::SETTING_ENABLED, false);
                 $issuer = trim($settings->getString(self::SETTING_ISSUER, 'Prime CMS')) ?: 'Prime CMS';
             } catch (Throwable) {
                 // Settings are unreachable before installation: keep the safe defaults.

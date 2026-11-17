@@ -151,7 +151,7 @@ final class JobQueueTest extends TestCase
         $id = $queue->dispatch('quiet');
         $queue->runNext('worker-1');
 
-        $this->assertSame(["pushed:quiet:default", "started:{$id}", "completed:{$id}"], $seen);
+        $this->assertSame(['pushed:quiet:default', "started:{$id}", "completed:{$id}"], $seen);
     }
 
     public function testJobReleasedByAFailingHandlerEmitsTheDelay(): void

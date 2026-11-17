@@ -310,7 +310,7 @@ final class SchedulerRunnerTest extends TestCase
     public function testATaskThatIsNeverDueLeavesNoTrace(): void
     {
         $schedule = new Schedule();
-        $schedule->call('leap', static function (): void {}, '0 0 31 2 *');
+        $schedule->call('leap', static fn () => null, '0 0 31 2 *');
 
         $runner = $this->runner($schedule);
 
@@ -324,9 +324,9 @@ final class SchedulerRunnerTest extends TestCase
     public function testDueNamesAndLastRunsDescribeTheSchedule(): void
     {
         $schedule = new Schedule();
-        $schedule->call('heartbeat', static function (): void {}, '* * * * *');
-        $schedule->call('nightly', static function (): void {}, '0 3 * * *');
-        $schedule->call('mondays', static function (): void {}, '0 4 * * 1');
+        $schedule->call('heartbeat', static fn () => null, '* * * * *');
+        $schedule->call('nightly', static fn () => null, '0 3 * * *');
+        $schedule->call('mondays', static fn () => null, '0 4 * * 1');
 
         $runner = $this->runner($schedule);
         $tuesday = $this->timestamp(self::TUESDAY_0803);
