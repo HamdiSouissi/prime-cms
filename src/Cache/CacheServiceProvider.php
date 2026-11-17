@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace Prime\Cache;
 
+use Prime\Cache\Http\PageCacheMiddleware;
 use Prime\Hooks\Hooks;
+use Prime\Http\Kernel;
+use Prime\Http\Middleware\MiddlewareInterface;
+use Prime\Http\Middleware\PassthroughMiddleware;
+use Prime\Kernel\Container;
 use Prime\Kernel\ServiceProvider;
+use Throwable;
 
 /**
  * Registers the data cache (`CacheInterface`), the public page cache (`PageCache`), and the
@@ -82,6 +88,8 @@ final class CacheServiceProvider extends ServiceProvider
         $app = $this->app;
         $c = $app->container();
 
+        $this->registerMiddlewareAlias($c);
+
         if (!$c->has(CacheManager::class) || !$c->has(Hooks::class)) {
             return;
         }
@@ -111,6 +119,29 @@ final class CacheServiceProvider extends ServiceProvider
             $manager->namespace('settings')->flush();
             $manager->namespace('sitemap')->flush();
             $manager->pages()->purgeAll();
+        });
+    }
+
+    /**
+     * `page_cache` is resolved per request through an alias so a storage failure (or a container
+     * without a cache driver, e.g. during installation) degrades to an uncached response instead of
+     * taking the whole pipeline down.
+     */
+    private function registerMiddlewareAlias(Container $c): void
+    {
+        if (!$c->has(Kernel::class)) {
+            return;
+        }
+
+        /** @var Kernel $kernel */
+        $kernel = $c->get(Kernel::class);
+
+        $kernel->registerMiddlewareAlias('page_cache', static function () use ($c): MiddlewareInterface {
+            try {
+                return new PageCacheMiddleware($c->get(PageCache::class));
+            } catch (Throwable) {
+                return new PassthroughMiddleware();
+            }
         });
     }
 }

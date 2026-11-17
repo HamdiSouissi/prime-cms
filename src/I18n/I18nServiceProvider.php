@@ -4,9 +4,18 @@ declare(strict_types=1);
 
 namespace Prime\I18n;
 
+use Prime\Auth\Auth;
 use Prime\Hooks\Hooks;
+use Prime\Http\Kernel;
+use Prime\Http\Middleware\MiddlewareInterface;
+use Prime\Http\Middleware\PassthroughMiddleware;
+use Prime\I18n\Http\LocaleMiddleware;
+use Prime\Install\InstallCheckerInterface;
+use Prime\Kernel\Container;
 use Prime\Kernel\ServiceProvider;
+use Prime\Settings\Settings;
 use Prime\Validation\Validator;
+use Throwable;
 
 /**
  * Registers the internationalization layer: translations, locale-aware formatting, and the
@@ -80,6 +89,53 @@ final class I18nServiceProvider extends ServiceProvider
         if ($hooks instanceof Hooks) {
             $hooks->apply('translations.register', $translator);
         }
+
+        $this->registerMiddlewareAlias($c, $translator);
+    }
+
+    /**
+     * Expose `locale` as a middleware alias so the pipeline can be built before the database exists:
+     * `/install` and `/health` keep working with the configured default language instead of failing
+     * on a Settings/Auth resolution that cannot succeed yet.
+     */
+    private function registerMiddlewareAlias(Container $c, Translator $translator): void
+    {
+        if (!$c->has(Kernel::class)) {
+            return;
+        }
+
+        /** @var Kernel $kernel */
+        $kernel = $c->get(Kernel::class);
+        $container = $c;
+        $app = $this->app;
+
+        $kernel->registerMiddlewareAlias('locale', static function () use ($container, $translator, $app): MiddlewareInterface {
+            try {
+                /** @var LocaleFormatter $formatter */
+                $formatter = $container->has(LocaleFormatter::class)
+                    ? $container->get(LocaleFormatter::class)
+                    : new LocaleFormatter($translator, (string) $app->config()->get('app.timezone', 'UTC'));
+
+                $checker = $container->has(InstallCheckerInterface::class)
+                    ? $container->get(InstallCheckerInterface::class)
+                    : null;
+                $installed = $checker instanceof InstallCheckerInterface && $checker->isInstalled();
+
+                $settings = $installed && $container->has(Settings::class) ? $container->get(Settings::class) : null;
+                $auth = $installed && $container->has(Auth::class) ? $container->get(Auth::class) : null;
+                $hooks = $container->has(Hooks::class) ? $container->get(Hooks::class) : null;
+
+                return new LocaleMiddleware(
+                    $translator,
+                    $formatter,
+                    $settings instanceof Settings ? $settings : null,
+                    $auth instanceof Auth ? $auth : null,
+                    $hooks instanceof Hooks ? $hooks : null,
+                );
+            } catch (Throwable) {
+                return new PassthroughMiddleware();
+            }
+        });
     }
 
     /**

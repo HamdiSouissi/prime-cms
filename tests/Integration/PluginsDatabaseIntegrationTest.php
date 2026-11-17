@@ -64,7 +64,7 @@ final class PluginsDatabaseIntegrationTest extends DatabaseTestCase
         );
 
         $ran = $migrator->run();
-        $this->assertCount(23, $ran);
+        $this->assertCount($this->migrationCount(), $ran);
         $this->assertTrue($schema->hasTable('plugins'));
         $this->assertTrue($schema->hasColumn('migrations', 'source'));
 

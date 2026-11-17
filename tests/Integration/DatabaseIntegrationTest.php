@@ -199,7 +199,7 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
 
         // Run core migrations
         $ran = $migrator->run();
-        $this->assertCount(23, $ran);
+        $this->assertCount($this->migrationCount(), $ran);
         $this->assertTrue($schema->hasTable('settings'));
         $this->assertTrue($schema->hasTable('plugins'));
         $this->assertTrue($schema->hasColumn('migrations', 'source'));
@@ -219,20 +219,20 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
 
         // Status reflects all core migrations as ran in batch 1
         $status = $migrator->status();
-        $this->assertCount(23, $status);
+        $this->assertCount($this->migrationCount(), $status);
         $this->assertSame('ran', $status[0]['status']);
         $this->assertSame(1, $status[0]['batch']);
 
         // Rollback removes all batch-1 migrations cleanly
         $rolledBack = $migrator->rollback(1);
-        $this->assertCount(23, $rolledBack);
+        $this->assertCount($this->migrationCount(), $rolledBack);
         $this->assertFalse($schema->hasTable('roles'));
         $this->assertFalse($schema->hasTable('users'));
         $this->assertFalse($schema->hasTable('settings'));
 
         // Fresh recreates cleanly
         $freshRan = $migrator->fresh();
-        $this->assertCount(23, $freshRan);
+        $this->assertCount($this->migrationCount(), $freshRan);
         $this->assertTrue($schema->hasTable('settings'));
         $this->assertTrue($schema->hasTable('users'));
         $this->assertTrue($schema->hasTable('roles'));

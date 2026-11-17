@@ -70,6 +70,19 @@ abstract class DatabaseTestCase extends TestCase
         }
     }
 
+    /**
+     * Number of migration files shipped in `database/migrations`.
+     *
+     * The schema tests assert that the whole catalogue runs and rolls back; deriving the expected
+     * count from the directory keeps them green when a phase adds a migration.
+     */
+    protected function migrationCount(): int
+    {
+        $files = glob(dirname(__DIR__, 2) . '/database/migrations/*.php') ?: [];
+
+        return count($files);
+    }
+
     protected function dropTablesWithPrefix(Connection $connection, string $prefix): void
     {
         $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);

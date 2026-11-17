@@ -38,7 +38,7 @@ use Prime\Themes\ThemeOptions;
 
 /**
  * Real MySQL 8.0 & MariaDB 10.6 integration tests for Phase 8:
- * - Migrations 000019–000023 schema creation, FK cascades, and clean full rollback (23 migrations)
+ * - Migrations 000019–000023 schema creation, FK cascades, and clean full rollback (every migration)
  * - MenuRepository 3-level hierarchy & ON DELETE CASCADE on menu deletion
  * - ZoneRepository + MediaUsageRepository::syncForZone() tracking
  * - RedirectRepository chain shortening, hit counters, and cycle guard
@@ -52,7 +52,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
         $ran = $migrator->run();
-        $this->assertCount(23, $ran);
+        $this->assertCount($this->migrationCount(), $ran);
 
         $this->assertTrue($schema->hasTable('menus'));
         $this->assertTrue($schema->hasTable('menu_items'));
@@ -146,9 +146,9 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $afterHit = $redirects->findBySource('/v1');
         $this->assertSame(1, $afterHit['hits'] ?? 0);
 
-        // 5. Full rollback of all 23 migrations leaves clean DB
+        // 5. Full rollback of every migration leaves a clean DB
         $rolledBack = $migrator->rollback(1);
-        $this->assertCount(23, $rolledBack);
+        $this->assertCount($this->migrationCount(), $rolledBack);
         $this->assertFalse($schema->hasTable('menus'));
         $this->assertFalse($schema->hasTable('zones'));
         $this->assertFalse($schema->hasTable('redirects'));
@@ -159,7 +159,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
     {
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
-        $this->assertCount(23, $migrator->run());
+        $this->assertCount($this->migrationCount(), $migrator->run());
 
         $app = new Application(dirname(__DIR__, 2), loadEnv: false, registerErrorHandler: false);
         $app->config()->set('app.env', 'testing');

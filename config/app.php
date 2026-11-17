@@ -5,14 +5,12 @@ declare(strict_types=1);
 use Prime\Admin\AdminServiceProvider;
 use Prime\Auth\AuthServiceProvider;
 use Prime\Cache\CacheServiceProvider;
-use Prime\Cache\Http\PageCacheMiddleware;
 use Prime\Content\ContentServiceProvider;
 use Prime\Database\DatabaseServiceProvider;
 use Prime\Http\Middleware\RedirectIfNotInstalled;
 use Prime\Http\Middleware\SecurityHeaders;
 use Prime\Http\Middleware\TrailingSlash;
 use Prime\Http\Middleware\VerifyCsrfToken;
-use Prime\I18n\Http\LocaleMiddleware;
 use Prime\I18n\I18nServiceProvider;
 use Prime\Install\InstallServiceProvider;
 use Prime\Kernel\Env;
@@ -60,8 +58,10 @@ return [
         SecurityHeaders::class,
         TrailingSlash::class,
         RedirectIfNotInstalled::class,
-        LocaleMiddleware::class,
-        PageCacheMiddleware::class,
+        // Registered as aliases so a site whose tables do not exist yet still answers: the
+        // factories in I18nServiceProvider / CacheServiceProvider degrade to a passthrough.
+        'locale',
+        'page_cache',
     ],
 
     'route_middleware' => [

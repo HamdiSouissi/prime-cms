@@ -429,17 +429,13 @@ final class LocaleFormatter
      */
     private function namesFromIntl(string $type, string $context, string $locale): ?array
     {
-        $pattern = $type === 'months'
-            ? match ($context) {
-                'abbreviated' => 'MMM',
-                'narrow' => 'MMMMM',
-                default => 'MMMM',
-            }
-            : match ($context) {
-                'abbreviated' => 'EEE',
-                'narrow' => 'EEEEE',
-                default => 'EEEE',
-            };
+        $pattern = match ($type . ':' . $context) {
+            'months:abbreviated' => 'MMM',
+            'months:narrow' => 'MMMMM',
+            'weekdays:abbreviated' => 'EEE',
+            'weekdays:narrow' => 'EEEEE',
+            default => $type === 'months' ? 'MMMM' : 'EEEE',
+        };
 
         $count = $type === 'months' ? 12 : 7;
         $base = $type === 'months' ? 1 : 0;

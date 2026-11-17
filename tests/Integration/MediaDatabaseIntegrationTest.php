@@ -87,7 +87,7 @@ final class MediaDatabaseIntegrationTest extends DatabaseTestCase
 
         // Clean full rollback of all 18 core migrations
         $rolledBack = $migrator->reset();
-        $this->assertCount(23, $rolledBack);
+        $this->assertCount($this->migrationCount(), $rolledBack);
         $this->assertFalse($schema->hasTable('media'));
         $this->assertFalse($schema->hasTable('media_folders'));
         $this->assertFalse($schema->hasTable('media_usage'));
@@ -364,7 +364,7 @@ final class MediaDatabaseIntegrationTest extends DatabaseTestCase
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
         $ran = $migrator->run();
-        $this->assertCount(23, $ran);
+        $this->assertCount($this->migrationCount(), $ran);
 
         $roles = new RoleRepository($this->connection);
         $users = new UserRepository($this->connection, $roles);
