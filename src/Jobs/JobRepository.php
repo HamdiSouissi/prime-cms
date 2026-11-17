@@ -258,7 +258,9 @@ final class JobRepository
                 'SELECT SUM(CASE WHEN `failed_at` IS NULL AND `reserved_at` IS NULL AND `available_at` <= ? THEN 1 ELSE 0 END) AS pending,'
                 . ' SUM(CASE WHEN `reserved_at` IS NOT NULL AND `failed_at` IS NULL THEN 1 ELSE 0 END) AS reserved,'
                 . ' SUM(CASE WHEN `failed_at` IS NOT NULL THEN 1 ELSE 0 END) AS failed,'
-                . ' SUM(CASE WHEN `failed_at` IS NULL AND `available_at` > ? THEN 1 ELSE 0 END) AS delayed,'
+                // `delayed` is a MySQL reserved word (the retired INSERT DELAYED): unquoted, the whole
+                // aggregate dies with a 1064 on MySQL 8.0 while MariaDB shrugs it off.
+                . ' SUM(CASE WHEN `failed_at` IS NULL AND `available_at` > ? THEN 1 ELSE 0 END) AS `delayed`,'
                 . ' MIN(CASE WHEN `failed_at` IS NULL AND `reserved_at` IS NULL THEN `available_at` ELSE NULL END) AS oldest'
                 . ' FROM `%s`',
                 $table,
