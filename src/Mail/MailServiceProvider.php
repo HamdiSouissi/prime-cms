@@ -52,6 +52,10 @@ final class MailServiceProvider extends ServiceProvider
                 return new SmtpTransport($config);
             }
 
+            if ($driver === MailConfig::DRIVER_NULL) {
+                return new NullMailer();
+            }
+
             if ($driver === MailConfig::DRIVER_NATIVE && function_exists('mail')) {
                 return new NativeMailer($config->fromAddress(), $config->fromName());
             }
@@ -128,11 +132,64 @@ final class MailServiceProvider extends ServiceProvider
             return;
         }
 
+        $this->notifyReviewers($c);
+
         try {
             $registry->register(SendMailJob::NAME, SendMailJob::class);
         } catch (Throwable) {
             // A site without the queue tables cannot accept mail jobs: the mailer falls back to
             // sending inline, which is worse for latency and better than losing the message.
         }
+    }
+
+    /**
+     * « Nouveau contenu à relire » : when a contributor submits content for review, every account
+     * able to publish (except the author of the change) receives the « content-review » e-mail.
+     */
+    private function notifyReviewers(Container $c): void
+    {
+        if (!$c->has(\Prime\Hooks\Hooks::class)) {
+            return;
+        }
+
+        $hooks = $c->get(\Prime\Hooks\Hooks::class);
+        if (!$hooks instanceof \Prime\Hooks\Hooks) {
+            return;
+        }
+
+        $app = $this->app;
+        $hooks->on('content.status_changed', static function (mixed $entry, mixed $from, mixed $to, mixed $actor = null) use ($c, $app): void {
+            if (!$entry instanceof \Prime\Content\Entry || $to !== \Prime\Content\Entry::STATUS_PENDING || $from === \Prime\Content\Entry::STATUS_PENDING) {
+                return;
+            }
+
+            try {
+                $users = $c->get(\Prime\Auth\UserRepository::class);
+                $mailer = $c->get(Mailer::class);
+                if (!$users instanceof \Prime\Auth\UserRepository || !$mailer instanceof Mailer) {
+                    return;
+                }
+
+                $actorId = $actor instanceof \Prime\Auth\User ? $actor->id : (is_int($actor) ? $actor : null);
+                $author = $actor instanceof \Prime\Auth\User ? $actor->displayName : '';
+                $editUrl = rtrim((string) $app->config()->get('app.url', ''), '/') . $entry->editUrl();
+
+                foreach ($users->all() as $user) {
+                    if ($user->id === $actorId || !$user->isActive() || !$user->can('content.publish')) {
+                        continue;
+                    }
+
+                    $locale = $user->locale !== '' ? $user->locale : null;
+                    $mailer->sendTemplate('content-review', $user->email, t('core.mail.review.subject', ['title' => $entry->title], $locale), [
+                        'displayName' => $user->displayName,
+                        'entryTitle' => $entry->title,
+                        'authorName' => $author,
+                        'editUrl' => $editUrl,
+                    ]);
+                }
+            } catch (\Throwable) {
+                // A failed notification must never block the status change itself.
+            }
+        });
     }
 }

@@ -53,6 +53,14 @@ return [
             'title' => 'Hello Prime est activé !',
         ],
     ],
+    'settings' => [
+        'greeting_help' => '160 caractères maximum, affiché sur la page publique /hello-prime.',
+        'greeting_label' => 'Message d\'accueil',
+        'moved' => 'Le message d\'accueil se règle désormais dans Réglages › Général : la section est générée par l\'API de réglages à partir de la déclaration du plugin.',
+        'open' => 'Modifier dans Réglages › Général',
+        'section_description' => 'Section ajoutée par le plugin Hello Prime avec l\'API de réglages.',
+        'section_title' => 'Hello Prime — Message d\'accueil',
+    ],
     'types' => [
         'source' => [
             'add_new' => 'Ajouter une source',
@@ -71,17 +79,13 @@ return [
         ],
     ],
     'ui' => [
-        'greeting_invalid' => 'Le message d’accueil doit contenir entre 1 et 160 caractères.',
-        'greeting_saved' => 'Le message d’accueil a été enregistré.',
         'message_added' => 'Nouveau message ajouté dans la base de données.',
         'message_deleted' => 'Message supprimé.',
         'message_invalid' => 'Le message doit contenir entre 1 et 280 caractères.',
         'message_invalid_title' => 'Message invalide',
         'message_saved' => 'Message enregistré',
-        'settings_saved' => 'Réglages sauvegardés',
         'shortcut' => 'Configurer le message d’accueil et le livre d’or.',
         'subtitle' => 'Plugin de référence v:version — démonstration complète de l’API plugins Prime CMS.',
-        'validation_failed' => 'Validation échouée',
         'view_public' => 'Voir /hello-prime',
     ],
     'views' => [
@@ -94,14 +98,11 @@ return [
             'date_utc' => 'Date (UTC)',
             'ecrivez_message_demonstration' => 'Écrivez un message de démonstration…',
             'enregistre_cle_prefixee' => 'Enregistré dans <code>pc_settings</code> sous la clé préfixée <code>:key</code>.',
-            'enregistrer_message' => 'Enregistrer le message',
-            'entre_caracteres_page_publique' => 'Entre 1 et 160 caractères. Affiché sur la page publique <code>:url</code>.',
             'greeting_label' => 'Message d’accueil',
             'insere_ligne_table_dediee' => 'Insère une ligne dans la table dédiée <code>:table</code> créée par la migration du plugin.',
             'message' => 'Message',
             'messages_enregistres' => '{0} Aucun message enregistré|{1} 1 message enregistré|[2,*] :count messages enregistrés',
             'nom' => 'Votre nom',
-            'texte_message' => 'Texte du message',
             'version' => 'Hello Prime · v:version',
         ],
         'public' => [

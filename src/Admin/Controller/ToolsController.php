@@ -66,6 +66,7 @@ final class ToolsController
                 'name' => $task->name,
                 'description' => $this->taskDescription($task->name, $task->description),
                 'expression' => $task->expression(),
+                'frequency' => \Prime\Scheduler\CronDescriber::describe($task->expression()),
                 'owner' => $task->owner,
                 'last_run' => $last instanceof DateTimeImmutable ? $last->getTimestamp() : null,
                 'next_run' => $next?->getTimestamp(),
@@ -79,6 +80,7 @@ final class ToolsController
             'tasks' => $tasks,
             'heartbeat' => $heartbeat,
             'cronStale' => $heartbeat === null || ($now - $heartbeat) > SystemStatus::HEARTBEAT_STALE_SECONDS,
+            'fallbackEnabled' => $this->fallbackEnabled(),
             'now' => $now,
             'schedulerFields' => $this->registry?->fields('scheduler') ?? [],
             'basePath' => $this->status->basePath(),
@@ -244,6 +246,13 @@ final class ToolsController
             'error' => $job->lastError,
             'created_at' => $job->createdAt,
         ];
+    }
+
+    private function fallbackEnabled(): bool
+    {
+        $field = $this->registry?->field('scheduler.fallback');
+
+        return (bool) setting('scheduler.enabled', true) && (bool) setting('scheduler.fallback', $field !== null ? $field->default : true);
     }
 
     private function taskDescription(string $name, ?string $fallback): string

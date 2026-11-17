@@ -214,6 +214,31 @@ final class AdminSettingsToolsTest extends TestCase
         $this->assertSame('600', $visitor->header('Retry-After'));
     }
 
+    public function testSubmittingContentForReviewEmailsPublishersButNotTheAuthor(): void
+    {
+        $db = $this->app->get(Connection::class);
+        $now = '2026-11-16 12:00:00';
+        $db->statement("INSERT INTO pc_roles (id, slug, name, description, is_system, created_at, updated_at) VALUES (2, 'contributor', 'Contributeur', NULL, 1, '{$now}', '{$now}')");
+        $db->statement("INSERT INTO pc_role_capabilities (role_id, capability) VALUES (2, 'content.create')");
+        $db->statement("INSERT INTO pc_users (id, email, password_hash, display_name, status, locale, session_version, created_at, updated_at) VALUES (2, 'leo@prime-cms.local', 'x', 'Léo', 'active', 'en', 1, '{$now}', '{$now}')");
+        $db->statement('INSERT INTO pc_user_roles (user_id, role_id) VALUES (2, 2)');
+
+        $author = $this->app->get(UserRepository::class)->find(2);
+        $entry = \Prime\Content\Entry::fromRow(['id' => 7, 'type' => 'post', 'status' => 'pending', 'title' => 'Brouillon à relire', 'slug' => 'brouillon', 'created_at' => $now, 'updated_at' => $now]);
+
+        $this->app->get(Hooks::class)->emit('content.status_changed', $entry, 'draft', 'pending', $author);
+
+        $rows = $db->select('SELECT recipient, subject, template FROM pc_mail_log');
+        $this->assertCount(1, $rows, 'only the administrator can publish');
+        $this->assertSame('camille@prime-cms.local', $rows[0]['recipient']);
+        $this->assertSame('content-review', $rows[0]['template']);
+        $this->assertStringContainsString('Brouillon à relire', (string) $rows[0]['subject']);
+
+        // Moving between other statuses sends nothing.
+        $this->app->get(Hooks::class)->emit('content.status_changed', $entry, 'pending', 'pending', $author);
+        $this->assertCount(1, $db->select('SELECT id FROM pc_mail_log'));
+    }
+
     public function testToolsAreReservedToSettingsManagers(): void
     {
         $this->app->get(Auth::class)->logout();

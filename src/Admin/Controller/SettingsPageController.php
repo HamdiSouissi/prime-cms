@@ -117,6 +117,12 @@ final class SettingsPageController
             $extra += $this->mailData($request);
         }
 
+        if ($page === 'security') {
+            $extra['securityHeaders'] = \Prime\Http\Middleware\SecurityHeaders::defaults()
+                + ['Cache-Control (admin)' => \Prime\Auth\Middleware\NoStoreHeaders::HEADERS['Cache-Control'],
+                    'Set-Cookie (session)' => 'HttpOnly; SameSite=Lax' . ($request->isSecure() ? '; Secure' : '')];
+        }
+
         $data = $this->context->build($request, t('admin.settings.pages.' . $page . '.title'), $extra);
         if ($page === 'emails' && ($data['authUser'] ?? null) instanceof \Prime\Auth\User) {
             $data['testRecipient'] = $data['authUser']->email;

@@ -6,9 +6,10 @@ declare(strict_types=1);
  * « Outils › Tâches planifiées ».
  *
  * @var \Prime\View\TemplateContext $this
- * @var list<array{name: string, description: string, expression: string, owner: string, last_run: ?int, next_run: ?int, error: ?string}> $tasks
+ * @var list<array{name: string, description: string, expression: string, frequency: string, owner: string, last_run: ?int, next_run: ?int, error: ?string}> $tasks
  * @var ?int $heartbeat
  * @var bool $cronStale
+ * @var bool $fallbackEnabled
  * @var int $now
  * @var array<string, \Prime\Settings\SettingsField> $schedulerFields
  * @var string $basePath
@@ -31,7 +32,7 @@ $formatter = locale_formatter();
 
 <div class="pc-tools-stack">
     <?php if ($cronStale): ?>
-        <div class="pc-alert pc-alert--warning" role="status">
+        <div class="pc-alert pc-alert--<?= $fallbackEnabled ? 'info' : 'warning' ?>" role="status">
             <?= $this->raw($this->icon('alert-triangle', 18)) ?>
             <div>
                 <p>
@@ -39,6 +40,9 @@ $formatter = locale_formatter();
                         ? $this->t('admin.tools.scheduler.never_ran')
                         : $this->t('admin.tools.scheduler.stale', ['ago' => $formatter->relative($heartbeat, $now)])) ?>
                 </p>
+                <?php if ($fallbackEnabled): ?>
+                    <p class="pc-text-sm"><?= $this->e($this->t('admin.tools.scheduler.fallback_active')) ?></p>
+                <?php endif; ?>
                 <code class="pc-cron-line">* * * * * cd <?= $this->e($basePath) ?> &amp;&amp; php bin/prime schedule:run &gt;&gt; /dev/null 2&gt;&amp;1</code>
             </div>
         </div>
@@ -81,7 +85,12 @@ $formatter = locale_formatter();
                                             <span class="pc-field__help pc-help-block"><?= $this->e($task['description']) ?></span>
                                         <?php endif; ?>
                                     </td>
-                                    <td><code class="pc-mono"><?= $this->e($task['expression']) ?></code></td>
+                                    <td>
+                                        <span class="pc-text-sm"><?= $this->e($task['frequency']) ?></span>
+                                        <?php if ($task['frequency'] !== $task['expression']): ?>
+                                            <code class="pc-mono pc-field__help pc-help-block"><?= $this->e($task['expression']) ?></code>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="pc-text-sm pc-nowrap">
                                         <?= $task['last_run'] !== null ? $this->e($formatter->relative($task['last_run'], $now)) : '<span class="pc-text-muted">' . $this->e($this->t('admin.tools.scheduler.never')) . '</span>' ?>
                                     </td>

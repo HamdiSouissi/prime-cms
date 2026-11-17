@@ -543,8 +543,8 @@ final class AdminContext
             'id' => 'action.profile',
             'label' => $this->t('admin.ctrl_admincontext.mon_profil_et_securite'),
             'subtitle' => $this->t('admin.ctrl_admincontext.mot_de_passe_2fa_et_sessions'),
-            'group' => 'Raccourcis',
-            'section' => 'Raccourcis',
+            'group' => t('admin.palette.section_shortcuts'),
+            'section' => t('admin.palette.section_shortcuts'),
             'icon' => 'user',
             'accent' => 'sky',
             'url' => '/admin/profile',
@@ -554,14 +554,29 @@ final class AdminContext
         $entries[] = [
             'id' => 'action.view_site',
             'label' => $this->t('admin.ctrl_admincontext.voir_le_site_public'),
-            'subtitle' => 'Ouvrir la page d’accueil',
-            'group' => 'Raccourcis',
-            'section' => 'Raccourcis',
+            'subtitle' => t('admin.palette.open_home'),
+            'group' => t('admin.palette.section_shortcuts'),
+            'section' => t('admin.palette.section_shortcuts'),
             'icon' => 'external-link',
             'accent' => 'brand',
             'url' => '/',
             'keywords' => ['site', 'accueil', 'public', 'front'],
         ];
+
+        if ($user === null || $user->can('settings.manage')) {
+            // Runs the topbar purge form (POST + CSRF); without it, the URL opens « Performance ».
+            $entries[] = [
+                'id' => 'action.purge_cache',
+                'label' => t('admin.layouts.app.vider_cache'),
+                'subtitle' => t('admin.palette.purge_cache_hint'),
+                'group' => t('admin.palette.section_shortcuts'),
+                'section' => t('admin.palette.section_shortcuts'),
+                'icon' => 'rotate-ccw',
+                'accent' => 'neutral',
+                'url' => '/admin/settings/performance',
+                'keywords' => ['cache', 'purge', 'vider', 'clear', 'performance'],
+            ];
+        }
 
         /** @var list<array<string, mixed>> $normalized */
         $normalized = $this->hooks->applyValidated(

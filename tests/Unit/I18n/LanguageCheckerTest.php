@@ -100,6 +100,20 @@ final class LanguageCheckerTest extends TestCase
         $this->assertSame(['core.idle'], $report['unused']);
     }
 
+    public function testKeysStoredAsDataOrBuiltFromAPrefixCountAsUsed(): void
+    {
+        $this->write('lang/fr/core.php', "<?php\nreturn ['menu' => ['tools' => 'Outils'], 'kinds' => ['image' => 'Image', 'video' => 'Vidéo'], 'idle' => 'Inutilisé'];");
+        $this->write('lang/en/core.php', "<?php\nreturn ['menu' => ['tools' => 'Tools'], 'kinds' => ['image' => 'Image', 'video' => 'Video'], 'idle' => 'Unused'];");
+        // A label kept as data (resolved later by LabelTranslator) and a key built from a prefix.
+        $this->write('views/data.php', "<?php\n\$item = ['label' => 'core.menu.tools', 'not' => 'core.menu.unknown'];\necho t('core.kinds.' . (\$kind ?? 'image'));\n");
+
+        $report = $this->checker()->report();
+
+        $this->assertSame(['core.idle'], $report['unused']);
+        // A key-shaped literal that is not in the catalogue is data, not an unknown usage.
+        $this->assertSame([], $report['unknown']);
+    }
+
     public function testPluginCatalogueIsResolvedThroughItsNamespace(): void
     {
         $this->write('lang/fr/core.php', "<?php\nreturn ['known' => 'Connu'];");

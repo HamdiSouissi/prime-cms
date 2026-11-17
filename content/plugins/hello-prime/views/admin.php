@@ -39,25 +39,13 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
             <h2 id="hp-settings-title" class="hp-card__title"><?= $this->e($this->t('plugin::hello-prime.views.admin.greeting_label')) ?></h2>
             <p class="hp-card__subtitle"><?= $this->raw($this->t('plugin::hello-prime.views.admin.enregistre_cle_prefixee', ['key' => 'plugin.hello-prime.greeting'])) ?></p>
 
-            <form method="post" action="/admin/hello-prime/settings" class="pc-stack pc-stack--md">
-                <?= $this->raw($this->csrfField()) ?>
-                <div class="pc-field">
-                    <label class="pc-field__label" for="hp-greeting-input"><?= $this->e($this->t('plugin::hello-prime.views.admin.texte_message')) ?></label>
-                    <input
-                        id="hp-greeting-input"
-                        type="text"
-                        name="greeting"
-                        value="<?= $this->e($greeting) ?>"
-                        maxlength="160"
-                        required
-                        class="pc-input"
-                    >
-                    <p class="pc-field__hint"><?= $this->raw($this->t('plugin::hello-prime.views.admin.entre_caracteres_page_publique', ['url' => '/hello-prime'])) ?></p>
-                </div>
-                <div>
-                    <button type="submit" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('plugin::hello-prime.views.admin.enregistrer_message')) ?></button>
-                </div>
-            </form>
+            <p class="pc-text-sm"><?= $this->e($this->t('plugin::hello-prime.settings.moved')) ?></p>
+            <p class="pc-text-sm pc-text-strong">« <?= $this->e($greeting) ?> »</p>
+            <div>
+                <a class="pc-btn pc-btn--secondary" href="/admin/settings/general#settings-section-hello-prime">
+                    <?= $this->e($this->t('plugin::hello-prime.settings.open')) ?>
+                </a>
+            </div>
         </section>
 
         <!-- Database form card -->

@@ -217,6 +217,7 @@ return [
             'native' => 'Fonction mail() de PHP',
             'smtp' => 'Serveur SMTP',
             'queue' => 'File d’attente SMTP',
+            'null' => 'Aucun envoi (désactivé)',
         ]],
         ['name' => 'mail.from_address', 'label' => 'Adresse de l’expéditeur', 'type' => 'email', 'section' => 'mail', 'default' => 'no-reply@prime-cms.local', 'rules' => 'required|email|max:191', 'priority' => 20],
         ['name' => 'mail.from_name', 'label' => 'Nom de l’expéditeur', 'type' => 'text', 'section' => 'mail', 'default' => 'Prime CMS', 'rules' => 'max:120', 'priority' => 30],

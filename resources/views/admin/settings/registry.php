@@ -91,6 +91,26 @@ $this->layout('admin::layouts/app');
         </div>
     </form>
 
+    <?php if ($page === 'security' && !empty($securityHeaders)): ?>
+        <section class="pc-card" aria-labelledby="security-headers-title">
+            <header class="pc-card__header">
+                <div>
+                    <h2 class="pc-card__title" id="security-headers-title"><?= $this->e($this->t('admin.settings.security_headers.title')) ?></h2>
+                    <p class="pc-card__subtitle"><?= $this->e($this->t('admin.settings.security_headers.subtitle')) ?></p>
+                </div>
+            </header>
+            <ul class="pc-check-list">
+                <?php foreach ($securityHeaders as $header => $headerValue): ?>
+                    <li class="pc-check">
+                        <span class="pc-check__icon pc-check__icon--ok"><?= $this->raw($this->icon('lock', 16)) ?></span>
+                        <p class="pc-check__label pc-mono"><?= $this->e((string) $header) ?></p>
+                        <span class="pc-check__value"><?= $this->e((string) $headerValue) ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </section>
+    <?php endif; ?>
+
     <?php if ($page === 'emails'): ?>
         <section class="pc-card" aria-labelledby="mail-test-title">
             <header class="pc-card__header">

@@ -474,6 +474,44 @@ return [
     'mail' => [
         'direct_link' => 'Direct link:',
         'greeting' => 'Hello :name,',
+        'invite' => [
+            'subject' => '[:site] Activate your account and set your password',
+            'text' => 'Hello :name,
+
+An administrator has just created your account on :site.
+Set your password with this link (valid for :hours hours, single use):',
+        ],
+        'password_changed' => [
+            'subject' => '[:site] Your password was changed',
+            'text' => 'Hello :name,
+
+The password of your account on :site was changed on :date (UTC).
+All your other sessions and remembered sign-ins have been revoked.
+
+If you did not make this change, contact an administrator immediately.',
+        ],
+        'reset' => [
+            'ignore' => 'If you did not request this, you can ignore this email.',
+            'subject' => '[:site] Reset your password',
+            'text' => 'Hello :name,
+
+A password reset was requested for your account on :site.
+Use this link (valid for :minutes minutes, single use):',
+        ],
+        'review' => [
+            'action' => 'Review the content',
+            'body' => '“:title” was submitted for review on :site.',
+            'body_author' => ':author submitted “:title” for review on :site.',
+            'subject' => 'Content to review: “:title”',
+            'title' => 'New content to review',
+        ],
+        'security_update' => [
+            'action' => 'View system status',
+            'body' => 'An update fixing a security issue is available for :site (version :version). We recommend installing it promptly.',
+            'footer' => 'You receive this email because you administer this site.',
+            'subject' => '[:site] Security update available',
+            'title' => 'Security update :version',
+        ],
         'test' => [
             'html' => 'This is a test email sent by Prime CMS. If you can read it, the delivery settings work.',
             'subject' => '[:name] Test email',
@@ -542,12 +580,28 @@ return [
     ],
     'saving' => 'Saving…',
     'scheduler' => [
+        'daily_at' => 'Every day at :time',
+        'days' => [
+            'friday' => 'Friday',
+            'monday' => 'Monday',
+            'saturday' => 'Saturday',
+            'sunday' => 'Sunday',
+            'thursday' => 'Thursday',
+            'tuesday' => 'Tuesday',
+            'wednesday' => 'Wednesday',
+        ],
+        'every_minute' => 'Every minute',
+        'every_n_hours' => 'Every :count hours',
+        'every_n_minutes' => 'Every :count minutes',
+        'hourly_at' => 'Every hour at minute :minute',
+        'monthly_at' => 'On day :day of every month at :time',
         'tasks' => [
             'content_publish_scheduled' => 'Publishes content whose scheduled date has come.',
             'content_purge_trash' => 'Empties the trash according to the retention period (Settings › General).',
             'jobs_prune' => 'Recovers expired reservations and prunes old failures.',
             'mail_prune_log' => 'Applies the email log retention.',
         ],
+        'weekly_at' => 'Every :day at :time',
     ],
     'settings' => [
         'fields' => [
@@ -631,6 +685,7 @@ return [
                     'options' => [
                         'log' => 'Log only (nothing is sent)',
                         'native' => 'PHP mail() function',
+                        'null' => 'No delivery (disabled)',
                         'queue' => 'Queued SMTP',
                         'smtp' => 'SMTP server',
                     ],

@@ -474,6 +474,44 @@ return [
     'mail' => [
         'direct_link' => 'Lien direct :',
         'greeting' => 'Bonjour :name,',
+        'invite' => [
+            'subject' => '[:site] Activez votre compte et définissez votre mot de passe',
+            'text' => 'Bonjour :name,
+
+Un administrateur vient de créer votre compte sur :site.
+Définissez votre mot de passe via ce lien (valable :hours heures, usage unique) :',
+        ],
+        'password_changed' => [
+            'subject' => '[:site] Votre mot de passe a été modifié',
+            'text' => 'Bonjour :name,
+
+Le mot de passe de votre compte sur :site a été modifié le :date (UTC).
+Toutes vos autres sessions et connexions mémorisées ont été révoquées.
+
+Si vous n\'êtes pas à l\'origine de ce changement, contactez immédiatement un administrateur.',
+        ],
+        'reset' => [
+            'ignore' => 'Si vous n\'êtes pas à l\'origine de cette demande, ignorez cet e-mail.',
+            'subject' => '[:site] Réinitialisation de votre mot de passe',
+            'text' => 'Bonjour :name,
+
+Une demande de réinitialisation de mot de passe a été effectuée pour votre compte sur :site.
+Utilisez ce lien (valable :minutes minutes, usage unique) :',
+        ],
+        'review' => [
+            'action' => 'Relire le contenu',
+            'body' => '« :title » a été soumis pour relecture sur :site.',
+            'body_author' => ':author a soumis « :title » pour relecture sur :site.',
+            'subject' => 'Contenu à relire : « :title »',
+            'title' => 'Nouveau contenu à relire',
+        ],
+        'security_update' => [
+            'action' => 'Voir l\'état du système',
+            'body' => 'Une mise à jour corrigeant un problème de sécurité est disponible pour :site (version :version). Nous vous recommandons de l\'installer rapidement.',
+            'footer' => 'Vous recevez cet e-mail parce que vous administrez ce site.',
+            'subject' => '[:site] Mise à jour de sécurité disponible',
+            'title' => 'Mise à jour de sécurité :version',
+        ],
         'test' => [
             'html' => 'Ceci est un e-mail de test envoyé par Prime CMS. Si vous le lisez, la configuration d\'envoi fonctionne.',
             'subject' => '[:name] Test d\'envoi',
@@ -542,12 +580,28 @@ return [
     ],
     'saving' => 'Enregistrement…',
     'scheduler' => [
+        'daily_at' => 'Chaque jour à :time',
+        'days' => [
+            'friday' => 'vendredi',
+            'monday' => 'lundi',
+            'saturday' => 'samedi',
+            'sunday' => 'dimanche',
+            'thursday' => 'jeudi',
+            'tuesday' => 'mardi',
+            'wednesday' => 'mercredi',
+        ],
+        'every_minute' => 'Toutes les minutes',
+        'every_n_hours' => 'Toutes les :count heures',
+        'every_n_minutes' => 'Toutes les :count minutes',
+        'hourly_at' => 'Toutes les heures, à la minute :minute',
+        'monthly_at' => 'Le :day de chaque mois à :time',
         'tasks' => [
             'content_publish_scheduled' => 'Publie les contenus arrivés à échéance.',
             'content_purge_trash' => 'Vide la corbeille selon la durée de rétention (Réglages › Général).',
             'jobs_prune' => 'Récupère les réservations expirées et purge les échecs anciens.',
             'mail_prune_log' => 'Applique la rétention du journal des e-mails.',
         ],
+        'weekly_at' => 'Chaque :day à :time',
     ],
     'settings' => [
         'fields' => [
@@ -631,6 +685,7 @@ return [
                     'options' => [
                         'log' => 'Journal de bord (aucun envoi réel)',
                         'native' => 'Fonction mail() de PHP',
+                        'null' => 'Aucun envoi (désactivé)',
                         'queue' => 'File d’attente SMTP',
                         'smtp' => 'Serveur SMTP',
                     ],

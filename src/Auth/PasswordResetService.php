@@ -197,7 +197,8 @@ final class PasswordResetService
     public function sendPasswordChangedEmail(User $user, string $siteName, ?string $changedAtUtc = null): void
     {
         $changedAt = $changedAtUtc ?? $this->formatUtc(($this->clock)());
-        $subject = sprintf('[%s] Votre mot de passe a été modifié', $siteName);
+        $locale = $user->locale !== '' ? $user->locale : null;
+        $subject = t('core.mail.password_changed.subject', ['site' => $siteName], $locale);
 
         $html = $this->view->render('mail::password-changed', [
             'subject' => $subject,
@@ -206,10 +207,7 @@ final class PasswordResetService
             'changedAt' => $changedAt,
         ]);
 
-        $text = "Bonjour {$user->displayName},\n\n"
-            . "Le mot de passe de votre compte sur {$siteName} a été modifié le {$changedAt} (UTC).\n"
-            . "Toutes vos autres sessions et connexions mémorisées ont été révoquées.\n\n"
-            . "Si vous n'êtes pas à l'origine de ce changement, contactez immédiatement un administrateur.\n";
+        $text = t('core.mail.password_changed.text', ['name' => $user->displayName, 'site' => $siteName, 'date' => $changedAt], $locale) . "\n";
 
         $this->mailer->send(new Message(
             to: $user->email,
@@ -246,10 +244,11 @@ final class PasswordResetService
         });
 
         $url = rtrim($appUrl, '/') . '/admin/reset-password/' . $rawToken;
+        $locale = $user->locale !== '' ? $user->locale : null;
 
         if ($isInvite) {
             $ttlHours = max(1, (int) round($ttl / 3600));
-            $subject = sprintf('[%s] Activez votre compte et définissez votre mot de passe', $siteName);
+            $subject = t('core.mail.invite.subject', ['site' => $siteName], $locale);
             $html = $this->view->render('mail::user-invite', [
                 'subject' => $subject,
                 'siteName' => $siteName,
@@ -257,12 +256,10 @@ final class PasswordResetService
                 'inviteUrl' => $url,
                 'ttlHours' => $ttlHours,
             ]);
-            $text = "Bonjour {$user->displayName},\n\n"
-                . "Un administrateur vient de créer votre compte sur {$siteName}.\n"
-                . "Définissez votre mot de passe via ce lien (valable {$ttlHours} heures, usage unique) :\n{$url}\n";
+            $text = t('core.mail.invite.text', ['name' => $user->displayName, 'site' => $siteName, 'hours' => $ttlHours], $locale) . "\n{$url}\n";
         } else {
             $ttlMinutes = max(1, (int) round($ttl / 60));
-            $subject = sprintf('[%s] Réinitialisation de votre mot de passe', $siteName);
+            $subject = t('core.mail.reset.subject', ['site' => $siteName], $locale);
             $html = $this->view->render('mail::password-reset', [
                 'subject' => $subject,
                 'siteName' => $siteName,
@@ -270,10 +267,8 @@ final class PasswordResetService
                 'resetUrl' => $url,
                 'ttlMinutes' => $ttlMinutes,
             ]);
-            $text = "Bonjour {$user->displayName},\n\n"
-                . "Une demande de réinitialisation de mot de passe a été effectuée pour votre compte sur {$siteName}.\n"
-                . "Utilisez ce lien (valable {$ttlMinutes} minutes, usage unique) :\n{$url}\n\n"
-                . "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.\n";
+            $text = t('core.mail.reset.text', ['name' => $user->displayName, 'site' => $siteName, 'minutes' => $ttlMinutes], $locale)
+                . "\n{$url}\n\n" . t('core.mail.reset.ignore', [], $locale) . "\n";
         }
 
         $this->mailer->send(new Message(

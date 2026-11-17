@@ -93,4 +93,112 @@ export function initSettingsAdmin(root = document) {
   if (summary instanceof HTMLElement) {
     summary.focus();
   }
+
+  initDatePreviews(root);
+  initUnsavedWarnings(root);
+}
+
+const pad = (n) => String(n).padStart(2, '0');
+
+/**
+ * Format a date with the PHP `date()` tokens the settings screen offers (a common subset),
+ * using the interface month and weekday names. `\x` escapes a literal character.
+ *
+ * @param {string} format
+ * @param {Date} date
+ * @param {{months?: string[], days?: string[]}} names
+ * @returns {string}
+ */
+export function formatPhpDate(format, date, names = {}) {
+  const months = names.months && names.months.length === 12 ? names.months : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const days = names.days && names.days.length === 7 ? names.days : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const h = date.getHours();
+  const tokens = {
+    d: () => pad(date.getDate()),
+    j: () => String(date.getDate()),
+    D: () => days[date.getDay()].slice(0, 3),
+    l: () => days[date.getDay()],
+    N: () => String(date.getDay() === 0 ? 7 : date.getDay()),
+    m: () => pad(date.getMonth() + 1),
+    n: () => String(date.getMonth() + 1),
+    F: () => months[date.getMonth()],
+    M: () => months[date.getMonth()].slice(0, 3),
+    Y: () => String(date.getFullYear()),
+    y: () => String(date.getFullYear()).slice(-2),
+    H: () => pad(h),
+    G: () => String(h),
+    h: () => pad(h % 12 === 0 ? 12 : h % 12),
+    g: () => String(h % 12 === 0 ? 12 : h % 12),
+    i: () => pad(date.getMinutes()),
+    s: () => pad(date.getSeconds()),
+    a: () => (h < 12 ? 'am' : 'pm'),
+    A: () => (h < 12 ? 'AM' : 'PM'),
+  };
+  let out = '';
+  for (let i = 0; i < format.length; i += 1) {
+    const ch = format[i];
+    if (ch === '\\' && i + 1 < format.length) {
+      out += format[i + 1];
+      i += 1;
+    } else if (Object.prototype.hasOwnProperty.call(tokens, ch)) {
+      out += tokens[ch]();
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+function initDatePreviews(root) {
+  root.querySelectorAll('[data-prime-date-preview]').forEach((preview) => {
+    const input = root.getElementById ? root.getElementById(preview.getAttribute('data-prime-date-preview') || '') : null;
+    const value = preview.querySelector('[data-prime-date-preview-value]');
+    if (!(input instanceof HTMLInputElement) || !(value instanceof HTMLElement)) {
+      return;
+    }
+    let names = {};
+    try {
+      names = { months: JSON.parse(preview.getAttribute('data-months') || '[]'), days: JSON.parse(preview.getAttribute('data-days') || '[]') };
+    } catch {
+      names = {};
+    }
+    const render = () => {
+      value.textContent = input.value.trim() === '' ? '—' : formatPhpDate(input.value, new Date(), names);
+    };
+    input.addEventListener('input', render);
+    render();
+  });
+}
+
+/**
+ * Warn before leaving a settings form with unsaved changes.
+ *
+ * @param {HTMLFormElement} form
+ */
+export function trackUnsavedChanges(form) {
+  const state = { dirty: false };
+  form.addEventListener('input', () => {
+    state.dirty = true;
+  });
+  form.addEventListener('change', () => {
+    state.dirty = true;
+  });
+  form.addEventListener('submit', () => {
+    state.dirty = false;
+  });
+  window.addEventListener('beforeunload', (event) => {
+    if (state.dirty) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
+  return state;
+}
+
+function initUnsavedWarnings(root) {
+  root.querySelectorAll('form[data-prime-settings-form]').forEach((form) => {
+    if (form instanceof HTMLFormElement) {
+      trackUnsavedChanges(form);
+    }
+  });
 }

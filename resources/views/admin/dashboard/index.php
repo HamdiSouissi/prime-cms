@@ -32,6 +32,16 @@ $showStyleguide = ($environment ?? '') === 'local' && !empty($currentUser['isAdm
 
 <div class="pc-stack pc-stack--lg">
 
+    <?php if (!empty($criticalChecks)): ?>
+        <div class="pc-alert pc-alert--danger" role="alert" data-prime-system-alert>
+            <?= $this->raw($this->icon('alert-triangle', 18)) ?>
+            <div>
+                <p><strong><?= $this->e($this->choice('admin.system.dashboard_alert', count($criticalChecks))) ?></strong> <?= $this->e(implode(' · ', $criticalChecks)) ?></p>
+                <a class="pc-auth-link" href="/admin/tools/system"><?= $this->e($this->t('admin.system.dashboard_alert_link')) ?></a>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- 4 vibrant KPI stat tiles -->
     <section aria-label="<?= t('admin.attr.indicateurs_cles') ?>" class="pc-grid pc-grid--stats">
         <?php foreach ($stats as $stat): ?>

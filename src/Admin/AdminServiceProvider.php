@@ -261,6 +261,7 @@ final class AdminServiceProvider extends ServiceProvider
             $jobs = $opt(\Prime\Jobs\JobRepository::class);
             $mailer = $opt(\Prime\Mail\Mailer::class);
             $cache = $opt(CacheManager::class);
+            $plugins = $opt(PluginManager::class);
 
             return new SystemStatus(
                 app: $this->app,
@@ -270,6 +271,7 @@ final class AdminServiceProvider extends ServiceProvider
                 jobs: $jobs instanceof \Prime\Jobs\JobRepository ? $jobs : null,
                 mailer: $mailer instanceof \Prime\Mail\Mailer ? $mailer : null,
                 cache: $cache instanceof CacheManager ? $cache : null,
+                plugins: $plugins instanceof PluginManager ? $plugins : null,
             );
         });
 

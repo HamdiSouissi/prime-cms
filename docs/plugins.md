@@ -172,3 +172,20 @@ Le dépôt inclut `content/plugins/hello-prime/` (`v1.1.0`, installé inactif pa
 - désinstallation sans trace (`EntryRepository::deleteByType('testimonial')` et `TermRepository::deleteByTaxonomy('testimonial_source')`).
 
 Pour l'API complète de gestion des contenus et de l'éditeur de blocs, consultez [`docs/content.md`](content.md) et [`docs/editor.md`](editor.md).
+
+---
+
+## Phase 9 — réglages, traductions et tâches de fond
+
+Un plugin s'intègre aux nouveaux services sans code d'interface :
+
+- **Traductions** : déposer `lang/{fr,en}/messages.php` ; les clés s'utilisent sous la forme
+  `plugin::<slug>.x.y` partout où un libellé est attendu (menu, type de contenu, champ,
+  bloc, réglage, description du manifeste). Voir [`i18n.md`](i18n.md).
+- **Réglages** : filtre `settings.register` — une section `'page' => 'general'|'security'|'emails'`
+  s'affiche sur l'écran correspondant. Voir [`settings.md`](settings.md).
+- **Tâches planifiées et file** : filtres `scheduler.register` et `jobs.register_handlers`.
+  Voir [`scheduler.md`](scheduler.md).
+- **Diagnostic** : filtre `system.checks` pour ajouter des contrôles à **Outils › État du système**.
+
+Le plugin de référence `hello-prime` illustre la traduction de tous ses libellés (`content/plugins/hello-prime/lang/`).

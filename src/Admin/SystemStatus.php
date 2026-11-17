@@ -53,6 +53,7 @@ final class SystemStatus
         private readonly ?JobRepository $jobs = null,
         private readonly ?Mailer $mailer = null,
         private readonly ?CacheManager $cache = null,
+        private readonly ?\Prime\Plugins\PluginManager $plugins = null,
     ) {
     }
 
@@ -197,6 +198,39 @@ final class SystemStatus
                 );
             } catch (Throwable) {
                 $checks[] = $this->check('mail.transport', 'background', t('admin.system.checks.mail'), self::STATUS_ERROR, t('admin.system.values.unavailable'));
+            }
+        }
+
+        if ($this->cache !== null) {
+            $pageCache = $this->cache->pages()->isEnabled();
+            $checks[] = $this->check(
+                'cache.pages',
+                'app',
+                t('admin.system.checks.page_cache'),
+                $pageCache ? self::STATUS_OK : self::STATUS_WARNING,
+                $pageCache ? t('admin.system.values.on') : t('admin.system.values.off'),
+                $pageCache ? null : t('admin.system.help.page_cache'),
+            );
+        }
+
+        if ($this->plugins !== null) {
+            try {
+                $errored = [];
+                foreach ($this->plugins->discover() as $info) {
+                    if ($info->isErrored()) {
+                        $errored[] = $info->name();
+                    }
+                }
+                $checks[] = $this->check(
+                    'plugins.errored',
+                    'plugins',
+                    t('admin.system.checks.plugins'),
+                    $errored === [] ? self::STATUS_OK : self::STATUS_ERROR,
+                    $errored === [] ? t('admin.system.values.none_errored') : implode(', ', $errored),
+                    $errored === [] ? null : t('admin.system.help.plugins'),
+                );
+            } catch (Throwable) {
+                // Plugin tables missing (site mid-install): nothing meaningful to report.
             }
         }
 

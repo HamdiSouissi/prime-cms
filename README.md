@@ -2,7 +2,7 @@
 
 **Prime CMS** est un système de gestion de contenu (CMS) 100 % original écrit en **PHP 8.2+ natif**, sans framework et avec **zéro dépendance au runtime**.
 
-> Version actuelle : **0.8.0** (Phase 8 — Thèmes et rendu du site : moteur de thèmes, thème éditorial Aurora, Personnaliseur live, menus, zones de blocs dynamiques, permaliens, redirections 301 & SEO natif)
+> Version actuelle : **0.9.0** (Phase 9 — Réglages, internationalisation FR/EN, cache de pages, e-mails SMTP, planificateur, file de tâches et outils d'administration)
 > Référence complète d'architecture et de conventions : [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 ---
@@ -32,6 +32,8 @@ docker compose up -d
    - **Connexion administration** : [http://localhost:8080/admin/login](http://localhost:8080/admin/login)
    - **Tableau de bord (authentifié)** : [http://localhost:8080/admin](http://localhost:8080/admin)
    - **Apparence** : `/admin/appearance/themes` (thèmes & installation ZIP), `/admin/appearance/customizer` (aperçu en direct), `/admin/appearance/menus` (arborescence 3 niveaux), `/admin/appearance/zones` (zones de blocs & blocs dynamiques)
+   - **Réglages** : `/admin/settings/general` (identité, langues, écriture, maintenance), `/admin/settings/security` (mots de passe, sessions, 2FA obligatoire par rôle), `/admin/settings/emails` (SMTP, e-mail de test, journal), `/admin/settings/performance` (cache)
+   - **Outils** : `/admin/tools/scheduler` (tâches planifiées), `/admin/tools/queue` (file d'attente), `/admin/tools/system` (état du système et rapport)
    - **Réglages du site** : `/admin/settings/reading` (page d'accueil & pagination), `/admin/settings/permalinks` (structures d'URL & redirections 301), `/admin/settings/seo` (métadonnées globales, Open Graph, sitemaps & robots.txt)
    - **Contenus & Taxonomies** : `/admin/content/page`, `/admin/content/post`, `/admin/taxonomies/category`, `/admin/taxonomies/tag` (éditeur de blocs natif **Prime Editor**, panneau SEO + aperçu SERP, modèles de page, image à la une, champs `media`, révisions/diff, autosave, verrous d'édition et aperçu dans le thème actif)
    - **Médiathèque** : `/admin/media` (upload parallèle drag & drop, traitement GD/WebP, dossiers hiérarchiques, point focal, suivi des utilisations et sélecteur réutilisable)
@@ -166,6 +168,11 @@ prime-cms/
 - [`docs/media.md`](docs/media.md) — Médiathèque (pipeline upload sécurisé, GD/WebP, point focal, sélecteur `Prime.media.open()`, helpers responsive et CLI)
 - [`docs/themes.md`](docs/themes.md) — Système de thèmes, `theme.json`, héritage parent/enfant, hiérarchie de templates, Personnaliseur, thème Aurora et CLI `themes:*`
 - [`docs/seo.md`](docs/seo.md) — Rendu public, permaliens, redirections 301, menus, zones de blocs dynamiques, SEO, sitemaps XML et `robots.txt`
+- [`docs/settings.md`](docs/settings.md) — Registre des réglages, écrans Général/Sécurité/E-mails, API plugins et CLI `settings:*`
+- [`docs/i18n.md`](docs/i18n.md) — Catalogues FR/EN, `t()`/`tr()`, pluriels, libellés-données et `lang:check`
+- [`docs/cache.md`](docs/cache.md) — Cache de données et cache de pages (règles de sécurité, purge ciblée)
+- [`docs/mail.md`](docs/mail.md) — Envoi d'e-mails (SMTP natif, file), journal et CLI `mail:*`
+- [`docs/scheduler.md`](docs/scheduler.md) — Planificateur, file de tâches, état du système et CLI `schedule:run`/`queue:*`
 - [`docs/design-system.md`](docs/design-system.md) — Guide complet du design system, des composants, icônes et modules JS
 - [`docs/hooks.md`](docs/hooks.md) — Référence de tous les hooks (événements et filtres)
 - [`docs/nginx.conf.example`](docs/nginx.conf.example) — Exemple de configuration Nginx

@@ -40,6 +40,8 @@ final class MailConfig
     public const DRIVER_SMTP = 'smtp';
     public const DRIVER_QUEUE = 'queue';
 
+    public const DRIVER_NULL = 'null';
+
     public const ENCRYPTION_NONE = '';
     public const ENCRYPTION_SSL = 'ssl';
     public const ENCRYPTION_STARTTLS = 'tls';

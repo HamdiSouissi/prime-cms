@@ -185,6 +185,7 @@ final class DashboardController
             'isLiveActivity' => $liveActivity !== null,
             'shortcuts' => $shortcuts,
             'systemStatus' => $this->demo->systemStatus($this->app),
+            'criticalChecks' => $this->criticalChecks($request),
         ]);
 
         return Response::html($this->view->render('admin::dashboard/index', $data));
@@ -337,6 +338,36 @@ final class DashboardController
     /**
      * Placeholder page for upcoming CMS modules (`GET /admin/{module}` and `GET /admin/{module}/{section}`).
      */
+    /**
+     * Blocking problems from « État du système », surfaced on the dashboard for administrators.
+     *
+     * @return list<string>
+     */
+    private function criticalChecks(Request $request): array
+    {
+        if (!$this->auth->can('settings.manage', $request) || !$this->app->container()->has(\Prime\Admin\SystemStatus::class)) {
+            return [];
+        }
+
+        try {
+            $status = $this->app->get(\Prime\Admin\SystemStatus::class);
+            if (!$status instanceof \Prime\Admin\SystemStatus) {
+                return [];
+            }
+
+            $labels = [];
+            foreach ($status->checks() as $check) {
+                if ($check['status'] === \Prime\Admin\SystemStatus::STATUS_ERROR) {
+                    $labels[] = $check['label'];
+                }
+            }
+
+            return $labels;
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
     public function module(Request $request, string $module, ?string $section = null): Response
     {
         $key = $section !== null ? $module . '/' . $section : $module;

@@ -49,25 +49,6 @@ final class HelloPrimeController
         return Response::html($html);
     }
 
-    public function saveSettings(Request $request): Response
-    {
-        $greeting = trim((string) $request->body('greeting', ''));
-        if ($greeting === '' || mb_strlen($greeting) > 160) {
-            $this->adminContext->flashToast(
-                t('plugin::hello-prime.ui.greeting_invalid'),
-                'danger',
-                t('plugin::hello-prime.ui.validation_failed'),
-            );
-
-            return Response::redirect('/admin/hello-prime');
-        }
-
-        $this->plugin->settings()->set('greeting', $greeting);
-        $this->adminContext->flashToast(t('plugin::hello-prime.ui.greeting_saved'), 'success', t('plugin::hello-prime.ui.settings_saved'));
-
-        return Response::redirect('/admin/hello-prime');
-    }
-
     public function addGreeting(Request $request): Response
     {
         $message = trim((string) $request->body('message', ''));

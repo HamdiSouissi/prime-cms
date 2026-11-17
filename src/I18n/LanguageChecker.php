@@ -29,7 +29,14 @@ final class LanguageChecker
     /**
      * Dynamic lookups: `t('core.date.formats.' . $preset)` or `'validation.' . $rule`.
      */
-    private const DYNAMIC_PREFIX_PATTERN = '/([\'"])((?:[a-z0-9][a-z0-9_-]*::)?[a-z0-9][a-z0-9_.:-]*\.)\1\s*\.\s*[\$\'"]/i';
+    private const DYNAMIC_PREFIX_PATTERN = '/([\'"])((?:[a-z0-9][a-z0-9_-]*::)?[a-z0-9][a-z0-9_.:-]*\.)\1\s*\.\s*[\$\'"(A-Za-z_\\\\]/';
+
+    /**
+     * Any quoted string shaped like a catalogue key. Labels stored as *data* (a menu item, a
+     * content type, a capability, a theme manifest, a plugin field) are resolved later through
+     * `LabelTranslator`: when such a literal names an existing key, that key is in use.
+     */
+    private const DATA_KEY_PATTERN = '/([\'"`])((?:[a-z0-9][a-z0-9_-]*::)?[a-z0-9][a-z0-9_-]*(?:\.[a-z0-9_-]+)+)\1/';
 
     /**
      * Catalogue keys referenced as data by a theme manifest (`"label_key": "site.aurora.…"`).
@@ -209,6 +216,16 @@ final class LanguageChecker
             if (preg_match_all(self::DYNAMIC_PREFIX_PATTERN, $contents, $dynamic) > 0) {
                 foreach ($dynamic[2] as $prefix) {
                     $dynamicPrefixes[$prefix] = true;
+                }
+            }
+
+            if (!str_ends_with($file, '/js/i18n.js') && preg_match_all(self::DATA_KEY_PATTERN, $contents, $data, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) > 0) {
+                foreach ($data as $match) {
+                    $key = (string) $match[2][0];
+                    if (isset($defined[$key])) {
+                        $line = substr_count(substr($contents, 0, (int) $match[2][1]), "\n") + 1;
+                        $usedKeys[$key][] = $this->relative($file) . ':' . $line;
+                    }
                 }
             }
 

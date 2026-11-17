@@ -119,12 +119,36 @@ $scalar = is_scalar($value) ? (string) $value : '';
                 $extra['min'] = 0;
             }
             ?>
+            <?php
+            $presets = match ($field->name) {
+                'general.date_format' => ['d/m/Y', 'j F Y', 'l j F Y', 'Y-m-d', 'm/d/Y', 'F j, Y'],
+                'general.time_format' => ['H:i', 'G\\hi', 'g:i a', 'g:i A'],
+                default => [],
+            };
+            if ($presets !== []) {
+                $extra['list'] = $id . '-presets';
+            }
+            ?>
             <input
                 class="pc-input<?= in_array($type, ['number'], true) ? ' pc-input--narrow' : '' ?>"
                 type="<?= $this->e($type) ?>"
                 name="<?= $this->e($name) ?>"
-                value="<?= $this->e($scalar) ?>"<?= $field->placeholder !== null ? ' placeholder="' . $this->e(\Prime\Content\LabelTranslator::resolve($field->placeholder)) . '"' : '' ?><?= $this->raw($attr($common + $extra)) ?>
+                value="<?= $this->e($scalar) ?>"<?= $field->placeholder !== null ? ' placeholder="' . $this->e(\Prime\Content\LabelTranslator::resolve($field->placeholder)) . '"' : '' ?><?= $this->raw($attr($common + $extra)) ?><?= $presets !== [] ? ' data-prime-date-format' : '' ?>
             >
+            <?php if ($presets !== []): ?>
+                <?php $fmt = locale_formatter(); ?>
+                <datalist id="<?= $this->e($id . '-presets') ?>">
+                    <?php foreach ($presets as $preset): ?>
+                        <option value="<?= $this->e($preset) ?>"></option>
+                    <?php endforeach; ?>
+                </datalist>
+                <p class="pc-field__help" aria-live="polite"
+                   data-prime-date-preview="<?= $this->e($id) ?>"
+                   data-months="<?= $this->e((string) json_encode(array_values($fmt->monthNames()), JSON_UNESCAPED_UNICODE)) ?>"
+                   data-days="<?= $this->e((string) json_encode(array_values($fmt->weekdayNames()), JSON_UNESCAPED_UNICODE)) ?>">
+                    <?= $this->e($this->t('admin.settings.date_preview')) ?> <strong data-prime-date-preview-value><?= $this->e(date($scalar !== '' ? $scalar : 'd/m/Y')) ?></strong>
+                </p>
+            <?php endif; ?>
         <?php endif; ?>
     <?php endif; ?>
     <?php if ($description !== null): ?>

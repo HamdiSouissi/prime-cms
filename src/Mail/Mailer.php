@@ -124,6 +124,14 @@ final class Mailer implements MailerInterface
     }
 
     /**
+     * Send right away, bypassing the queue even when the driver is `queue`.
+     */
+    public function sendNow(Message $message, ?string $template = null): void
+    {
+        $this->deliver($this->applyFilters($message, $template), $template);
+    }
+
+    /**
      * Deliver without consulting the queue — the path a worker takes, and what `mail:test` uses.
      *
      * @param array<string, mixed> $data
