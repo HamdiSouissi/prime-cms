@@ -15,7 +15,7 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
     <?php if ($taxonomy !== null): ?>
       <span class="aurora-page-header__eyebrow"><?= $site->e($taxonomy->label('singular')) ?></span>
     <?php endif; ?>
-    <h1 class="aurora-page-header__title"><?= $term !== null ? $site->e($term->name) : 'Archive' ?></h1>
+    <h1 class="aurora-page-header__title"><?= $term !== null ? $site->e($term->name) : $site->e($site->t('site.archive.title')) ?></h1>
     <?php if ($term !== null && $term->description !== null && trim($term->description) !== ''): ?>
       <p class="aurora-page-header__lead"><?= $site->e($term->description) ?></p>
     <?php endif; ?>
@@ -31,8 +31,8 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
         </div>
       <?php else: ?>
         <section class="aurora-empty">
-          <h2>Aucun article dans cette rubrique</h2>
-          <p>Aucun contenu publié n'est encore associé à ce terme.</p>
+          <h2><?= $site->e($site->t('site.aurora.term.default.aucun_article_rubrique')) ?></h2>
+          <p><?= $site->e($site->t('site.aurora.term.default.aucun_contenu_publie_encore_associe')) ?></p>
         </section>
       <?php endif; ?>
 
@@ -40,7 +40,7 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
     </div>
 
     <?php if ($showSidebar): ?>
-      <aside class="aurora-sidebar" aria-label="Barre latérale">
+      <aside class="aurora-sidebar" aria-label="<?= t('site.attr.barre_laterale') ?>">
         <?= $site->zone('sidebar') ?>
       </aside>
     <?php endif; ?>

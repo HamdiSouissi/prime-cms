@@ -36,7 +36,7 @@ use Prime\View\View;
 #[Group('database')]
 final class PluginsDatabaseIntegrationTest extends DatabaseTestCase
 {
-    private string $tmpRoot;
+    private string $tmpRoot = '';
 
     protected function setUp(): void
     {
@@ -50,7 +50,12 @@ final class PluginsDatabaseIntegrationTest extends DatabaseTestCase
 
     protected function tearDown(): void
     {
-        AssetPublisher::deleteDirectory($this->tmpRoot);
+        // `setUp()` bails out before creating the workspace when no database is configured,
+        // but PHPUnit still calls `tearDown()`, so the path is only removed when it was set.
+        if ($this->tmpRoot !== '') {
+            AssetPublisher::deleteDirectory($this->tmpRoot);
+        }
+
         parent::tearDown();
     }
 
@@ -64,7 +69,7 @@ final class PluginsDatabaseIntegrationTest extends DatabaseTestCase
         );
 
         $ran = $migrator->run();
-        $this->assertCount($this->migrationCount(), $ran);
+        $this->assertCount($this->coreMigrationCount(), $ran);
         $this->assertTrue($schema->hasTable('plugins'));
         $this->assertTrue($schema->hasColumn('migrations', 'source'));
 

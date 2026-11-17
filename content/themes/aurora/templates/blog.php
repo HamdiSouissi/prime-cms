@@ -11,8 +11,8 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
   <?= $site->partial('breadcrumbs') ?>
 
   <header class="aurora-page-header">
-    <span class="aurora-page-header__eyebrow">Journal</span>
-    <h1 class="aurora-page-header__title"><?= $entry !== null ? $entry->title() : 'Blog' ?></h1>
+    <span class="aurora-page-header__eyebrow"><?= $site->e($site->t('site.aurora.templates.blog.eyebrow')) ?></span>
+    <h1 class="aurora-page-header__title"><?= $entry !== null ? $entry->title() : $site->e($site->t('site.blog.title')) ?></h1>
     <?php if ($entry !== null && $entry->excerpt() !== ''): ?>
       <p class="aurora-page-header__lead"><?= $entry->excerpt(200) ?></p>
     <?php endif; ?>
@@ -28,8 +28,8 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
         </div>
       <?php else: ?>
         <section class="aurora-empty">
-          <h2>Aucun article publié</h2>
-          <p>Les prochains articles apparaîtront ici dès leur publication.</p>
+          <h2><?= $site->e($site->t('site.aurora.blog.aucun_article_publie')) ?></h2>
+          <p><?= $site->e($site->t('site.aurora.blog.prochains_articles_apparaitront_ici_des')) ?></p>
         </section>
       <?php endif; ?>
 
@@ -37,7 +37,7 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
     </div>
 
     <?php if ($showSidebar): ?>
-      <aside class="aurora-sidebar" aria-label="Barre latérale">
+      <aside class="aurora-sidebar" aria-label="<?= t('site.attr.barre_laterale') ?>">
         <?= $site->zone('sidebar') ?>
       </aside>
     <?php endif; ?>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Tests\Unit\I18n;
 
 use PHPUnit\Framework\TestCase;
+use Prime\Cache\ArrayCache;
 use Prime\Hooks\Hooks;
 use Prime\I18n\Translator;
 
@@ -13,6 +14,9 @@ final class TranslatorTest extends TestCase
     private string $langPath;
 
     private string $overridePath;
+
+    /** @var list<string> */
+    private array $namespacePaths = [];
 
     protected function setUp(): void
     {
@@ -24,6 +28,17 @@ final class TranslatorTest extends TestCase
 
     protected function tearDown(): void
     {
+        foreach ($this->namespacePaths as $dir) {
+            foreach (glob($dir . '/*/*.php') ?: [] as $file) {
+                @unlink((string) $file);
+            }
+            foreach ([$dir . '/fr', $dir . '/en'] as $locale) {
+                @rmdir($locale);
+            }
+            @rmdir($dir);
+            @rmdir(dirname($dir));
+        }
+
         foreach (glob($this->overridePath . '/*/*.php') ?: [] as $file) {
             @unlink((string) $file);
         }
@@ -38,6 +53,24 @@ final class TranslatorTest extends TestCase
     private function translator(string $locale = 'fr', ?Hooks $hooks = null): Translator
     {
         return new Translator($locale, Translator::FALLBACK_LOCALE, [$this->langPath], $hooks);
+    }
+
+    /**
+     * Create a fake extension shipping `lang/{locale}/messages.php` and return its lang root.
+     */
+    private function extensionLang(string $kind, string $slug, array $catalogues): string
+    {
+        $root = sys_get_temp_dir() . '/prime_ext_' . uniqid('', true) . '/' . $kind . '/' . $slug . '/lang';
+        foreach ($catalogues as $locale => $messages) {
+            if (!is_dir($root . '/' . $locale)) {
+                mkdir($root . '/' . $locale, 0750, true);
+            }
+            file_put_contents($root . '/' . $locale . '/messages.php', "<?php\nreturn " . var_export($messages, true) . ';');
+        }
+
+        $this->namespacePaths[] = $root;
+
+        return $root;
     }
 
     public function testResolvesNestedKeysAndFallsBackToTheCoreGroup(): void
@@ -126,6 +159,26 @@ final class TranslatorTest extends TestCase
         $this->assertSame('Médias', $translator->translate('admin.menu.media'));
     }
 
+    public function testPluginAndThemeCataloguesAreAddressedThroughTheirNamespace(): void
+    {
+        $plugin = $this->extensionLang('plugins', 'hello-prime', [
+            'fr' => ['views' => ['public' => ['greeting' => 'Bonjour depuis Hello Prime']], 'count' => 'un message|:count messages'],
+            'en' => ['views' => ['public' => ['greeting' => 'Hello from Hello Prime']]],
+        ]);
+        $theme = $this->extensionLang('themes', 'aurora', [
+            'fr' => ['footer' => ['credit' => 'Propulsé par Prime CMS']],
+        ]);
+
+        $translator = new Translator('fr', 'en', [$this->langPath, $plugin, $theme]);
+
+        $this->assertSame('Bonjour depuis Hello Prime', $translator->translate('plugin::hello-prime.views.public.greeting'));
+        $this->assertSame('Propulsé par Prime CMS', $translator->translate('theme::aurora.footer.credit'));
+        $this->assertSame('3 messages', $translator->choice('plugin::hello-prime.count', 3));
+        // Unknown namespaces and unknown slugs must not resolve through a core group.
+        $this->assertSame('plugin::inconnu.title', $translator->translate('plugin::inconnu.title'));
+        $this->assertSame('other::hello-prime.views.public.greeting', $translator->translate('other::hello-prime.views.public.greeting'));
+    }
+
     public function testRuntimeRegistrationIsMergedWithoutTouchingFiles(): void
     {
         $translator = $this->translator();
@@ -165,6 +218,20 @@ final class TranslatorTest extends TestCase
         $this->assertGreaterThan(500, count($messages));
         $this->assertSame('Enregistrer', $messages['core.actions.save']);
         $this->assertSame($messages, $translator->messages('fr'));
+    }
+
+    public function testMergedTreesAreStoredInTheDataCacheAndServedFromIt(): void
+    {
+        $cache = new ArrayCache();
+        $messages = (new Translator('fr', Translator::FALLBACK_LOCALE, [$this->langPath], null, $cache))->messages('fr');
+        $this->assertGreaterThan(500, count($messages));
+
+        // A single merged tree is stored, and a second translator sharing that cache returns
+        // the very same flattened catalogue instead of re-parsing every language file.
+        $this->assertSame(1, $cache->stats()['entries'], 'Exactly one merged tree must be cached.');
+
+        $second = new Translator('fr', Translator::FALLBACK_LOCALE, [$this->langPath], null, $cache);
+        $this->assertSame($messages, $second->messages('fr'));
     }
 
     public function testHelpersUseTheBoundTranslatorInstance(): void

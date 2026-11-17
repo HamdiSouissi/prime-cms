@@ -6,7 +6,7 @@ declare(strict_types=1);
 /** @var string $content */
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= $site->e($site->locale()) ?>" dir="<?= $site->e($site->direction()) ?>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +15,7 @@ declare(strict_types=1);
   <?= $site->head() ?>
 </head>
 <body class="<?= $site->bodyClass() ?>">
-  <a class="skip-link" href="#main-content">Aller au contenu principal</a>
+  <a class="skip-link" href="#main-content"><?= $site->t('site.skip_to_content') ?></a>
 
   <?= $site->partial('header') ?>
 

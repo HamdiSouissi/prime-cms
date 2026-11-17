@@ -44,12 +44,12 @@ $this->layout('admin::layouts/app');
     <a class="pc-sg-nav__link" href="#sg-forms">Formulaires</a>
     <a class="pc-sg-nav__link" href="#sg-badges">Badges</a>
     <a class="pc-sg-nav__link" href="#sg-cards">Cartes &amp; KPI</a>
-    <a class="pc-sg-nav__link" href="#sg-table">Tableau</a>
+    <a class="pc-sg-nav__link" href="#sg-table"><?= $this->e($this->t('admin.styleguide.index.tableau')) ?></a>
     <a class="pc-sg-nav__link" href="#sg-tabs">Onglets</a>
     <a class="pc-sg-nav__link" href="#sg-overlays">Modale &amp; tiroir</a>
     <a class="pc-sg-nav__link" href="#sg-feedback">Toasts &amp; alertes</a>
-    <a class="pc-sg-nav__link" href="#sg-states">États &amp; utilitaires</a>
-    <a class="pc-sg-nav__link" href="#sg-icons">Icônes (<?= $this->e((string) count($iconNames)) ?>)</a>
+    <a class="pc-sg-nav__link" href="#sg-states"><?= $this->e($this->t('admin.styleguide.index.etats_amp_utilitaires')) ?></a>
+    <a class="pc-sg-nav__link" href="#sg-icons"><?= $this->e($this->choice('admin.styleguide.icones', count($iconNames))) ?></a>
 </nav>
 
 <div class="pc-stack pc-stack--lg">
@@ -92,8 +92,8 @@ $this->layout('admin::layouts/app');
             <h1>Titre H1 — Plus Jakarta Sans 24px / 700</h1>
             <h2>Titre H2 — Plus Jakarta Sans 20px / 600</h2>
             <h3>Titre H3 — Plus Jakarta Sans 16px / 600</h3>
-            <p>Texte courant Inter 14px — conçu pour la lisibilité prolongée dans les écrans d’administration, avec un interligne équilibré et un contraste WCAG AA vérifié.</p>
-            <p class="pc-text-muted pc-text-sm">Texte secondaire 13px — métadonnées, sous-titres et descriptions d’aide.</p>
+            <p><?= $this->e($this->t('admin.styleguide.index.texte_courant_inter_14px_concu')) ?></p>
+            <p class="pc-text-muted pc-text-sm"><?= $this->e($this->t('admin.styleguide.index.texte_secondaire_13px_metadonnees_sous')) ?></p>
             <p class="pc-mono">JetBrains Mono — /admin/styleguide · php bin/prime assets:build</p>
         </div>
     </div>
@@ -242,7 +242,7 @@ $this->layout('admin::layouts/app');
 
     <!-- 5. Stat tiles -->
     <section id="sg-cards" class="pc-sg-section pc-stack">
-        <h2>Cartes et tuiles de statistiques</h2>
+        <h2><?= $this->e($this->t('admin.styleguide.index.cartes_tuiles_statistiques')) ?></h2>
         <div class="pc-grid pc-grid--stats">
             <?= $this->raw($this->insert('admin::components/stat-tile', [
                 'label' => 'Pages publiées',
@@ -285,10 +285,10 @@ $this->layout('admin::layouts/app');
 
     <!-- 6. Table with sticky header, bulk actions, row dropdown, pagination -->
     <section id="sg-table" class="pc-sg-section pc-stack">
-        <h2>Tableau de données</h2>
+        <h2><?= $this->e($this->t('admin.styleguide.index.tableau_donnees')) ?></h2>
         <div class="pc-table-wrap" data-prime-table-bulk>
             <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
-                <span class="pc-table-bulk__count" data-prime-table-bulk-count>0 élément sélectionné</span>
+                <span class="pc-table-bulk__count" data-prime-table-bulk-count><?= $this->e($this->t('admin.styleguide.index.0_element_selectionne')) ?></span>
                 <div class="pc-row pc-row--sm">
                     <?= $this->raw($this->insert('admin::components/button', [
                         'label' => 'Publier la sélection',
@@ -343,7 +343,7 @@ $this->layout('admin::layouts/app');
                                         type="checkbox"
                                         value="<?= $this->e($row['id']) ?>"
                                         data-prime-table-select-row
-                                        aria-label="Sélectionner <?= $this->e($row['title']) ?>"
+                                        aria-label="<?= $this->e($this->t('admin.styleguide.selectionner', ['title' => $row['title']])) ?>"
                                     >
                                 </td>
                                 <td>
@@ -377,7 +377,7 @@ $this->layout('admin::layouts/app');
             </div>
 
             <div class="pc-table-footer">
-                <span>Affichage de 1 à 3 sur 18 résultats</span>
+                <span><?= $this->e($this->t('admin.styleguide.index.affichage_1_a_3_18')) ?></span>
                 <nav class="pc-pagination" aria-label="Pagination du tableau">
                     <button type="button" class="pc-pagination__btn" disabled aria-label="Page précédente">
                         <?= $this->raw($this->icon('chevron-left', 15)) ?>
@@ -556,12 +556,12 @@ $this->layout('admin::layouts/app');
             </div>
 
             <div class="pc-stack">
-                <h3>Barres de progression</h3>
+                <h3><?= $this->e($this->t('admin.styleguide.index.barres_progression')) ?></h3>
                 <?= $this->raw($this->insert('admin::components/progress', ['label' => 'Optimisation des médias', 'value' => 72, 'accent' => 'teal'])) ?>
                 <?= $this->raw($this->insert('admin::components/progress', ['label' => 'Couverture du design system', 'value' => 100, 'accent' => 'success'])) ?>
                 <?= $this->raw($this->insert('admin::components/progress', ['label' => 'Quota de stockage', 'value' => 86, 'accent' => 'amber'])) ?>
 
-                <h3>Skeletons de chargement</h3>
+                <h3><?= $this->e($this->t('admin.styleguide.index.skeletons_chargement')) ?></h3>
                 <div class="pc-row">
                     <?= $this->raw($this->insert('admin::components/skeleton', ['variant' => 'circle'])) ?>
                     <div class="pc-stack pc-stack--sm" style="flex: 1;">

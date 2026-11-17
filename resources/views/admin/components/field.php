@@ -48,7 +48,7 @@ $invalidAttr = $errorText !== null ? ' aria-invalid="true"' : '';
         <span><?= $this->e($label) ?></span>
         <?php if ($isRequired): ?>
             <span class="pc-field__required" aria-hidden="true">*</span>
-            <span class="sr-only">(obligatoire)</span>
+            <span class="sr-only"><?= $this->e($this->t('admin.components.field.obligatoire')) ?></span>
         <?php endif; ?>
     </label>
 
@@ -96,7 +96,7 @@ $invalidAttr = $errorText !== null ? ' aria-invalid="true"' : '';
                 type="button"
                 class="pc-input-group__action"
                 data-prime-password-toggle
-                aria-label="Afficher le mot de passe"
+                aria-label="<?= $this->e($this->t('admin.components.field.afficher_mot_passe')) ?>"
                 aria-pressed="false"
             >
                 <?= $this->raw($this->icon('eye', 18)) ?>

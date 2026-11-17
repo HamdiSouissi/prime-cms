@@ -12,7 +12,7 @@ $heading = $contentType !== null ? $contentType->label('plural') : 'Archives';
   <?= $site->partial('breadcrumbs') ?>
 
   <header class="aurora-page-header">
-    <span class="aurora-page-header__eyebrow">Archive</span>
+    <span class="aurora-page-header__eyebrow"><?= $site->e($site->t('site.archive.eyebrow')) ?></span>
     <h1 class="aurora-page-header__title"><?= $site->e($heading) ?></h1>
     <p class="aurora-page-header__lead">
       <?= $site->context()->totalEntries ?> publication<?= $site->context()->totalEntries > 1 ? 's' : '' ?>
@@ -29,8 +29,8 @@ $heading = $contentType !== null ? $contentType->label('plural') : 'Archives';
         </div>
       <?php else: ?>
         <section class="aurora-empty">
-          <h2>Aucun contenu publié</h2>
-          <p>Cette rubrique ne contient aucun élément pour le moment.</p>
+          <h2><?= $site->e($site->t('site.aurora.archive.default.aucun_contenu_publie')) ?></h2>
+          <p><?= $site->e($site->t('site.aurora.archive.default.rubrique_ne_contient_aucun_element')) ?></p>
         </section>
       <?php endif; ?>
 
@@ -38,7 +38,7 @@ $heading = $contentType !== null ? $contentType->label('plural') : 'Archives';
     </div>
 
     <?php if ($showSidebar): ?>
-      <aside class="aurora-sidebar" aria-label="Barre latérale">
+      <aside class="aurora-sidebar" aria-label="<?= t('site.attr.barre_laterale') ?>">
         <?= $site->zone('sidebar') ?>
       </aside>
     <?php endif; ?>

@@ -33,6 +33,19 @@ abstract class DatabaseTestCase extends TestCase
         'prefix' => 'pc_',
     ];
 
+    /**
+     * Number of core migration files shipped in `database/migrations`.
+     *
+     * Hard-coded totals rot as soon as a new migration lands, so the file system stays
+     * the single source of truth for what `Migrator::run()` is expected to apply.
+     */
+    protected function coreMigrationCount(): int
+    {
+        $files = glob(dirname(__DIR__, 2) . '/database/migrations/*.php');
+
+        return count($files === false ? [] : $files);
+    }
+
     protected function setUp(): void
     {
         $host = $this->envVar('PRIME_TEST_DB_HOST');
@@ -76,13 +89,6 @@ abstract class DatabaseTestCase extends TestCase
      * The schema tests assert that the whole catalogue runs and rolls back; deriving the expected
      * count from the directory keeps them green when a phase adds a migration.
      */
-    protected function migrationCount(): int
-    {
-        $files = glob(dirname(__DIR__, 2) . '/database/migrations/*.php') ?: [];
-
-        return count($files);
-    }
-
     protected function dropTablesWithPrefix(Connection $connection, string $prefix): void
     {
         $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);

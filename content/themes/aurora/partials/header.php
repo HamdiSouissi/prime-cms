@@ -24,15 +24,15 @@ $hasPrimaryMenu = $site->hasMenu('primary');
 
     <div class="site-header__nav" id="aurora-primary-nav" data-aurora-nav>
       <?php if ($hasPrimaryMenu): ?>
-        <?= $site->menu('primary', ['class' => 'site-nav', 'aria_label' => 'Navigation principale']) ?>
+        <?= $site->menu('primary', ['class' => 'site-nav', 'aria_label' => $site->t('site.aurora.partials.header.primary_nav')]) ?>
       <?php else: ?>
-        <nav class="site-nav" aria-label="Navigation principale">
+        <nav class="site-nav" aria-label="<?= $site->e($site->t('site.aurora.partials.header.primary_nav')) ?>">
           <ul class="site-nav__list">
             <li class="site-nav__item">
-              <a class="site-nav__link" href="/"<?= $site->isFront() ? ' aria-current="page"' : '' ?>>Accueil</a>
+              <a class="site-nav__link" href="/"<?= $site->isFront() ? ' aria-current="page"' : '' ?>><?= $site->e($site->t('site.aurora.partials.header.home')) ?></a>
             </li>
             <li class="site-nav__item">
-              <a class="site-nav__link" href="<?= $site->blogUrl() ?>"<?= $site->isBlog() ? ' aria-current="page"' : '' ?>>Blog</a>
+              <a class="site-nav__link" href="<?= $site->blogUrl() ?>"<?= $site->isBlog() ? ' aria-current="page"' : '' ?>><?= $site->e($site->t('site.aurora.partials.header.blog')) ?></a>
             </li>
           </ul>
         </nav>
@@ -44,7 +44,7 @@ $hasPrimaryMenu = $site->hasMenu('primary');
         <button
           type="button"
           class="site-icon-btn"
-          aria-label="Ouvrir la recherche"
+          aria-label="<?= $site->e($site->t('site.aurora.partials.header.ouvrir_recherche')) ?>"
           aria-expanded="false"
           aria-controls="aurora-header-search"
           data-aurora-search-toggle
@@ -59,7 +59,7 @@ $hasPrimaryMenu = $site->hasMenu('primary');
       <button
         type="button"
         class="site-icon-btn site-mobile-toggle"
-        aria-label="Ouvrir le menu de navigation"
+        aria-label="<?= $site->e($site->t('site.aurora.partials.header.ouvrir_menu_navigation')) ?>"
         aria-expanded="false"
         aria-controls="aurora-primary-nav"
         data-aurora-nav-toggle
@@ -77,9 +77,9 @@ $hasPrimaryMenu = $site->hasMenu('primary');
     <div class="site-header-search" id="aurora-header-search" data-aurora-search-bar hidden>
       <div class="site-container">
         <form class="site-search-form" role="search" method="get" action="<?= $site->searchUrl() ?>">
-          <label class="sr-only" for="aurora-header-q">Rechercher sur le site</label>
-          <input id="aurora-header-q" class="site-search-form__input" type="search" name="q" placeholder="Rechercher un article, une page…" required>
-          <button class="site-search-form__btn" type="submit">Rechercher</button>
+          <label class="sr-only" for="aurora-header-q"><?= $site->e($site->t('site.aurora.partials.header.rechercher_site')) ?></label>
+          <input id="aurora-header-q" class="site-search-form__input" type="search" name="q" placeholder="<?= $site->e($site->t('site.attr.rechercher_un_article_une_page')) ?>" required>
+          <button class="site-search-form__btn" type="submit"><?= $site->e($site->t('site.search.submit')) ?></button>
         </form>
       </div>
     </div>

@@ -10,6 +10,7 @@ use Prime\Kernel\Exception\NotFoundException;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionParameter;
+use ReflectionUnionType;
 
 /**
  * Dependency injection container with reflection-based autowiring
@@ -199,18 +200,28 @@ final class Container
         $type = $parameter->getType();
 
         if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
-            $dependency = $type->getName();
+            return $this->resolveClassParameter($parameter, $type, $name, $class);
+        }
 
-            if ($this->has($dependency) || class_exists($dependency)) {
-                return $this->get($dependency);
+        if ($type instanceof ReflectionUnionType) {
+            // For union types only explicitly bound services are injected; anything else
+            // falls back to the declared default (or `null` when the parameter allows it).
+            foreach ($type->getTypes() as $candidate) {
+                if ($candidate instanceof ReflectionNamedType && !$candidate->isBuiltin() && $this->has($candidate->getName())) {
+                    return $this->get($candidate->getName());
+                }
             }
 
             if ($parameter->isDefaultValueAvailable()) {
                 return $parameter->getDefaultValue();
             }
 
+            if ($type->allowsNull()) {
+                return null;
+            }
+
             throw new ContainerException(
-                sprintf('Unable to resolve class dependency [%s] for parameter [$%s] in [%s].', $dependency, $name, $class),
+                sprintf('Unable to resolve union dependency for parameter [$%s] in [%s].', $name, $class),
             );
         }
 
@@ -220,6 +231,45 @@ final class Container
 
         throw new ContainerException(
             sprintf('Unable to resolve parameter [$%s] in [%s].', $name, $class),
+        );
+    }
+
+    /**
+     * Resolve a parameter typed with a single non-builtin class.
+     *
+     * A registered binding always wins. Unregistered classes are autowired only when the
+     * parameter is mandatory: for optional (nullable or defaulted) parameters the declared
+     * default is used instead, so that container resolution never boots heavyweight
+     * services (database, encrypter, mailer…) merely to hand them a `null`.
+     */
+    private function resolveClassParameter(
+        ReflectionParameter $parameter,
+        ReflectionNamedType $type,
+        string $name,
+        string $class,
+    ): mixed {
+        $dependency = $type->getName();
+
+        if ($this->has($dependency)) {
+            return $this->get($dependency);
+        }
+
+        $optional = $type->allowsNull() || $parameter->isDefaultValueAvailable();
+
+        if (!$optional && class_exists($dependency)) {
+            return $this->get($dependency);
+        }
+
+        if ($parameter->isDefaultValueAvailable()) {
+            return $parameter->getDefaultValue();
+        }
+
+        if ($type->allowsNull()) {
+            return null;
+        }
+
+        throw new ContainerException(
+            sprintf('Unable to resolve class dependency [%s] for parameter [$%s] in [%s].', $dependency, $name, $class),
         );
     }
 }

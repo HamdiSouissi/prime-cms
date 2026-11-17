@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Auth\User;
 use Prime\Http\Exception\ForbiddenException;
@@ -25,6 +26,8 @@ use Prime\View\View;
  */
 final class MediaController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly View $view,
         private readonly AdminContext $context,
@@ -44,7 +47,7 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.view')) {
-            throw new ForbiddenException('Vous ne disposez pas de la permission d\'accéder à la médiathèque.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_media.vous_ne_disposez_pas_de_la_permission_d_acceder_a_la_mediath'));
         }
 
         $folderParam = trim((string) $request->query('folder', ''));
@@ -74,7 +77,7 @@ final class MediaController
 
         $tree = $this->serializeFolderTree($this->folders->tree());
         $flatFolders = array_map(
-            static fn (array $row): array => [
+            fn (array $row): array => [
                 'id' => $row['folder']->id,
                 'parent_id' => $row['folder']->parentId,
                 'name' => $row['folder']->name,
@@ -139,7 +142,7 @@ final class MediaController
             'bootstrapJson' => is_string($bootstrapJson) ? $bootstrapJson : '{}',
             'primaryCtaInContent' => $user->can('media.upload'),
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_media.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => 'Médiathèque', 'url' => null],
             ],
         ]));
@@ -154,7 +157,7 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.view')) {
-            return Response::json(['error' => 'Accès refusé à la médiathèque.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.acces_refuse_a_la_mediatheque')], 403);
         }
 
         $folderParam = trim((string) $request->query('folder', ''));
@@ -169,7 +172,7 @@ final class MediaController
 
         $kindsParam = trim((string) $request->query('kinds', ''));
         $kinds = $kindsParam !== ''
-            ? array_values(array_filter(array_map('trim', explode(',', $kindsParam)), static fn (string $k): bool => $k !== ''))
+            ? array_values(array_filter(array_map('trim', explode(',', $kindsParam)), fn (string $k): bool => $k !== ''))
             : [];
 
         $mine = (string) $request->query('mine', '') === '1';
@@ -214,12 +217,12 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.view')) {
-            return Response::json(['error' => 'Accès refusé.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.acces_refuse')], 403);
         }
 
         $item = $this->media->find($id);
         if ($item === null) {
-            return Response::json(['error' => 'Média introuvable.'], 404);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.media_introuvable')], 404);
         }
 
         return Response::json([
@@ -235,12 +238,12 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.upload')) {
-            return Response::json(['error' => 'Vous n\'avez pas la permission de téléverser des médias.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_televerser_des_medias')], 403);
         }
 
         $file = $request->file('file');
         if (!is_array($file)) {
-            return Response::json(['error' => 'Aucun fichier n\'a été envoyé.'], 422);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.aucun_fichier_n_a_ete_envoye')], 422);
         }
 
         $rawFolder = $request->body('folder_id');
@@ -266,7 +269,7 @@ final class MediaController
                     'url' => '/admin/media?open=' . $duplicate->id,
                 ] : null,
                 'warning' => $duplicate !== null
-                    ? sprintf('Un fichier identique existe déjà dans la médiathèque (« %s »).', $duplicate->displayTitle())
+                    ? sprintf($this->t('admin.ctrl_text_media.un_fichier_identique_existe_deja_dans_la_mediatheque_s'), $duplicate->displayTitle())
                     : null,
             ], 201);
         } catch (MediaValidationException $e) {
@@ -287,11 +290,11 @@ final class MediaController
         $user = $this->requireUser($request);
         $item = $this->media->find($id);
         if ($item === null) {
-            return Response::json(['error' => 'Média introuvable.'], 404);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.media_introuvable')], 404);
         }
 
         if (!$this->canEditMedia($user, $item)) {
-            return Response::json(['error' => 'Vous n\'avez pas la permission de modifier ce média.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_modifier_ce_media')], 403);
         }
 
         $body = $request->body();
@@ -319,11 +322,11 @@ final class MediaController
         $user = $this->requireUser($request);
         $item = $this->media->find($id);
         if ($item === null) {
-            return Response::json(['error' => 'Média introuvable.'], 404);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.media_introuvable')], 404);
         }
 
         if (!$this->canEditMedia($user, $item)) {
-            return Response::json(['error' => 'Vous n\'avez pas la permission de régénérer ce média.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_regenerer_ce_media')], 403);
         }
 
         try {
@@ -345,16 +348,16 @@ final class MediaController
         $user = $this->requireUser($request);
         $item = $this->media->find($id);
         if ($item === null) {
-            return Response::json(['error' => 'Média introuvable.'], 404);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.media_introuvable')], 404);
         }
 
         if (!$this->canEditMedia($user, $item)) {
-            return Response::json(['error' => 'Vous n\'avez pas la permission de remplacer ce média.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_remplacer_ce_media')], 403);
         }
 
         $file = $request->file('file');
         if (!is_array($file)) {
-            return Response::json(['error' => 'Aucun fichier de remplacement n\'a été envoyé.'], 422);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.aucun_fichier_de_remplacement_n_a_ete_envoye')], 422);
         }
 
         try {
@@ -379,11 +382,11 @@ final class MediaController
         $user = $this->requireUser($request);
         $item = $this->media->find($id);
         if ($item === null) {
-            return Response::json(['error' => 'Média introuvable.'], 404);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.media_introuvable')], 404);
         }
 
         if (!$this->canDeleteMedia($user, $item)) {
-            return Response::json(['error' => 'Vous n\'avez pas la permission de supprimer ce média.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_supprimer_ce_media')], 403);
         }
 
         $this->uploader->delete($item, $user);
@@ -401,7 +404,7 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.view')) {
-            return Response::json(['error' => 'Accès refusé.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.acces_refuse')], 403);
         }
 
         $action = trim((string) $request->body('action', ''));
@@ -417,18 +420,18 @@ final class MediaController
         $ids = array_values(array_unique($ids));
 
         if ($ids === []) {
-            return Response::json(['error' => 'Aucun média sélectionné.'], 422);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.aucun_media_selectionne')], 422);
         }
 
         $itemsMap = $this->media->findByIds($ids);
         if ($itemsMap === []) {
-            return Response::json(['error' => 'Aucun média correspondant trouvé.'], 404);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.aucun_media_correspondant_trouve')], 404);
         }
 
         if ($action === 'move') {
             foreach ($itemsMap as $item) {
                 if (!$this->canEditMedia($user, $item)) {
-                    return Response::json(['error' => 'Vous n\'avez pas la permission de déplacer certains médias sélectionnés.'], 403);
+                    return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_deplacer_certains_medias_se')], 403);
                 }
             }
 
@@ -437,7 +440,7 @@ final class MediaController
             if ($rawFolder !== null && $rawFolder !== '' && $rawFolder !== 0 && $rawFolder !== '0') {
                 $fid = (int) $rawFolder;
                 if ($fid <= 0 || $this->folders->find($fid) === null) {
-                    return Response::json(['error' => 'Le dossier cible est introuvable.'], 422);
+                    return Response::json(['error' => $this->t('admin.ctrl_text_media.le_dossier_cible_est_introuvable')], 422);
                 }
                 $folderId = $fid;
             }
@@ -456,7 +459,7 @@ final class MediaController
         if ($action === 'delete') {
             foreach ($itemsMap as $item) {
                 if (!$this->canDeleteMedia($user, $item)) {
-                    return Response::json(['error' => 'Vous n\'avez pas la permission de supprimer certains médias sélectionnés.'], 403);
+                    return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_supprimer_certains_medias_s')], 403);
                 }
             }
 
@@ -473,7 +476,7 @@ final class MediaController
             ]);
         }
 
-        return Response::json(['error' => 'Action groupée non reconnue.'], 422);
+        return Response::json(['error' => $this->t('admin.ctrl_text_media.action_groupee_non_reconnue')], 422);
     }
 
     /**
@@ -483,7 +486,7 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.view')) {
-            return Response::json(['error' => 'Accès refusé.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.acces_refuse')], 403);
         }
 
         return Response::json($this->foldersPayload());
@@ -496,7 +499,7 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.upload') && !$user->can('media.delete_any')) {
-            return Response::json(['error' => 'Vous n\'avez pas la permission de créer un dossier.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_creer_un_dossier')], 403);
         }
 
         $name = trim((string) $request->body('name', ''));
@@ -524,7 +527,7 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.upload') && !$user->can('media.delete_any')) {
-            return Response::json(['error' => 'Vous n\'avez pas la permission de modifier ce dossier.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_modifier_ce_dossier')], 403);
         }
 
         $body = $request->body();
@@ -558,12 +561,12 @@ final class MediaController
     {
         $user = $this->requireUser($request);
         if (!$user->can('media.upload') && !$user->can('media.delete_any')) {
-            return Response::json(['error' => 'Vous n\'avez pas la permission de supprimer ce dossier.'], 403);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.vous_n_avez_pas_la_permission_de_supprimer_ce_dossier')], 403);
         }
 
         $folder = $this->folders->find($id);
         if ($folder === null) {
-            return Response::json(['error' => 'Dossier introuvable.'], 404);
+            return Response::json(['error' => $this->t('admin.ctrl_text_media.dossier_introuvable')], 404);
         }
 
         // Non-delete_any users may only delete folders that do not contain other users' files
@@ -571,7 +574,7 @@ final class MediaController
             $inFolder = $this->media->paginate(['folder_id' => $id, 'page' => 1, 'per_page' => 100])['items'];
             foreach ($inFolder as $m) {
                 if ($m->authorId !== $user->id) {
-                    return Response::json(['error' => 'Ce dossier contient des médias appartenant à d\'autres utilisateurs.'], 403);
+                    return Response::json(['error' => $this->t('admin.ctrl_text_media.ce_dossier_contient_des_medias_appartenant_a_d_autres_utilis')], 403);
                 }
             }
         }
@@ -617,7 +620,7 @@ final class MediaController
     {
         $tree = $this->serializeFolderTree($this->folders->tree());
         $flat = array_map(
-            static fn (array $row): array => [
+            fn (array $row): array => [
                 'id' => $row['folder']->id,
                 'parent_id' => $row['folder']->parentId,
                 'name' => $row['folder']->name,

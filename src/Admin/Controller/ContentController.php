@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Auth\User;
 use Prime\Auth\UserRepository;
@@ -51,6 +52,8 @@ use Throwable;
  */
 final class ContentController
 {
+    use TranslatesAdminCopy;
+
     /**
      * Preview-only CSP extending the baseline policy with whitelisted YouTube/Vimeo iframes and HTTPS images.
      */
@@ -224,7 +227,7 @@ final class ContentController
             'canEditOthers' => $user->can($contentType->capability('edit_any')),
             'primaryCtaInContent' => $canCreate,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_content.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $contentType->label('plural'), 'url' => null],
             ],
         ]));
@@ -241,7 +244,7 @@ final class ContentController
         $user = $this->requireUser($request);
 
         if (!$this->service->canCreate($user, $contentType)) {
-            throw new ForbiddenException('Vous n’avez pas la permission de créer ce type de contenu.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_content.vous_n_avez_pas_la_permission_de_creer_ce_type_de_contenu'));
         }
 
         return $this->renderEditor($request, $contentType, $user, null, [], []);
@@ -262,15 +265,15 @@ final class ContentController
             $isPendingSubmission = $entry->status === Entry::STATUS_PENDING && !$this->service->canPublish($user, $contentType);
             $this->context->flashToast(
                 $isPendingSubmission
-                    ? sprintf('« %s » a été soumis pour relecture.', $entry->title)
-                    : sprintf('« %s » a été enregistré.', $entry->title),
+                    ? sprintf($this->t('admin.ctrl_text_content.s_a_ete_soumis_pour_relecture'), $entry->title)
+                    : sprintf($this->t('admin.ctrl_text_content.s_a_ete_enregistre'), $entry->title),
                 'success',
                 $isPendingSubmission ? 'Soumis pour relecture' : $contentType->label('singular') . ' créé',
             );
 
             return Response::redirect($entry->editUrl());
         } catch (ContentValidationException $exception) {
-            $this->context->flashToast('Veuillez corriger les erreurs signalées dans le formulaire.', 'danger', 'Validation');
+            $this->context->flashToast($this->t('admin.ctrl_text_content.veuillez_corriger_les_erreurs_signalees_dans_le_formulaire'), 'danger', 'Validation');
 
             return $this->renderEditor($request, $contentType, $user, null, $input, $this->flattenErrors($exception->errors()), 422);
         } catch (ContentForbiddenException $exception) {
@@ -302,7 +305,7 @@ final class ContentController
         }
 
         if (!$this->service->canEdit($user, $entry, $contentType)) {
-            throw new ForbiddenException('Vous ne disposez pas des droits nécessaires pour modifier ce contenu.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_content.vous_ne_disposez_pas_des_droits_necessaires_pour_modifier_ce'));
         }
 
         // Check/acquire cooperative edit lock (120s TTL)
@@ -337,10 +340,10 @@ final class ContentController
             }
             $this->context->flashToast(
                 $isPendingSubmission
-                    ? sprintf('« %s » a été soumis pour relecture et ne peut plus être modifié tant qu’il est en attente.', $updated->title)
-                    : sprintf('« %s » a été mis à jour.', $updated->title),
+                    ? sprintf($this->t('admin.ctrl_text_content.s_a_ete_soumis_pour_relecture_et_ne_peut_plus_etre_modifie_t'), $updated->title)
+                    : sprintf($this->t('admin.ctrl_text_content.s_a_ete_mis_a_jour'), $updated->title),
                 'success',
-                $isPendingSubmission ? 'Soumis pour relecture' : 'Modifications enregistrées',
+                $isPendingSubmission ? 'Soumis pour relecture' : $this->t('admin.ctrl_text_content.modifications_enregistrees'),
             );
 
             return Response::redirect($updated->editUrl());
@@ -351,11 +354,11 @@ final class ContentController
 
                 return $this->renderLockedScreen($request, $contentType, $entry, $activeLock, $holder, $user);
             }
-            $this->context->flashToast($exception->getMessage(), 'warning', 'Contenu verrouillé');
+            $this->context->flashToast($exception->getMessage(), 'warning', $this->t('admin.ctrl_text_content.contenu_verrouille'));
 
             return Response::redirect($entry->editUrl());
         } catch (ContentValidationException $exception) {
-            $this->context->flashToast('Veuillez corriger les erreurs signalées.', 'danger', 'Validation');
+            $this->context->flashToast($this->t('admin.ctrl_text_content.veuillez_corriger_les_erreurs_signalees'), 'danger', 'Validation');
 
             return $this->renderEditor($request, $contentType, $user, $entry, $input, $this->flattenErrors($exception->errors()), 422);
         } catch (ContentForbiddenException $exception) {
@@ -414,7 +417,7 @@ final class ContentController
         $entry = $this->requireEntry($contentType->name, $id);
 
         if (!$this->service->canEdit($user, $entry, $contentType)) {
-            return Response::json(['ok' => false, 'message' => 'Accès refusé.'], 403);
+            return Response::json(['ok' => false, 'message' => $this->t('admin.ctrl_text_content.acces_refuse')], 403);
         }
 
         $result = $this->locks->heartbeat($entry->id, $user->id);
@@ -447,11 +450,11 @@ final class ContentController
         $entry = $this->requireEntry($contentType->name, $id);
 
         if (!$this->service->canEdit($user, $entry, $contentType) || !$this->service->canTakeOverLock($user, $contentType)) {
-            throw new ForbiddenException('Vous ne pouvez pas prendre le contrôle de ce contenu.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_content.vous_ne_pouvez_pas_prendre_le_controle_de_ce_contenu'));
         }
 
         $this->locks->acquire($entry->id, $user->id, force: true);
-        $this->context->flashToast('Vous avez repris le contrôle de l’édition.', 'info', 'Verrou transféré');
+        $this->context->flashToast($this->t('admin.ctrl_text_content.vous_avez_repris_le_controle_de_l_edition'), 'info', $this->t('admin.ctrl_text_content.verrou_transfere'));
 
         return Response::redirect($entry->editUrl());
     }
@@ -481,7 +484,7 @@ final class ContentController
 
         try {
             $this->service->trash($entry->id, $user);
-            $this->context->flashToast(sprintf('« %s » a été déplacé dans la corbeille.', $entry->title), 'info');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_content.s_a_ete_deplace_dans_la_corbeille'), $entry->title), 'info');
         } catch (ContentForbiddenException $exception) {
             throw new ForbiddenException($exception->getMessage());
         } catch (ContentException $exception) {
@@ -502,7 +505,7 @@ final class ContentController
 
         try {
             $this->service->restore($entry->id, $user);
-            $this->context->flashToast(sprintf('« %s » a été restauré.', $entry->title), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_content.s_a_ete_restaure'), $entry->title), 'success');
         } catch (ContentForbiddenException $exception) {
             throw new ForbiddenException($exception->getMessage());
         } catch (ContentException $exception) {
@@ -523,7 +526,7 @@ final class ContentController
 
         try {
             $this->service->delete($entry->id, $user);
-            $this->context->flashToast(sprintf('« %s » a été supprimé définitivement.', $entry->title), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_content.s_a_ete_supprime_definitivement'), $entry->title), 'success');
         } catch (ContentForbiddenException $exception) {
             throw new ForbiddenException($exception->getMessage());
         } catch (ContentConflictException $exception) {
@@ -546,7 +549,7 @@ final class ContentController
 
         try {
             $copy = $this->service->duplicate($entry->id, $user);
-            $this->context->flashToast(sprintf('Copie « %s » créée en brouillon.', $copy->title), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_content.copie_s_creee_en_brouillon'), $copy->title), 'success');
 
             return Response::redirect($copy->editUrl());
         } catch (ContentForbiddenException $exception) {
@@ -578,7 +581,7 @@ final class ContentController
         }
 
         if ($ids === [] || $action === '') {
-            $this->context->flashToast('Sélectionnez au moins un contenu et une action groupée.', 'warning');
+            $this->context->flashToast($this->t('admin.ctrl_text_content.selectionnez_au_moins_un_contenu_et_une_action_groupee'), 'warning');
 
             return Response::redirect($contentType->adminListUrl());
         }
@@ -590,7 +593,7 @@ final class ContentController
                 if ($entry !== null && $entry->type === $contentType->name && $entry->status !== Entry::STATUS_TRASH) {
                     return $this->conflictResponse(
                         $request,
-                        'La suppression définitive est réservée aux contenus déjà placés dans la corbeille.',
+                        $this->t('admin.ctrl_text_content.la_suppression_definitive_est_reservee_aux_contenus_deja_pla'),
                     );
                 }
             }
@@ -611,7 +614,7 @@ final class ContentController
                     'trash' => $this->service->trash($entry->id, $user),
                     'restore' => $this->service->restore($entry->id, $user),
                     'delete' => $this->service->delete($entry->id, $user),
-                    default => throw new ContentException('Action groupée inconnue.'),
+                    default => throw new ContentException($this->t('admin.ctrl_text_content.action_groupee_inconnue')),
                 };
                 $processed++;
             } catch (ContentConflictException $exception) {
@@ -622,10 +625,10 @@ final class ContentController
         }
 
         if ($processed > 0) {
-            $this->context->flashToast(sprintf('%d contenu(s) traité(s).', $processed), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_content.d_contenu_s_traite_s'), $processed), 'success');
         }
         if ($errors > 0) {
-            $this->context->flashToast(sprintf('%d contenu(s) n’ont pas pu être modifiés (droits ou verrou).', $errors), 'warning');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_content.d_contenu_s_n_ont_pas_pu_etre_modifies_droits_ou_verrou'), $errors), 'warning');
         }
 
         return Response::redirect($contentType->adminListUrl());
@@ -657,7 +660,7 @@ final class ContentController
             $deleted++;
         }
 
-        $this->context->flashToast(sprintf('%d élément(s) supprimé(s) définitivement.', $deleted), 'success', 'Corbeille vidée');
+        $this->context->flashToast(sprintf($this->t('admin.ctrl_text_content.d_element_s_supprime_s_definitivement'), $deleted), 'success', $this->t('admin.ctrl_text_content.corbeille_videe'));
 
         return Response::redirect($contentType->adminListUrl() . '?status=trash');
     }
@@ -672,7 +675,7 @@ final class ContentController
         $entry = $this->requireEntry($contentType->name, $id);
 
         if (!$this->service->canPreview($user, $entry, $contentType)) {
-            throw new ForbiddenException('Vous ne pouvez pas prévisualiser ce contenu.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_content.vous_ne_pouvez_pas_previsualiser_ce_contenu'));
         }
 
         // Optional revision preview (`?revision=123`)
@@ -727,7 +730,7 @@ final class ContentController
         $entry = $this->requireEntry($contentType->name, $id);
 
         if (!$this->service->canEdit($user, $entry, $contentType)) {
-            throw new ForbiddenException('Vous ne pouvez pas consulter les révisions de ce contenu.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_content.vous_ne_pouvez_pas_consulter_les_revisions_de_ce_contenu'));
         }
 
         $revisions = $this->revisions->forEntry($entry->id, includeAutosaves: true);
@@ -765,7 +768,7 @@ final class ContentController
             'bodyDiff' => $bodyDiff,
             'authorsMap' => $this->loadAuthorsMap(),
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_content.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $contentType->label('plural'), 'url' => $contentType->adminListUrl()],
                 ['label' => $entry->title, 'url' => $entry->editUrl()],
                 ['label' => 'Révisions', 'url' => null],
@@ -786,7 +789,7 @@ final class ContentController
 
         try {
             $this->service->restoreRevision($entry->id, $revId, $user);
-            $this->context->flashToast('La révision sélectionnée a été restaurée.', 'success', 'Révision restaurée');
+            $this->context->flashToast($this->t('admin.ctrl_text_content.la_revision_selectionnee_a_ete_restauree'), 'success', $this->t('admin.ctrl_text_content.revision_restauree'));
 
             return Response::redirect($entry->editUrl());
         } catch (ContentForbiddenException $exception) {
@@ -1094,7 +1097,7 @@ final class ContentController
             'primaryCtaInContent' => true,
             'editorConfigJson' => is_string($editorConfigJson) ? $editorConfigJson : '{}',
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_content.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $contentType->label('plural'), 'url' => $contentType->adminListUrl()],
                 ['label' => $isEdit ? $entry->title : 'Créer', 'url' => null],
             ],
@@ -1134,14 +1137,14 @@ final class ContentController
         ?User $holder,
         User $currentUser,
     ): Response {
-        $html = $this->view->render('admin::content/locked', $this->context->build($request, 'Contenu verrouillé', [
+        $html = $this->view->render('admin::content/locked', $this->context->build($request, $this->t('admin.ctrl_text_content.contenu_verrouille'), [
             'contentType' => $contentType,
             'entry' => $entry,
             'lock' => $lock,
             'holder' => $holder,
             'canTakeOver' => $this->service->canTakeOverLock($currentUser, $contentType),
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_content.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $contentType->label('plural'), 'url' => $contentType->adminListUrl()],
                 ['label' => $entry->title, 'url' => null],
             ],
@@ -1257,7 +1260,7 @@ final class ContentController
     {
         $contentType = $this->types->get($slug);
         if ($contentType === null) {
-            throw new NotFoundException(sprintf('Type de contenu « %s » introuvable.', $slug));
+            throw new NotFoundException(sprintf($this->t('admin.ctrl_text_content.type_de_contenu_s_introuvable'), $slug));
         }
 
         return $contentType;
@@ -1267,7 +1270,7 @@ final class ContentController
     {
         $entry = $this->entries->find($id);
         if ($entry === null || $entry->type !== $type) {
-            throw new NotFoundException('Contenu introuvable.');
+            throw new NotFoundException($this->t('admin.ctrl_text_content.contenu_introuvable'));
         }
 
         return $entry;

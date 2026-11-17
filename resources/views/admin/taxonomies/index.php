@@ -36,7 +36,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                 <?= $this->raw($this->csrfField()) ?>
 
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-term-name">Nom *</label>
+                    <label class="pc-label" for="pc-term-name"><?= t('admin.taxonomies.name') ?> *</label>
                     <input
                         id="pc-term-name"
                         type="text"
@@ -63,7 +63,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                     <div class="pc-field">
                         <label class="pc-label" for="pc-term-parent"><?= $this->e($taxonomy->label('parent_label')) ?></label>
                         <select id="pc-term-parent" name="parent_id" class="pc-select">
-                            <option value="0">Aucun (racine)</option>
+                            <option value="0"><?= $this->e($this->t('admin.taxonomies.index.aucun_racine')) ?></option>
                             <?php foreach ($allTerms as $candidate): ?>
                                 <?php if ($editing !== null && $candidate->id === $editing->id) { continue; } ?>
                                 <option value="<?= $this->e((string) $candidate->id) ?>"<?= $editing?->parentId === $candidate->id ? ' selected' : '' ?>>
@@ -84,7 +84,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                         <?= $this->e($isEdit ? 'Enregistrer' : 'Ajouter') ?>
                     </button>
                     <?php if ($isEdit): ?>
-                        <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--secondary">Annuler</a>
+                        <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('core.actions.cancel')) ?></a>
                     <?php endif; ?>
                 </div>
             </form>
@@ -98,12 +98,12 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                 name="q"
                 value="<?= $this->e($search) ?>"
                 class="pc-input pc-content-filters__search"
-                placeholder="Rechercher dans <?= $this->e(mb_strtolower($taxonomy->label('plural'))) ?>…"
-                aria-label="Rechercher"
+                placeholder="<?= $this->e($this->t('admin.taxonomies.index.rechercher_placeholder', ['type' => mb_strtolower($taxonomy->label('plural'))])) ?>"
+                aria-label="<?= $this->e($this->t('core.actions.search')) ?>"
             >
-            <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm">Rechercher</button>
+            <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($this->t('core.actions.search')) ?></button>
             <?php if ($search !== ''): ?>
-                <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm">Réinitialiser</a>
+                <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm"><?= $this->e($this->t('core.actions.reset')) ?></a>
             <?php endif; ?>
         </form>
 
@@ -112,7 +112,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                 'icon' => $taxonomy->icon,
                 'accent' => 'teal',
                 'title' => $taxonomy->label('empty_title'),
-                'description' => 'Utilisez le formulaire ci-contre pour créer votre premier terme.',
+                'description' => $this->t('admin.view_taxonomies_index.utilisez_le_formulaire_ci_contre_pour_creer_votre_premier_te'),
             ])) ?>
         <?php else: ?>
             <div class="pc-table-wrap">
@@ -121,7 +121,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                         <tr>
                             <th>Nom</th>
                             <th>Slug</th>
-                            <th>Contenus</th>
+                            <th><?= $this->e($this->t('admin.taxonomies.index.contenus')) ?></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -154,7 +154,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                                         <a href="<?= $this->e(sprintf('%s/%d/edit', $baseUrl, $term->id)) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">Modifier</a>
                                         <form method="post" action="<?= $this->e(sprintf('%s/%d/delete', $baseUrl, $term->id)) ?>" class="pc-row-action-form">
                                             <?= $this->raw($this->csrfField()) ?>
-                                            <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm">Supprimer</button>
+                                            <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm"><?= $this->e($this->t('core.actions.delete')) ?></button>
                                         </form>
                                     </div>
                                 </td>

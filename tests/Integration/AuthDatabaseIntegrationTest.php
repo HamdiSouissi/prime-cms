@@ -39,7 +39,7 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
         );
         $ran = $migrator->run();
 
-        $this->assertCount($this->migrationCount(), $ran);
+        $this->assertCount($this->coreMigrationCount(), $ran);
 
         $rolesRepo = new RoleRepository($this->connection);
         $usersRepo = new UserRepository($this->connection, $rolesRepo);
@@ -117,7 +117,7 @@ final class AuthDatabaseIntegrationTest extends DatabaseTestCase
 
         // Full rollback of all core migrations must succeed cleanly without FK errors
         $rolledBack = $migrator->reset();
-        $this->assertCount($this->migrationCount(), $rolledBack);
+        $this->assertCount($this->coreMigrationCount(), $rolledBack);
     }
 
     public function testEndToEndAuthTwoFactorRateLimiterAndPasswordResetOnRealDatabase(): void

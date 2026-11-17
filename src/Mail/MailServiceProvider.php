@@ -74,7 +74,7 @@ final class MailServiceProvider extends ServiceProvider
             return new MailLogRepository($connection, $hooks instanceof Hooks ? $hooks : null);
         });
 
-        $c->singleton(Mailer::class, static function (Container $c) use ($app): Mailer {
+        $c->singleton(Mailer::class, static function (Container $c): Mailer {
             /** @var MailConfig $config */
             $config = $c->get(MailConfig::class);
             /** @var MailerInterface $transport */

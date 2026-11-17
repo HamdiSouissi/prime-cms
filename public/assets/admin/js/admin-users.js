@@ -4,6 +4,7 @@
  */
 
 import { showToast } from './toast.js';
+import { tr } from './i18n.js';
 
 function slugify(value) {
   return value
@@ -52,7 +53,7 @@ function initCapabilityGroupToggles() {
 
     const syncLabel = () => {
       const allChecked = checkboxes.every((cb) => cb instanceof HTMLInputElement && cb.checked);
-      toggleBtn.textContent = allChecked ? 'Tout décocher' : 'Tout cocher';
+      toggleBtn.textContent = allChecked ? tr('admin.js.admin-users.tout_decocher', 'Tout décocher') : 'Tout cocher';
     };
 
     toggleBtn.addEventListener('click', () => {
@@ -97,14 +98,14 @@ function initCopyAndDownload() {
     const copyBtn = target.closest('[data-prime-copy-text]');
     if (copyBtn instanceof HTMLElement) {
       const text = copyBtn.getAttribute('data-prime-copy-text') || '';
-      const feedback = copyBtn.getAttribute('data-prime-copy-feedback') || 'Copié dans le presse-papiers.';
+      const feedback = copyBtn.getAttribute('data-prime-copy-feedback') || tr('admin.js.admin-users.copie_dans_le_presse_papiers', 'Copié dans le presse-papiers.');
       try {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
           await navigator.clipboard.writeText(text);
           showToast(feedback, 'success');
         }
       } catch {
-        showToast('Impossible de copier automatiquement. Copiez la sélection manuellement.', 'warning');
+        showToast(tr('admin.js.admin-users.impossible_de_copier_automatiquement_copiez', 'Impossible de copier automatiquement. Copiez la sélection manuellement.'), 'warning');
       }
       return;
     }
@@ -145,7 +146,7 @@ function initConfirmForms() {
       if (select instanceof HTMLSelectElement && select.value === 'delete') {
         const confirmMsg = checkedCount > 1
           ? `Supprimer définitivement ${checkedCount} utilisateurs sélectionnés ?`
-          : 'Supprimer définitivement 1 utilisateur sélectionné ?';
+          : tr('admin.js.admin-users.supprimer_definitivement_1_utilisateur_selectionne', 'Supprimer définitivement 1 utilisateur sélectionné ?');
         if (!window.confirm(confirmMsg)) {
           event.preventDefault();
         }

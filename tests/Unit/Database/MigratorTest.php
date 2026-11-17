@@ -77,9 +77,11 @@ final class MigratorTest extends TestCase
         $this->assertArrayHasKey('2026_11_15_000025_create_jobs_table', $discovered);
         $this->assertArrayHasKey('2026_11_16_000001_create_plugin_demo_table', $discovered);
 
-        // The count follows the directory (plus the plugin file this test writes): adding a migration
-        // must never mean touching this assertion again.
-        $this->assertCount(count(glob(dirname(__DIR__, 3) . '/database/migrations/*.php') ?: []) + 1, $discovered);
+        // Every core migration file must be discovered, plus the single plugin migration.
+        // Asserting on the file system instead of a hard-coded count keeps the test honest
+        // without breaking each time a new migration is added to the core.
+        $coreFiles = glob(dirname(__DIR__, 3) . '/database/migrations/*.php') ?: [];
+        $this->assertCount(count($coreFiles) + 1, $discovered);
 
         // Verify each core migration file returns a valid Migration instance.
         foreach ($discovered as $path) {

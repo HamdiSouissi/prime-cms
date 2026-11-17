@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\Notices;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Http\Request;
 use Prime\Http\Response;
@@ -16,6 +17,8 @@ use Prime\Themes\ThemeManager;
  */
 final class NoticeController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly Notices $notices,
         private readonly Auth $auth,
@@ -27,7 +30,7 @@ final class NoticeController
     {
         $user = $this->auth->user($request);
         if ($user === null) {
-            return Response::json(['ok' => false, 'message' => 'Non authentifié.'], 401);
+            return Response::json(['ok' => false, 'message' => $this->t('admin.ctrl_text_notice.non_authentifie')], 401);
         }
 
         if ($id === ThemeManager::FALLBACK_NOTICE_ID) {

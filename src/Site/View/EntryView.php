@@ -9,6 +9,8 @@ use DateTimeZone;
 use Prime\Auth\User;
 use Prime\Content\Entry;
 use Prime\Content\EntryQuery;
+use Prime\I18n\LocaleFormatter;
+use Prime\Kernel\Application;
 use Prime\Media\Media;
 use Prime\Media\MediaHelper;
 use Prime\Site\UrlGenerator;
@@ -25,31 +27,6 @@ use Prime\Site\Zone\ZoneRepository;
  */
 final class EntryView
 {
-    private const FRENCH_MONTHS = [
-        1 => 'janvier',
-        2 => 'février',
-        3 => 'mars',
-        4 => 'avril',
-        5 => 'mai',
-        6 => 'juin',
-        7 => 'juillet',
-        8 => 'août',
-        9 => 'septembre',
-        10 => 'octobre',
-        11 => 'novembre',
-        12 => 'décembre',
-    ];
-
-    private const FRENCH_DAYS = [
-        0 => 'dimanche',
-        1 => 'lundi',
-        2 => 'mardi',
-        3 => 'mercredi',
-        4 => 'jeudi',
-        5 => 'vendredi',
-        6 => 'samedi',
-    ];
-
     private bool $prevLoaded = false;
     private ?self $prevCache = null;
     private bool $nextLoaded = false;
@@ -156,9 +133,12 @@ final class EntryView
     }
 
     /**
-     * French-localized formatted publication date (e.g. `15 novembre 2026`).
+     * Localised publication date (`15 November 2026` in English, `15 novembre 2026` in French).
+     *
+     * The stored value stays UTC; the container formatter applies the site timezone and the
+     * active locale, so a theme never hard-codes a language.
      */
-    public function date(string $format = 'j F Y'): string
+    public function date(string $preset = 'medium'): string
     {
         $source = $this->entry->publishedAt ?? $this->entry->createdAt;
         $ts = $source !== '' ? strtotime($source) : false;
@@ -166,7 +146,20 @@ final class EntryView
             return '';
         }
 
-        return $this->e(self::formatFrenchDate($ts, $format));
+        return $this->e($this->formatter()->date($ts, $preset));
+    }
+
+    /**
+     * Container formatter, so the site language and timezone of the request are applied.
+     */
+    private function formatter(): LocaleFormatter
+    {
+        $application = Application::hasInstance() ? Application::getInstance() : null;
+        if ($application !== null && $application->container()->has(LocaleFormatter::class)) {
+            return $application->get(LocaleFormatter::class);
+        }
+
+        return LocaleFormatter::fallback();
     }
 
     /**
@@ -451,45 +444,6 @@ final class EntryView
         }
 
         return $this->factory->makeMany($selected);
-    }
-
-    public static function formatFrenchDate(int $timestamp, string $format = 'j F Y'): string
-    {
-        $dt = (new DateTimeImmutable('@' . $timestamp))->setTimezone(new DateTimeZone('UTC'));
-        $monthIdx = (int) $dt->format('n');
-        $dayIdx = (int) $dt->format('w');
-
-        $out = '';
-        $len = strlen($format);
-        $escaped = false;
-
-        for ($i = 0; $i < $len; $i++) {
-            $ch = $format[$i];
-            if ($escaped) {
-                $out .= $ch;
-                $escaped = false;
-                continue;
-            }
-            if ($ch === '\\') {
-                $escaped = true;
-                continue;
-            }
-            if ($ch === 'F') {
-                $out .= self::FRENCH_MONTHS[$monthIdx];
-            } elseif ($ch === 'M') {
-                $full = self::FRENCH_MONTHS[$monthIdx];
-                $out .= mb_substr($full, 0, 4, 'UTF-8') . '.';
-            } elseif ($ch === 'l') {
-                $out .= self::FRENCH_DAYS[$dayIdx];
-            } elseif ($ch === 'D') {
-                $full = self::FRENCH_DAYS[$dayIdx];
-                $out .= mb_substr($full, 0, 3, 'UTF-8') . '.';
-            } else {
-                $out .= $dt->format($ch);
-            }
-        }
-
-        return $out;
     }
 
     private function computeInitials(string $name): string

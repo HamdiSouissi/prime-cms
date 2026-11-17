@@ -3,6 +3,7 @@
  * duplicate detection warnings, retry, and cancel/abort support.
  */
 
+import { tr } from '../i18n.js';
 let nextItemSeq = 1;
 
 /**
@@ -59,11 +60,11 @@ export function xhrUploadTransport({ file, folderId, url, csrfToken, onProgress,
     });
 
     xhr.addEventListener('error', () => {
-      reject(new Error('Erreur réseau lors du téléversement.'));
+      reject(new Error(tr('admin.js.media.upload-queue.erreur_reseau_lors_du_televersement', 'Erreur réseau lors du téléversement.')));
     });
 
     xhr.addEventListener('abort', () => {
-      const err = new Error('Téléversement annulé.');
+      const err = new Error(tr('admin.js.media.upload-queue.televersement_annule', 'Téléversement annulé.'));
       err.name = 'AbortError';
       reject(err);
     });

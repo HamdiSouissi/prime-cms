@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\I18n;
 
+use Prime\Cache\CacheInterface;
 use Prime\Hooks\Hooks;
 use Prime\Kernel\Application;
 use Prime\Log\Logger;
@@ -96,12 +97,17 @@ final class Translator
 
     /**
      * @param list<string> $paths Directories containing `{locale}/{group}.php` language files
+     * @param ?CacheInterface $cache Optional persistent cache for the merged language trees;
+     *                               the key embeds a fingerprint of the catalogue files, so
+     *                               editing one (or installing a theme/plugin) invalidates
+     *                               the entry without any manual flush.
      */
     public function __construct(
         private string $locale = self::DEFAULT_LOCALE,
         private string $fallbackLocale = self::FALLBACK_LOCALE,
         array $paths = [],
         private readonly ?Hooks $hooks = null,
+        private readonly ?CacheInterface $cache = null,
     ) {
         $this->paths = array_values(array_filter(
             array_map(static fn (string $path): string => rtrim($path, '/\\'), $paths),
@@ -261,6 +267,12 @@ final class Translator
             return $this->treeCache[$locale];
         }
 
+        $cached = $this->cache?->get($this->cacheKey($locale));
+        if (is_array($cached)) {
+            /** @var array<string, mixed> $cached */
+            return $this->treeCache[$locale] = $cached;
+        }
+
         $tree = [];
         foreach ($this->groupFiles($locale) as $group) {
             $tree[$group] = $this->loadGroup($locale, $group);
@@ -273,7 +285,30 @@ final class Translator
 
         $this->treeCache[$locale] = $tree;
 
+        if ($this->cache !== null) {
+            $this->cache->set($this->cacheKey($locale), $tree, 86400);
+        }
+
         return $tree;
+    }
+
+    /**
+     * Persistent cache key for a locale's merged tree, invalidated by any catalogue change.
+     */
+    private function cacheKey(string $locale): string
+    {
+        $fingerprint = [];
+
+        foreach ($this->paths as $path) {
+            foreach ($this->groupFiles($locale) as $group) {
+                $file = $path . '/' . $locale . '/' . $group . '.php';
+                if (is_file($file)) {
+                    $fingerprint[] = $file . ':' . (string) (@filemtime($file) ?: 0);
+                }
+            }
+        }
+
+        return 'translations.' . $locale . '.' . sha1(implode('|', $fingerprint));
     }
 
     /**
@@ -297,7 +332,7 @@ final class Translator
         foreach ($this->paths as $path) {
             $entries = @scandir($path) ?: [];
             foreach ($entries as $entry) {
-                if (!is_string($entry) || $entry === '.' || $entry === '..' || !is_dir($path . '/' . $entry)) {
+                if ($entry === '.' || $entry === '..' || !is_dir($path . '/' . $entry)) {
                     continue;
                 }
                 if ($this->groupFiles($entry) !== []) {
@@ -307,7 +342,7 @@ final class Translator
         }
 
         foreach ($this->registered as $locale => $messages) {
-            if (is_string($locale) && $messages !== []) {
+            if ($messages !== []) {
                 $locales[$locale] = true;
             }
         }
@@ -524,6 +559,102 @@ final class Translator
     }
 
     /**
+     * Resolve `plugin::hello-prime.views.admin.title` against the `lang/` folder shipped by
+     * the `hello-prime` plugin (or `theme::aurora.…` for a theme).
+     *
+     * @return array<string, mixed>|string|null
+     */
+    private function lookupNamespaced(string $key, string $locale): array|string|null
+    {
+        $parts = explode('::', $key, 2);
+        $namespace = strtolower($parts[0]);
+        $rest = $parts[1] ?? '';
+
+        // `plugin::hello-prime.views.admin.title` => namespace `plugin`, slug `hello-prime`.
+        $cut = strpos($rest, '.');
+        if ($cut === false) {
+            return null;
+        }
+
+        $slug = substr($rest, 0, $cut);
+        $segments = explode('.', substr($rest, $cut + 1));
+        if ($namespace === '' || $slug === '' || $segments[0] === '') {
+            return null;
+        }
+
+        $directory = $this->namespaceDirectory($namespace, $slug);
+        if ($directory === null) {
+            return null;
+        }
+
+        foreach (['messages', ...$this->groupsOfPath($directory, $locale)] as $group) {
+            $file = $directory . '/' . $locale . '/' . $group . '.php';
+            if (!is_file($file)) {
+                continue;
+            }
+
+            $loaded = require $file;
+            if (!is_array($loaded)) {
+                continue;
+            }
+
+            /** @var array<string, mixed> $loaded */
+            $found = $this->walk($loaded, $segments);
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Locate the `lang/` root shipped by the plugin or theme named `$slug`.
+     */
+    private function namespaceDirectory(string $namespace, string $slug): ?string
+    {
+        $kind = match ($namespace) {
+            'plugin', 'plugins' => 'plugins',
+            'theme', 'themes' => 'themes',
+            default => null,
+        };
+
+        if ($kind === null) {
+            return null;
+        }
+
+        foreach ($this->paths as $path) {
+            $pluginDir = \dirname($path);
+            if (basename($pluginDir) !== $slug || basename(\dirname($pluginDir)) !== $kind) {
+                continue;
+            }
+
+            return $path;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function groupsOfPath(string $directory, string $locale): array
+    {
+        $files = @glob($directory . '/' . $locale . '/*.php') ?: [];
+        $groups = [];
+        foreach ($files as $file) {
+            $name = basename((string) $file, '.php');
+            if ($name !== '' && $name !== 'index' && $name !== 'messages') {
+                $groups[] = $name;
+            }
+        }
+
+        sort($groups);
+
+        return $groups;
+    }
+
+    /**
      * CLDR-style `one` / `other` split used by French and English.
      */
     private function pluralIndex(int|float $number): int
@@ -534,12 +665,18 @@ final class Translator
     }
 
     /**
+     * Resolve a key, honouring the `plugin::slug.key` / `theme::slug.key` namespaces.
+     *
      * @return array<string, mixed>|string|null
      */
     private function lookup(string $key, string $locale): array|string|null
     {
         if ($key === '' || $locale === '') {
             return null;
+        }
+
+        if (str_contains($key, '::')) {
+            return $this->lookupNamespaced($key, $locale);
         }
 
         $segments = explode('.', $key);
@@ -561,6 +698,12 @@ final class Translator
             }
 
             $tree = $this->loadGroup($locale, $group);
+            // A key may be both a leaf and a group (`menu.settings` label vs `menu.settings.*`
+            // pages). PHP cannot hold both, so a leaf declared through `leaves` always wins.
+            $leaf = $this->walkLeaf($tree, $path);
+            if ($leaf !== null) {
+                return $leaf;
+            }
             $found = $this->walk($tree, $path);
             if ($found !== null) {
                 return $found;
@@ -576,20 +719,53 @@ final class Translator
     }
 
     /**
-     * @param array<string, mixed> $tree
-     * @param list<string>         $segments
+     * @param array<array-key, mixed> $tree
+     * @param list<string>            $segments
+     */
+    private function walkLeaf(array $tree, array $segments): ?string
+    {
+        $current = $tree;
+        foreach ($segments as $segment) {
+            if (!is_array($current)) {
+                return null;
+            }
+            $resolved = array_key_exists($segment, $current)
+                ? $segment
+                : (ctype_digit($segment) && array_key_exists((int) $segment, $current) ? (int) $segment : null);
+            if ($resolved === null) {
+                return null;
+            }
+            $current = $current[$resolved];
+        }
+
+        return is_string($current) ? $current : null;
+    }
+
+    /**
+     * @param array<array-key, mixed> $tree
+     * @param list<string>            $segments
      *
-     * @return array<string, mixed>|string|null
+     * @return array<array-key, mixed>|string|null
      */
     private function walk(array $tree, array $segments): array|string|null
     {
         $current = $tree;
         foreach ($segments as $segment) {
-            if (!is_array($current) || !array_key_exists($segment, $current)) {
+            if (!is_array($current)) {
                 return null;
             }
 
-            $current = $current[$segment];
+            // `'404' => [...]` is stored under the integer key 404 by PHP, while the dotted key
+            // keeps the string segment, so numeric segments must be tried both ways.
+            $resolved = array_key_exists($segment, $current)
+                ? $segment
+                : (ctype_digit($segment) && array_key_exists((int) $segment, $current) ? (int) $segment : null);
+
+            if ($resolved === null) {
+                return null;
+            }
+
+            $current = $current[$resolved];
         }
 
         if (is_string($current)) {
@@ -692,7 +868,7 @@ final class Translator
 
         $registered = $this->registered[$locale] ?? [];
         foreach ($registered as $group => $value) {
-            if (is_string($group) && (is_array($value) || is_string($value))) {
+            if (is_array($value) || is_string($value)) {
                 $groups[$group] = true;
             }
         }

@@ -1281,6 +1281,10 @@ final class SiteRenderingTest extends TestCase
         $app->config()->set('app.debug', true);
         $app->config()->set('app.url', 'https://prime.test');
         $app->config()->set('app.key', 'base64:' . base64_encode(str_repeat('k', 32)));
+        // Page caching is exercised by its own dedicated suite: here every request must hit the
+        // database so that SQL query counts measure template/query efficiency, not cache hits.
+        $app->config()->set('cache.page.enabled', false);
+        $app->config()->set('cache.page.directory', sys_get_temp_dir() . '/prime_pages_' . uniqid('', true));
         $app->boot();
 
         $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {

@@ -66,12 +66,10 @@ final class AdminDashboardTest extends TestCase
             '/admin/roles/create',
             '/admin/profile',
             '/admin/settings',
-            '/admin/settings/general',
             '/admin/settings/reading',
             '/admin/settings/permalinks',
             '/admin/settings/seo',
-            '/admin/settings/security',
-            '/admin/settings/emails',
+            '/admin/settings/performance',
         ];
 
         foreach ($paths as $path) {
@@ -168,7 +166,7 @@ final class AdminDashboardTest extends TestCase
         $body = $response->body();
 
         $this->assertSame(200, $response->status());
-        $this->assertStringContainsString('<html lang="fr">', $body);
+        $this->assertStringContainsString('<html lang="fr" dir="ltr">', $body);
         $this->assertStringContainsString('href="#content">Aller au contenu</a>', $body);
         $this->assertStringContainsString('aria-label="Navigation principale"', $body);
         $this->assertStringContainsString('<header class="pc-topbar">', $body);
@@ -179,6 +177,10 @@ final class AdminDashboardTest extends TestCase
         $this->assertStringContainsString('id="prime-command-palette"', $body);
         $this->assertStringContainsString('Bonjour, Camille Admin', $body);
         $this->assertStringContainsString('action="/admin/logout"', $body);
+        // The JS translation catalogue is embedded as inert JSON (strict CSP, no extra request).
+        $this->assertStringContainsString('type="application/json" data-prime-translations', $body);
+        $this->assertStringContainsString('"core.actions.save"', $body);
+        $this->assertStringContainsString('"locale":"fr"', $body);
 
         // Zero external HTTP(S) asset requests (no CDN fonts/scripts/stylesheets)
         $this->assertSame(
@@ -235,13 +237,13 @@ final class AdminDashboardTest extends TestCase
         /** @var Kernel $kernel */
         $kernel = $app->get(Kernel::class);
 
-        $response = $kernel->handle(Request::create('GET', '/admin/settings/security'));
+        $response = $kernel->handle(Request::create('GET', '/admin/settings/performance'));
         $body = $response->body();
 
         $this->assertSame(200, $response->status());
         $this->assertStringContainsString('id="pc-submenu-settings"', $body);
         $this->assertStringNotContainsString('id="pc-submenu-settings" hidden', $body);
-        $this->assertStringContainsString('href="/admin/settings/security"', $body);
+        $this->assertStringContainsString('href="/admin/settings/performance"', $body);
         $this->assertStringContainsString('pc-sidebar__sublink--active', $body);
     }
 
@@ -310,11 +312,10 @@ final class AdminDashboardTest extends TestCase
         /** @var Kernel $kernel */
         $kernel = $app->get(Kernel::class);
 
+        // `/admin/settings` is still the Phase 9 hub; the individual settings screens that
+        // ship in Phase 9 have their own pages (General, Security, E-mails, Performance…).
         $expectedPhases = [
             '/admin/settings' => 'Phase 9',
-            '/admin/settings/general' => 'Phase 9',
-            '/admin/settings/security' => 'Phase 9',
-            '/admin/settings/emails' => 'Phase 9',
         ];
 
         foreach ($expectedPhases as $path => $expectedPhase) {
@@ -335,6 +336,7 @@ final class AdminDashboardTest extends TestCase
         $this->assertStringContainsString('Lecture', $kernel->handle(Request::create('GET', '/admin/settings/reading'))->body());
         $this->assertStringContainsString('Permaliens', $kernel->handle(Request::create('GET', '/admin/settings/permalinks'))->body());
         $this->assertStringContainsString('Référencement', $kernel->handle(Request::create('GET', '/admin/settings/seo'))->body());
+        $this->assertStringContainsString('Performance', $kernel->handle(Request::create('GET', '/admin/settings/performance'))->body());
 
         // Styleguide row actions reflect Phase 6 editing and accurate demo duplicate text.
         $styleguideBody = $kernel->handle(Request::create('GET', '/admin/styleguide'))->body();

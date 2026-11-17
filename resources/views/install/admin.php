@@ -20,10 +20,10 @@ $this->layout('install::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-install__header">
-    <h1 class="pc-install__title">Compte administrateur</h1>
+    <h1 class="pc-install__title"><?= t('core.install.admin.account') ?></h1>
     <p class="pc-install__lead">
-        Créez le compte principal qui administrera votre site.
-        Choisissez une phrase secrète unique d'au moins 12 caractères (stockée de façon irréversible en Argon2id).
+        <?= $this->e($this->t('core.install.admin.compte_principal')) ?>
+        <?= $this->e($this->t('core.install.admin.choisissez_phrase_secrete_unique_moins')) ?>
     </p>
 </div>
 
@@ -33,9 +33,9 @@ $this->layout('install::layout', [
     <div class="pc-install__grid">
         <div class="pc-field<?= isset($errors['display_name']) ? ' pc-field--error' : '' ?>">
             <label class="pc-field__label" for="admin-display-name">
-                <span>Nom affiché</span>
+                <span><?= $this->e($this->t('core.fields.display_name')) ?></span>
                 <span class="pc-field__required" aria-hidden="true">*</span>
-                <span class="sr-only">(obligatoire)</span>
+                <span class="sr-only"><?= $this->e($this->t('core.install.admin.obligatoire')) ?></span>
             </label>
             <input
                 type="text"
@@ -59,9 +59,9 @@ $this->layout('install::layout', [
 
         <div class="pc-field<?= isset($errors['email']) ? ' pc-field--error' : '' ?>">
             <label class="pc-field__label" for="admin-email">
-                <span>Adresse e-mail</span>
+                <span><?= t('core.install.admin.email') ?></span>
                 <span class="pc-field__required" aria-hidden="true">*</span>
-                <span class="sr-only">(obligatoire)</span>
+                <span class="sr-only"><?= $this->e($this->t('core.install.admin.obligatoire')) ?></span>
             </label>
             <input
                 type="email"
@@ -86,9 +86,9 @@ $this->layout('install::layout', [
 
     <div class="pc-field<?= isset($errors['password']) ? ' pc-field--error' : '' ?>">
         <label class="pc-field__label" for="admin-password">
-            <span>Mot de passe</span>
+            <span><?= $this->e($this->t('core.fields.password')) ?></span>
             <span class="pc-field__required" aria-hidden="true">*</span>
-            <span class="sr-only">(obligatoire)</span>
+            <span class="sr-only"><?= $this->e($this->t('core.install.admin.obligatoire')) ?></span>
         </label>
         <div class="pc-input-group">
             <input
@@ -97,7 +97,7 @@ $this->layout('install::layout', [
                 name="password"
                 class="pc-input"
                 value=""
-                placeholder="Au moins 12 caractères"
+                placeholder="<?= $this->e($this->t('core.install.admin.moins_12_caracteres')) ?>"
                 autocomplete="new-password"
                 minlength="12"
                 required
@@ -109,7 +109,7 @@ $this->layout('install::layout', [
                 type="button"
                 class="pc-input-group__action"
                 data-prime-password-toggle
-                aria-label="Afficher le mot de passe"
+                aria-label="<?= $this->e($this->t('core.install.admin.afficher_mot_passe')) ?>"
                 aria-pressed="false"
             >
                 <?= $this->raw($this->icon('eye', 18)) ?>
@@ -130,7 +130,7 @@ $this->layout('install::layout', [
                 <span class="pc-strength__bar"></span>
             </div>
             <p class="pc-strength__text" data-prime-strength-label aria-live="polite">
-                Minimum 12 caractères recommandés (phrase secrète, majuscules, chiffres et symboles).
+                <?= $this->e($this->t('core.install.admin.minimum_12_caracteres_recommandes_phrase')) ?>
             </p>
         </div>
 
@@ -144,9 +144,9 @@ $this->layout('install::layout', [
 
     <div class="pc-field<?= isset($errors['password_confirmation']) ? ' pc-field--error' : '' ?>">
         <label class="pc-field__label" for="admin-password-confirm">
-            <span>Confirmer le mot de passe</span>
+            <span><?= $this->e($this->t('core.install.admin.confirmer_mot_passe')) ?></span>
             <span class="pc-field__required" aria-hidden="true">*</span>
-            <span class="sr-only">(obligatoire)</span>
+            <span class="sr-only"><?= $this->e($this->t('core.install.admin.obligatoire')) ?></span>
         </label>
         <div class="pc-input-group">
             <input
@@ -155,7 +155,7 @@ $this->layout('install::layout', [
                 name="password_confirmation"
                 class="pc-input"
                 value=""
-                placeholder="Ressaisissez votre mot de passe"
+                placeholder="<?= $this->e($this->t('core.install.admin.ressaisissez_mot_passe')) ?>"
                 autocomplete="new-password"
                 minlength="12"
                 required
@@ -166,7 +166,7 @@ $this->layout('install::layout', [
                 type="button"
                 class="pc-input-group__action"
                 data-prime-password-toggle
-                aria-label="Afficher la confirmation du mot de passe"
+                aria-label="<?= $this->e($this->t('core.install.admin.afficher_confirmation_mot_passe')) ?>"
                 aria-pressed="false"
             >
                 <?= $this->raw($this->icon('eye', 18)) ?>

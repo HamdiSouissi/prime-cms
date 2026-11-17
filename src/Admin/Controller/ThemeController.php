@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Kernel\Application;
@@ -23,6 +24,8 @@ use Prime\View\View;
  */
 final class ThemeController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly Application $app,
         private readonly View $view,
@@ -62,7 +65,7 @@ final class ThemeController
             'fallbackError' => $fallbackError,
             'primaryCtaInContent' => $allowUpload,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_theme.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => 'Apparence', 'url' => '/admin/appearance/themes'],
                 ['label' => 'Thèmes', 'url' => null],
             ],
@@ -78,7 +81,7 @@ final class ThemeController
     {
         try {
             $activated = $this->themes->activate($slug);
-            $this->context->flashToast(sprintf('Le thème « %s » est désormais actif.', $activated->name()), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_theme.le_theme_s_est_desormais_actif'), $activated->name()), 'success');
         } catch (ThemeException $e) {
             $this->context->flashToast($e->getMessage(), 'danger');
         }
@@ -93,7 +96,7 @@ final class ThemeController
     {
         try {
             $this->themes->delete($slug);
-            $this->context->flashToast(sprintf('Le thème « %s » a été supprimé.', $slug), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_theme.le_theme_s_a_ete_supprime'), $slug), 'success');
         } catch (ThemeException $e) {
             $this->context->flashToast($e->getMessage(), 'danger');
         }
@@ -107,14 +110,14 @@ final class ThemeController
     public function upload(Request $request): Response
     {
         if (!(bool) $this->app->config()->get('themes.allow_upload', true)) {
-            $this->context->flashToast('Le téléversement de thèmes ZIP est désactivé sur cette instance.', 'danger');
+            $this->context->flashToast($this->t('admin.ctrl_text_theme.le_televersement_de_themes_zip_est_desactive_sur_cette_insta'), 'danger');
 
             return Response::redirect('/admin/appearance/themes');
         }
 
         $file = $request->file('theme_zip');
         if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            $this->context->flashToast('Veuillez sélectionner une archive ZIP valide.', 'danger');
+            $this->context->flashToast($this->t('admin.ctrl_text_theme.veuillez_selectionner_une_archive_zip_valide'), 'danger');
 
             return Response::redirect('/admin/appearance/themes');
         }
@@ -126,8 +129,8 @@ final class ThemeController
             $result = $this->installer->installFromZip($tmpPath, replaceExisting: $replace);
             $manifest = $result['manifest'];
             $msg = $result['replaced']
-                ? sprintf('Le thème « %s » a été mis à jour vers la version %s.', $manifest->name, $manifest->version)
-                : sprintf('Le thème « %s » (v%s) a été installé avec succès.', $manifest->name, $manifest->version);
+                ? sprintf($this->t('admin.ctrl_text_theme.le_theme_s_a_ete_mis_a_jour_vers_la_version_s'), $manifest->name, $manifest->version)
+                : sprintf($this->t('admin.ctrl_text_theme.le_theme_s_v_s_a_ete_installe_avec_succes'), $manifest->name, $manifest->version);
             $this->context->flashToast($msg, 'success');
         } catch (ThemeInstallationException $e) {
             $this->context->flashToast($e->getMessage(), 'danger');
@@ -190,7 +193,7 @@ final class ThemeController
             'previewUrl' => '/?customizer_preview=1',
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_theme.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => 'Apparence', 'url' => '/admin/appearance/themes'],
                 ['label' => 'Personnaliser', 'url' => null],
             ],
@@ -209,7 +212,7 @@ final class ThemeController
         $manifest = $active->manifest;
 
         if ($manifest === null) {
-            return $this->customizerErrorResponse($request, 'Aucun thème valide actif.');
+            return $this->customizerErrorResponse($request, $this->t('admin.ctrl_text_theme.aucun_theme_valide_actif'));
         }
 
         $payload = $this->extractBody($request);
@@ -264,13 +267,13 @@ final class ThemeController
         if ($request->wantsJson()) {
             return Response::json([
                 'ok' => true,
-                'message' => 'Personnalisation publiée avec succès.',
+                'message' => $this->t('admin.ctrl_text_theme.personnalisation_publiee_avec_succes'),
                 'values' => $saved['values'],
                 'css_url' => $saved['css_url'],
             ]);
         }
 
-        $this->context->flashToast('Les réglages d\'apparence ont été publiés.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_theme.les_reglages_d_apparence_ont_ete_publies'), 'success');
 
         return Response::redirect('/admin/appearance/customizer');
     }
@@ -284,7 +287,7 @@ final class ThemeController
         $parent = $this->themes->activeParent();
 
         if ($active->manifest === null) {
-            return $this->customizerErrorResponse($request, 'Aucun thème valide actif.');
+            return $this->customizerErrorResponse($request, $this->t('admin.ctrl_text_theme.aucun_theme_valide_actif'));
         }
 
         $reset = $this->options->reset($active->manifest, $parent?->manifest);
@@ -292,13 +295,13 @@ final class ThemeController
         if ($request->wantsJson()) {
             return Response::json([
                 'ok' => true,
-                'message' => 'Options réinitialisées aux valeurs par défaut.',
+                'message' => $this->t('admin.ctrl_text_theme.options_reinitialisees_aux_valeurs_par_defaut'),
                 'values' => $reset['values'],
                 'css_url' => $reset['css_url'],
             ]);
         }
 
-        $this->context->flashToast('Les options du thème ont été réinitialisées.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_theme.les_options_du_theme_ont_ete_reinitialisees'), 'success');
 
         return Response::redirect('/admin/appearance/customizer');
     }

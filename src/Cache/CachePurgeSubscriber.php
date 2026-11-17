@@ -89,7 +89,7 @@ final class CachePurgeSubscriber
 
         $exact = ['/'];
         $url = $entry->url();
-        if (is_string($url) && $url !== '') {
+        if ($url !== '') {
             $exact[] = $url;
         }
 

@@ -24,9 +24,17 @@ final class PageCacheTest extends TestCase
     protected function tearDown(): void
     {
         if (is_dir($this->tempDir)) {
-            foreach (glob($this->tempDir . '/{,.}*', GLOB_BRACE) ?: [] as $f) {
-                if (is_file($f)) {
-                    @unlink($f);
+            // `scandir` keeps this cleanup portable: `GLOB_BRACE` is unavailable on some SAPIs.
+            $entries = scandir($this->tempDir);
+            foreach ($entries === false ? [] : $entries as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+                $path = $this->tempDir . '/' . $entry;
+                if (is_dir($path)) {
+                    @rmdir($path);
+                } else {
+                    @unlink($path);
                 }
             }
             @rmdir($this->tempDir);

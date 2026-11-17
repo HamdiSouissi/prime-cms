@@ -5,6 +5,7 @@
  */
 
 import { editorApi } from './editor/core.js';
+import { tr } from './i18n.js';
 
 /**
  * Fallback catalog used only when editor config has not provided `dynamicBlocks`.
@@ -13,10 +14,10 @@ const FALLBACK_CATALOG = [
   {
     name: 'latest_entries',
     label: 'Derniers contenus',
-    description: 'Affiche la liste des derniers articles ou contenus publiés.',
+    description: tr('admin.js.zones-admin.affiche_la_liste_des_derniers', 'Affiche la liste des derniers articles ou contenus publiés.'),
     defaults: { title: 'Derniers articles', type: 'post', limit: 5, show_image: false, show_excerpt: false },
     fields: [
-      { name: 'title', type: 'text', label: 'Titre affiché', placeholder: 'Derniers articles', default: 'Derniers articles' },
+      { name: 'title', type: 'text', label: tr('admin.js.zones-admin.titre_affiche', 'Titre affiché'), placeholder: 'Derniers articles', default: 'Derniers articles' },
       {
         name: 'type',
         type: 'select',
@@ -27,25 +28,25 @@ const FALLBACK_CATALOG = [
         ],
         default: 'post',
       },
-      { name: 'limit', type: 'number', label: 'Nombre d’éléments (1 à 12)', min: 1, max: 12, step: 1, default: 5 },
-      { name: 'show_image', type: 'toggle', label: 'Afficher l’image mise en avant', default: false },
+      { name: 'limit', type: 'number', label: tr('admin.js.zones-admin.nombre_d_elements_1_a', 'Nombre d’éléments (1 à 12)'), min: 1, max: 12, step: 1, default: 5 },
+      { name: 'show_image', type: 'toggle', label: tr('admin.js.zones-admin.afficher_l_image_mise_en', 'Afficher l’image mise en avant'), default: false },
       { name: 'show_excerpt', type: 'toggle', label: 'Afficher l’extrait', default: false },
     ],
   },
   {
     name: 'term_list',
     label: 'Liste de termes',
-    description: 'Affiche les catégories ou étiquettes du site.',
-    defaults: { title: 'Catégories', taxonomy: 'category', show_count: true },
+    description: tr('admin.js.zones-admin.affiche_les_categories_ou_etiquettes', 'Affiche les catégories ou étiquettes du site.'),
+    defaults: { title: tr('admin.js.zones-admin.categories', 'Catégories'), taxonomy: 'category', show_count: true },
     fields: [
-      { name: 'title', type: 'text', label: 'Titre affiché', placeholder: 'Catégories', default: 'Catégories' },
+      { name: 'title', type: 'text', label: tr('admin.js.zones-admin.titre_affiche', 'Titre affiché'), placeholder: tr('admin.js.zones-admin.categories', 'Catégories'), default: tr('admin.js.zones-admin.categories', 'Catégories') },
       {
         name: 'taxonomy',
         type: 'select',
         label: 'Taxonomie',
         options: [
-          { value: 'category', label: 'Catégories' },
-          { value: 'tag', label: 'Étiquettes' },
+          { value: 'category', label: tr('admin.js.zones-admin.categories', 'Catégories') },
+          { value: 'tag', label: tr('admin.js.zones-admin.etiquettes', 'Étiquettes') },
         ],
         default: 'category',
       },
@@ -55,14 +56,14 @@ const FALLBACK_CATALOG = [
   {
     name: 'menu',
     label: 'Menu de navigation',
-    description: 'Affiche un menu de navigation enregistré.',
+    description: tr('admin.js.zones-admin.affiche_un_menu_de_navigation', 'Affiche un menu de navigation enregistré.'),
     defaults: { title: '', menu_id: 0 },
     fields: [
-      { name: 'title', type: 'text', label: 'Titre affiché (optionnel)', placeholder: 'Navigation', default: '' },
+      { name: 'title', type: 'text', label: tr('admin.js.zones-admin.titre_affiche_optionnel', 'Titre affiché (optionnel)'), placeholder: 'Navigation', default: '' },
       {
         name: 'menu_id',
         type: 'select',
-        label: 'Menu à afficher',
+        label: tr('admin.js.zones-admin.menu_a_afficher', 'Menu à afficher'),
         options: [{ value: '0', label: 'Aucun menu enregistré' }],
         default: '0',
       },
@@ -71,7 +72,7 @@ const FALLBACK_CATALOG = [
   {
     name: 'search_form',
     label: 'Formulaire de recherche',
-    description: 'Champ de recherche accessible pointant vers la page de recherche.',
+    description: tr('admin.js.zones-admin.champ_de_recherche_accessible_pointant', 'Champ de recherche accessible pointant vers la page de recherche.'),
     defaults: {},
     fields: [],
   },
@@ -159,7 +160,7 @@ export function formatDynamicSummary(entry, attrs) {
 
   const fields = Array.isArray(entry.fields) ? entry.fields : [];
   if (fields.length === 0) {
-    return 'Aucun réglage requis';
+    return tr('admin.js.zones-admin.aucun_reglage_requis', 'Aucun réglage requis');
   }
 
   const parts = [];
@@ -198,14 +199,14 @@ export function formatDynamicSummary(entry, attrs) {
       } else if (key === 'show_count') {
         parts.push(active ? 'avec compteur' : 'sans compteur');
       } else if (key === 'show_stars') {
-        parts.push(active ? 'avec étoiles' : 'sans étoiles');
+        parts.push(active ? tr('admin.js.zones-admin.avec_etoiles', 'avec étoiles') : tr('admin.js.zones-admin.sans_etoiles', 'sans étoiles'));
       } else {
         parts.push(`${field.label} : ${active ? 'oui' : 'non'}`);
       }
     }
   }
 
-  return parts.length > 0 ? parts.join(' · ') : (entry.description || 'Paramètres par défaut');
+  return parts.length > 0 ? parts.join(' · ') : (entry.description || tr('admin.js.zones-admin.parametres_par_defaut', 'Paramètres par défaut'));
 }
 
 /**
@@ -435,7 +436,7 @@ export function registerDynamicBlock() {
   editorApi.registerBlock({
     type: 'dynamic',
     title: 'Bloc dynamique',
-    description: 'Contenu rendu dynamiquement côté serveur (derniers contenus, termes, menu, recherche ou plugin)',
+    description: tr('admin.js.zones-admin.contenu_rendu_dynamiquement_cote_serveur', 'Contenu rendu dynamiquement côté serveur (derniers contenus, termes, menu, recherche ou plugin)'),
     category: 'widgets',
     keywords: ['dynamic', 'dynamique', 'widget', 'zone', 'articles', 'recherche', 'categories', 'menu'],
     icon: 'sparkles',

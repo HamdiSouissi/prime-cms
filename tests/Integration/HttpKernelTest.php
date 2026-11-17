@@ -10,6 +10,7 @@ use Prime\Http\Kernel;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Http\Router;
+use Prime\I18n\Http\LocaleMiddleware;
 use Prime\Install\InstallCheckerInterface;
 use Prime\Kernel\Application;
 use Prime\Kernel\ErrorHandler;
@@ -21,9 +22,12 @@ final class HttpKernelTest extends TestCase
 {
     private string $tempLogDir;
 
+    private string $pageCacheDir;
+
     protected function setUp(): void
     {
         $this->tempLogDir = sys_get_temp_dir() . '/prime_int_logs_' . uniqid('', true);
+        $this->pageCacheDir = sys_get_temp_dir() . '/prime_int_pages_' . uniqid('', true);
     }
 
     protected function tearDown(): void
@@ -36,6 +40,24 @@ final class HttpKernelTest extends TestCase
                 }
             }
             rmdir($this->tempLogDir);
+        }
+
+        if (is_dir($this->pageCacheDir)) {
+            // `scandir` instead of a `GLOB_BRACE` glob: the brace flag is not portable
+            // (php-wasm rejects it), and dotfiles must be removed too.
+            $entries = scandir($this->pageCacheDir);
+            foreach ($entries === false ? [] : $entries as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+                $path = $this->pageCacheDir . '/' . $entry;
+                if (is_dir($path)) {
+                    @rmdir($path);
+                } else {
+                    @unlink($path);
+                }
+            }
+            @rmdir($this->pageCacheDir);
         }
     }
 
@@ -129,8 +151,37 @@ final class HttpKernelTest extends TestCase
 
         $this->assertSame(404, $response->status());
         $this->assertStringContainsString('Page introuvable', $response->body());
-        $this->assertStringContainsString("Retourner à l'accueil", $response->body());
+        // The call to action is translated and HTML-escaped by `e()`, hence the `&#039;` entity.
+        $this->assertStringContainsString('Retourner à l&#039;accueil', $response->body());
         $this->assertSecurityHeadersPresent($response);
+    }
+
+    public function testLocaleMiddlewareResolvesTheLocaleBeforeRendering(): void
+    {
+        $app = $this->createBootedApp();
+        /** @var Router $router */
+        $router = $app->get(Router::class);
+        $router->get('/locale-probe', static function (Request $request): Response {
+            return Response::json([
+                'attribute' => $request->attribute(LocaleMiddleware::ATTRIBUTE),
+                'translate' => t('core.actions.save'),
+                'locale' => current_locale(),
+            ]);
+        });
+
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        $response = $kernel->handle(Request::create('GET', '/locale-probe'));
+
+        $this->assertSame(200, $response->status());
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode($response->body(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('fr', $payload['attribute']);
+        $this->assertSame('fr', $payload['locale']);
+        $this->assertSame('Enregistrer', $payload['translate']);
+
+        // No `.env` is loaded here, so the request scope must be restored afterwards.
+        $this->assertSame('fr', current_locale());
     }
 
     public function testWrongMethodReturns405WithAllowHeaderAndSecurityHeaders(): void
@@ -359,6 +410,9 @@ final class HttpKernelTest extends TestCase
         $app = new Application(dirname(__DIR__, 2), loadEnv: false);
         $app->config()->set('app.debug', $debug);
         $app->config()->set('logging.path', $this->tempLogDir);
+        // Each booted app gets its own page cache directory: a production response cached by
+        // one test must never be replayed to the debug app of the next one.
+        $app->config()->set('cache.page.directory', $this->pageCacheDir);
         $app->boot();
 
         $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {

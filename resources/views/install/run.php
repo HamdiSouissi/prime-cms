@@ -25,10 +25,10 @@ $this->layout('install::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-install__header">
-    <h1 class="pc-install__title">Prêt pour l'installation</h1>
+    <h1 class="pc-install__title"><?= $this->e($this->t('core.install.run.pret_installation')) ?></h1>
     <p class="pc-install__lead">
-        Vérifiez votre récapitulatif ci-dessous (aucun mot de passe n'est affiché), puis lancez l'installation.
-        Prime CMS écrira la configuration, créera les tables et enregistrera votre compte administrateur.
+        <?= $this->e($this->t('core.install.run.verifiez_recapitulatif')) ?>
+        <?= $this->e($this->t('core.install.run.prime_cms_ecrira_configuration_creera')) ?>
     </p>
 </div>
 
@@ -45,7 +45,7 @@ $this->layout('install::layout', [
 <?php if ($manualEnvContent !== null): ?>
     <div class="pc-env-box">
         <div class="pc-env-box__header">
-            <p class="pc-env-box__title">Créez manuellement le fichier <code>.env</code> à la racine du projet</p>
+            <p class="pc-env-box__title"><?= $this->raw($this->t('core.install.run.creer_fichier_env')) ?></p>
             <button
                 type="button"
                 class="pc-btn pc-btn--secondary pc-btn--sm"
@@ -56,7 +56,7 @@ $this->layout('install::layout', [
                 <span>Copier</span>
             </button>
         </div>
-        <label class="sr-only" for="install-manual-env-content">Contenu exact du fichier .env</label>
+        <label class="sr-only" for="install-manual-env-content"><?= $this->e($this->t('core.install.run.contenu_exact_fichier_env')) ?></label>
         <textarea
             id="install-manual-env-content"
             class="pc-env-box__textarea"
@@ -76,9 +76,9 @@ $this->layout('install::layout', [
 <?php endif; ?>
 
 <div class="pc-install-summary">
-    <section class="pc-install-summary__section" aria-label="Base de données">
+    <section class="pc-install-summary__section" aria-label="<?= t('admin.attr.base_de_donnees') ?>">
         <div class="pc-install-summary__heading">
-            <h2 class="pc-install-summary__title">Base de données</h2>
+            <h2 class="pc-install-summary__title"><?= $this->e($this->t('core.install.database.titre')) ?></h2>
             <a href="/install/database" class="pc-install-summary__edit">Modifier</a>
         </div>
         <dl class="pc-install-dl">
@@ -86,9 +86,9 @@ $this->layout('install::layout', [
             <dd><?= $this->e($summary['database']['host'] . ':' . (string) $summary['database']['port']) ?></dd>
             <dt>Base</dt>
             <dd><?= $this->e($summary['database']['database']) ?></dd>
-            <dt>Utilisateur</dt>
+            <dt><?= $this->e($this->t('core.install.run.utilisateur')) ?></dt>
             <dd><?= $this->e($summary['database']['username']) ?></dd>
-            <dt>Préfixe des tables</dt>
+            <dt><?= $this->e($this->t('core.install.run.prefixe_tables')) ?></dt>
             <dd><code><?= $this->e($summary['database']['prefix']) ?></code></dd>
         </dl>
     </section>
@@ -99,13 +99,13 @@ $this->layout('install::layout', [
             <a href="/install/site" class="pc-install-summary__edit">Modifier</a>
         </div>
         <dl class="pc-install-dl">
-            <dt>Nom du site</dt>
+            <dt><?= $this->e($this->t('core.install.run.nom_site')) ?></dt>
             <dd><?= $this->e($summary['site']['name']) ?></dd>
-            <dt>URL publique</dt>
+            <dt><?= t('core.install.run.public_url') ?></dt>
             <dd><?= $this->e($summary['site']['url']) ?></dd>
             <dt>Langue</dt>
             <dd><?= $this->e(strtoupper($summary['site']['locale'])) ?></dd>
-            <dt>Fuseau horaire</dt>
+            <dt><?= t('core.install.run.timezone') ?></dt>
             <dd><?= $this->e($summary['site']['timezone']) ?></dd>
         </dl>
     </section>
@@ -116,12 +116,12 @@ $this->layout('install::layout', [
             <a href="/install/admin" class="pc-install-summary__edit">Modifier</a>
         </div>
         <dl class="pc-install-dl">
-            <dt>Nom affiché</dt>
+            <dt><?= $this->e($this->t('core.fields.display_name')) ?></dt>
             <dd><?= $this->e($summary['admin']['display_name']) ?></dd>
-            <dt>Adresse e-mail</dt>
+            <dt><?= t('core.install.run.email') ?></dt>
             <dd><?= $this->e($summary['admin']['email']) ?></dd>
-            <dt>Mot de passe</dt>
-            <dd>Masqué (stocké en Argon2id)</dd>
+            <dt><?= $this->e($this->t('core.fields.password')) ?></dt>
+            <dd><?= $this->e($this->t('core.install.run.masque_stocke_argon2id')) ?></dd>
         </dl>
     </section>
 </div>

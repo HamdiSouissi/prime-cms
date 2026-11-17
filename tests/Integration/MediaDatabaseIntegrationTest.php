@@ -85,9 +85,9 @@ final class MediaDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertNull($users->find($user->id)?->avatarMediaId);
         $this->assertSame([], $this->listUploadedFiles($config));
 
-        // Clean full rollback of all 18 core migrations
+        // Clean full rollback of all core migrations
         $rolledBack = $migrator->reset();
-        $this->assertCount($this->migrationCount(), $rolledBack);
+        $this->assertCount($this->coreMigrationCount(), $rolledBack);
         $this->assertFalse($schema->hasTable('media'));
         $this->assertFalse($schema->hasTable('media_folders'));
         $this->assertFalse($schema->hasTable('media_usage'));
@@ -364,7 +364,7 @@ final class MediaDatabaseIntegrationTest extends DatabaseTestCase
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
         $ran = $migrator->run();
-        $this->assertCount($this->migrationCount(), $ran);
+        $this->assertCount($this->coreMigrationCount(), $ran);
 
         $roles = new RoleRepository($this->connection);
         $users = new UserRepository($this->connection, $roles);

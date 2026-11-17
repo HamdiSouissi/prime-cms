@@ -35,7 +35,7 @@ foreach ($steps as $s) {
     <link rel="stylesheet" href="<?= $this->e(asset('admin/css/admin.css')) ?>">
 </head>
 <body class="pc-install-page">
-    <a class="pc-skip-link" href="#install-content">Aller au contenu</a>
+    <a class="pc-skip-link" href="#install-content"><?= t('core.install.layout.skip_to_content') ?></a>
 
     <div class="pc-install__shell">
         <header class="pc-install__brand">
@@ -51,11 +51,11 @@ foreach ($steps as $s) {
             </picture>
             <div>
                 <p class="pc-install__brand-name">Prime CMS</p>
-                <p class="pc-install__brand-sub">Assistant d'installation</p>
+                <p class="pc-install__brand-sub"><?= t('core.install.layout.wizard') ?></p>
             </div>
         </header>
 
-        <nav class="pc-install__stepper" aria-label="Étapes de l'installation">
+        <nav class="pc-install__stepper" aria-label="<?= t('admin.attr.etapes_de_l_installation') ?>">
             <ol class="pc-stepper">
                 <?php foreach ($steps as $step): ?>
                     <li
@@ -85,7 +85,7 @@ foreach ($steps as $s) {
 
             <div class="pc-install__step-mobile" aria-hidden="true">
                 <div class="pc-install__step-mobile-top">
-                    <span>Étape <?= $this->e((string) $currentStepNumber) ?> sur <?= $this->e((string) $totalSteps) ?></span>
+                    <span><?= $this->e($this->t('core.install.layout.etape_sur', ['current' => $currentStepNumber, 'total' => $totalSteps])) ?></span>
                     <span class="pc-install__step-mobile-name"><?= $this->e($activeLabel) ?></span>
                 </div>
                 <div class="pc-install__step-mobile-dots">
@@ -101,7 +101,7 @@ foreach ($steps as $s) {
         </main>
 
         <footer class="pc-install__footer">
-            Prime CMS <?= $this->e(\Prime\Kernel\Application::VERSION) ?> — Installation sécurisée locale
+            Prime CMS <?= $this->e(\Prime\Kernel\Application::VERSION) ?> &mdash; <?= $this->e($this->t('core.install.layout.installation_securisee_locale')) ?>
         </footer>
     </div>
 

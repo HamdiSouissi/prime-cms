@@ -18,10 +18,10 @@ declare(strict_types=1);
 $this->layout('admin::layouts/app');
 
 $statusTabs = [
-    'all' => ['label' => 'Tous', 'count' => $counts['all']],
-    'active' => ['label' => 'Actifs', 'count' => $counts['active']],
-    'inactive' => ['label' => 'Inactifs', 'count' => $counts['inactive']],
-    'errored' => ['label' => 'En erreur', 'count' => $counts['errored']],
+    'all' => ['label' => $this->t('admin.shared.tous'), 'count' => $counts['all']],
+    'active' => ['label' => $this->t('admin.shared.actifs'), 'count' => $counts['active']],
+    'inactive' => ['label' => $this->t('admin.shared.inactifs'), 'count' => $counts['inactive']],
+    'errored' => ['label' => $this->t('admin.shared.en_erreur'), 'count' => $counts['errored']],
 ];
 
 $buildTabUrl = static function (string $status) use ($filters): string {
@@ -40,7 +40,7 @@ $headerActions = '';
 if ($allowUpload) {
     $headerActions = '<button type="button" class="pc-btn pc-btn--primary" data-prime-drawer-open="prime-plugin-upload-drawer">'
         . $this->icon('upload', 16)
-        . '<span>Ajouter un plugin</span></button>';
+        . '<span>' . $this->e($this->t('admin.view_plugins_index.ajouter_un_plugin')) . '</span></button>';
 }
 ?>
 <?php $this->start('content'); ?>
@@ -48,7 +48,7 @@ if ($allowUpload) {
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Plugins',
     'subtitle' => sprintf(
-        '%d plugin%s installé%s · %d actif%s%s',
+        $this->t('admin.view_plugins_index.d_plugin_s_installe_s_d_actif_s_s'),
         $counts['all'],
         $counts['all'] > 1 ? 's' : '',
         $counts['all'] > 1 ? 's' : '',
@@ -63,7 +63,7 @@ if ($allowUpload) {
 <div class="pc-stack pc-stack--lg" data-prime-plugins-page>
     <!-- Status filter tabs & search bar -->
     <div class="pc-plugins-toolbar">
-        <nav class="pc-plugins-tabs" aria-label="Filtrer les plugins par statut">
+        <nav class="pc-plugins-tabs" aria-label="<?= t('admin.attr.filtrer_les_plugins_par_statut') ?>">
             <?php foreach ($statusTabs as $tabKey => $tabMeta): ?>
                 <?php $isActiveTab = $filters['status'] === $tabKey; ?>
                 <a
@@ -77,11 +77,11 @@ if ($allowUpload) {
             <?php endforeach; ?>
         </nav>
 
-        <form method="get" action="/admin/plugins" class="pc-plugins-search" role="search" aria-label="Rechercher un plugin">
+        <form method="get" action="/admin/plugins" class="pc-plugins-search" role="search" aria-label="<?= t('admin.attr.rechercher_un_plugin') ?>">
             <?php if ($filters['status'] !== 'all'): ?>
                 <input type="hidden" name="status" value="<?= $this->e($filters['status']) ?>">
             <?php endif; ?>
-            <label class="pc-sr-only" for="plugins-search-input">Rechercher un plugin</label>
+            <label class="pc-sr-only" for="plugins-search-input"><?= $this->e($this->t('admin.plugins.index.rechercher_plugin')) ?></label>
             <div class="pc-plugins-search__field">
                 <span class="pc-plugins-search__icon" aria-hidden="true"><?= $this->raw($this->icon('search', 16)) ?></span>
                 <input
@@ -90,7 +90,7 @@ if ($allowUpload) {
                     name="q"
                     value="<?= $this->e($filters['q']) ?>"
                     class="pc-input pc-plugins-search__input"
-                    placeholder="Rechercher par nom, slug ou auteur…"
+                    placeholder="<?= $this->e($this->t('admin.plugins.index.rechercher_nom_slug_auteur')) ?>"
                     autocomplete="off"
                 >
             </div>
@@ -106,8 +106,8 @@ if ($allowUpload) {
         <?php if ($counts['all'] === 0): ?>
             <?= $this->raw($this->insert('admin::components/empty-state', [
                 'icon' => 'plug',
-                'title' => 'Aucun plugin installé',
-                'description' => 'Étendez Prime CMS avec des plugins officiels ou sur-mesure en téléversant une archive ZIP ou en plaçant un dossier dans content/plugins/.',
+                'title' => $this->t('admin.view_plugins_index.aucun_plugin_installe'),
+                'description' => $this->t('admin.view_plugins_index.etendez_prime_cms_avec_des_plugins_officiels_ou_sur_mesure_e'),
                 'actionHtml' => $allowUpload
                     ? '<button type="button" class="pc-btn pc-btn--secondary" data-prime-drawer-open="prime-plugin-upload-drawer">' . $this->icon('upload', 16) . '<span>Téléverser une archive ZIP</span></button>'
                     : null,
@@ -115,8 +115,8 @@ if ($allowUpload) {
         <?php else: ?>
             <?= $this->raw($this->insert('admin::components/empty-state', [
                 'icon' => 'search',
-                'title' => 'Aucun plugin ne correspond à ce filtre',
-                'description' => 'Essayez un autre mot-clé ou réinitialisez les filtres de statut.',
+                'title' => $this->t('admin.view_plugins_index.aucun_plugin_ne_correspond_a_ce_filtre'),
+                'description' => $this->t('admin.view_plugins_index.essayez_un_autre_mot_cle_ou_reinitialisez_les_filtres_de_sta'),
                 'actionHtml' => '<a class="pc-btn pc-btn--secondary" href="/admin/plugins">Afficher tous les plugins</a>',
             ])) ?>
         <?php endif; ?>
@@ -132,8 +132,8 @@ if ($allowUpload) {
                     default => 'neutral',
                 };
                 $statusLabel = match ($plugin->status) {
-                    'active' => 'Actif',
-                    'errored' => 'En erreur',
+                    'active' => $this->t('admin.shared.actif'),
+                    'errored' => $this->t('admin.shared.en_erreur'),
                     default => 'Inactif',
                 };
                 ?>
@@ -183,7 +183,7 @@ if ($allowUpload) {
                             ])) ?>
                             <?php if ($plugin->needsUpdate && $plugin->installedVersion !== null): ?>
                                 <?= $this->raw($this->insert('admin::components/badge', [
-                                    'label' => 'Maj ' . $plugin->installedVersion . ' → ' . $plugin->version(),
+                                    'label' => $this->t('admin.shared.mise_a_jour') . ' ' . $plugin->installedVersion . ' → ' . $plugin->version(),
                                     'variant' => 'info',
                                 ])) ?>
                             <?php endif; ?>
@@ -194,14 +194,14 @@ if ($allowUpload) {
                         <?php if ($manifest !== null): ?>
                             <p class="pc-plugin-card__desc"><?= $this->e($manifest->description) ?></p>
                         <?php else: ?>
-                            <p class="pc-plugin-card__desc pc-plugin-card__desc--muted">Manifeste <code>plugin.json</code> invalide ou incomplet.</p>
+                            <p class="pc-plugin-card__desc pc-plugin-card__desc--muted"><?= $this->raw($this->t('admin.plugins.index.manifeste_invalide_incomplet')) ?></p>
                         <?php endif; ?>
 
                         <?php if ($manifest !== null && ($manifest->dependencies !== [] || $plugin->requiredBy !== [])): ?>
                             <div class="pc-plugin-card__deps">
                                 <?php if ($manifest->dependencies !== []): ?>
                                     <div class="pc-plugin-card__dep-row">
-                                        <span class="pc-plugin-card__dep-label">Nécessite :</span>
+                                        <span class="pc-plugin-card__dep-label"><?= $this->e($this->t('admin.plugins.index.necessite')) ?></span>
                                         <?php foreach ($manifest->dependencies as $depSlug => $depConstraint): ?>
                                             <?php
                                             $depInfo = $allPlugins[$depSlug] ?? null;
@@ -217,7 +217,7 @@ if ($allowUpload) {
 
                                 <?php if ($plugin->requiredBy !== []): ?>
                                     <div class="pc-plugin-card__dep-row">
-                                        <span class="pc-plugin-card__dep-label">Requis par :</span>
+                                        <span class="pc-plugin-card__dep-label"><?= t('admin.plugins.required_by') ?></span>
                                         <?php foreach ($plugin->requiredBy as $reqBySlug): ?>
                                             <?php $reqInfo = $allPlugins[$reqBySlug] ?? null; ?>
                                             <span class="pc-plugin-dep-chip">
@@ -233,7 +233,7 @@ if ($allowUpload) {
                             <div class="pc-plugin-card__issues pc-plugin-card__issues--danger" role="alert">
                                 <div class="pc-plugin-card__issues-title">
                                     <?= $this->raw($this->icon('alert-circle', 15)) ?>
-                                    <span>Dernière erreur enregistrée<?= $plugin->erroredAt !== null ? ' (' . $this->e($plugin->erroredAt) . ' UTC)' : '' ?></span>
+                                    <span><?= $this->e($this->t('admin.plugins.index.derniere_erreur_enregistree')) ?><?= $plugin->erroredAt !== null ? ' (' . $this->e($plugin->erroredAt) . ' UTC)' : '' ?></span>
                                 </div>
                                 <p class="pc-plugin-card__error-msg"><?= $this->e($plugin->lastError) ?></p>
                             </div>
@@ -243,7 +243,7 @@ if ($allowUpload) {
                             <div class="pc-plugin-card__issues pc-plugin-card__issues--warning">
                                 <div class="pc-plugin-card__issues-title">
                                     <?= $this->raw($this->icon('alert-triangle', 15)) ?>
-                                    <span>Points à résoudre (<?= $this->e((string) count($issues)) ?>)</span>
+                                    <span><?= $this->e($this->choice('admin.plugins.index.points_a_resoudre', count($issues))) ?></span>
                                 </div>
                                 <ul class="pc-plugin-card__issues-list">
                                     <?php foreach ($issues as $issue): ?>
@@ -270,16 +270,16 @@ if ($allowUpload) {
                                     <button
                                         type="submit"
                                         class="pc-btn pc-btn--secondary pc-btn--sm"
-                                        <?= !$plugin->canDeactivate() ? 'disabled title="Désactivez d\'abord les plugins qui dépendent de celui-ci."' : '' ?>
+                                        <?= !$plugin->canDeactivate() ? 'disabled title="' . $this->e($this->t('admin.attr.desactivez_d_abord_les_plugins_qui_dependent_de_celui_ci')) . '"' : '' ?>
                                     >
-                                        <span>Désactiver</span>
+                                        <span><?= $this->e($this->t('admin.plugins.index.desactiver')) ?></span>
                                     </button>
                                 </form>
 
                                 <?php if ($plugin->settingsUrl !== null): ?>
                                     <a href="<?= $this->e($plugin->settingsUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm">
                                         <?= $this->raw($this->icon('settings', 15)) ?>
-                                        <span>Réglages</span>
+                                        <span><?= $this->e($this->t('admin.plugins.index.reglages')) ?></span>
                                     </a>
                                 <?php endif; ?>
                             <?php else: ?>
@@ -291,7 +291,7 @@ if ($allowUpload) {
                                         <?= (!$plugin->canActivate() || $safeMode) ? 'disabled' : '' ?>
                                     >
                                         <?= $this->raw($this->icon('check', 15)) ?>
-                                        <span><?= $plugin->isErrored() ? 'Réessayer l’activation' : 'Activer' ?></span>
+                                        <span><?= $plugin->isErrored() ? $this->t('admin.view_plugins_index.reessayer_l_activation') : 'Activer' ?></span>
                                     </button>
                                 </form>
                             <?php endif; ?>
@@ -304,10 +304,10 @@ if ($allowUpload) {
                                 data-prime-plugin-delete
                                 data-prime-plugin-slug="<?= $this->e($plugin->slug) ?>"
                                 data-prime-plugin-name="<?= $this->e($plugin->name()) ?>"
-                                <?= !$plugin->canUninstall() ? 'disabled title="D\'autres plugins installés dépendent de ce plugin."' : '' ?>
+                                <?= !$plugin->canUninstall() ? 'disabled title="' . $this->e($this->t('admin.attr.d_autres_plugins_installes_dependent_de_ce_plugin')) . '"' : '' ?>
                             >
                                 <?= $this->raw($this->icon('trash', 15)) ?>
-                                <span>Supprimer</span>
+                                <span><?= $this->e($this->t('core.actions.delete')) ?></span>
                             </button>
                         <?php endif; ?>
                     </footer>
@@ -335,11 +335,11 @@ if ($allowUpload) {
         <input type="hidden" name="force_replace" value="0" data-prime-upload-force>
 
         <p class="pc-text-muted">
-            Téléversez une archive <code>.zip</code> contenant un unique dossier racine nommé d’après le slug du plugin avec son manifeste <code>plugin.json</code>.
-            Le plugin sera installé à l’état inactif après validation de sécurité.
+            <?= $this->raw($this->t('admin.plugins.index.televersez_archive_dossier_racine')) ?>
+            <?= $this->e($this->t('admin.plugins.index.plugin_sera_installe_a_etat')) ?>
         </p>
 
-        <div class="pc-dropzone" data-prime-dropzone tabindex="0" role="button" aria-label="Déposer une archive ZIP ou cliquer pour choisir un fichier">
+        <div class="pc-dropzone" data-prime-dropzone tabindex="0" role="button" aria-label="<?= t('admin.attr.deposer_une_archive_zip_ou_cliquer_pour_choisir_un_fichier') ?>">
             <input
                 type="file"
                 id="prime-plugin-zip-input"
@@ -352,13 +352,13 @@ if ($allowUpload) {
             <div class="pc-dropzone__icon" aria-hidden="true">
                 <?= $this->raw($this->icon('upload', 28)) ?>
             </div>
-            <p class="pc-dropzone__title" data-prime-dropzone-title>Déposez votre archive ZIP ici</p>
-            <p class="pc-dropzone__hint" data-prime-dropzone-hint>ou cliquez pour parcourir · Format .zip · Maximum <?= $this->e((string) $maxUploadMb) ?> Mo</p>
+            <p class="pc-dropzone__title" data-prime-dropzone-title><?= $this->e($this->t('admin.plugins.index.deposez_archive_zip_ici')) ?></p>
+            <p class="pc-dropzone__hint" data-prime-dropzone-hint><?= t('admin.plugins.dropzone_hint', ['size' => $this->e((string) $maxUploadMb)]) ?></p>
         </div>
 
         <div class="pc-upload-progress" data-prime-upload-progress hidden>
             <div class="pc-upload-progress__row">
-                <span data-prime-upload-status>Envoi et validation de l’archive…</span>
+                <span data-prime-upload-status><?= $this->e($this->t('admin.plugins.index.envoi_validation_archive')) ?></span>
                 <span data-prime-upload-percent>0 %</span>
             </div>
             <div class="pc-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-prime-upload-bar-wrap>
@@ -369,7 +369,7 @@ if ($allowUpload) {
         <div class="pc-alert pc-alert--danger" role="alert" data-prime-upload-error hidden>
             <span class="pc-alert__icon" aria-hidden="true"><?= $this->raw($this->icon('alert-circle', 18)) ?></span>
             <div class="pc-alert__body">
-                <p class="pc-alert__title">Installation refusée</p>
+                <p class="pc-alert__title"><?= $this->e($this->t('admin.plugins.index.installation_refusee')) ?></p>
                 <p class="pc-alert__text" data-prime-upload-error-text></p>
             </div>
         </div>
@@ -377,21 +377,21 @@ if ($allowUpload) {
         <div class="pc-alert pc-alert--warning pc-upload-conflict" role="alert" data-prime-upload-conflict hidden>
             <span class="pc-alert__icon" aria-hidden="true"><?= $this->raw($this->icon('alert-triangle', 18)) ?></span>
             <div class="pc-alert__body">
-                <p class="pc-alert__title">Plugin déjà installé</p>
+                <p class="pc-alert__title"><?= $this->e($this->t('admin.plugins.index.plugin_deja_installe')) ?></p>
                 <p class="pc-alert__text" data-prime-upload-conflict-text></p>
                 <div class="pc-upload-conflict__actions">
                     <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-upload-confirm-replace>
-                        Remplacer le plugin existant
+                        <?= $this->e($this->t('admin.plugins.index.remplacer_plugin_existant')) ?>
                     </button>
                 </div>
             </div>
         </div>
 
         <div class="pc-drawer-form-actions">
-            <button type="button" class="pc-btn pc-btn--ghost" data-prime-drawer-close>Annuler</button>
+            <button type="button" class="pc-btn pc-btn--ghost" data-prime-drawer-close><?= $this->e($this->t('core.actions.cancel')) ?></button>
             <button type="submit" class="pc-btn pc-btn--secondary" data-prime-upload-submit>
                 <?= $this->raw($this->icon('upload', 16)) ?>
-                <span>Installer l’archive</span>
+                <span><?= t('admin.plugins.install_archive') ?></span>
             </button>
         </div>
     </form>
@@ -401,7 +401,7 @@ if ($allowUpload) {
 
     <?= $this->raw($this->insert('admin::components/drawer', [
         'id' => 'prime-plugin-upload-drawer',
-        'title' => 'Ajouter un plugin (.zip)',
+        'title' => $this->t('admin.view_plugins_index.ajouter_un_plugin_zip'),
         'body' => $drawerBody,
     ])) ?>
 <?php endif; ?>
@@ -412,15 +412,15 @@ ob_start();
 ?>
 <div class="pc-stack pc-stack--md">
     <p>
-        Vous êtes sur le point de supprimer définitivement le plugin
+        <?= $this->e($this->t('admin.plugins.index.etes_point_supprimer_definitivement_plugin')) ?>
         <strong data-prime-delete-plugin-name></strong>
         (<code data-prime-delete-plugin-slug></code>).
     </p>
     <div class="pc-alert pc-alert--danger" role="alert">
         <span class="pc-alert__icon" aria-hidden="true"><?= $this->raw($this->icon('alert-triangle', 18)) ?></span>
         <div class="pc-alert__body">
-            <p class="pc-alert__title">Action irréversible — perte de données</p>
-            <p class="pc-alert__text">Toutes les tables créées par ses migrations, tous ses réglages enregistrés, ses assets publiés ainsi que son dossier dans <code>content/plugins/</code> seront définitivement supprimés.</p>
+            <p class="pc-alert__title"><?= $this->e($this->t('admin.plugins.index.action_irreversible_perte_donnees')) ?></p>
+            <p class="pc-alert__text"><?= $this->raw($this->t('admin.plugins.index.tables_creees_migrations_reglages_enregistres')) ?></p>
         </div>
     </div>
 </div>
@@ -429,12 +429,12 @@ $modalBody = (string) ob_get_clean();
 
 ob_start();
 ?>
-<button type="button" class="pc-btn pc-btn--ghost" data-prime-modal-close>Annuler</button>
+<button type="button" class="pc-btn pc-btn--ghost" data-prime-modal-close><?= $this->e($this->t('core.actions.cancel')) ?></button>
 <form method="post" action="/admin/plugins" data-prime-delete-plugin-form>
     <?= $this->raw($this->csrfField()) ?>
     <button type="submit" class="pc-btn pc-btn--danger">
         <?= $this->raw($this->icon('trash', 15)) ?>
-        <span>Supprimer définitivement</span>
+        <span><?= $this->e($this->t('admin.plugins.index.supprimer_definitivement')) ?></span>
     </button>
 </form>
 <?php
@@ -443,7 +443,7 @@ $modalFooter = (string) ob_get_clean();
 
 <?= $this->raw($this->insert('admin::components/modal', [
     'id' => 'prime-plugin-delete-modal',
-    'title' => 'Supprimer le plugin',
+    'title' => $this->t('admin.view_plugins_index.supprimer_le_plugin'),
     'body' => $modalBody,
     'footer' => $modalFooter,
 ])) ?>

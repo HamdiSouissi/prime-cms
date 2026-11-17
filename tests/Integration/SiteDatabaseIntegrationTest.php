@@ -39,7 +39,7 @@ use Prime\Themes\ThemeOptions;
 
 /**
  * Real MySQL 8.0 & MariaDB 10.6 integration tests for Phase 8:
- * - Migrations 000019–000023 schema creation, FK cascades, and clean full rollback (every migration)
+ * - Migrations up to 000023: schema creation, FK cascades, and a clean full rollback
  * - MenuRepository 3-level hierarchy & ON DELETE CASCADE on menu deletion
  * - ZoneRepository + MediaUsageRepository::syncForZone() tracking
  * - RedirectRepository chain shortening, hit counters, and cycle guard
@@ -53,7 +53,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
         $ran = $migrator->run();
-        $this->assertCount($this->migrationCount(), $ran);
+        $this->assertCount($this->coreMigrationCount(), $ran);
 
         $this->assertTrue($schema->hasTable('menus'));
         $this->assertTrue($schema->hasTable('menu_items'));
@@ -149,7 +149,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
 
         // 5. Full rollback of every migration leaves a clean DB
         $rolledBack = $migrator->rollback(1);
-        $this->assertCount($this->migrationCount(), $rolledBack);
+        $this->assertCount($this->coreMigrationCount(), $rolledBack);
         $this->assertFalse($schema->hasTable('menus'));
         $this->assertFalse($schema->hasTable('zones'));
         $this->assertFalse($schema->hasTable('redirects'));
@@ -160,13 +160,17 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
     {
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
-        $this->assertCount($this->migrationCount(), $migrator->run());
+        $this->assertCount($this->coreMigrationCount(), $migrator->run());
 
         $app = new Application(dirname(__DIR__, 2), loadEnv: false, registerErrorHandler: false);
         $app->config()->set('app.env', 'testing');
         $app->config()->set('app.debug', true);
         $app->config()->set('app.url', 'https://prime-db.test');
         $app->config()->set('app.key', 'base64:' . base64_encode(str_repeat('d', 32)));
+        // The page cache is covered by its own suite: here `/blog` must always reach the
+        // database so the SQL query counts measure template efficiency, not cache hits.
+        $app->config()->set('cache.page.enabled', false);
+        $app->config()->set('cache.page.directory', sys_get_temp_dir() . '/prime_pages_' . uniqid('', true));
         $app->boot();
 
         $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {

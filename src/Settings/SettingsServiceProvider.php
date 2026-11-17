@@ -31,7 +31,7 @@ final class SettingsServiceProvider extends ServiceProvider
         $app = $this->app;
         $c = $app->container();
 
-        $c->singleton(Settings::class, static function (Container $c) use ($app): Settings {
+        $c->singleton(Settings::class, static function (Container $c): Settings {
             /** @var Connection $connection */
             $connection = $c->get(Connection::class);
             $hooks = $c->has(Hooks::class) ? $c->get(Hooks::class) : null;
@@ -54,7 +54,7 @@ final class SettingsServiceProvider extends ServiceProvider
             );
         });
 
-        $c->singleton(SettingsOptionSources::class, static function (Container $c) use ($app): SettingsOptionSources {
+        $c->singleton(SettingsOptionSources::class, static function (Container $c): SettingsOptionSources {
             $sources = new SettingsOptionSources();
 
             $sources->provide('timezones', static function (): array {
@@ -66,7 +66,7 @@ final class SettingsServiceProvider extends ServiceProvider
                 return $options;
             });
 
-            $sources->provide('locales', static function () use ($app, $c): array {
+            $sources->provide('locales', static function () use ($c): array {
                 if (!$c->has(Translator::class)) {
                     return ['fr' => 'Français', 'en' => 'English'];
                 }

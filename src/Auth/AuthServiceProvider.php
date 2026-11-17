@@ -147,7 +147,7 @@ final class AuthServiceProvider extends ServiceProvider
                 twoFactor: $container->get(TwoFactorService::class),
                 hooks: $container->get(Hooks::class),
                 logger: $container->get(Logger::class),
-                config: is_array($cfg) ? $cfg : [],
+                config: $cfg,
                 hasher: $container->get(Hasher::class),
             );
             $this->authInstantiated = true;

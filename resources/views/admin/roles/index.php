@@ -14,11 +14,11 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Rôles et permissions',
-    'subtitle' => 'Définissez les groupes de permissions attribuables aux utilisateurs du site.',
+    'title' => $this->t('admin.view_roles_index.roles_et_permissions'),
+    'subtitle' => $this->t('admin.view_roles_index.definissez_les_groupes_de_permissions_attribuables_aux_utili'),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $this->insert('admin::components/button', [
-        'label' => 'Créer un rôle',
+        'label' => $this->t('admin.view_roles_index.creer_un_role'),
         'variant' => 'primary',
         'icon' => 'plus',
         'href' => '/admin/roles/create',
@@ -30,7 +30,7 @@ $this->layout('admin::layouts/app');
         <table class="pc-table pc-table--stacked">
             <thead>
                 <tr>
-                    <th scope="col">Rôle</th>
+                    <th scope="col"><?= $this->e($this->t('core.fields.role')) ?></th>
                     <th scope="col">Slug</th>
                     <th scope="col">Permissions</th>
                     <th scope="col">Utilisateurs</th>
@@ -62,7 +62,7 @@ $this->layout('admin::layouts/app');
                         <td data-prime-label="Permissions">
                             <?php if ($role->isAdministrator()): ?>
                                 <?= $this->raw($this->insert('admin::components/badge', [
-                                    'label' => 'Toutes (*)',
+                                    'label' => $this->t('admin.view_roles_index.toutes'),
                                     'variant' => 'brand',
                                 ])) ?>
                             <?php else: ?>
@@ -89,20 +89,20 @@ $this->layout('admin::layouts/app');
                                     <?php if ($role->usersCount > 0): ?>
                                         <span
                                             class="pc-text-xs pc-text-muted"
-                                            title="Réassignez les <?= $this->e((string) $role->usersCount) ?> utilisateur(s) avant suppression."
+                                            title="<?= $this->e($this->t('admin.roles.reassignez_utilisateurs', ['count' => $role->usersCount])) ?>"
                                         >
-                                            Assigné (<?= $this->e((string) $role->usersCount) ?>)
+                                            <?= $this->e($this->t('admin.roles.assigne', ['count' => $role->usersCount])) ?>
                                         </span>
                                     <?php else: ?>
                                         <form
                                             method="post"
                                             action="/admin/roles/<?= $this->e((string) $role->id) ?>/delete"
                                             class="pc-inline-form"
-                                            data-prime-confirm-form="Supprimer définitivement le rôle « <?= $this->e($role->name) ?> » ?"
+                                            data-prime-confirm-form="<?= $this->e($this->t('admin.roles.confirmer_suppression', ['name' => $role->name])) ?>"
                                         >
                                             <?= $this->raw($this->csrfField()) ?>
                                             <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm pc-text-danger">
-                                                Supprimer
+                                                <?= $this->e($this->t('core.actions.delete')) ?>
                                             </button>
                                         </form>
                                     <?php endif; ?>

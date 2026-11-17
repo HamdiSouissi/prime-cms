@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\I18n;
 
 use Prime\Auth\Auth;
+use Prime\Cache\CacheInterface;
 use Prime\Hooks\Hooks;
 use Prime\Http\Kernel;
 use Prime\Http\Middleware\MiddlewareInterface;
@@ -32,11 +33,16 @@ final class I18nServiceProvider extends ServiceProvider
             $locale = (string) $app->config()->get('app.locale', Translator::DEFAULT_LOCALE);
             $hooks = $c->has(Hooks::class) ? $c->get(Hooks::class) : null;
 
+            // Catalogue trees are cached in the data cache: parsing hundreds of PHP files on
+            // every request is the single most expensive part of the I18n layer.
+            $cache = $c->has(CacheInterface::class) ? $c->get(CacheInterface::class) : null;
+
             $translator = new Translator(
                 locale: $locale !== '' ? $locale : Translator::DEFAULT_LOCALE,
                 fallbackLocale: Translator::FALLBACK_LOCALE,
                 paths: self::languagePaths($app->contentPath(), $app->resourcesPath('lang')),
                 hooks: $hooks instanceof Hooks ? $hooks : null,
+                cache: $cache instanceof CacheInterface ? $cache : null,
             );
 
             return $translator;
@@ -62,6 +68,7 @@ final class I18nServiceProvider extends ServiceProvider
                     $app->basePath('src'),
                     $app->contentPath('themes'),
                     $app->contentPath('plugins'),
+                    $app->basePath('public/assets/admin/js'),
                 ],
             );
         });
@@ -78,8 +85,14 @@ final class I18nServiceProvider extends ServiceProvider
         /** @var Translator $translator */
         $translator = $c->get(Translator::class);
 
-        // Global `t()`/`tc()` helpers and CLI output share this instance.
+        // Global `t()`/`tc()` helpers, theme templates and CLI output share this instance.
         Translator::setInstance($translator);
+
+        if ($c->has(LocaleFormatter::class)) {
+            /** @var LocaleFormatter $formatter */
+            $formatter = $c->get(LocaleFormatter::class);
+            LocaleFormatter::setInstance($formatter);
+        }
 
         // Validation messages are translated unless a caller provides its own message overrides.
         Validator::setTranslator($translator);

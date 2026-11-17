@@ -106,22 +106,22 @@ final class PasswordPolicy
      */
     public function describe(): array
     {
-        $lines = [sprintf('Au moins %d caractères.', $this->minLength)];
+        $lines = [t('validation.password_policy.describe.min_length', ['min' => $this->minLength])];
 
         if ($this->rules['require_mixed_case']) {
-            $lines[] = 'Une majuscule et une minuscule.';
+            $lines[] = t('validation.password_policy.describe.mixed_case');
         }
 
         if ($this->rules['require_number']) {
-            $lines[] = 'Au moins un chiffre.';
+            $lines[] = t('validation.password_policy.describe.number');
         }
 
         if ($this->rules['require_special']) {
-            $lines[] = 'Au moins un caractère spécial.';
+            $lines[] = t('validation.password_policy.describe.special');
         }
 
         if ($this->rules['block_common']) {
-            $lines[] = 'Ni mot de passe courant, ni nom, ni e-mail.';
+            $lines[] = t('validation.password_policy.describe.personal');
         }
 
         return $lines;
@@ -131,50 +131,44 @@ final class PasswordPolicy
      * Validate a password against the policy and optional personal context.
      *
      * @param array{email?: string, display_name?: string, site_name?: string} $context
-     * @return string|null First error message in French, or null if valid
+     * @return string|null First error message, translated in the active locale, or null when valid
      */
     public function validate(string $password, array $context = []): ?string
     {
         $length = mb_strlen($password, 'UTF-8');
 
         if ($length < $this->minLength) {
-            return sprintf(
-                'Le mot de passe doit contenir au moins %d caractères (ajoutez des mots, chiffres ou symboles).',
-                $this->minLength,
-            );
+            return t('validation.password_policy.min_length', ['min' => $this->minLength]);
         }
 
         if ($this->rules['require_mixed_case']
             && (preg_match('/\p{Lu}/u', $password) !== 1 || preg_match('/\p{Ll}/u', $password) !== 1)) {
-            return 'Le mot de passe doit contenir au moins une majuscule et une minuscule.';
+            return t('validation.password_policy.mixed_case');
         }
 
         if ($this->rules['require_number'] && preg_match('/\p{N}/u', $password) !== 1) {
-            return 'Le mot de passe doit contenir au moins un chiffre.';
+            return t('validation.password_policy.number');
         }
 
         if ($this->rules['require_special'] && preg_match('/[^\p{L}\p{N}]/u', $password) !== 1) {
-            return 'Le mot de passe doit contenir au moins un caractère spécial.';
+            return t('validation.password_policy.special');
         }
 
         if ($length > self::MAX_LENGTH || strlen($password) > self::MAX_LENGTH) {
-            return sprintf(
-                'Le mot de passe ne peut pas dépasser %d caractères.',
-                self::MAX_LENGTH,
-            );
+            return t('validation.password_policy.max_length', ['max' => self::MAX_LENGTH]);
         }
 
         $lower = mb_strtolower(trim($password), 'UTF-8');
 
         if ($this->rules['block_repetition'] && preg_match('/^(.)\1+$/u', $lower) === 1) {
-            return 'Choisissez un mot de passe plus varié plutôt qu\'un caractère répété.';
+            return t('validation.password_policy.repetition');
         }
 
         $compact = preg_replace('/[\s._-]+/', '', $lower) ?? $lower;
         $common = $this->rules['block_common'] ? $this->commonPasswords() : [];
 
         if (isset($common[$lower]) || isset($common[$compact])) {
-            return 'Ce mot de passe est trop courant. Combinez plusieurs mots inhabituels ou utilisez un gestionnaire de mots de passe.';
+            return t('validation.password_policy.common');
         }
 
         if (!$this->rules['block_personal']) {
@@ -185,12 +179,12 @@ final class PasswordPolicy
         if ($email !== '') {
             $lowerEmail = mb_strtolower($email, 'UTF-8');
             if (str_contains($lower, $lowerEmail)) {
-                return 'Le mot de passe ne doit pas contenir votre adresse e-mail.';
+                return t('validation.password_policy.email');
             }
 
             $localPart = strstr($lowerEmail, '@', true);
             if (is_string($localPart) && mb_strlen($localPart, 'UTF-8') >= 4 && str_contains($lower, $localPart)) {
-                return 'Le mot de passe est trop proche de votre adresse e-mail. Choisissez une phrase secrète distincte.';
+                return t('validation.password_policy.email_similar');
             }
         }
 
@@ -198,14 +192,14 @@ final class PasswordPolicy
         if ($displayName !== '') {
             $lowerDisplay = mb_strtolower($displayName, 'UTF-8');
             if (mb_strlen($lowerDisplay, 'UTF-8') >= 4 && str_contains($lower, $lowerDisplay)) {
-                return 'Le mot de passe ne doit pas reprendre votre nom affiché. Choisissez une combinaison distincte.';
+                return t('validation.password_policy.display_name');
             }
 
             // Also reject individual display name words of 4+ chars (e.g. first or last name).
             $tokens = preg_split('/[\s._-]+/u', $lowerDisplay) ?: [];
             foreach ($tokens as $token) {
                 if (mb_strlen($token, 'UTF-8') >= 4 && str_contains($lower, $token)) {
-                    return 'Le mot de passe ne doit pas contenir votre nom. Choisissez une phrase secrète distincte.';
+                    return t('validation.password_policy.name_token');
                 }
             }
         }
@@ -214,7 +208,7 @@ final class PasswordPolicy
         if ($siteName !== '') {
             $lowerSite = mb_strtolower($siteName, 'UTF-8');
             if (mb_strlen($lowerSite, 'UTF-8') >= 4 && str_contains($lower, $lowerSite)) {
-                return 'Le mot de passe ne doit pas reprendre le nom du site. Choisissez un mot de passe unique.';
+                return t('validation.password_policy.site_name');
             }
         }
 

@@ -12,15 +12,15 @@ declare(strict_types=1);
  * @var string $siteName
  */
 $this->layout('auth::layout', [
-    'pageTitle' => 'Mot de passe oublié',
+    'pageTitle' => $this->t('admin.auth_forgot-password.mot_de_passe_oublie'),
     'siteName' => $siteName,
 ]);
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-auth-card__header">
-    <h2 class="pc-auth-card__title">Mot de passe oublié</h2>
+    <h2 class="pc-auth-card__title"><?= $this->e($this->t('admin.auth.forgot-password.mot_passe_oublie')) ?></h2>
     <p class="pc-auth-card__subtitle">
-        Indiquez votre adresse e-mail pour recevoir un lien de réinitialisation à usage unique.
+        <?= $this->e($this->t('admin.auth.forgot-password.indiquez_adresse_e_mail_recevoir')) ?>
     </p>
 </div>
 
@@ -54,11 +54,11 @@ $this->layout('auth::layout', [
     ])) ?>
 
     <button type="submit" class="pc-btn pc-btn--primary pc-auth-submit">
-        <span>Envoyer le lien de réinitialisation</span>
+        <span><?= $this->e($this->t('admin.auth.forgot-password.envoyer_lien_reinitialisation')) ?></span>
     </button>
 </form>
 
 <div class="pc-auth-card__footer">
-    <a href="/admin/login" class="pc-auth-link">← Retour à la connexion</a>
+    <a href="/admin/login" class="pc-auth-link"><?= $this->e($this->t('admin.auth.forgot-password.retour_a_connexion')) ?></a>
 </div>
 <?php $this->stop(); ?>

@@ -114,7 +114,7 @@ final class HelloPrimeController
             ->limit(20)
             ->get();
 
-        $appName = (string) $this->plugin->app()->config()->get('app.name', 'Prime CMS');
+        $appName = (string) $this->plugin->app()->config()->get('app.name');
 
         $html = $this->plugin->views()->render('hello-prime::public', [
             'appName' => $appName,

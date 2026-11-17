@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Auth\PasswordResetService;
 use Prime\Auth\TwoFactorService;
@@ -30,18 +31,16 @@ use Throwable;
  */
 final class ProfileController
 {
+    use TranslatesAdminCopy;
+
     private const SESSION_2FA_PENDING_SECRET = '_profile.2fa_pending_secret';
 
     private const FLASH_RECOVERY_CODES = '_profile.recovery_codes_once';
 
     /**
-     * @var array<string, string>
+     * @var list<string>
      */
-    private const LOCALE_OPTIONS = [
-        'fr' => 'Français (fr)',
-        'en' => 'English (en)',
-        'it' => 'Italiano (it)',
-    ];
+    private const LOCALE_OPTIONS = ['fr', 'en', 'it'];
 
     public function __construct(
         private readonly Application $app,
@@ -57,6 +56,21 @@ final class ProfileController
         private readonly Hasher $hasher,
         private readonly ?MediaRepository $media = null,
     ) {
+    }
+
+    /**
+     * Locale choices offered in the account forms, labelled in the interface language.
+     *
+     * @return array<string, string>
+     */
+    private function localeOptions(): array
+    {
+        $options = [];
+        foreach (self::LOCALE_OPTIONS as $code) {
+            $options[$code] = \Prime\I18n\LocaleFormatter::fallback()->localeName($code);
+        }
+
+        return $options;
     }
 
     public function index(Request $request): Response
@@ -91,9 +105,9 @@ final class ProfileController
                 'locale' => 'required|in:fr,en,it',
             ],
             labels: [
-                'display_name' => 'Nom affiché',
+                'display_name' => $this->t('admin.ctrl_text_profile.nom_affiche'),
                 'email' => 'Adresse e-mail',
-                'locale' => 'Langue de l\'interface',
+                'locale' => $this->t('admin.ctrl_text_profile.langue_de_l_interface'),
             ],
             connection: $this->connection,
         );
@@ -102,24 +116,24 @@ final class ProfileController
 
         if ($usernameProvided && $username !== '') {
             if (preg_match('/^[a-z0-9](?:[a-z0-9_-]{1,38}[a-z0-9])?$/', $username) !== 1) {
-                $errors['username'] = 'L\'identifiant public doit contenir 3 à 40 caractères (lettres minuscules, chiffres, tirets ou underscores).';
+                $errors['username'] = $this->t('admin.ctrl_text_profile.l_identifiant_public_doit_contenir_3_a_40_caracteres_lettres');
             } elseif ((new ReservedSlugValidator())->isReserved($username)) {
-                $errors['username'] = 'Cet identifiant public est réservé par le système.';
+                $errors['username'] = $this->t('admin.ctrl_text_profile.cet_identifiant_public_est_reserve_par_le_systeme');
             } else {
                 $existing = $this->users->findByAuthorSlug($username);
                 if ($existing !== null && $existing->id !== $user->id) {
-                    $errors['username'] = 'Cet identifiant public est déjà utilisé par un autre auteur.';
+                    $errors['username'] = $this->t('admin.ctrl_text_profile.cet_identifiant_public_est_deja_utilise_par_un_autre_auteur');
                 }
             }
         }
 
         if ($bioProvided && mb_strlen($bio) > 1000) {
-            $errors['bio'] = 'La biographie ne doit pas dépasser 1000 caractères.';
+            $errors['bio'] = $this->t('admin.ctrl_text_profile.la_biographie_ne_doit_pas_depasser_1000_caracteres');
         }
 
         $emailChanged = $email !== $user->email;
         if ($emailChanged && !$this->verifyCurrentPassword($user->id, $currentPassword)) {
-            $errors['current_password_email'] = 'Saisissez votre mot de passe actuel pour confirmer le changement d\'adresse e-mail.';
+            $errors['current_password_email'] = $this->t('admin.ctrl_text_profile.saisissez_votre_mot_de_passe_actuel_pour_confirmer_le_change');
         }
 
         // Optional avatar selection from Media Library (`avatar_media_id`)
@@ -134,7 +148,7 @@ final class ProfileController
                 if ($this->media !== null) {
                     $avatarMedia = $this->media->find($candidateId);
                     if ($avatarMedia === null || !$avatarMedia->isImage()) {
-                        $errors['avatar_media_id'] = 'L’avatar sélectionné doit être une image valide de la médiathèque.';
+                        $errors['avatar_media_id'] = $this->t('admin.ctrl_text_profile.l_avatar_selectionne_doit_etre_une_image_valide_de_la_mediat');
                     } else {
                         $avatarMediaId = $candidateId;
                     }
@@ -174,7 +188,7 @@ final class ProfileController
         $this->users->updateFields($user->id, $fieldsToUpdate);
 
         $this->auth->resetCache();
-        $this->context->flashToast('Vos informations personnelles ont été enregistrées.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.vos_informations_personnelles_ont_ete_enregistrees'), 'success');
 
         return Response::redirect('/admin/profile', 302);
     }
@@ -188,7 +202,7 @@ final class ProfileController
 
         $errors = [];
         if (!$this->verifyCurrentPassword($user->id, $currentPassword)) {
-            $errors['current_password'] = 'Votre mot de passe actuel est incorrect.';
+            $errors['current_password'] = $this->t('admin.ctrl_text_profile.votre_mot_de_passe_actuel_est_incorrect');
         }
 
         $validator = Validator::make(
@@ -200,7 +214,7 @@ final class ProfileController
                 'password' => 'required|confirmed|password',
             ],
             labels: [
-                'password' => 'Nouveau mot de passe',
+                'password' => $this->t('admin.ctrl_text_profile.nouveau_mot_de_passe'),
             ],
             passwordPolicy: $this->passwordPolicy,
             passwordContext: [
@@ -222,7 +236,7 @@ final class ProfileController
         $this->passwordResets->sendPasswordChangedEmail($user, $this->siteName());
 
         $this->session->flash('_profile.tab', 'security');
-        $this->context->flashToast('Votre mot de passe a été modifié et vos autres appareils ont été déconnectés.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.votre_mot_de_passe_a_ete_modifie_et_vos_autres_appareils_ont'), 'success');
 
         return Response::redirect('/admin/profile?tab=security', 302);
     }
@@ -256,7 +270,7 @@ final class ProfileController
         $pending = $this->session->get(self::SESSION_2FA_PENDING_SECRET);
 
         if (!is_array($pending) || !is_string($pending['secret'] ?? null)) {
-            $this->context->flashToast('Aucune configuration 2FA en cours. Recommencez l\'activation.', 'warning');
+            $this->context->flashToast($this->t('admin.ctrl_text_profile.aucune_configuration_2fa_en_cours_recommencez_l_activation'), 'warning');
 
             return Response::redirect('/admin/profile?tab=security', 302);
         }
@@ -269,7 +283,7 @@ final class ProfileController
                 $request,
                 $user,
                 'security',
-                twoFactorError: 'Code TOTP invalide. Vérifiez l\'heure de votre appareil et réessayez.',
+                twoFactorError: $this->t('admin.ctrl_text_profile.code_totp_invalide_verifiez_l_heure_de_votre_appareil_et_ree'),
             ), 422);
         }
 
@@ -278,7 +292,7 @@ final class ProfileController
         $this->session->flash('_profile.tab', 'security');
         $this->auth->resetCache();
 
-        $this->context->flashToast('Authentification à deux facteurs activée ! Conservez vos codes de récupération.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.authentification_a_deux_facteurs_activee_conservez_vos_codes'), 'success');
 
         return Response::redirect('/admin/profile?tab=security', 302);
     }
@@ -296,14 +310,14 @@ final class ProfileController
                 $request,
                 $user,
                 'security',
-                twoFactorError: 'Mot de passe actuel incorrect pour régénérer les codes de récupération.',
+                twoFactorError: $this->t('admin.ctrl_text_profile.mot_de_passe_actuel_incorrect_pour_regenerer_les_codes_de_re'),
             ), 422);
         }
 
         $codes = $this->twoFactor->regenerateRecoveryCodes($user);
         $this->session->flash(self::FLASH_RECOVERY_CODES, $codes);
         $this->session->flash('_profile.tab', 'security');
-        $this->context->flashToast('Nouveaux codes de récupération générés. Les anciens ne sont plus valides.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.nouveaux_codes_de_recuperation_generes_les_anciens_ne_sont_p'), 'success');
 
         return Response::redirect('/admin/profile?tab=security', 302);
     }
@@ -323,7 +337,7 @@ final class ProfileController
                 $request,
                 $user,
                 'security',
-                twoFactorError: 'Mot de passe actuel incorrect. La 2FA n\'a pas été désactivée.',
+                twoFactorError: $this->t('admin.ctrl_text_profile.mot_de_passe_actuel_incorrect_la_2fa_n_a_pas_ete_desactivee'),
             ), 422);
         }
 
@@ -332,14 +346,14 @@ final class ProfileController
                 $request,
                 $user,
                 'security',
-                twoFactorError: 'Code TOTP ou code de récupération invalide. La 2FA n\'a pas été désactivée.',
+                twoFactorError: $this->t('admin.ctrl_text_profile.code_totp_ou_code_de_recuperation_invalide_la_2fa_n_a_pas_et'),
             ), 422);
         }
 
         $this->twoFactor->disable($user, $user->id);
         $this->auth->resetCache();
         $this->session->flash('_profile.tab', 'security');
-        $this->context->flashToast('L\'authentification à deux facteurs a été désactivée.', 'warning');
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.l_authentification_a_deux_facteurs_a_ete_desactivee'), 'warning');
 
         return Response::redirect('/admin/profile?tab=security', 302);
     }
@@ -354,13 +368,13 @@ final class ProfileController
                 $request,
                 $user,
                 'security',
-                devicesError: 'Mot de passe actuel incorrect.',
+                devicesError: $this->t('admin.ctrl_text_profile.mot_de_passe_actuel_incorrect'),
             ), 422);
         }
 
         $this->auth->logoutOtherDevices($user);
         $this->session->flash('_profile.tab', 'security');
-        $this->context->flashToast('Tous vos autres appareils ont été déconnectés.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.tous_vos_autres_appareils_ont_ete_deconnectes'), 'success');
 
         return Response::redirect('/admin/profile?tab=security', 302);
     }
@@ -397,12 +411,12 @@ final class ProfileController
             }
         }
 
-        $data = $this->context->build($request, 'Mon profil', [
+        $data = $this->context->build($request, $this->t('admin.ctrl_text_profile.mon_profil'), [
             'profileUser' => $user,
             'avatarInitialJson' => $avatarInitialJson,
             'canPickAvatar' => $user->can('media.view'),
             'activeTab' => $activeTab,
-            'localeOptions' => self::LOCALE_OPTIONS,
+            'localeOptions' => $this->localeOptions(),
             'oldInfo' => $oldInfo ?? [
                 'display_name' => $user->displayName,
                 'email' => $user->email,
@@ -418,8 +432,8 @@ final class ProfileController
             'recoveryCodesOnce' => is_array($recoveryOnce) ? $recoveryOnce : null,
             'remainingRecoveryCount' => $user->hasTwoFactor() ? $this->twoFactor->remainingRecoveryCodesCount($user->id) : 0,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Mon profil', 'url' => null],
+                ['label' => $this->t('admin.ctrl_text_profile.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_profile.mon_profil'), 'url' => null],
             ],
         ]);
 
@@ -444,7 +458,7 @@ final class ProfileController
     {
         $user = $this->auth->user($request);
         if ($user === null) {
-            throw new ForbiddenException('Session expirée.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_profile.session_expiree'));
         }
 
         return $user;

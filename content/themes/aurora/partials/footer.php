@@ -9,7 +9,10 @@ foreach (['footer_1', 'footer_2', 'footer_3'] as $zSlug) {
         $footerZones[] = $site->zone($zSlug);
     }
 }
-$footerText = (string) $site->option('footer_text', 'Propulsé par Prime CMS.');
+$footerText = trim((string) $site->option('footer_text', ''));
+if ($footerText === '') {
+    $footerText = $site->t('site.footer.powered_by', ['name' => 'Prime CMS']);
+}
 ?>
 <footer class="site-footer">
   <div class="site-container">
@@ -28,7 +31,7 @@ $footerText = (string) $site->option('footer_text', 'Propulsé par Prime CMS.');
 
       <?php if ($site->hasMenu('footer')): ?>
         <div class="site-footer__nav">
-          <?= $site->menu('footer', ['class' => 'site-nav', 'aria_label' => 'Navigation de pied de page']) ?>
+          <?= $site->menu('footer', ['class' => 'site-nav', 'aria_label' => $site->t('site.aurora.partials.footer.footer_nav')]) ?>
         </div>
       <?php endif; ?>
     </div>

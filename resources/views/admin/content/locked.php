@@ -23,21 +23,21 @@ $holderName = $holder !== null ? $holder->displayName : ($lock->userName !== '' 
         <?= $this->raw($this->icon('lock', 26)) ?>
     </div>
 
-    <h1 class="pc-page-header__title" style="margin-bottom:8px;">Contenu en cours d’édition</h1>
+    <h1 class="pc-page-header__title" style="margin-bottom:8px;"><?= $this->e($this->t('admin.content.locked.contenu_cours_edition')) ?></h1>
     <p class="pc-text-muted">
         <strong><?= $this->e($holderName) ?></strong> modifie actuellement « <?= $this->e($entry->title) ?> ».
-        Dernière activité enregistrée à <span class="pc-mono"><?= $this->e($lock->heartbeatAt) ?></span> UTC.
+        <?= $this->raw($this->t('admin.content.locked.derniere_activite', ['date' => '<span class="pc-mono">' . $this->e($lock->heartbeatAt) . '</span>'])) ?>
     </p>
 
     <div class="pc-lock-screen__actions">
-        <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--secondary">Retour à la liste</a>
+        <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('admin.content.locked.retour_a_liste')) ?></a>
 
         <?php if (!empty($canTakeOver)): ?>
             <form method="post" action="<?= $this->e(sprintf('%s/%d/lock/takeover', $baseUrl, $entry->id)) ?>">
                 <?= $this->raw($this->csrfField()) ?>
                 <button type="submit" class="pc-btn pc-btn--primary">
                     <?= $this->raw($this->icon('lock', 16)) ?>
-                    <span>Prendre le contrôle de l’édition</span>
+                    <span><?= $this->e($this->t('admin.content.locked.prendre_controle_edition')) ?></span>
                 </button>
             </form>
         <?php endif; ?>

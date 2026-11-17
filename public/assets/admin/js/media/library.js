@@ -8,6 +8,7 @@
 
 import { SelectionState } from './selection.js';
 import { UploadQueue } from './upload-queue.js';
+import { tr } from '../i18n.js';
 
 const VIEW_STORAGE_KEY = 'prime.media.view';
 
@@ -41,8 +42,8 @@ function formatMonthLabel(ym) {
   if (!/^\d{4}-\d{2}$/.test(ym)) return ym;
   const [y, m] = ym.split('-');
   const names = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+    'Janvier', tr('admin.js.media.library.fevrier', 'Février'), 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', tr('admin.js.media.library.aout', 'Août'), 'Septembre', 'Octobre', 'Novembre', tr('admin.js.media.library.decembre', 'Décembre'),
   ];
   const idx = Number(m) - 1;
   return `${names[idx] || m} ${y}`;
@@ -273,8 +274,8 @@ export function initMediaLibrary() {
         folderTreeEl.appendChild(li);
       };
 
-      addSpecialRow('', 'Tous les médias', state.counts.all, 'layers');
-      addSpecialRow('unclassified', 'Non classés', state.counts.unclassified, 'inbox');
+      addSpecialRow('', tr('admin.js.media.library.tous_les_medias', 'Tous les médias'), state.counts.all, 'layers');
+      addSpecialRow('unclassified', tr('admin.js.media.library.non_classes', 'Non classés'), state.counts.unclassified, 'inbox');
 
       const renderBranch = (nodes, depth) => {
         nodes.forEach((node) => {
@@ -359,8 +360,8 @@ export function initMediaLibrary() {
       syncMobileFolderSelect();
     }
 
-    renderFolderSelectOptions(bulkMoveSelect, { includeRoot: true, rootLabel: 'Non classés (racine)' });
-    renderFolderSelectOptions(drawerFolderSelect, { includeRoot: true, rootLabel: 'Aucun dossier (non classé)' });
+    renderFolderSelectOptions(bulkMoveSelect, { includeRoot: true, rootLabel: tr('admin.js.media.library.non_classes_racine', 'Non classés (racine)') });
+    renderFolderSelectOptions(drawerFolderSelect, { includeRoot: true, rootLabel: tr('admin.js.media.library.aucun_dossier_non_classe', 'Aucun dossier (non classé)') });
   }
 
   function syncMobileFolderSelect() {
@@ -417,7 +418,7 @@ export function initMediaLibrary() {
     }
     renderFolderSelectOptions(folderParentSelect, {
       includeRoot: true,
-      rootLabel: 'Racine (aucun parent)',
+      rootLabel: tr('admin.js.media.library.racine_aucun_parent', 'Racine (aucun parent)'),
       excludeId: editingFolderId,
     });
     if (folderParentSelect instanceof HTMLSelectElement) {
@@ -430,7 +431,7 @@ export function initMediaLibrary() {
   function confirmDeleteFolder(folder) {
     openConfirmModal({
       title: `Supprimer le dossier « ${folder.name} » ?`,
-      message: 'Les médias et sous-dossiers contenus dans ce dossier ne seront pas supprimés : ils seront déplacés vers le dossier parent.',
+      message: tr('admin.js.media.library.les_medias_et_sous_dossiers', 'Les médias et sous-dossiers contenus dans ce dossier ne seront pas supprimés : ils seront déplacés vers le dossier parent.'),
       warning: null,
       confirmLabel: 'Supprimer le dossier',
       onConfirm: async () => {
@@ -471,7 +472,7 @@ export function initMediaLibrary() {
         'success',
       );
     } catch (err) {
-      window.Prime?.toast?.(err instanceof Error ? err.message : 'Erreur dossier.', 'danger');
+      window.Prime?.toast?.(err instanceof Error ? err.message : tr('admin.js.media.library.erreur_dossier', 'Erreur dossier.'), 'danger');
     }
   });
 
@@ -502,7 +503,7 @@ export function initMediaLibrary() {
       pendingConfirmAction = null;
       window.Prime?.closeModal?.('pc-media-confirm-modal');
     } catch (err) {
-      window.Prime?.toast?.(err instanceof Error ? err.message : 'Opération impossible.', 'danger');
+      window.Prime?.toast?.(err instanceof Error ? err.message : tr('admin.js.media.library.operation_impossible', 'Opération impossible.'), 'danger');
     } finally {
       confirmBtn.disabled = false;
     }
@@ -546,11 +547,11 @@ export function initMediaLibrary() {
       syncSelectionUi();
       await Promise.all([refreshFolders(), fetchItems(1, false)]);
       window.Prime?.toast?.(
-        ids.length > 1 ? `${ids.length} médias déplacés.` : 'Média déplacé.',
+        ids.length > 1 ? `${ids.length} médias déplacés.` : tr('admin.js.media.library.media_deplace', 'Média déplacé.'),
         'success',
       );
     } catch (err) {
-      window.Prime?.toast?.(err instanceof Error ? err.message : 'Déplacement impossible.', 'danger');
+      window.Prime?.toast?.(err instanceof Error ? err.message : tr('admin.js.media.library.deplacement_impossible', 'Déplacement impossible.'), 'danger');
     }
   }
 
@@ -572,8 +573,8 @@ export function initMediaLibrary() {
         : null;
 
     openConfirmModal({
-      title: ids.length > 1 ? `Supprimer ${ids.length} médias ?` : 'Supprimer 1 média ?',
-      message: 'Les fichiers originaux et toutes leurs variantes générées seront définitivement supprimés du disque.',
+      title: ids.length > 1 ? `Supprimer ${ids.length} médias ?` : tr('admin.js.media.library.supprimer_1_media', 'Supprimer 1 média ?'),
+      message: tr('admin.js.media.library.les_fichiers_originaux_et_toutes', 'Les fichiers originaux et toutes leurs variantes générées seront définitivement supprimés du disque.'),
       warning,
       confirmLabel: ids.length > 1 ? `Supprimer (${ids.length})` : 'Supprimer',
       onConfirm: async () => {
@@ -585,7 +586,7 @@ export function initMediaLibrary() {
         syncSelectionUi();
         await Promise.all([refreshFolders(), fetchItems(1, false)]);
         window.Prime?.toast?.(
-          ids.length > 1 ? `${ids.length} médias supprimés.` : 'Média supprimé.',
+          ids.length > 1 ? `${ids.length} médias supprimés.` : tr('admin.js.media.library.media_supprime', 'Média supprimé.'),
           'success',
         );
       },
@@ -627,7 +628,7 @@ export function initMediaLibrary() {
 
   function renderItems() {
     if (totalBadge) {
-      totalBadge.textContent = state.total > 1 ? `${state.total} médias` : `${state.total} média`;
+      totalBadge.textContent = tr(state.total > 1 ? 'admin.js.media.library.medias_count' : 'admin.js.media.library.media_count', state.total > 1 ? ':count médias' : ':count média', { count: state.total });
     }
 
     if (state.items.length === 0) {
@@ -637,12 +638,12 @@ export function initMediaLibrary() {
         emptyWrap.hidden = false;
         const filtered = hasActiveFilters();
         if (emptyTitle) {
-          emptyTitle.textContent = filtered ? 'Aucun média ne correspond à ces critères' : 'Votre médiathèque est vide';
+          emptyTitle.textContent = filtered ? tr('admin.js.media.library.aucun_media_ne_correspond_a', 'Aucun média ne correspond à ces critères') : tr('admin.js.media.library.votre_mediatheque_est_vide', 'Votre médiathèque est vide');
         }
         if (emptyDesc) {
           emptyDesc.textContent = filtered
-            ? 'Essayez d’élargir votre recherche ou de réinitialiser les filtres actifs.'
-            : 'Glissez-déposez des images, documents, fichiers audio ou vidéos n’importe où sur cette page pour commencer.';
+            ? tr('admin.js.media.library.essayez_d_elargir_votre_recherche', 'Essayez d’élargir votre recherche ou de réinitialiser les filtres actifs.')
+            : tr('admin.js.media.library.glissez_deposez_des_images_documents', 'Glissez-déposez des images, documents, fichiers audio ou vidéos n’importe où sur cette page pour commencer.');
         }
         if (emptyResetBtn instanceof HTMLElement) emptyResetBtn.hidden = !filtered;
         if (emptyUploadBtn instanceof HTMLElement) emptyUploadBtn.hidden = filtered || !canUpload;
@@ -869,7 +870,7 @@ export function initMediaLibrary() {
       }
       renderItems();
     } catch (err) {
-      window.Prime?.toast?.(err instanceof Error ? err.message : 'Erreur de chargement.', 'danger');
+      window.Prime?.toast?.(err instanceof Error ? err.message : tr('admin.js.media.library.erreur_de_chargement', 'Erreur de chargement.'), 'danger');
     } finally {
       state.loading = false;
       if (loadMoreBtn instanceof HTMLButtonElement) {
@@ -893,7 +894,7 @@ export function initMediaLibrary() {
       populateDetailDrawer();
       window.Prime?.openDrawer?.('pc-media-detail-drawer');
     } catch (err) {
-      window.Prime?.toast?.(err instanceof Error ? err.message : 'Média introuvable.', 'danger');
+      window.Prime?.toast?.(err instanceof Error ? err.message : tr('admin.js.media.library.media_introuvable', 'Média introuvable.'), 'danger');
     }
   }
 
@@ -1029,7 +1030,7 @@ export function initMediaLibrary() {
         <dt>Type</dt><dd>${escapeHtml(item.kind_label)} <span class="pc-mono pc-text-muted">(${escapeHtml(item.mime_type)})</span></dd>
         <dt>Poids</dt><dd>${escapeHtml(item.human_size)}</dd>
         ${item.kind === 'image' ? `<dt>Dimensions</dt><dd>${escapeHtml(dims)} (${variantsCount} variante${variantsCount > 1 ? 's' : ''})</dd>` : ''}
-        <dt>Téléversé par</dt><dd>${escapeHtml(item.author_name || 'Système')} · ${escapeHtml((item.created_at || '').slice(0, 16))} UTC</dd>
+        <dt>Téléversé par</dt><dd>${escapeHtml(item.author_name || tr('admin.js.media.library.systeme', 'Système'))} · ${escapeHtml((item.created_at || '').slice(0, 16))} UTC</dd>
       `;
     }
 
@@ -1037,7 +1038,7 @@ export function initMediaLibrary() {
       drawerUrlInput.value = `${window.location.origin}${item.url}`;
     }
 
-    renderFolderSelectOptions(drawerFolderSelect, { includeRoot: true, rootLabel: 'Aucun dossier (non classé)' });
+    renderFolderSelectOptions(drawerFolderSelect, { includeRoot: true, rootLabel: tr('admin.js.media.library.aucun_dossier_non_classe', 'Aucun dossier (non classé)') });
     if (drawerFolderSelect instanceof HTMLSelectElement) {
       drawerFolderSelect.value = item.folder_id ? String(item.folder_id) : '';
       drawerFolderSelect.disabled = !item.can_edit;
@@ -1100,10 +1101,10 @@ export function initMediaLibrary() {
     if (!(drawerUrlInput instanceof HTMLInputElement)) return;
     try {
       await navigator.clipboard.writeText(drawerUrlInput.value);
-      window.Prime?.toast?.('URL copiée dans le presse-papiers.', 'success');
+      window.Prime?.toast?.(tr('admin.js.media.library.url_copiee_dans_le_presse', 'URL copiée dans le presse-papiers.'), 'success');
     } catch {
       drawerUrlInput.select();
-      window.Prime?.toast?.('URL sélectionnée — appuyez sur Ctrl+C pour copier.', 'info');
+      window.Prime?.toast?.(tr('admin.js.media.library.url_selectionnee_appuyez_sur_ctrl', 'URL sélectionnée — appuyez sur Ctrl+C pour copier.'), 'info');
     }
   });
 
@@ -1136,7 +1137,7 @@ export function initMediaLibrary() {
       populateDetailDrawer();
       renderItems();
       await refreshFolders();
-      window.Prime?.toast?.('Métadonnées enregistrées.', 'success');
+      window.Prime?.toast?.(tr('admin.js.media.library.metadonnees_enregistrees', 'Métadonnées enregistrées.'), 'success');
     } catch (err) {
       window.Prime?.toast?.(err instanceof Error ? err.message : 'Enregistrement impossible.', 'danger');
     } finally {
@@ -1154,9 +1155,9 @@ export function initMediaLibrary() {
       state.items = state.items.map((m) => (Number(m.id) === Number(res.item.id) ? res.item : m));
       populateDetailDrawer();
       renderItems();
-      window.Prime?.toast?.('Variantes d’image régénérées.', 'success');
+      window.Prime?.toast?.(tr('admin.js.media.library.variantes_d_image_regenerees', 'Variantes d’image régénérées.'), 'success');
     } catch (err) {
-      window.Prime?.toast?.(err instanceof Error ? err.message : 'Régénération impossible.', 'danger');
+      window.Prime?.toast?.(err instanceof Error ? err.message : tr('admin.js.media.library.regeneration_impossible', 'Régénération impossible.'), 'danger');
     } finally {
       drawerRegenBtn.disabled = false;
     }
@@ -1184,9 +1185,9 @@ export function initMediaLibrary() {
       state.items = state.items.map((m) => (Number(m.id) === Number(res.item.id) ? res.item : m));
       populateDetailDrawer();
       renderItems();
-      window.Prime?.toast?.('Fichier remplacé en conservant l’identifiant et l’URL.', 'success');
+      window.Prime?.toast?.(tr('admin.js.media.library.fichier_remplace_en_conservant_l', 'Fichier remplacé en conservant l’identifiant et l’URL.'), 'success');
     } catch (err) {
-      window.Prime?.toast?.(err instanceof Error ? err.message : 'Remplacement refusé.', 'danger');
+      window.Prime?.toast?.(err instanceof Error ? err.message : tr('admin.js.media.library.remplacement_refuse', 'Remplacement refusé.'), 'danger');
     }
   });
 
@@ -1200,17 +1201,17 @@ export function initMediaLibrary() {
         : null;
 
     openConfirmModal({
-      title: `Supprimer « ${item.display_title} » ?`,
-      message: 'Le fichier original et toutes ses variantes seront définitivement supprimés du serveur.',
+      title: tr('admin.js.media.library.supprimer_media_confirmation', 'Supprimer « :title » ?', { title: item.display_title }),
+      message: tr('admin.js.media.library.le_fichier_original_et_toutes', 'Le fichier original et toutes ses variantes seront définitivement supprimés du serveur.'),
       warning,
-      confirmLabel: 'Supprimer définitivement',
+      confirmLabel: tr('admin.js.media.library.supprimer_definitivement', 'Supprimer définitivement'),
       onConfirm: async () => {
         await apiJson(`${apiBase}/items/${item.id}/delete`, { method: 'POST', body: '{}' });
         selection.remove(item.id);
         window.Prime?.closeDrawer?.('pc-media-detail-drawer');
         state.activeMedia = null;
         await Promise.all([refreshFolders(), fetchItems(1, false)]);
-        window.Prime?.toast?.(`« ${item.display_title} » supprimé.`, 'success');
+        window.Prime?.toast?.(tr('admin.js.media.library.media_supprime_nomme', '« :title » supprimé.', { title: item.display_title }), 'success');
       },
     });
   });
@@ -1245,11 +1246,11 @@ export function initMediaLibrary() {
 
       const statusMeta =
         entry.status === 'done'
-          ? 'Terminé'
+          ? tr('admin.js.media.library.termine', 'Terminé')
           : entry.status === 'error'
             ? entry.error || 'Erreur'
             : entry.status === 'cancelled'
-              ? 'Annulé'
+              ? tr('admin.js.media.library.annule', 'Annulé')
               : entry.status === 'queued'
                 ? 'En attente'
                 : `${entry.progress}%`;

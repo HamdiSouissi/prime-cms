@@ -2,6 +2,7 @@
  * Prime Editor — Pure utility functions (zero DOM dependencies, Node-testable).
  */
 
+import { tr } from '../i18n.js';
 let idCounter = 0;
 
 /**
@@ -175,7 +176,7 @@ export function parseEmbedUrl(rawUrl) {
         provider: 'youtube',
         id,
         embedUrl: `https://www.youtube-nocookie.com/embed/${id}`,
-        defaultTitle: 'Vidéo YouTube',
+        defaultTitle: tr('admin.js.editor.utils.video_youtube', 'Vidéo YouTube'),
       };
     }
     return null;
@@ -188,7 +189,7 @@ export function parseEmbedUrl(rawUrl) {
         provider: 'youtube',
         id: m[1],
         embedUrl: `https://www.youtube-nocookie.com/embed/${m[1]}`,
-        defaultTitle: 'Vidéo YouTube',
+        defaultTitle: tr('admin.js.editor.utils.video_youtube', 'Vidéo YouTube'),
       };
     }
     return null;
@@ -201,7 +202,7 @@ export function parseEmbedUrl(rawUrl) {
         provider: 'vimeo',
         id: m[1],
         embedUrl: `https://player.vimeo.com/video/${m[1]}`,
-        defaultTitle: 'Vidéo Vimeo',
+        defaultTitle: tr('admin.js.editor.utils.video_vimeo', 'Vidéo Vimeo'),
       };
     }
     return null;

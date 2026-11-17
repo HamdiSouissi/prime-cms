@@ -12,14 +12,14 @@
         class="pc-logo"
       >
     </picture>
-    <span class="pc-badge pc-badge--brand">Erreur 405</span>
-    <h1 id="error-405-title" class="pc-error-heading">Méthode non autorisée</h1>
+    <span class="pc-badge pc-badge--brand"><?= t('core.errors.405.title') ?></span>
+    <h1 id="error-405-title" class="pc-error-heading"><?= $this->e($this->t('core.errors.405.methode_non_autorisee')) ?></h1>
     <p class="pc-error-text">
-      La méthode HTTP utilisée n'est pas acceptée pour cette adresse.
+      <?= $this->e($this->t('core.errors.405.methode_http_utilisee_pas_acceptee')) ?>
       <?php if (!empty($allowedMethods)): ?>
-        <br>Méthodes autorisées : <code class="pc-mono"><?= $this->e(implode(', ', $allowedMethods)) ?></code>
+        <br><?= $this->e($this->t('core.errors.405.methodes_autorisees')) ?> <code class="pc-mono"><?= $this->e(implode(', ', $allowedMethods)) ?></code>
       <?php endif; ?>
     </p>
-    <a href="/" class="pc-btn pc-btn--primary">Retourner à l'accueil</a>
+    <a href="/" class="pc-btn pc-btn--primary"><?= $this->e($this->t('core.errors.405.retourner_a_accueil')) ?></a>
   </section>
 <?php $this->stop(); ?>

@@ -88,8 +88,10 @@ final class MailTestCommand implements CommandInterface
         $output->writeln('');
         $output->writeln(($report['ok'] ? '[OK] ' : '[ÉCHEC] ') . $report['message']);
 
-        if (isset($report['capabilities']) && is_array($report['capabilities']) && $report['capabilities'] !== []) {
-            $output->writeln('  Capacités : ' . implode(', ', array_map('strval', $report['capabilities'])));
+        $capabilities = $report['capabilities'] ?? [];
+
+        if ($capabilities !== []) {
+            $output->writeln('  Capacités : ' . implode(', ', array_map('strval', $capabilities)));
         }
 
         if (!$report['ok'] && $recipient === '') {

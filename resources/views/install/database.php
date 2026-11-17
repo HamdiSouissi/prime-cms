@@ -21,10 +21,10 @@ $this->layout('install::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-install__header">
-    <h1 class="pc-install__title">Connexion à la base de données</h1>
+    <h1 class="pc-install__title"><?= $this->e($this->t('core.install.database.connexion_a_base_donnees')) ?></h1>
     <p class="pc-install__lead">
-        Renseignez les identifiants de votre serveur MySQL 8.0+ ou MariaDB 10.6+.
-        Les informations sensibles restent stockées en session serveur et ne sont jamais écrites dans le HTML.
+        <?= $this->e($this->t('core.install.database.identifiants_serveur')) ?>
+        <?= $this->e($this->t('core.install.database.informations_sensibles_restent_stockees_session')) ?>
     </p>
 </div>
 
@@ -79,9 +79,9 @@ $this->layout('install::layout', [
 
         <div class="pc-field<?= isset($errors['db_prefix']) ? ' pc-field--error' : '' ?>">
             <label class="pc-field__label" for="db-prefix">
-                <span>Préfixe des tables</span>
+                <span><?= $this->e($this->t('core.install.database.prefixe_tables')) ?></span>
                 <span class="pc-field__required" aria-hidden="true">*</span>
-                <span class="sr-only">(obligatoire)</span>
+                <span class="sr-only"><?= $this->e($this->t('core.install.database.obligatoire')) ?></span>
             </label>
             <input
                 type="text"
@@ -95,7 +95,7 @@ $this->layout('install::layout', [
                 aria-describedby="db-prefix-help<?= isset($errors['db_prefix']) ? ' db-prefix-error' : '' ?>"
                 <?= isset($errors['db_prefix']) ? 'aria-invalid="true"' : '' ?>
             >
-            <p class="pc-field__help" id="db-prefix-help">Lettres minuscules, chiffres et « _ », terminé par « _ ».</p>
+            <p class="pc-field__help" id="db-prefix-help"><?= $this->e($this->t('core.install.database.lettres_minuscules_chiffres_termine')) ?></p>
             <?php if (isset($errors['db_prefix'])): ?>
                 <p class="pc-field__error" id="db-prefix-error" role="alert">
                     <?= $this->raw($this->icon('alert-circle', 14)) ?>
@@ -131,7 +131,7 @@ $this->layout('install::layout', [
     <?php if ($dbStatus !== null && ($dbStatus['status'] ?? '') === 'database_missing' && !empty($dbStatus['can_create_database'])): ?>
         <div>
             <button type="submit" name="intent" value="create_db" class="pc-btn pc-btn--secondary">
-                Créer la base « <?= $this->e($values['db_database']) ?> »
+                <?= $this->e($this->t('core.install.database.creer_base', ['name' => $values['db_database']])) ?>
             </button>
         </div>
     <?php endif; ?>
@@ -144,7 +144,7 @@ $this->layout('install::layout', [
 
         <div class="pc-install__actions-group">
             <button type="submit" name="intent" value="test" class="pc-btn pc-btn--secondary">
-                Tester la connexion
+                <?= $this->e($this->t('core.install.db_test')) ?>
             </button>
             <button type="submit" name="intent" value="continue" class="pc-btn pc-btn--primary">
                 <span>Continuer</span>

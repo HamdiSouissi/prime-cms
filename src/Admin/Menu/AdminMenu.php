@@ -6,6 +6,7 @@ namespace Prime\Admin\Menu;
 
 use Prime\Admin\Data\FilterValueHelper;
 use Prime\Admin\Exception\InvalidMenuItemException;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Http\Request;
 
 /**
@@ -13,6 +14,8 @@ use Prime\Http\Request;
  */
 final class AdminMenu
 {
+    use TranslatesAdminCopy;
+
     /**
      * Top-level items indexed by ID.
      *
@@ -82,7 +85,7 @@ final class AdminMenu
             $item = $entry['item'];
             if (!FilterValueHelper::isSafeUrl($item->url) || !FilterValueHelper::isValidIcon($item->icon)) {
                 unset($this->items[$id], $this->children[$id]);
-                $issues[] = sprintf('Entrée de menu "%s" ignorée (URL ou icône invalide).', $id);
+                $issues[] = sprintf($this->t('admin.ctrl_menu_adminmenu.entree_de_menu_s_ignoree_url_ou_icone_invalide'), $id);
                 continue;
             }
 
@@ -94,7 +97,7 @@ final class AdminMenu
                 $child = $childEntry['item'];
                 if (!FilterValueHelper::isSafeUrl($child->url) || !FilterValueHelper::isValidIcon($child->icon)) {
                     unset($this->children[$id][$childId]);
-                    $issues[] = sprintf('Sous-menu "%s" ignoré (URL ou icône invalide).', $childId);
+                    $issues[] = sprintf($this->t('admin.ctrl_menu_adminmenu.sous_menu_s_ignore_url_ou_icone_invalide'), $childId);
                 }
             }
         }

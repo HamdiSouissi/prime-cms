@@ -27,7 +27,7 @@ final class LangCheckCommand implements CommandInterface
 
     public function description(): string
     {
-        return 'Vérifie la cohérence des catalogues de traduction (--strict, --json, --locales=fr,en)';
+        return 'Vérifie la cohérence des catalogues de traduction (--json, --catalog, --locales=fr,en). Toute clé manquante, clé inconnue ou texte en dur fait échouer la commande ; --strict fait aussi échouer les avertissements (clés inutilisées, substituts différents).';
     }
 
     public function execute(array $args, ConsoleOutput $output): int
@@ -106,19 +106,15 @@ final class LangCheckCommand implements CommandInterface
 
         $output->writeln('');
 
-        if ($errors === 0 && $warnings === 0) {
-            $output->writeln('Catalogue de traduction cohérent.');
+        $output->writeln(match (true) {
+            $errors === 0 && $warnings === 0 => 'Catalogue de traduction cohérent.',
+            default => sprintf('%d erreur(s), %d avertissement(s).', $errors, $warnings),
+        });
 
-            return self::SUCCESS;
-        }
+        // `--strict` additionally fails on warnings: unused keys and placeholder drift.
+        $failed = $errors !== 0 || ($strict && $warnings !== 0);
 
-        $output->writeln(sprintf('%d erreur(s), %d avertissement(s).', $errors, $warnings));
-
-        if ($errors > 0 || ($strict && $warnings > 0)) {
-            return self::FAILURE;
-        }
-
-        return self::SUCCESS;
+        return $failed ? self::FAILURE : self::SUCCESS;
     }
 
     /**
@@ -142,8 +138,14 @@ final class LangCheckCommand implements CommandInterface
                 $this->app->basePath('src'),
                 $this->app->contentPath('themes'),
                 $this->app->contentPath('plugins'),
+                $this->app->basePath('public/assets/admin/js'),
             ], static fn (string $path): bool => is_dir($path))),
             locales: $allowed,
+            // The suite references internal and deliberately-missing keys: usage only.
+            usageOnlyPaths: array_filter(
+                [$this->app->basePath('tests')],
+                static fn (string $path): bool => is_dir($path),
+            ),
         );
     }
 

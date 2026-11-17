@@ -87,9 +87,10 @@ final class Authenticate implements MiddlewareInterface
 
         $path = '/' . ltrim($request->path(), '/');
         $target = TwoFactorPolicy::ENROLLMENT_URL;
-        $enrollmentPath = parse_url($target, PHP_URL_PATH);
+        // The enrollment target carries a query string, so only its path can be compared with the request.
+        $enrollmentPath = explode('?', $target, 2)[0];
 
-        if (is_string($enrollmentPath) && $path === $enrollmentPath) {
+        if ($path === $enrollmentPath) {
             return null;
         }
 
