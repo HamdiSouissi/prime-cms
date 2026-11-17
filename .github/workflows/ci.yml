@@ -49,7 +49,15 @@ jobs:
           fi
 
       - name: Run static analysis (PHPStan level 8)
-        run: composer stan
+        run: |
+          set -o pipefail
+          # GitHub keeps only ten annotations per job, which hides the rest of a failing run: ask for
+          # the table format, and put the whole report in a single annotation.
+          if ! php -d memory_limit=1G vendor/bin/phpstan analyse --error-format=table --no-progress 2>&1 | tee /tmp/stan.log; then
+            SUMMARY=$(sed -n '/^ *Line /,$p' /tmp/stan.log | tr '\n' '|' | sed 's/||*/ | /g' | cut -c1-3000)
+            echo "::error title=PHPStan niveau 8::$SUMMARY"
+            exit 1
+          fi
 
       - name: Run unit and HTTP test suite (PHPUnit 11)
         run: vendor/bin/phpunit --exclude-group database
