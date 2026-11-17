@@ -198,9 +198,15 @@ final class Barcode
             }
         }
 
-        /** @var list<list<bool>> $best */
+        // Every mask gets scored, so `$best` is set; the re-index is what hands back the dense
+        // `list<list<bool>>` this method promises, from the widened shape the drawing helpers
+        // necessarily work in.
+        if ($best === null) {
+            throw new InvalidArgumentException('Aucun masque de QR Code ne convient à ce contenu.');
+        }
+
         return [
-            'matrix' => $best,
+            'matrix' => self::asListMatrix($best),
             'version' => $version,
             'size' => $size,
             'mask' => $chosenMask,
@@ -453,8 +459,8 @@ final class Barcode
     }
 
     /**
-     * @param list<list<bool>> $base
-     * @param list<list<bool>> $functions
+     * @param array<int, array<int, bool>> $base
+     * @param array<int, array<int, bool>> $functions
      */
     private static function drawFunctionPatterns(array &$base, array &$functions, int $size, int $version): void
     {
@@ -524,11 +530,6 @@ final class Barcode
                 self::set($base, $functions, $size, $row, $size - 11 + $col, $bit);
             }
         }
-
-        // Writes through a reference at computed offsets widen the rows from `list<bool>` to
-        // `array<int, bool>`; re-indexing them keeps the promise every helper below makes.
-        $base = self::asListMatrix($base);
-        $functions = self::asListMatrix($functions);
     }
 
     /**
@@ -558,9 +559,9 @@ final class Barcode
     }
 
     /**
-     * @param list<list<bool>> $matrix
-     * @param list<list<bool>> $functions
-     * @param list<int>          $data
+     * @param array<int, array<int, bool>> $matrix
+     * @param array<int, array<int, bool>> $functions
+     * @param list<int>                    $data
      */
     private static function drawCodewords(array &$matrix, array $functions, int $size, array $data): void
     {
@@ -588,13 +589,11 @@ final class Barcode
                 }
             }
         }
-
-        $matrix = self::asListMatrix($matrix);
     }
 
     /**
-     * @param list<list<bool>> $matrix
-     * @param list<list<bool>> $functions
+     * @param array<int, array<int, bool>> $matrix
+     * @param array<int, array<int, bool>> $functions
      */
     private static function applyMask(array &$matrix, array $functions, int $size, int $mask): void
     {
@@ -609,8 +608,6 @@ final class Barcode
                 }
             }
         }
-
-        $matrix = self::asListMatrix($matrix);
     }
 
     private static function maskHit(int $mask, int $x, int $y): bool
@@ -628,7 +625,7 @@ final class Barcode
     }
 
     /**
-     * @param list<list<bool>> $matrix
+     * @param array<int, array<int, bool>> $matrix
      */
     private static function drawFormat(array &$matrix, int $size, int $mask): void
     {
@@ -667,12 +664,10 @@ final class Barcode
 
         // Always-dark module below the top-right copy of the format information.
         $matrix[$size - 8][8] = true;
-
-        $matrix = self::asListMatrix($matrix);
     }
 
     /**
-     * @param list<list<bool>> $matrix
+     * @param array<int, array<int, bool>> $matrix
      */
     private static function penalty(array $matrix, int $size): int
     {
@@ -754,14 +749,10 @@ final class Barcode
     }
 
     /**
-     * @param list<list<bool>> $base
-     * @param list<list<bool>> $functions
-     */
-    /**
-     * PHPStan reads a write at a computed offset as `array<int, bool>` rather than `list<bool>`, which
-     * a caller holding a `list<list<bool>>` may not be given back. Re-indexing the rows is a no-op on a
-     * matrix that was dense to begin with — the size loop never leaves a hole — and it is what lets the
-     * four drawing helpers keep taking their matrix by reference.
+     * PHPStan reads a write at a computed offset as `array<int, bool>` rather than `list<bool>`, so the
+     * drawing helpers take and give `array<int, array<int, bool>>` and only this method restores the
+     * dense shape `build()` promises. Re-indexing rows that were never sparse is the cheap half of the
+     * job; the other half is that nobody downstream has to guess whether an offset exists.
      *
      * @param array<int, array<int, bool>> $matrix
      *
@@ -778,6 +769,12 @@ final class Barcode
         return $rows;
     }
 
+    /**
+     * Paint one module, and mark it taken so no codeword lands on it.
+     *
+     * @param array<int, array<int, bool>> $base
+     * @param array<int, array<int, bool>> $functions
+     */
     private static function set(array &$base, array &$functions, int $size, int $x, int $y, bool $on): void
     {
         if ($x < 0 || $y < 0 || $x >= $size || $y >= $size) {
@@ -789,7 +786,7 @@ final class Barcode
     }
 
     /**
-     * @param list<list<bool>> $functions
+     * @param array<int, array<int, bool>> $functions
      */
     private static function reserve(array &$functions, int $size, int $x, int $y): void
     {
