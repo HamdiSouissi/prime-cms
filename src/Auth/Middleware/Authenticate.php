@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Auth\Middleware;
 
 use Prime\Auth\Auth;
+use Prime\Auth\TwoFactorPolicy;
 use Prime\Http\Middleware\MiddlewareInterface;
 use Prime\Http\Request;
 use Prime\Http\Response;
@@ -17,6 +18,7 @@ use Prime\Http\Session;
  *   (strictly rejecting external URLs, protocol-relative URLs, backslashes, or CRLF).
  * - Returns HTTP 401 JSON when the client requests JSON (`Accept: application/json`).
  * - Applies `Cache-Control: no-store` and `Pragma: no-cache` on all admin responses.
+ * - Holds accounts of a role where 2FA is mandatory on the enrollment screen until they activate it.
  */
 final class Authenticate implements MiddlewareInterface
 {
@@ -25,11 +27,19 @@ final class Authenticate implements MiddlewareInterface
     public function __construct(
         private readonly Auth $auth,
         private readonly Session $session,
+        private readonly ?TwoFactorPolicy $twoFactorPolicy = null,
     ) {
     }
 
     public function process(Request $request, callable $next): Response
     {
+        if ($this->auth->check($request)) {
+            $block = $this->enrollmentRedirect($request);
+            if ($block !== null) {
+                return $block;
+            }
+        }
+
         if (!$this->auth->check($request)) {
             if ($request->wantsJson()) {
                 return Response::json([
@@ -58,6 +68,51 @@ final class Authenticate implements MiddlewareInterface
         $response = $next($request);
 
         return $response->withHeaders(NoStoreHeaders::HEADERS);
+    }
+
+    /**
+     * Redirect an account that must enroll in 2FA onto its profile, once per request.
+     */
+    private function enrollmentRedirect(Request $request): ?Response
+    {
+        $policy = $this->twoFactorPolicy;
+        if ($policy === null || !$policy->isEnabled()) {
+            return null;
+        }
+
+        $user = $this->auth->user();
+        if ($user === null || !$policy->isRequired($user)) {
+            return null;
+        }
+
+        $path = '/' . ltrim($request->path(), '/');
+        $target = TwoFactorPolicy::ENROLLMENT_URL;
+        $enrollmentPath = parse_url($target, PHP_URL_PATH);
+
+        if (is_string($enrollmentPath) && $path === $enrollmentPath) {
+            return null;
+        }
+
+        // Keep the media picker and auth endpoints reachable so the profile stays usable.
+        foreach (['/admin/logout', '/admin/login', '/admin/media'] as $allowed) {
+            if ($path === $allowed || str_starts_with($path, $allowed . '/') || str_starts_with($path, $allowed . '?')) {
+                return null;
+            }
+        }
+
+        if ($request->wantsJson()) {
+            return Response::json([
+                'error' => [
+                    'code' => 403,
+                    'message' => 'La double authentification est requise pour votre rôle.',
+                    'redirect' => $target,
+                ],
+            ], 403)->withHeaders(NoStoreHeaders::HEADERS);
+        }
+
+        $this->session->flash('warning', 'La double authentification est obligatoire pour votre rôle : activez-la pour continuer.');
+
+        return Response::redirect($target, 302)->withHeaders(NoStoreHeaders::HEADERS);
     }
 
     /**

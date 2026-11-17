@@ -38,6 +38,7 @@ use Prime\Console\Commands\PluginUninstallCommand;
 use Prime\Console\Commands\RoleListCommand;
 use Prime\Console\Commands\RoutesCommand;
 use Prime\Console\Commands\SettingsGetCommand;
+use Prime\Console\Commands\SettingsListCommand;
 use Prime\Console\Commands\SettingsSetCommand;
 use Prime\Console\Commands\ThemeActivateCommand;
 use Prime\Console\Commands\ThemeListCommand;
@@ -67,6 +68,7 @@ use Prime\Plugins\PluginInstaller;
 use Prime\Plugins\PluginManager;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
+use Prime\Settings\SettingsRegistry;
 use Prime\Themes\ThemeManager;
 
 /**
@@ -176,6 +178,13 @@ final class ConsoleApplication
 
             $this->register(new SettingsGetCommand($settings));
             $this->register(new SettingsSetCommand($settings));
+
+            if ($this->app->container()->has(SettingsRegistry::class)) {
+                /** @var SettingsRegistry $registry */
+                $registry = $this->app->get(SettingsRegistry::class);
+
+                $this->register(new SettingsListCommand($registry, $settings));
+            }
         }
 
         if ($this->app->container()->has(Installer::class)) {
