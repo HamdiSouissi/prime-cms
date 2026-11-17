@@ -493,6 +493,10 @@ final class PageCache
             return;
         }
 
+        if (!@is_writable($this->directory)) {
+            @chmod($this->directory, 0777);
+        }
+
         $marker = $this->directory . '/' . self::PURGE_MARKER;
         $temp = $marker . '.' . bin2hex(random_bytes(4));
 
@@ -661,13 +665,14 @@ final class PageCache
             @mkdir($this->directory, 0750, true);
         }
 
-        // `bin/prime cache:clear` creates this directory too, as root inside `docker compose exec` and as
-        // the deploy user on a VM: a 0750 directory owned by somebody else would leave Apache unable to
-        // store a single page, and the cache would degrade to `BYPASS` forever without saying so. Relax
-        // it the way the container entrypoint relaxes `storage/cache`; the `.htaccess` written below keeps
-        // the entries unreachable over HTTP either way.
+        // Two users share this directory: `bin/prime cache:clear` (root inside `docker compose exec`,
+        // the deploy user on a VM) creates and purges it, Apache fills it. Whoever came first owns it,
+        // and a 0750 leftover from the other one would leave the web process unable to store a single
+        // page — a `BYPASS` forever, with nothing said about it. Relax it the way
+        // `docker/php/entrypoint.sh` relaxes `storage/cache`; the `.htaccess` written below keeps the
+        // entries unreachable over HTTP either way.
         if (!@is_writable($this->directory)) {
-            @chmod($this->directory, 0775);
+            @chmod($this->directory, 0777);
         }
 
         $htaccess = rtrim($this->directory, '/\\') . '/.htaccess';

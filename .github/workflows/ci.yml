@@ -344,7 +344,10 @@ jobs:
           # repairs — so purge from the CLI as well and ask the question a second time.
           prime9_cache MISS http://localhost:8080/
           prime9_cache HIT http://localhost:8080/
-          docker compose exec -T app php bin/prime cache:clear --pages | grep -q "Cache de pages vidé"
+
+          # The CLI purge counting that entry back is the proof it was really written on disk, and not
+          # only answered with a friendly header.
+          docker compose exec -T app php bin/prime cache:clear --pages | grep -qE "vidé \([1-9][0-9]* page"
           prime9_cache MISS http://localhost:8080/
           prime9_cache HIT http://localhost:8080/
 

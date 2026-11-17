@@ -323,6 +323,12 @@ final class FileCache implements CacheInterface
             @mkdir($this->directory, 0750, true);
         }
 
+        // Same two-user story as `PageCache`: the CLI that flushes the data cache and the web process
+        // that writes it are rarely the same account, and the entries have to survive both.
+        if (!@is_writable($this->directory)) {
+            @chmod($this->directory, 0777);
+        }
+
         $htaccess = rtrim($this->directory, '/\\') . '/.htaccess';
         if (!is_file($htaccess)) {
             @file_put_contents($htaccess, "Require all denied\n");
