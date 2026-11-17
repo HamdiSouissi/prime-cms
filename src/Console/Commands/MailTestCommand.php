@@ -7,6 +7,7 @@ namespace Prime\Console\Commands;
 use Prime\Console\ArgParser;
 use Prime\Console\CommandInterface;
 use Prime\Console\ConsoleOutput;
+use Prime\Kernel\Container;
 use Prime\Mail\LogMailer;
 use Prime\Mail\Mailer;
 use Prime\Mail\NativeMailer;
@@ -21,7 +22,7 @@ use Prime\Mail\SmtpTransport;
  */
 final class MailTestCommand implements CommandInterface
 {
-    public function __construct(private readonly Mailer $mailer)
+    public function __construct(private readonly Container $container)
     {
     }
 
@@ -43,18 +44,26 @@ final class MailTestCommand implements CommandInterface
         $parsed = ArgParser::parse($args, ['json']);
         $options = $parsed['options'];
         $asJson = ArgParser::hasFlag($options, 'json');
-        $config = $this->mailer->config();
+        $mailer = $this->container->get(Mailer::class);
+
+        if (!$mailer instanceof Mailer) {
+            $output->error('Service d\'envoi indisponible : le conteneur ne répond pas.');
+
+            return self::FAILURE;
+        }
+
+        $config = $mailer->config();
         $recipient = (string) ($options['to'] ?? '');
 
-        $report = ['driver' => $config->driver(), 'transport' => $this->mailer->transportName()];
+        $report = ['driver' => $config->driver(), 'transport' => $mailer->transportName()];
 
         if ($recipient !== '') {
-            $result = $this->mailer->test($recipient);
+            $result = $mailer->test($recipient);
             $report['sent_to'] = $recipient;
             $report['ok'] = $result['ok'];
             $report['message'] = $result['message'];
         } else {
-            $report += $this->probe();
+            $report += $this->probe($mailer);
         }
 
         if ($asJson) {
@@ -68,7 +77,7 @@ final class MailTestCommand implements CommandInterface
             ['Expéditeur', sprintf('%s <%s>', $config->fromName(), $config->fromAddress())],
             ['Serveur', $config->usesSmtp() ? sprintf('%s:%d (%s)', $config->host(), $config->port(), $config->encryption() !== '' ? $config->encryption() : 'clair') : '—'],
             ['Identifiant', $config->username() !== '' ? $config->username() : 'aucun'],
-            ['Transport', $this->mailer->transportName()],
+            ['Transport', $mailer->transportName()],
             ['Journal', $config->logEnabled() ? sprintf('activé, %d jours', $config->logDays()) : 'désactivé'],
         ];
 
@@ -93,9 +102,9 @@ final class MailTestCommand implements CommandInterface
     /**
      * @return array{ok: bool, message: string, capabilities?: list<string>, auth?: string, tls?: bool}
      */
-    private function probe(): array
+    private function probe(Mailer $mailer): array
     {
-        $transport = $this->mailer->transport();
+        $transport = $mailer->transport();
 
         if ($transport instanceof SmtpTransport) {
             $report = $transport->verify();
@@ -122,6 +131,6 @@ final class MailTestCommand implements CommandInterface
             return ['ok' => true, 'message' => 'Le pilote « log » écrit dans storage/logs/mail-*.log — aucun envoi réel.'];
         }
 
-        return ['ok' => true, 'message' => 'Transport prêt (' . $this->mailer->transportName() . ').'];
+        return ['ok' => true, 'message' => 'Transport prêt (' . $mailer->transportName() . ').'];
     }
 }

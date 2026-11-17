@@ -7,6 +7,7 @@ namespace Prime\Console\Commands;
 use Prime\Console\ArgParser;
 use Prime\Console\CommandInterface;
 use Prime\Console\ConsoleOutput;
+use Prime\Kernel\Container;
 use Prime\Mail\MailLogRepository;
 
 /**
@@ -17,7 +18,7 @@ use Prime\Mail\MailLogRepository;
  */
 final class MailLogsCommand implements CommandInterface
 {
-    public function __construct(private readonly MailLogRepository $logs)
+    public function __construct(private readonly Container $container)
     {
     }
 
@@ -36,14 +37,22 @@ final class MailLogsCommand implements CommandInterface
      */
     public function execute(array $args, ConsoleOutput $output): int
     {
+        $logs = $this->container->get(MailLogRepository::class);
+
+        if (!$logs instanceof MailLogRepository) {
+            $output->error('Journal des e-mails indisponible : la base de données n\'est pas joignable.');
+
+            return self::FAILURE;
+        }
+
         $parsed = ArgParser::parse($args, ['json']);
         $options = $parsed['options'];
         $status = isset($options['status']) ? (string) $options['status'] : null;
         $limit = max(1, min(200, (int) ($options['limit'] ?? 25)));
-        $rows = $this->logs->recent($limit, 0, $status);
+        $rows = $logs->recent($limit, 0, $status);
 
         if (ArgParser::hasFlag($options, 'json')) {
-            $output->writeln((string) json_encode(['stats' => $this->logs->stats(), 'rows' => $rows], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $output->writeln((string) json_encode(['stats' => $logs->stats(), 'rows' => $rows], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
             return self::SUCCESS;
         }
@@ -72,7 +81,7 @@ final class MailLogsCommand implements CommandInterface
 
         $output->table(['#', 'Date (UTC)', 'Destinataire', 'Sujet', 'État', 'Transport', 'Gabarit', 'Essais', 'Erreur'], $table);
 
-        $stats = $this->logs->stats();
+        $stats = $logs->stats();
         $output->writeln(sprintf(
             '%d e-mail(s) — %d envoyé(s), %d en file, %d en échec.',
             $stats['total'],

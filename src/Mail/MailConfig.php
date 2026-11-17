@@ -33,6 +33,8 @@ final class MailConfig
     public const SETTING_LOG_ENABLED = 'mail.log_enabled';
     public const SETTING_LOG_DAYS = 'mail.log_days';
 
+    public const DEFAULT_LOG_DAYS = 30;
+
     public const DRIVER_LOG = 'log';
     public const DRIVER_NATIVE = 'native';
     public const DRIVER_SMTP = 'smtp';

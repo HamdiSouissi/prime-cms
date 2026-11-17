@@ -70,7 +70,6 @@ use Prime\Jobs\JobQueue;
 use Prime\Jobs\JobRepository;
 use Prime\Kernel\Application;
 use Prime\Mail\Mailer;
-use Prime\Mail\MailLogRepository;
 use Prime\Media\MediaConfig;
 use Prime\Media\MediaRepository;
 use Prime\Media\UploadService;
@@ -205,17 +204,14 @@ final class ConsoleApplication
             $this->register(new QueueRetryCommand($jobs));
         }
 
+        // `bin/prime list` must answer on a site whose database is unreachable, so nothing is resolved
+        // here: the commands take the container and fetch the mailer when they actually run.
         if ($this->app->container()->has(Mailer::class)) {
-            /** @var Mailer $mailer */
-            $mailer = $this->app->get(Mailer::class);
-            $logs = $this->app->container()->has(MailLogRepository::class) ? $this->app->get(MailLogRepository::class) : null;
+            $c = $this->app->container();
 
-            $this->register(new MailTestCommand($mailer));
-
-            if ($logs instanceof MailLogRepository) {
-                $this->register(new MailLogsCommand($logs));
-                $this->register(new MailPruneCommand($logs, $mailer->config()->logDays()));
-            }
+            $this->register(new MailTestCommand($c));
+            $this->register(new MailLogsCommand($c));
+            $this->register(new MailPruneCommand($c));
         }
 
         if ($this->app->container()->has(Settings::class)) {
