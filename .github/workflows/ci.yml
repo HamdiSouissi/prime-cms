@@ -284,22 +284,32 @@ jobs:
           set -o pipefail
           trap 'printf "::error::phase9 ligne %s (statut %s)\n" "$LINENO" "$?"' ERR
 
-          # `prime9_cache <attendu> <url>` pastes the response headers into an annotation when the page
-          # cache does not answer as expected: this shell is the only place that can see the container.
+          # `prime9_cache <attendu> <url>` reads back the X-Prime-Cache header the container answered.
+          # On a mismatch it turns everything only this shell can see — the header names, the state of
+          # storage/cache/pages, the settings row — into annotations, since the container's own log is
+          # out of reach from the Actions UI.
           prime9_cache() {
-            headers=$(curl -s -o /dev/null -D - "$2")
-            if ! printf '%s' "$headers" | grep -qi "^X-Prime-Cache: $1"; then
-              printf '::error::phase9 cache %s attendu sur %s — %s\n' "$1" "$2" "$(printf '%s' "$headers" | tr '\r\n' '  ' | cut -c1-400)"
-              exit 1
+            got=$(curl -s -o /dev/null -D - "$2" | tr -d '\r' | grep -i '^X-Prime-Cache:' | head -n 1 | cut -d: -f2- | tr -d ' ' || true)
+            if [ "$got" = "$1" ]; then
+              return 0
             fi
+            printf '::error::phase9 cache : «%s» attendu sur %s, le conteneur a dit «%s»\n' "$1" "$2" "${got:-aucun en-tête}"
+            printf '::error::phase9 cache entêtes : %s\n' "$(curl -s -o /dev/null -D - "$2" | tr -d '\r' | awk 'NR > 1 {printf "%s ", $1}' | cut -c1-300 || true)"
+            printf '::error::phase9 cache répertoire : %s\n' "$(docker compose exec -T app sh -c 'ls -ld storage/cache/pages; ls storage/cache/pages | wc -l; cat storage/cache/config.json' 2>&1 | tr '\n' ' ' | cut -c1-300 || true)"
+            printf '::error::phase9 cache réglage : %s\n' "$(docker compose exec -T app php bin/prime settings:get cache.page_enabled 2>&1 | tr '\n' ' ' | cut -c1-200 || true)"
+            exit 1
           }
 
-          # Full page cache: cold after a purge, warm on the next hit, cold again after `cache:clear`.
+          # The web process has to be the one that creates storage/cache/pages: a `bin/prime` purge runs
+          # as root here, and the 0750 root-owned directory it would leave behind is what PageCache now
+          # repairs — so purge from the CLI as well and ask the question a second time.
+          prime9_cache MISS http://localhost:8080/
+          prime9_cache HIT http://localhost:8080/
           docker compose exec -T app php bin/prime cache:clear --pages | grep -q "Cache de pages vidé"
           prime9_cache MISS http://localhost:8080/
           prime9_cache HIT http://localhost:8080/
 
-          # Targeted purge: publishing must drop the copies that list the new post, then serve them fresh.
+          # Targeted purge: publishing drops the home copy that lists the new post, and the fresh render shows it.
           docker compose exec -T app php bin/prime content:create --type=post --title="Purge Cible" --status=published --body="Article publié pour vérifier la purge ciblée du cache." | grep -q "Purge Cible"
           prime9_cache MISS http://localhost:8080/
           curl -sf http://localhost:8080/ | grep -q "Purge Cible"

@@ -357,8 +357,11 @@ final class Settings
     }
 
     /**
-     * @param Closure(): array<array-key, mixed> $loader
-     * @param array<array-key, mixed>            $default
+     * The loader may hand back anything the cache held — a scalar from an older release, for
+     * instance — which is why `$default` exists rather than a bare cast.
+     *
+     * @param Closure(): mixed            $loader
+     * @param array<array-key, mixed>     $default
      *
      * @return array<array-key, mixed>
      */

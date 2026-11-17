@@ -7,7 +7,6 @@ namespace Prime\Settings;
 use DateTimeZone;
 use Prime\Auth\RoleRepository;
 use Prime\Cache\CacheInterface;
-use Prime\Content\Entry;
 use Prime\Content\EntryQuery;
 use Prime\Content\Term;
 use Prime\Content\TermRepository;
@@ -195,9 +194,7 @@ final class SettingsServiceProvider extends ServiceProvider
 
         $options = [];
         foreach ($rows as $entry) {
-            if ($entry instanceof Entry) {
-                $options[$entry->id] = $entry->title !== '' ? $entry->title : '#' . $entry->id;
-            }
+            $options[$entry->id] = $entry->title !== '' ? $entry->title : '#' . $entry->id;
         }
 
         return $options;

@@ -157,6 +157,9 @@ final class SettingsFormProcessor
             'textarea', 'code' => $this->toMultiline($field, $raw),
             'radio', 'select' => $this->toChoice($field, $raw),
             'multiselect' => $this->toChoices($field, $raw),
+            // A plugin may register a type of its own (a `range`, a `textarea-json`): nothing to
+            // coerce here, the declared validation rules are what guards the value.
+            default => $raw,
         };
     }
 
@@ -262,10 +265,10 @@ final class SettingsFormProcessor
         }
 
         if (in_array($field->type, ['select', 'radio', 'multiselect'], true) && $field->options !== []) {
-            $choices = array_keys($field->options);
-            if ($choices !== []) {
-                $rules['in'] = implode(',', array_map(static fn (int|string $k): string => (string) $k, $choices));
-            }
+            $rules['in'] = implode(',', array_map(
+                static fn (int|string $key): string => (string) $key,
+                array_keys($field->options),
+            ));
         }
 
         if ($field->type === 'color' && !isset($rules['regex'])) {
@@ -355,14 +358,6 @@ final class SettingsFormProcessor
         $specs = [];
 
         foreach ($rules as $rule => $value) {
-            if (is_int($rule)) {
-                if (is_string($value)) {
-                    $specs[] = $value;
-                }
-
-                continue;
-            }
-
             $specs[] = $value === '' || $value === null ? (string) $rule : $rule . ':' . $value;
         }
 
@@ -494,7 +489,6 @@ final class SettingsFormProcessor
         };
 
         $candidates = [$value, str_replace('T', ' ', $value)];
-        $errors = null;
 
         foreach ($candidates as $candidate) {
             $date = DateTimeImmutable::createFromFormat($format, $candidate);
@@ -502,8 +496,9 @@ final class SettingsFormProcessor
                 continue;
             }
 
-            $errors = DateTimeImmutable::getLastErrors();
-            $hasIssues = is_array($errors) && (($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0);
+            // PHP 8.2 hands back both counters, so a rollover is a fact and not a maybe.
+            $issues = DateTimeImmutable::getLastErrors();
+            $hasIssues = $issues['warning_count'] > 0 || $issues['error_count'] > 0;
 
             // A lossless round-trip keeps `25:00` and `31/02/2026` from being silently rolled over:
             // the raw input reaches the declared `regex` rule and the screen shows why it was refused.

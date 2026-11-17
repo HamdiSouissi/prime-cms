@@ -120,20 +120,19 @@ final class SettingsRegistry
     public function register(array $sections, array $fields, ?string $owner = null): void
     {
         foreach ($sections as $id => $section) {
-            if (is_int($id) && isset($section['id']) && is_string($section['id'])) {
-                $this->section($section['id'], $section);
+            // A list-shaped payload has to carry its own id; a map is keyed by it.
+            if (is_int($id) && isset($section['id']) && is_scalar($section['id'])) {
+                $this->section((string) $section['id'], $section);
                 continue;
             }
 
             if (is_string($id)) {
-                $this->section($id, is_array($section) ? $section : []);
+                $this->section($id, $section);
             }
         }
 
         foreach ($fields as $field) {
-            if (is_array($field)) {
-                $this->add($field, $owner);
-            }
+            $this->add($field, $owner);
         }
     }
 

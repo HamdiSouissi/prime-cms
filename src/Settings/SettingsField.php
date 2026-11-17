@@ -50,7 +50,7 @@ final class SettingsField
     /**
      * @param array<int|string, string> $options
      * @param array<string, mixed>      $attributes
-     * @param array<string, mixed>      $rules
+     * @param array<array-key, mixed>   $rules
      * @param array<string, mixed>      $conditions
      * @param array<string, mixed>      $ui
      */
@@ -207,11 +207,12 @@ final class SettingsField
 
     /**
      * Accept both the `['required', 'max:120']` list shape and the `['required' => '', 'max' => 120]`
-     * map, plus the `required|max:120` string form a plugin may hand over instead.
+     * map, plus the `required|max:120` string form a plugin may hand over instead. A list keeps its
+     * integer keys — `SettingsFormProcessor::rulesFor()` is what turns them into a rule map.
      *
      * @param mixed $rules
      *
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     private static function normalizeRules(mixed $rules): array
     {

@@ -496,7 +496,10 @@ final class PageCache
         $marker = $this->directory . '/' . self::PURGE_MARKER;
         $temp = $marker . '.' . bin2hex(random_bytes(4));
 
+        // Read by both the CLI and the web process, whoever wrote it last: unlike a page entry the
+        // marker has to stay world-readable for `cache:stats` to tell the truth on the « Performance » screen.
         if (@file_put_contents($temp, (string) ($this->clock)()) !== false) {
+            @chmod($temp, 0644);
             @rename($temp, $marker);
         }
 
@@ -656,6 +659,15 @@ final class PageCache
 
         if (!is_dir($this->directory)) {
             @mkdir($this->directory, 0750, true);
+        }
+
+        // `bin/prime cache:clear` creates this directory too, as root inside `docker compose exec` and as
+        // the deploy user on a VM: a 0750 directory owned by somebody else would leave Apache unable to
+        // store a single page, and the cache would degrade to `BYPASS` forever without saying so. Relax
+        // it the way the container entrypoint relaxes `storage/cache`; the `.htaccess` written below keeps
+        // the entries unreachable over HTTP either way.
+        if (!@is_writable($this->directory)) {
+            @chmod($this->directory, 0775);
         }
 
         $htaccess = rtrim($this->directory, '/\\') . '/.htaccess';
