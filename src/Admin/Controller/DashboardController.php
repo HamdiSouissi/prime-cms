@@ -346,7 +346,9 @@ final class DashboardController
             throw new NotFoundException('Module d’administration introuvable.');
         }
 
-        $requiredCap = self::MODULE_CAPABILITIES[$key] ?? null;
+        // A placeholder section inherits its parent module's capability, so `/admin/settings/security`
+        // is no more reachable than `/admin/settings` itself.
+        $requiredCap = self::MODULE_CAPABILITIES[$key] ?? self::MODULE_CAPABILITIES[$module] ?? null;
         if ($requiredCap !== null && !$this->auth->can($requiredCap, $request)) {
             throw new ForbiddenException($this->t('admin.ctrl_text_dashboard.vous_ne_disposez_pas_des_permissions_necessaires_pour_accede'));
         }

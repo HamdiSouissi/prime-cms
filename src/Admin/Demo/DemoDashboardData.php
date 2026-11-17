@@ -355,6 +355,49 @@ final class DemoDashboardData
                     $this->t('admin.ctrl_demo_demodashboarddata.journal_d_audit_complet_des_actions_d_administration'),
                 ],
             ],
+            'settings/general' => [
+                'title' => $this->t('admin.menu.settings.general'),
+                'subtitle' => $this->t('admin.ctrl_demo_demodashboarddata.configurez_l_identite_du_site_ses_langues_et_son_fuseau'),
+                'icon' => 'settings',
+                'accent' => 'neutral',
+                'phase' => $this->t('admin.ctrl_demo_demodashboarddata.phase_9_reglages_langues_cache_mails_taches'),
+                'parentTitle' => $this->t('admin.ctrl_demo_demodashboarddata.module_reglages'),
+                'parentUrl' => '/admin/settings',
+                'description' => $this->t('admin.ctrl_demo_demodashboarddata.les_champs_declares_par_le_noyau_et_les_extensions_dans'),
+                'planned' => [
+                    $this->t('admin.ctrl_demo_demodashboarddata.formulaire_genere_depuis_le_registre_des_reglages'),
+                    $this->t('admin.ctrl_demo_demodashboarddata.enregistrement_valide_puis_chiffre_pour_les_champs_secret'),
+                ],
+            ],
+            'settings/security' => [
+                'title' => $this->t('admin.menu.settings.security'),
+                'subtitle' => $this->t('admin.ctrl_demo_demodashboarddata.renforcez_les_comptes_les_connexions_et_le_journal'),
+                'icon' => 'shield',
+                'accent' => 'neutral',
+                'phase' => $this->t('admin.ctrl_demo_demodashboarddata.phase_9_reglages_langues_cache_mails_taches'),
+                'parentTitle' => $this->t('admin.ctrl_demo_demodashboarddata.module_reglages'),
+                'parentUrl' => '/admin/settings',
+                'description' => $this->t('admin.ctrl_demo_demodashboarddata.duree_de_session_double_facteur_et_verrouillages_attendent'),
+                'planned' => [
+                    $this->t('admin.ctrl_demo_demodashboarddata.politiques_de_mot_de_passe_et_double_facteur_par_role'),
+                    $this->t('admin.ctrl_demo_demodashboarddata.journal_d_audit_complet_des_actions_d_administration'),
+                ],
+            ],
+            'settings/emails' => [
+                'title' => $this->t('admin.menu.settings.emails'),
+                'subtitle' => $this->t('admin.ctrl_demo_demodashboarddata.expediteur_transport_smtp_et_journal_des_envois'),
+                'icon' => 'inbox',
+                'accent' => 'neutral',
+                'phase' => $this->t('admin.ctrl_demo_demodashboarddata.phase_9_reglages_langues_cache_mails_taches'),
+                'parentTitle' => $this->t('admin.ctrl_demo_demodashboarddata.module_reglages'),
+                'parentUrl' => '/admin/settings',
+                'description' => $this->t('admin.ctrl_demo_demodashboarddata.le_transport_le_test_d_envoi_et_le_journal_des_messages'),
+                'planned' => [
+                    $this->t('admin.ctrl_demo_demodashboarddata.test_d_envoi_reel_depuis_l_administration'),
+                    $this->t('admin.ctrl_demo_demodashboarddata.journal_des_messages_avec_statut_et_erreur_smtp'),
+                ],
+            ],
         ];
     }
 }
+
