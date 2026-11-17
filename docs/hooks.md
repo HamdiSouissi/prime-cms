@@ -282,3 +282,27 @@ Tout écouteur ou filtre enregistré via `$context->hooks()` (ou pendant l'exéc
 
 
 
+
+---
+
+## Hooks de réglages, i18n, cache, e-mails et tâches de fond (Phase 9)
+
+| Hook | Type | Arguments | Déclenchement |
+|------|------|-----------|---------------|
+| `settings.register` | Filtre | `SettingsRegistry $registry` | Au boot (`app.booted`), avant le verrouillage du registre : déclarer sections et champs. Voir [`settings.md`](settings.md). |
+| `settings.validate` | Filtre | `mixed $value`, `SettingsField $field`, `array $input` | Après validation d'une valeur soumise, avant écriture. |
+| `settings.before_save` | Filtre | `bool $allow`, `string $name`, `mixed $current`, `mixed $value`, `SettingsField $field` | Retourner `false` refuse l'écriture du réglage. |
+| `settings.saved` | Événement | `string $section`, `list<string> $saved`, `array $errors` | Après l'enregistrement d'une section par `SettingsFormProcessor`. |
+| `translations.register` | Filtre | `Translator $translator` | Ajouter des catalogues à l'exécution (`$translator->register($locale, $messages)`). |
+| `translations.missing` | Événement | `string $key`, `string $locale` | Clé introuvable dans la langue active et la langue de secours. |
+| `locale.resolved` / `locale.changed` | Événement | `string $locale` | Langue retenue pour la requête / changée par l'utilisateur. |
+| `cache.page.cacheable` | Filtre | `bool $cacheable`, `Request $request`, `?Response $response` | Exclure une page du cache de pages. |
+| `cache.purged` | Événement | `list<string> $paths` | Après une purge du cache de pages. |
+| `mail.message` | Filtre | `Message $message`, `?string $template` | Réécrire tout message avant envoi (file ou direct). |
+| `mail.sent` / `mail.failed` | Événement | `Message $message`, … | Après un envoi réussi / échoué. |
+| `mail.log.recorded` / `mail.log.purged` | Événement | `int $id`, … | Écriture / purge du journal `pc_mail_log`. |
+| `scheduler.register` | Filtre | `Schedule $schedule` | Au boot : ajouter des tâches (`call()`, `command()`). |
+| `scheduler.ran` / `scheduler.task.ran` | Événement | résultats / `string $name`, `string $tick` | Après un passage du planificateur / l'exécution d'une tâche. |
+| `jobs.register_handlers` | Filtre | `JobHandlerRegistry $registry` | Au boot : déclarer les gestionnaires de tâches en file. |
+| `job.pushed` / `job.started` / `job.completed` / `job.released` / `job.failed` | Événement | `Job $job`, … | Cycle de vie d'une tâche de la file. |
+| `system.checks` | Filtre | `list<array> $checks`, `SystemStatus $status` | Ajouter des contrôles à **Outils › État du système** (`id`, `group`, `label`, `status`, `value`, `help`). |

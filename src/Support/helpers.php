@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Prime\Http\Router;
+use Prime\I18n\LocaleFormatter;
+use Prime\I18n\Translator;
 use Prime\Kernel\Application;
 use Prime\Kernel\Config;
 use Prime\Kernel\Env;
@@ -237,5 +239,118 @@ if (!function_exists('media_image')) {
     function media_image(int|Media|null $media, array $attrs = []): string
     {
         return MediaHelper::image($media, $attrs);
+    }
+}
+if (!function_exists('t')) {
+    /**
+     * Translate a `group.key` string using the active locale.
+     *
+     * @param array<string|int, mixed> $replace
+     */
+    function t(string $key, array $replace = [], ?string $locale = null): string
+    {
+        if (!Application::hasInstance() || !Application::getInstance()->container()->has(Translator::class)) {
+            return Translator::fallback()->translate($key, $replace, $locale);
+        }
+
+        /** @var Translator $translator */
+        $translator = Application::getInstance()->get(Translator::class);
+
+        return $translator->translate($key, $replace, $locale);
+    }
+}
+
+if (!function_exists('__t')) {
+    /**
+     * Alias of {@see t()} kept for templates ported from WordPress-style themes.
+     *
+     * @param array<string|int, mixed> $replace
+     */
+    function __t(string $key, array $replace = [], ?string $locale = null): string
+    {
+        return t($key, $replace, $locale);
+    }
+}
+
+if (!function_exists('tc')) {
+    /**
+     * Translate a pluralized key (`one|other`) for a given count.
+     *
+     * @param array<string|int, mixed> $replace
+     */
+    function tc(string $key, int|float $number, array $replace = [], ?string $locale = null): string
+    {
+        if (!Application::hasInstance() || !Application::getInstance()->container()->has(Translator::class)) {
+            return Translator::fallback()->choice($key, $number, $replace, $locale);
+        }
+
+        /** @var Translator $translator */
+        $translator = Application::getInstance()->get(Translator::class);
+
+        return $translator->choice($key, $number, $replace, $locale);
+    }
+}
+
+if (!function_exists('current_locale')) {
+    /**
+     * Active interface locale (falls back to the Prime CMS default outside an application context).
+     */
+    function current_locale(): string
+    {
+        if (!Application::hasInstance() || !Application::getInstance()->container()->has(Translator::class)) {
+            return Translator::fallback()->locale();
+        }
+
+        /** @var Translator $translator */
+        $translator = Application::getInstance()->get(Translator::class);
+
+        return $translator->locale();
+    }
+}
+
+if (!function_exists('format_date')) {
+    /**
+     * Format a date according to the active locale (`short`, `medium`, `long`, `full`).
+     */
+    function format_date(DateTimeInterface|int|string $date, string $preset = 'medium'): string
+    {
+        return locale_formatter()->date($date, $preset);
+    }
+}
+
+if (!function_exists('format_datetime')) {
+    /**
+     * Format a date and time according to the active locale.
+     */
+    function format_datetime(DateTimeInterface|int|string $date, string $preset = 'dateTime'): string
+    {
+        return locale_formatter()->dateTime($date, $preset);
+    }
+}
+
+if (!function_exists('format_number')) {
+    /**
+     * Format a number using the active locale separators.
+     */
+    function format_number(int|float $value, ?int $decimals = null): string
+    {
+        return locale_formatter()->number($value, $decimals);
+    }
+}
+
+if (!function_exists('locale_formatter')) {
+    /**
+     * Resolve the locale-aware formatter, or a detached instance outside an application context.
+     */
+    function locale_formatter(): LocaleFormatter
+    {
+        if (Application::hasInstance() && Application::getInstance()->container()->has(LocaleFormatter::class)) {
+            /** @var LocaleFormatter $formatter */
+            $formatter = Application::getInstance()->get(LocaleFormatter::class);
+
+            return $formatter;
+        }
+
+        return new LocaleFormatter(new Translator());
     }
 }

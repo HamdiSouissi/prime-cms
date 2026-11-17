@@ -18,6 +18,8 @@ use Prime\Content\TaxonomyRegistry;
 use Prime\Hooks\Hooks;
 use Prime\Http\Request;
 use Prime\Http\Session;
+use Prime\I18n\LocaleFormatter;
+use Prime\I18n\Translator;
 use Prime\Kernel\Application;
 use Prime\Log\Logger;
 use Prime\Media\MediaRepository;
@@ -29,6 +31,8 @@ use Throwable;
  */
 final class AdminContext
 {
+    use TranslatesAdminCopy;
+
     public const FLASH_TOASTS_KEY = '_admin.toasts';
 
     public function __construct(
@@ -43,7 +47,50 @@ final class AdminContext
         private readonly ?TaxonomyRegistry $taxonomies = null,
         private readonly ?EntryRepository $entries = null,
         private readonly ?MediaRepository $media = null,
+        private readonly ?Translator $translator = null,
+        private readonly ?LocaleFormatter $formatter = null,
     ) {
+    }
+
+    /**
+     * Catalogue embedded for `Prime.t()`: the active locale plus the French fallback.
+     *
+     * Only the `core` and `admin` groups are shipped — the JS layer never renders site or
+     * e-mail strings — which keeps the payload well under 100 KB.
+     */
+    private function translationsJson(): string
+    {
+        if ($this->translator === null) {
+            return '{}';
+        }
+
+        $messages = [];
+        foreach ($this->translator->messages() as $key => $value) {
+            if (str_starts_with($key, 'core.') || str_starts_with($key, 'admin.')) {
+                $messages[$key] = $value;
+            }
+        }
+
+        $fallback = [];
+        $locale = $this->translator->locale();
+        if ($locale !== Translator::DEFAULT_LOCALE) {
+            foreach ($this->translator->messages(Translator::DEFAULT_LOCALE) as $key => $value) {
+                if (str_starts_with($key, 'core.') || str_starts_with($key, 'admin.')) {
+                    $fallback[$key] = $value;
+                }
+            }
+        }
+
+        $payload = [
+            'locale' => $locale,
+            'direction' => $this->formatter?->direction() ?? 'ltr',
+            'messages' => $messages,
+            'fallback' => $fallback,
+        ];
+
+        $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
+
+        return is_string($encoded) ? $encoded : '{}';
     }
 
     /**
@@ -88,7 +135,7 @@ final class AdminContext
                 /** @var AdminMenu $fallback */
                 $fallback = $previous instanceof AdminMenu ? $previous : clone $this->baseMenu;
                 if (!$candidate instanceof AdminMenu) {
-                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une instance de AdminMenu.');
+                    $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_admincontext.la_valeur_retournee_doit_etre_une_instance_de_adminmenu'));
 
                     return $fallback;
                 }
@@ -110,7 +157,7 @@ final class AdminContext
 
         $menu->setActive($request);
 
-        $menuGroups = $menu->groupedTree();
+        $menuGroups = $this->translateMenuGroups($menu->groupedTree());
         $createItems = $this->createItems($user);
         $paletteItems = $this->commandPaletteItems($menu->tree(), $createItems, $user);
         $assets = $this->assets();
@@ -144,6 +191,12 @@ final class AdminContext
             'adminFooterExtra' => is_string($footerExtra) ? $footerExtra : '',
             'authUser' => $user,
             'currentUser' => $this->formatCurrentUser($user),
+            // The topbar "Vider le cache" action is only offered to users allowed to manage
+            // settings; the same capability guards the POST route itself.
+            'canPurgeCache' => $user !== null && $user->can('settings.manage'),
+            'htmlLang' => $this->translator?->locale() ?? 'fr',
+            'htmlDirection' => $this->formatter?->direction() ?? 'ltr',
+            'translationsJson' => $this->translationsJson(),
         ], $extra);
     }
 
@@ -161,7 +214,7 @@ final class AdminContext
                 $defaults[] = [
                     'id' => 'create.' . $ct->name,
                     'label' => $ct->label('add_new'),
-                    'description' => 'Créer un élément (' . mb_strtolower($ct->label('singular')) . ')',
+                    'description' => t('admin.create.item_description', ['type' => mb_strtolower($ct->label('singular'))]),
                     'icon' => $ct->icon,
                     'accent' => $ct->accent,
                     'url' => $ct->adminCreateUrl(),
@@ -171,8 +224,8 @@ final class AdminContext
         } else {
             $defaults[] = [
                 'id' => 'create.page',
-                'label' => 'Nouvelle page',
-                'description' => 'Créer une page statique',
+                'label' => t('admin.create.new_page'),
+                'description' => t('admin.create.new_page_description'),
                 'icon' => 'file-text',
                 'accent' => 'teal',
                 'url' => '/admin/content/page/create',
@@ -180,8 +233,8 @@ final class AdminContext
             ];
             $defaults[] = [
                 'id' => 'create.post',
-                'label' => 'Nouvel article',
-                'description' => 'Rédiger une actualité',
+                'label' => t('admin.create.new_post'),
+                'description' => t('admin.create.new_post_description'),
                 'icon' => 'newspaper',
                 'accent' => 'teal',
                 'url' => '/admin/content/post/create',
@@ -191,8 +244,8 @@ final class AdminContext
 
         $defaults[] = [
             'id' => 'create.media',
-            'label' => 'Téléverser un média',
-            'description' => 'Ajouter image ou document',
+            'label' => t('admin.create.upload_media'),
+            'description' => t('admin.create.upload_media_description'),
             'icon' => 'upload',
             'accent' => 'sky',
             'url' => '/admin/media',
@@ -200,8 +253,8 @@ final class AdminContext
         ];
         $defaults[] = [
             'id' => 'create.user',
-            'label' => 'Nouvel utilisateur',
-            'description' => 'Créer ou inviter un membre',
+            'label' => t('admin.create.new_user'),
+            'description' => t('admin.create.new_user_description'),
             'icon' => 'users',
             'accent' => 'amber',
             'url' => '/admin/users/create',
@@ -216,7 +269,7 @@ final class AdminContext
                 /** @var list<array{id: string, label: string, description: string, icon: string, accent: string, url: string, capability?: string}> $fallback */
                 $fallback = is_array($previous) ? array_values($previous) : [];
                 if (!is_array($candidate)) {
-                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste d\'éléments de création rapide.');
+                    $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_admincontext.la_valeur_retournee_doit_etre_une_liste_d_elements_de_creati'));
 
                     return $fallback;
                 }
@@ -225,7 +278,7 @@ final class AdminContext
                 foreach ($candidate as $index => $entry) {
                     $normalized = CreateMenuItem::fromArray($entry);
                     if ($normalized === null) {
-                        $this->logInvalidFilterData($hookName, $owner, sprintf('Élément du menu Créer invalide ignoré à l\'index %s.', (string) $index));
+                        $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_admincontext.element_du_menu_creer_invalide_ignore_a_l_index_s'), (string) $index));
                         continue;
                     }
                     $valid[] = $normalized->toArray();
@@ -302,12 +355,12 @@ final class AdminContext
                 position: $ct->menuPosition > 0 ? $ct->menuPosition : $position,
                 accent: $ct->accent,
                 capability: $ct->capability('view'),
-                group: 'Contenu',
+                group: 'admin.menu.groups.content',
             ));
 
             $menu->addChild($parentId, new MenuItem(
                 id: $parentId . '.all',
-                label: 'Tous : ' . $ct->label('plural'),
+                label: t('admin.menu.all_of', ['type' => $ct->label('plural')]),
                 icon: $ct->icon,
                 url: $baseUrl,
                 position: 10,
@@ -317,7 +370,7 @@ final class AdminContext
 
             $menu->addChild($parentId, new MenuItem(
                 id: $parentId . '.create',
-                label: 'Ajouter',
+                label: 'admin.menu.add',
                 icon: 'plus',
                 url: $ct->adminCreateUrl(),
                 position: 20,
@@ -354,7 +407,7 @@ final class AdminContext
             return [
                 'id' => null,
                 'name' => 'Invité',
-                'role' => 'Non connecté',
+                'role' => $this->t('admin.ctrl_admincontext.non_connecte'),
                 'email' => '',
                 'initials' => 'IN',
                 'accent' => 'brand',
@@ -390,6 +443,26 @@ final class AdminContext
     }
 
     /**
+     * Resolve the sidebar section labels (`Contenu`, `Système`, …) for the active locale.
+     *
+     * @param list<array{label: ?string, items: list<MenuNode>}> $groups
+     * @return list<array{label: ?string, items: list<MenuNode>}>
+     */
+    private function translateMenuGroups(array $groups): array
+    {
+        foreach ($groups as $index => $group) {
+            $label = $group['label'];
+            if ($label === null || preg_match('/^(?:admin|core)\.[a-z0-9_.]+$/', $label) !== 1) {
+                continue;
+            }
+
+            $groups[$index]['label'] = t($label);
+        }
+
+        return $groups;
+    }
+
+    /**
      * Command palette entries built from capability-filtered menu, quick actions, and recent entries.
      *
      * @param list<MenuNode> $tree
@@ -402,13 +475,13 @@ final class AdminContext
 
         foreach ($tree as $node) {
             $item = $node->item;
-            $groupLabel = $item->group ?? 'Général';
+            $groupLabel = $item->translatedGroup() ?? t('admin.palette.group_general');
             $entries[] = [
                 'id' => 'nav.' . $item->id,
-                'label' => $item->label,
-                'subtitle' => $item->group ?? 'Accueil',
+                'label' => $item->translatedLabel(),
+                'subtitle' => $item->translatedGroup() ?? t('admin.palette.group_home'),
                 'group' => $groupLabel,
-                'section' => 'Navigation',
+                'section' => t('admin.palette.section_navigation'),
                 'icon' => $item->icon,
                 'accent' => $item->accent,
                 'url' => $item->url,
@@ -419,10 +492,10 @@ final class AdminContext
                 $child = $childNode->item;
                 $entries[] = [
                     'id' => 'nav.' . $child->id,
-                    'label' => $item->label . ' → ' . $child->label,
-                    'subtitle' => $item->group ?? $item->label,
+                    'label' => $item->translatedLabel() . ' → ' . $child->translatedLabel(),
+                    'subtitle' => $item->translatedGroup() ?? $item->translatedLabel(),
                     'group' => $groupLabel,
-                    'section' => 'Navigation',
+                    'section' => t('admin.palette.section_navigation'),
                     'icon' => $child->icon,
                     'accent' => $child->accent,
                     'url' => $child->url,
@@ -436,8 +509,8 @@ final class AdminContext
                 'id' => $create['id'],
                 'label' => $create['label'],
                 'subtitle' => $create['description'],
-                'group' => 'Actions rapides',
-                'section' => 'Actions rapides',
+                'group' => t('admin.palette.section_quick_actions'),
+                'section' => t('admin.palette.section_quick_actions'),
                 'icon' => $create['icon'],
                 'accent' => $create['accent'],
                 'url' => $create['url'],
@@ -453,8 +526,8 @@ final class AdminContext
                         'id' => 'entry.' . $recentEntry->id,
                         'label' => $recentEntry->title,
                         'subtitle' => ($ct !== null ? $ct->label('singular') : $recentEntry->type) . ' · ' . $recentEntry->statusLabel(),
-                        'group' => 'Contenus récents',
-                        'section' => 'Contenus récents',
+                        'group' => t('admin.palette.section_recent'),
+                        'section' => t('admin.palette.section_recent'),
                         'icon' => $ct !== null ? $ct->icon : 'file-text',
                         'accent' => $ct !== null ? $ct->accent : 'teal',
                         'url' => $recentEntry->editUrl(),
@@ -468,27 +541,42 @@ final class AdminContext
 
         $entries[] = [
             'id' => 'action.profile',
-            'label' => 'Mon profil et sécurité',
-            'subtitle' => 'Mot de passe, 2FA et sessions',
-            'group' => 'Raccourcis',
-            'section' => 'Raccourcis',
+            'label' => $this->t('admin.ctrl_admincontext.mon_profil_et_securite'),
+            'subtitle' => $this->t('admin.ctrl_admincontext.mot_de_passe_2fa_et_sessions'),
+            'group' => t('admin.palette.section_shortcuts'),
+            'section' => t('admin.palette.section_shortcuts'),
             'icon' => 'user',
             'accent' => 'sky',
             'url' => '/admin/profile',
-            'keywords' => ['profil', 'compte', 'mot de passe', '2fa', 'totp', 'sécurité'],
+            'keywords' => ['profil', 'compte', $this->t('admin.ctrl_admincontext.mot_de_passe'), '2fa', 'totp', 'sécurité'],
         ];
 
         $entries[] = [
             'id' => 'action.view_site',
-            'label' => 'Voir le site public',
-            'subtitle' => 'Ouvrir la page d’accueil',
-            'group' => 'Raccourcis',
-            'section' => 'Raccourcis',
+            'label' => $this->t('admin.ctrl_admincontext.voir_le_site_public'),
+            'subtitle' => t('admin.palette.open_home'),
+            'group' => t('admin.palette.section_shortcuts'),
+            'section' => t('admin.palette.section_shortcuts'),
             'icon' => 'external-link',
             'accent' => 'brand',
             'url' => '/',
             'keywords' => ['site', 'accueil', 'public', 'front'],
         ];
+
+        if ($user === null || $user->can('settings.manage')) {
+            // Runs the topbar purge form (POST + CSRF); without it, the URL opens « Performance ».
+            $entries[] = [
+                'id' => 'action.purge_cache',
+                'label' => t('admin.layouts.app.vider_cache'),
+                'subtitle' => t('admin.palette.purge_cache_hint'),
+                'group' => t('admin.palette.section_shortcuts'),
+                'section' => t('admin.palette.section_shortcuts'),
+                'icon' => 'rotate-ccw',
+                'accent' => 'neutral',
+                'url' => '/admin/settings/performance',
+                'keywords' => ['cache', 'purge', 'vider', 'clear', 'performance'],
+            ];
+        }
 
         /** @var list<array<string, mixed>> $normalized */
         $normalized = $this->hooks->applyValidated(
@@ -498,7 +586,7 @@ final class AdminContext
                 /** @var list<array<string, mixed>> $fallback */
                 $fallback = is_array($previous) ? array_values($previous) : [];
                 if (!is_array($candidate)) {
-                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste d\'entrées de palette de commandes.');
+                    $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_admincontext.la_valeur_retournee_doit_etre_une_liste_d_entrees_de_palette'));
 
                     return $fallback;
                 }
@@ -507,7 +595,7 @@ final class AdminContext
                 foreach ($candidate as $index => $entry) {
                     $item = CommandPaletteItem::fromArray($entry);
                     if ($item === null) {
-                        $this->logInvalidFilterData($hookName, $owner, sprintf('Entrée de palette de commandes invalide ignorée à l\'index %s.', (string) $index));
+                        $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_admincontext.entree_de_palette_de_commandes_invalide_ignoree_a_l_index_s'), (string) $index));
                         continue;
                     }
                     $valid[] = $item->toArray();
@@ -572,7 +660,7 @@ final class AdminContext
                 /** @var list<Notice> $fallback */
                 $fallback = is_array($previous) ? array_values($previous) : [];
                 if (!is_array($candidate)) {
-                    $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de notifications.');
+                    $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_admincontext.la_valeur_retournee_doit_etre_une_liste_de_notifications'));
 
                     return $fallback;
                 }
@@ -581,7 +669,7 @@ final class AdminContext
                 foreach ($candidate as $index => $entry) {
                     $notice = Notice::fromArray($entry);
                     if ($notice === null) {
-                        $this->logInvalidFilterData($hookName, $owner, sprintf('Notification invalide ignorée à l\'index %s.', (string) $index));
+                        $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_admincontext.notification_invalide_ignoree_a_l_index_s'), (string) $index));
                         continue;
                     }
                     $valid[] = $notice;

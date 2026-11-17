@@ -21,11 +21,11 @@ $editUrl = $entry->editUrl();
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Révisions — ' . $entry->title,
-    'subtitle' => 'Comparez une version antérieure avec la version actuelle ou restaurez-la en un clic.',
+    'title' => $this->t('admin.content.revisions_title', ['title' => $entry->title]),
+    'subtitle' => $this->t('admin.view_content_revisions.comparez_une_version_anterieure_avec_la_version_actuelle_ou_'),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $this->insert('admin::components/button', [
-        'label' => 'Retour à l’éditeur',
+        'label' => $this->t('admin.view_content_revisions.retour_a_l_editeur'),
         'variant' => 'secondary',
         'icon' => 'chevron-left',
         'href' => $editUrl,
@@ -36,16 +36,16 @@ $editUrl = $entry->editUrl();
     <?= $this->raw($this->insert('admin::components/empty-state', [
         'icon' => 'history',
         'accent' => 'sky',
-        'title' => 'Aucune révision enregistrée',
-        'description' => 'Chaque sauvegarde manuelle ou automatique enregistre automatiquement un instantané consultable ici.',
-        'actionLabel' => 'Retour à l’éditeur',
+        'title' => $this->t('admin.view_content_revisions.aucune_revision_enregistree'),
+        'description' => $this->t('admin.view_content_revisions.chaque_sauvegarde_manuelle_ou_automatique_enregistre_automat'),
+        'actionLabel' => $this->t('admin.view_content_revisions.retour_a_l_editeur'),
         'actionUrl' => $editUrl,
     ])) ?>
 <?php else: ?>
     <div class="pc-taxonomy-grid">
         <section class="pc-card">
             <div class="pc-card__header">
-                <h2 class="pc-card__title">Historique (<?= $this->e((string) count($revisions)) ?>)</h2>
+                <h2 class="pc-card__title"><?= t('admin.content.revisions.title') ?> (<?= $this->e((string) count($revisions)) ?>)</h2>
             </div>
             <div class="pc-card__body" style="padding:12px;">
                 <div class="pc-stack pc-stack--xs">
@@ -63,7 +63,7 @@ $editUrl = $entry->editUrl();
                                 <strong>#<?= $this->e((string) $rev->id) ?></strong> · <?= $this->e($rev->createdAt) ?>
                                 <br>
                                 <span class="pc-text-xs pc-text-muted">
-                                    <?= $this->e($revAuthor !== null ? $revAuthor->displayName : ($rev->authorName ?? 'Système')) ?>
+                                    <?= $this->e($revAuthor !== null ? $revAuthor->displayName : ($rev->authorName ?? $this->t('admin.common.system'))) ?>
                                     <?= $rev->isAutosave ? ' · Auto' : '' ?>
                                 </span>
                             </span>
@@ -78,8 +78,8 @@ $editUrl = $entry->editUrl();
                 <div class="pc-diff-card">
                     <div class="pc-diff-card__header">
                         <div>
-                            <strong>Comparaison : Révision #<?= $this->e((string) $selected->id) ?> → Version actuelle</strong>
-                            <div class="pc-text-xs pc-text-muted">Créée le <?= $this->e($selected->createdAt) ?> UTC</div>
+                            <strong><?= $this->e($this->t('admin.content.revisions.comparaison', ['id' => $selected->id])) ?></strong>
+                            <div class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.content.revisions.creee_le', ['date' => $selected->createdAt])) ?></div>
                         </div>
                         <div class="pc-row pc-row--sm">
                             <a
@@ -87,7 +87,7 @@ $editUrl = $entry->editUrl();
                                 target="_blank"
                                 rel="noopener"
                                 class="pc-btn pc-btn--secondary pc-btn--sm"
-                            >Aperçu</a>
+                            <?= $this->e($this->t('core.actions.preview')) ?></a>
                             <form method="post" action="<?= $this->e(sprintf('%s/%d/revisions/%d/restore', $baseUrl, $entry->id, $selected->id)) ?>">
                                 <?= $this->raw($this->csrfField()) ?>
                                 <button type="submit" class="pc-btn pc-btn--primary pc-btn--sm">
@@ -99,7 +99,7 @@ $editUrl = $entry->editUrl();
                     </div>
 
                     <?php if ($titleDiff !== null): ?>
-                        <div style="padding:10px 14px;border-bottom:1px solid var(--ink-200);font-size:12px;font-weight:600;color:var(--ink-500);">Titre</div>
+                        <div style="padding:10px 14px;border-bottom:1px solid var(--ink-200);font-size:12px;font-weight:600;color:var(--ink-500);"><?= $this->e($this->t('core.fields.title')) ?></div>
                         <div class="pc-diff-lines">
                             <?php foreach ($titleDiff as $row): ?>
                                 <?php $marker = $row['op'] === 'added' ? '+' : ($row['op'] === 'removed' ? '−' : ' '); ?>

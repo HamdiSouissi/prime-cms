@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\Auth;
 
+use Prime\Content\LabelTranslator;
 use Prime\Hooks\Hooks;
 
 /**
@@ -24,102 +25,102 @@ final class Capabilities
     private const CORE = [
         // Tableau de bord
         'dashboard.view' => [
-            'label' => 'Accéder au tableau de bord',
-            'group' => 'Tableau de bord',
+            'label' => 'core.capabilities.items.dashboard__view',
+            'group' => 'core.capabilities.groups.dashboard',
         ],
 
         // Utilisateurs
         'users.view' => [
-            'label' => 'Consulter la liste des utilisateurs',
-            'group' => 'Utilisateurs',
+            'label' => 'core.capabilities.items.users__view',
+            'group' => 'core.capabilities.groups.users',
         ],
         'users.create' => [
-            'label' => 'Créer des utilisateurs',
-            'group' => 'Utilisateurs',
+            'label' => 'core.capabilities.items.users__create',
+            'group' => 'core.capabilities.groups.users',
         ],
         'users.edit' => [
-            'label' => 'Modifier les comptes utilisateurs',
-            'group' => 'Utilisateurs',
+            'label' => 'core.capabilities.items.users__edit',
+            'group' => 'core.capabilities.groups.users',
         ],
         'users.delete' => [
-            'label' => 'Supprimer des utilisateurs',
-            'group' => 'Utilisateurs',
+            'label' => 'core.capabilities.items.users__delete',
+            'group' => 'core.capabilities.groups.users',
         ],
         'users.manage_roles' => [
-            'label' => 'Modifier les rôles attribués aux utilisateurs',
-            'group' => 'Utilisateurs',
+            'label' => 'core.capabilities.items.users__manage_roles',
+            'group' => 'core.capabilities.groups.users',
         ],
 
         // Rôles
         'roles.manage' => [
-            'label' => 'Gérer les rôles et leurs permissions',
-            'group' => 'Rôles',
+            'label' => 'core.capabilities.items.roles__manage',
+            'group' => 'core.capabilities.groups.roles',
         ],
 
         // Contenus
         'content.view' => [
-            'label' => 'Consulter les contenus',
-            'group' => 'Contenus',
+            'label' => 'core.capabilities.items.content__view',
+            'group' => 'core.capabilities.groups.content',
         ],
         'content.create' => [
-            'label' => 'Créer des contenus',
-            'group' => 'Contenus',
+            'label' => 'core.capabilities.items.content__create',
+            'group' => 'core.capabilities.groups.content',
         ],
         'content.edit_own' => [
-            'label' => 'Modifier ses propres contenus',
-            'group' => 'Contenus',
+            'label' => 'core.capabilities.items.content__edit_own',
+            'group' => 'core.capabilities.groups.content',
         ],
         'content.edit_any' => [
-            'label' => 'Modifier les contenus de tous les auteurs',
-            'group' => 'Contenus',
+            'label' => 'core.capabilities.items.content__edit_any',
+            'group' => 'core.capabilities.groups.content',
         ],
         'content.publish' => [
-            'label' => 'Publier et dépublier des contenus',
-            'group' => 'Contenus',
+            'label' => 'core.capabilities.items.content__publish',
+            'group' => 'core.capabilities.groups.content',
         ],
         'content.delete_own' => [
-            'label' => 'Supprimer ses propres contenus',
-            'group' => 'Contenus',
+            'label' => 'core.capabilities.items.content__delete_own',
+            'group' => 'core.capabilities.groups.content',
         ],
         'content.delete_any' => [
-            'label' => 'Supprimer les contenus de tous les auteurs',
-            'group' => 'Contenus',
+            'label' => 'core.capabilities.items.content__delete_any',
+            'group' => 'core.capabilities.groups.content',
         ],
         'content.unfiltered_html' => [
-            'label' => 'Insérer du HTML libre dans l\'éditeur de blocs',
-            'group' => 'Contenus',
+            'label' => 'core.capabilities.items.content__unfiltered_html',
+            'group' => 'core.capabilities.groups.content',
         ],
 
         // Médias
         'media.view' => [
-            'label' => 'Consulter la médiathèque',
-            'group' => 'Médias',
+            'label' => 'core.capabilities.items.media__view',
+            'group' => 'core.capabilities.groups.media',
         ],
         'media.upload' => [
-            'label' => 'Téléverser des fichiers médias',
-            'group' => 'Médias',
+            'label' => 'core.capabilities.items.media__upload',
+            'group' => 'core.capabilities.groups.media',
         ],
         'media.delete_any' => [
-            'label' => 'Supprimer n\'importe quel média',
-            'group' => 'Médias',
+            'label' => 'core.capabilities.items.media__delete_any',
+            'group' => 'core.capabilities.groups.media',
         ],
 
         // Apparence, Extensions, Réglages
         'themes.manage' => [
-            'label' => 'Gérer les thèmes, la personnalisation, les menus et les zones',
-            'group' => 'Apparence',
+            'label' => 'core.capabilities.items.themes__manage',
+            'group' => 'core.capabilities.groups.appearance',
         ],
         'appearance.manage' => [
-            'label' => 'Gérer les thèmes, menus et apparence (hérité)',
-            'group' => 'Apparence',
+            'label' => 'core.capabilities.items.appearance__manage',
+            'group' => 'core.capabilities.groups.appearance',
         ],
         'plugins.manage' => [
-            'label' => 'Installer et gérer les extensions',
-            'group' => 'Extensions',
+            'label' => 'core.capabilities.items.plugins__manage',
+            'group' => 'core.capabilities.groups.plugins',
         ],
         'settings.manage' => [
-            'label' => 'Modifier les réglages généraux du site',
-            'group' => 'Réglages',
+            'label' => 'core.capabilities.items.settings__manage',
+            'group' => 'core.capabilities.groups.settings',
         ],
     ];
 
@@ -157,6 +158,13 @@ final class Capabilities
                 }
                 $registry = $normalized;
             }
+        }
+
+        foreach ($registry as $key => $meta) {
+            $registry[$key] = [
+                'label' => LabelTranslator::resolve($meta['label']),
+                'group' => LabelTranslator::resolve($meta['group']),
+            ];
         }
 
         return $registry;

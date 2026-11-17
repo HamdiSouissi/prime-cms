@@ -42,7 +42,7 @@ $trendIcon = $trendDir === 'up' ? 'arrow-up-right' : ($trendDir === 'down' ? 'ar
             </span>
         <?php endif; ?>
         <?php if ($targetUrl !== null): ?>
-            <a class="pc-stat__link" href="<?= $this->e($targetUrl) ?>"><?= $this->e($hintText ?? 'Voir tout') ?></a>
+            <a class="pc-stat__link" href="<?= $this->e($targetUrl) ?>"><?= $this->e($hintText ?? $this->t('admin.view_components_stat-tile.voir_tout')) ?></a>
         <?php elseif ($hintText !== null): ?>
             <span><?= $this->e($hintText) ?></span>
         <?php endif; ?>

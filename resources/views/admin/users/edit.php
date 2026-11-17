@@ -26,7 +26,7 @@ $this->layout('admin::layouts/app');
     'subtitle' => $targetUser->email . ' · ' . $targetUser->primaryRoleName(),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $this->insert('admin::components/button', [
-        'label' => 'Retour à la liste',
+        'label' => $this->t('admin.view_users_edit.retour_a_la_liste'),
         'variant' => 'secondary',
         'href' => '/admin/users',
     ]),
@@ -49,7 +49,7 @@ $this->layout('admin::layouts/app');
                 <?= $this->raw($this->insert('admin::components/field', [
                     'id' => 'edit-display-name',
                     'name' => 'display_name',
-                    'label' => 'Nom affiché',
+                    'label' => $this->t('admin.view_users_edit.nom_affiche'),
                     'type' => 'text',
                     'value' => $old['display_name'],
                     'required' => true,
@@ -80,15 +80,15 @@ $this->layout('admin::layouts/app');
                     <?= $this->raw($this->insert('admin::components/field', [
                         'id' => 'edit-status',
                         'name' => 'status',
-                        'label' => 'Statut du compte',
+                        'label' => $this->t('admin.view_users_edit.statut_du_compte'),
                         'type' => 'select',
                         'value' => $old['status'],
                         'disabled' => $isSelf,
                         'options' => [
                             'active' => 'Actif',
-                            'disabled' => 'Désactivé',
+                            'disabled' => $this->t('core.statuses.disabled'),
                         ],
-                        'help' => $isSelf ? 'Vous ne pouvez pas désactiver votre propre compte.' : null,
+                        'help' => $isSelf ? $this->t('admin.view_users_edit.vous_ne_pouvez_pas_desactiver_votre_propre_compte') : null,
                         'error' => $errors['status'] ?? null,
                     ])) ?>
                 </div>
@@ -96,18 +96,18 @@ $this->layout('admin::layouts/app');
             <?php $infoBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Informations du compte',
+                'title' => $this->t('admin.users.account_info'),
                 'body' => $infoBody,
             ])) ?>
 
             <?php ob_start(); ?>
             <div class="pc-stack pc-stack--sm">
                 <?php if (!$canManageRoles): ?>
-                    <p class="pc-text-sm pc-text-muted">Vous n'avez pas la permission de modifier les rôles de cet utilisateur.</p>
+                    <p class="pc-text-sm pc-text-muted"><?= $this->e($this->t('admin.users.edit.avez_pas_permission_modifier_roles')) ?></p>
                     <div class="pc-badges-wrap">
                         <?php foreach ($targetUser->roles as $role): ?>
                             <?= $this->raw($this->insert('admin::components/badge', [
-                                'label' => $role->name,
+                                'label' => $role->label(),
                                 'variant' => $role->isAdministrator() ? 'brand' : 'info',
                             ])) ?>
                         <?php endforeach; ?>
@@ -119,9 +119,9 @@ $this->layout('admin::layouts/app');
                             <label class="pc-checkbox-card">
                                 <input type="checkbox" name="roles[]" value="<?= $this->e((string) $role->id) ?>"<?= $checked ? ' checked' : '' ?>>
                                 <span>
-                                    <span class="pc-checkbox-card__title"><?= $this->e($role->name) ?></span>
+                                    <span class="pc-checkbox-card__title"><?= $this->e($role->label()) ?></span>
                                     <?php if ($role->description !== null): ?>
-                                        <span class="pc-checkbox-card__desc"><?= $this->e($role->description) ?></span>
+                                        <span class="pc-checkbox-card__desc"><?= $this->e((string) $role->summary()) ?></span>
                                     <?php endif; ?>
                                 </span>
                             </label>
@@ -132,7 +132,7 @@ $this->layout('admin::layouts/app');
             <?php $rolesBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Rôles',
+                'title' => $this->t('admin.users.roles'),
                 'body' => $rolesBody,
             ])) ?>
 
@@ -141,7 +141,7 @@ $this->layout('admin::layouts/app');
                 <?= $this->raw($this->insert('admin::components/field', [
                     'id' => 'edit-password',
                     'name' => 'password',
-                    'label' => 'Nouveau mot de passe (optionnel)',
+                    'label' => $this->t('admin.view_users_edit.nouveau_mot_de_passe_optionnel'),
                     'type' => 'password',
                     'value' => '',
                     'placeholder' => 'Laisser vide pour ne pas changer',
@@ -157,17 +157,17 @@ $this->layout('admin::layouts/app');
                         <span class="pc-strength__bar"></span>
                     </div>
                     <span class="pc-strength__label" data-prime-strength-label>
-                        Laissez vide pour conserver le mot de passe actuel.
+                        <?= $this->e($this->t('admin.users.edit.laissez_vide_conserver_mot_passe')) ?>
                     </span>
                 </div>
 
                 <?= $this->raw($this->insert('admin::components/field', [
                     'id' => 'edit-password-confirmation',
                     'name' => 'password_confirmation',
-                    'label' => 'Confirmer le nouveau mot de passe',
+                    'label' => $this->t('admin.view_users_edit.confirmer_le_nouveau_mot_de_passe'),
                     'type' => 'password',
                     'value' => '',
-                    'placeholder' => 'Ressaisissez le nouveau mot de passe',
+                    'placeholder' => $this->t('admin.view_users_edit.ressaisissez_le_nouveau_mot_de_passe'),
                     'autocomplete' => 'new-password',
                     'error' => $errors['password_confirmation'] ?? null,
                 ])) ?>
@@ -175,9 +175,9 @@ $this->layout('admin::layouts/app');
             <?php $pwdBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Définir un nouveau mot de passe',
+                'title' => $this->t('admin.view_users_edit.definir_un_nouveau_mot_de_passe'),
                 'body' => $pwdBody,
-                'footer' => '<button type="submit" class="pc-btn pc-btn--primary">Enregistrer les modifications</button>',
+                'footer' => '<button type="submit" class="pc-btn pc-btn--primary">' . $this->e($this->t('core.actions.save_changes')) . '</button>',
             ])) ?>
         </form>
 
@@ -186,37 +186,37 @@ $this->layout('admin::layouts/app');
             <?php ob_start(); ?>
             <dl class="pc-kv-list">
                 <div class="pc-kv-row">
-                    <dt>Statut</dt>
+                    <dt><?= $this->e($this->t('core.labels.status')) ?></dt>
                     <dd>
                         <?= $this->raw($this->insert('admin::components/badge', [
-                            'label' => $targetUser->isActive() ? 'Actif' : 'Désactivé',
+                            'label' => $targetUser->isActive() ? $this->t('core.statuses.active') : $this->t('core.statuses.disabled'),
                             'variant' => $targetUser->isActive() ? 'success' : 'neutral',
                             'dot' => true,
                         ])) ?>
                     </dd>
                 </div>
                 <div class="pc-kv-row">
-                    <dt>2FA (TOTP)</dt>
+                    <dt><?= t('admin.users.edit.two_factor') ?></dt>
                     <dd>
                         <?= $this->raw($this->insert('admin::components/badge', [
-                            'label' => $targetUser->hasTwoFactor() ? 'Activée' : 'Non activée',
+                            'label' => $targetUser->hasTwoFactor() ? $this->t('admin.users.two_factor_on') : $this->t('admin.view_users_edit.non_activee'),
                             'variant' => $targetUser->hasTwoFactor() ? 'teal' : 'neutral',
                         ])) ?>
                     </dd>
                 </div>
                 <div class="pc-kv-row">
-                    <dt>Dernière connexion</dt>
+                    <dt><?= $this->e($this->t('admin.users.edit.derniere_connexion')) ?></dt>
                     <dd title="<?= $this->e($lastLoginMeta['title']) ?>"><?= $this->e($lastLoginMeta['label']) ?></dd>
                 </div>
                 <div class="pc-kv-row">
-                    <dt>Version de session</dt>
+                    <dt><?= $this->e($this->t('admin.users.edit.version_session')) ?></dt>
                     <dd class="pc-mono">v<?= $this->e((string) $targetUser->sessionVersion) ?></dd>
                 </div>
             </dl>
             <?php $statusBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'État sécurité',
+                'title' => $this->t('admin.view_users_edit.etat_securite'),
                 'body' => $statusBody,
             ])) ?>
 
@@ -225,14 +225,14 @@ $this->layout('admin::layouts/app');
                 <form method="post" action="/admin/users/<?= $this->e((string) $targetUser->id) ?>/reset-password">
                     <?= $this->raw($this->csrfField()) ?>
                     <button type="submit" class="pc-btn pc-btn--secondary pc-auth-submit">
-                        Envoyer un lien de réinitialisation
+                        <?= $this->e($this->t('admin.users.edit.envoyer_lien_reinitialisation')) ?>
                     </button>
                 </form>
 
                 <form method="post" action="/admin/users/<?= $this->e((string) $targetUser->id) ?>/logout-devices">
                     <?= $this->raw($this->csrfField()) ?>
                     <button type="submit" class="pc-btn pc-btn--secondary pc-auth-submit">
-                        Déconnecter tous les appareils
+                        <?= $this->e($this->t('admin.users.edit.deconnecter_appareils')) ?>
                     </button>
                 </form>
 
@@ -240,11 +240,11 @@ $this->layout('admin::layouts/app');
                     <form
                         method="post"
                         action="/admin/users/<?= $this->e((string) $targetUser->id) ?>/reset-2fa"
-                        data-prime-confirm-form="Réinitialiser la 2FA de <?= $this->e($targetUser->displayName) ?> ? L'utilisateur pourra se connecter sans second facteur jusqu'à réactivation."
+                        data-prime-confirm-form="<?= $this->e($this->t('admin.users.edit.confirmer_reinitialisation_2fa', ['name' => $targetUser->displayName])) ?>"
                     >
                         <?= $this->raw($this->csrfField()) ?>
                         <button type="submit" class="pc-btn pc-btn--secondary pc-auth-submit">
-                            Réinitialiser la 2FA
+                            <?= $this->e($this->t('admin.users.edit.reinitialiser_2fa')) ?>
                         </button>
                     </form>
                 <?php endif; ?>
@@ -253,11 +253,11 @@ $this->layout('admin::layouts/app');
                     <form
                         method="post"
                         action="/admin/users/<?= $this->e((string) $targetUser->id) ?>/delete"
-                        data-prime-confirm-form="Supprimer définitivement le compte de <?= $this->e($targetUser->displayName) ?> ? Cette action est irréversible."
+                        data-prime-confirm-form="<?= $this->e($this->t('admin.users.edit.confirmer_suppression_compte', ['name' => $targetUser->displayName])) ?>"
                     >
                         <?= $this->raw($this->csrfField()) ?>
                         <button type="submit" class="pc-btn pc-btn--danger pc-auth-submit">
-                            Supprimer ce compte
+                            <?= $this->e($this->t('admin.users.edit.supprimer_compte')) ?>
                         </button>
                     </form>
                 <?php endif; ?>
@@ -265,7 +265,7 @@ $this->layout('admin::layouts/app');
             <?php $actionsBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Actions de sécurité',
+                'title' => $this->t('admin.view_users_edit.actions_de_securite'),
                 'body' => $actionsBody,
             ])) ?>
         </div>

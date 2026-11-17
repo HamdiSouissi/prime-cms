@@ -1,4 +1,4 @@
-<?php $this->layout('layouts.base', ['title' => '403 — Accès refusé · Prime CMS']); ?>
+<?php $this->layout('layouts.base', ['title' => $this->t('core.errors.page_titles.403')]); ?>
 
 <?php $this->start('content'); ?>
   <section class="pc-card pc-error-card" aria-labelledby="error-403-title">
@@ -12,11 +12,11 @@
         class="pc-logo"
       >
     </picture>
-    <span class="pc-badge pc-badge--brand">Erreur 403</span>
-    <h1 id="error-403-title" class="pc-error-heading">Accès refusé</h1>
+    <span class="pc-badge pc-badge--brand"><?= t('core.errors.403.title') ?></span>
+    <h1 id="error-403-title" class="pc-error-heading"><?= $this->e($this->t('core.errors.403.acces_refuse')) ?></h1>
     <p class="pc-error-text">
-      <?= $this->e(!empty($message) && is_string($message) ? $message : 'Vous ne disposez pas des permissions nécessaires pour accéder à cette page.') ?>
+      <?= $this->e(!empty($message) && is_string($message) ? $message : $this->t('core.errors.forbidden_default')) ?>
     </p>
-    <a href="/admin" class="pc-btn pc-btn--primary">Retour au tableau de bord</a>
+    <a href="/admin" class="pc-btn pc-btn--primary"><?= $this->e($this->t('core.errors.403.retour_tableau_bord')) ?></a>
   </section>
 <?php $this->stop(); ?>

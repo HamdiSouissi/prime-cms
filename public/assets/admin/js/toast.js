@@ -3,6 +3,7 @@
  * Exposed via `Prime.toast(message, type, options)`.
  */
 
+import { tr } from './i18n.js';
 const VALID_TYPES = new Set(['info', 'success', 'warning', 'danger']);
 
 const ICON_BY_TYPE = {
@@ -154,7 +155,7 @@ export function showToast(message, type = 'info', options = {}) {
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
   closeBtn.className = 'pc-toast__close';
-  closeBtn.setAttribute('aria-label', 'Fermer la notification');
+  closeBtn.setAttribute('aria-label', tr('admin.js.toast.close', 'Fermer la notification'));
   closeBtn.appendChild(createSpriteIcon('x', 16));
 
   toast.appendChild(iconWrap);
@@ -228,7 +229,7 @@ export function initToasts() {
       return;
     }
 
-    const message = trigger.getAttribute('data-prime-toast-message') || 'Action effectuée.';
+    const message = trigger.getAttribute('data-prime-toast-message') || tr('admin.js.toast.action_effectuee', 'Action effectuée.');
     const type = /** @type {'info'|'success'|'warning'|'danger'} */ (
       trigger.getAttribute('data-prime-toast-type') || 'info'
     );

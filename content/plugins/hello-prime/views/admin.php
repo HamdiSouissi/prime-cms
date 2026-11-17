@@ -15,13 +15,13 @@ $this->layout('admin::layouts/app');
 
 $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferrer" class="pc-btn pc-btn--secondary">'
     . $this->icon('external-link', 16)
-    . '<span>Voir /hello-prime</span></a>';
+    . '<span>' . $this->e($this->t('plugin::hello-prime.ui.view_public')) . '</span></a>';
 ?>
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Hello Prime',
-    'subtitle' => sprintf('Plugin de référence v%s — démonstration complète de l’API plugins Prime CMS.', $pluginVersion),
+    'subtitle' => $this->t('plugin::hello-prime.ui.subtitle', ['version' => $pluginVersion]),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $headerActions,
 ])) ?>
@@ -29,52 +29,40 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
 <div class="pc-stack pc-stack--lg hp-layout">
     <!-- Live preview banner -->
     <div class="pc-card hp-banner">
-        <div class="hp-banner__badge">Hello Prime · v<?= $this->e($pluginVersion) ?></div>
+        <div class="hp-banner__badge"><?= $this->e($this->t('plugin::hello-prime.views.admin.version', ['version' => $pluginVersion])) ?></div>
         <p class="hp-banner__greeting"><?= $this->e($greeting) ?></p>
     </div>
 
     <div class="hp-grid">
         <!-- Settings card -->
         <section class="pc-card hp-card" aria-labelledby="hp-settings-title">
-            <h2 id="hp-settings-title" class="hp-card__title">Message d’accueil</h2>
-            <p class="hp-card__subtitle">Enregistré dans <code>pc_settings</code> sous la clé préfixée <code>plugin.hello-prime.greeting</code>.</p>
+            <h2 id="hp-settings-title" class="hp-card__title"><?= $this->e($this->t('plugin::hello-prime.views.admin.greeting_label')) ?></h2>
+            <p class="hp-card__subtitle"><?= $this->raw($this->t('plugin::hello-prime.views.admin.enregistre_cle_prefixee', ['key' => 'plugin.hello-prime.greeting'])) ?></p>
 
-            <form method="post" action="/admin/hello-prime/settings" class="pc-stack pc-stack--md">
-                <?= $this->raw($this->csrfField()) ?>
-                <div class="pc-field">
-                    <label class="pc-field__label" for="hp-greeting-input">Texte du message</label>
-                    <input
-                        id="hp-greeting-input"
-                        type="text"
-                        name="greeting"
-                        value="<?= $this->e($greeting) ?>"
-                        maxlength="160"
-                        required
-                        class="pc-input"
-                    >
-                    <p class="pc-field__hint">Entre 1 et 160 caractères. Affiché sur la page publique <code>/hello-prime</code>.</p>
-                </div>
-                <div>
-                    <button type="submit" class="pc-btn pc-btn--secondary">Enregistrer le message</button>
-                </div>
-            </form>
+            <p class="pc-text-sm"><?= $this->e($this->t('plugin::hello-prime.settings.moved')) ?></p>
+            <p class="pc-text-sm pc-text-strong">« <?= $this->e($greeting) ?> »</p>
+            <div>
+                <a class="pc-btn pc-btn--secondary" href="/admin/settings/general#settings-section-hello-prime">
+                    <?= $this->e($this->t('plugin::hello-prime.settings.open')) ?>
+                </a>
+            </div>
         </section>
 
         <!-- Database form card -->
         <section class="pc-card hp-card" aria-labelledby="hp-entry-title">
-            <h2 id="hp-entry-title" class="hp-card__title">Ajouter une entrée</h2>
-            <p class="hp-card__subtitle">Insère une ligne dans la table dédiée <code>pc_hello_prime_greetings</code> créée par la migration du plugin.</p>
+            <h2 id="hp-entry-title" class="hp-card__title"><?= $this->e($this->t('plugin::hello-prime.views.admin.ajouter_entree')) ?></h2>
+            <p class="hp-card__subtitle"><?= $this->raw($this->t('plugin::hello-prime.views.admin.insere_ligne_table_dediee', ['table' => 'pc_hello_prime_greetings'])) ?></p>
 
             <form method="post" action="/admin/hello-prime/greetings" class="pc-stack pc-stack--md">
                 <?= $this->raw($this->csrfField()) ?>
                 <div class="pc-field">
-                    <label class="pc-field__label" for="hp-author-input">Auteur</label>
+                    <label class="pc-field__label" for="hp-author-input"><?= $this->e($this->t('core.fields.author')) ?></label>
                     <input
                         id="hp-author-input"
                         type="text"
                         name="author"
                         maxlength="80"
-                        placeholder="Votre nom"
+                        placeholder="<?= $this->e($this->t('plugin::hello-prime.views.admin.nom')) ?>"
                         class="pc-input"
                     >
                 </div>
@@ -87,11 +75,11 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
                         maxlength="280"
                         required
                         class="pc-input"
-                        placeholder="Écrivez un message de démonstration…"
+                        placeholder="<?= $this->e($this->t('plugin::hello-prime.views.admin.ecrivez_message_demonstration')) ?>"
                     ></textarea>
                 </div>
                 <div>
-                    <button type="submit" class="pc-btn pc-btn--secondary">Ajouter le message</button>
+                    <button type="submit" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('plugin::hello-prime.views.admin.ajouter_message')) ?></button>
                 </div>
             </form>
         </section>
@@ -99,18 +87,18 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
 
     <!-- Greetings table -->
     <section class="pc-card hp-card" aria-labelledby="hp-list-title">
-        <h2 id="hp-list-title" class="hp-card__title">Messages enregistrés (<?= $this->e((string) count($entries)) ?>)</h2>
+        <h2 id="hp-list-title" class="hp-card__title"><?= $this->e($this->choice('plugin::hello-prime.views.admin.messages_enregistres', count($entries))) ?></h2>
         <?php if ($entries === []): ?>
-            <p class="pc-text-muted">Aucun message enregistré dans <code>pc_hello_prime_greetings</code> pour le moment.</p>
+            <p class="pc-text-muted"><?= $this->raw($this->t('plugin::hello-prime.views.admin.aucun_message_enregistre', ['table' => 'pc_hello_prime_greetings'])) ?></p>
         <?php else: ?>
             <div class="pc-table-wrap">
                 <table class="pc-table">
                     <thead>
                         <tr>
-                            <th>Auteur</th>
-                            <th>Message</th>
-                            <th>Date (UTC)</th>
-                            <th>Action</th>
+                            <th><?= $this->e($this->t('plugin::hello-prime.views.admin.author')) ?></th>
+                            <th><?= $this->e($this->t('plugin::hello-prime.views.admin.message')) ?></th>
+                            <th><?= $this->e($this->t('plugin::hello-prime.views.admin.date_utc')) ?></th>
+                            <th><?= $this->e($this->t('plugin::hello-prime.views.admin.action')) ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -122,7 +110,7 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
                                 <td>
                                     <form method="post" action="/admin/hello-prime/greetings/<?= $this->e((string) ($entry['id'] ?? 0)) ?>/delete">
                                         <?= $this->raw($this->csrfField()) ?>
-                                        <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm">Supprimer</button>
+                                        <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm"><?= $this->e($this->t('core.actions.delete')) ?></button>
                                     </form>
                                 </td>
                             </tr>

@@ -7,8 +7,8 @@ namespace Prime\Mail;
 use RuntimeException;
 
 /**
- * Native PHP `mail()` transport sending UTF-8 `multipart/alternative` messages
- * (plain text + HTML) with header injection protection.
+ * PHP's `mail()` transport: the message is built like any other (UTF-8, `multipart/alternative`,
+ * quoted-printable) and handed to the local MTA, which owns the envelope.
  */
 final class NativeMailer implements MailerInterface
 {
@@ -20,50 +20,51 @@ final class NativeMailer implements MailerInterface
 
     public function send(Message $message): void
     {
-        $to = $this->sanitizeHeader($message->to);
-        $subject = $this->encodeHeader($this->sanitizeHeader($message->subject));
-        $fromAddress = $this->sanitizeHeader($message->fromAddress ?? $this->defaultFromAddress);
-        $fromName = $this->encodeHeader($this->sanitizeHeader($message->fromName ?? $this->defaultFromName));
-
-        $boundary = 'prime_' . bin2hex(random_bytes(16));
-
-        $headers = [
-            'MIME-Version: 1.0',
-            sprintf('From: %s <%s>', $fromName, $fromAddress),
-            sprintf('Content-Type: multipart/alternative; boundary="%s"', $boundary),
-        ];
-
-        if ($message->replyTo !== null && $message->replyTo !== '') {
-            $headers[] = 'Reply-To: ' . $this->sanitizeHeader($message->replyTo);
+        if (!function_exists('mail')) {
+            throw new RuntimeException('La fonction mail() de PHP est désactivée sur ce serveur.');
         }
 
-        $body = "--{$boundary}\r\n"
-            . "Content-Type: text/plain; charset=UTF-8\r\n"
-            . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-            . $message->text . "\r\n\r\n"
-            . "--{$boundary}\r\n"
-            . "Content-Type: text/html; charset=UTF-8\r\n"
-            . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-            . $message->html . "\r\n\r\n"
-            . "--{$boundary}--\r\n";
+        $built = MimeBuilder::build($message, new MailConfig([
+            'from_address' => $this->defaultFromAddress,
+            'from_name' => $this->defaultFromName,
+        ]));
 
-        $sent = @mail($to, $subject, $body, implode("\r\n", $headers));
+        // `mail()` writes the To and Subject headers from its first two arguments: repeating them in the
+        // header block is how a message ends up with two Subject lines and lands in spam.
+        $headers = array_values(array_filter(
+            $built['headers'],
+            static fn (string $header): bool => preg_match('/^(To|Subject):/i', $header) !== 1,
+        ));
+
+        // The address list, not the display names: this is what sendmail is handed as recipients, and it
+        // includes the Bcc entries that must receive the message without ever appearing in it.
+        $sent = @mail(
+            implode(', ', $built['recipients']),
+            $message->subject,
+            rtrim($built['body'], "\r\n"),
+            implode("\r\n", $headers),
+            $this->envelopeArgument($built['recipients']),
+        );
+
         if (!$sent) {
             throw new RuntimeException('Échec de l\'envoi de l\'e-mail via la fonction PHP mail().');
         }
     }
 
-    private function sanitizeHeader(string $value): string
+    /**
+     * The `-f` flag sets the envelope sender, without which bounces go to root. It is passed to
+     * sendmail as a shell argument, so an address that is not an address is simply not used.
+     *
+     * @param list<string> $recipients
+     */
+    private function envelopeArgument(array $recipients): string
     {
-        return trim(str_replace(["\r", "\n", "\0"], '', $value));
-    }
+        $sender = $this->defaultFromAddress;
 
-    private function encodeHeader(string $value): string
-    {
-        if (preg_match('/[^\x20-\x7E]/', $value) !== 1) {
-            return $value;
+        if (filter_var($sender, FILTER_VALIDATE_EMAIL) === false) {
+            return '';
         }
 
-        return '=?UTF-8?B?' . base64_encode($value) . '?=';
+        return sprintf('-f%s', $sender);
     }
 }

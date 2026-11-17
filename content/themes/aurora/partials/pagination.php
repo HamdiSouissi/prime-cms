@@ -12,7 +12,7 @@ if ($pag['total'] <= 1) {
   <ul class="aurora-pagination__list">
     <?php if ($pag['prev_url'] !== null): ?>
       <li>
-        <a class="aurora-pagination__link" href="<?= $pag['prev_url'] ?>" rel="prev">&larr; Précédent</a>
+        <a class="aurora-pagination__link" href="<?= $pag['prev_url'] ?>" rel="prev"><?= $site->e($site->t('site.aurora.partials.pagination.larr_precedent')) ?></a>
       </li>
     <?php endif; ?>
 
@@ -28,7 +28,7 @@ if ($pag['total'] <= 1) {
 
     <?php if ($pag['next_url'] !== null): ?>
       <li>
-        <a class="aurora-pagination__link" href="<?= $pag['next_url'] ?>" rel="next">Suivant &rarr;</a>
+        <a class="aurora-pagination__link" href="<?= $pag['next_url'] ?>" rel="next"><?= $site->t('site.pagination.next') ?></a>
       </li>
     <?php endif; ?>
   </ul>

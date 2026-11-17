@@ -8,6 +8,7 @@ use Prime\Admin\AdminContext;
 use Prime\Admin\Data\DashboardShortcut;
 use Prime\Admin\Data\DashboardStat;
 use Prime\Admin\Demo\DemoDashboardData;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Auth\User;
 use Prime\Auth\UserRepository;
@@ -33,6 +34,8 @@ use Throwable;
  */
 final class DashboardController
 {
+    use TranslatesAdminCopy;
+
     /**
      * Required capability per placeholder module key.
      *
@@ -48,10 +51,6 @@ final class DashboardController
         'appearance/widgets' => 'appearance.manage',
         'plugins' => 'plugins.manage',
         'settings' => 'settings.manage',
-        'settings/general' => 'settings.manage',
-        'settings/permalinks' => 'settings.manage',
-        'settings/security' => 'settings.manage',
-        'settings/emails' => 'settings.manage',
     ];
 
     public function __construct(
@@ -128,7 +127,7 @@ final class DashboardController
                     /** @var list<array{title: string, description: string, icon: string, accent: string, url: string}> $fallback */
                     $fallback = is_array($previous) ? array_values($previous) : [];
                     if (!is_array($candidate)) {
-                        $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de raccourcis.');
+                        $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_text_dashboard.la_valeur_retournee_doit_etre_une_liste_de_raccourcis'));
 
                         return $fallback;
                     }
@@ -137,7 +136,7 @@ final class DashboardController
                     foreach ($candidate as $index => $entry) {
                         $normalized = DashboardShortcut::fromArray($entry);
                         if ($normalized === null) {
-                            $this->logInvalidFilterData($hookName, $owner, sprintf('Raccourci invalide ignoré à l\'index %s.', (string) $index));
+                            $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_text_dashboard.raccourci_invalide_ignore_a_l_index_s'), (string) $index));
                             continue;
                         }
                         $valid[] = $normalized->toArray();
@@ -157,7 +156,7 @@ final class DashboardController
                     /** @var list<array{label: string, value: string, icon: string, accent: string, trend: string, trendDirection: 'up'|'down'|'flat', hint: string, url: string}> $fallback */
                     $fallback = is_array($previous) ? array_values($previous) : [];
                     if (!is_array($candidate)) {
-                        $this->logInvalidFilterData($hookName, $owner, 'La valeur retournée doit être une liste de statistiques.');
+                        $this->logInvalidFilterData($hookName, $owner, $this->t('admin.ctrl_text_dashboard.la_valeur_retournee_doit_etre_une_liste_de_statistiques'));
 
                         return $fallback;
                     }
@@ -166,7 +165,7 @@ final class DashboardController
                     foreach ($candidate as $index => $entry) {
                         $normalized = DashboardStat::fromArray($entry);
                         if ($normalized === null) {
-                            $this->logInvalidFilterData($hookName, $owner, sprintf('Statistique invalide ignorée à l\'index %s.', (string) $index));
+                            $this->logInvalidFilterData($hookName, $owner, sprintf($this->t('admin.ctrl_text_dashboard.statistique_invalide_ignoree_a_l_index_s'), (string) $index));
                             continue;
                         }
                         $valid[] = $normalized->toArray();
@@ -180,12 +179,13 @@ final class DashboardController
         }
 
         $liveActivity = $this->buildLiveRecentActivity();
-        $data = $this->context->build($request, 'Tableau de bord', [
+        $data = $this->context->build($request, $this->t('admin.ctrl_text_dashboard.tableau_de_bord'), [
             'stats' => $stats,
             'recentActivity' => $liveActivity ?? $this->demo->recentActivity(),
             'isLiveActivity' => $liveActivity !== null,
             'shortcuts' => $shortcuts,
             'systemStatus' => $this->demo->systemStatus($this->app),
+            'criticalChecks' => $this->criticalChecks($request),
         ]);
 
         return Response::html($this->view->render('admin::dashboard/index', $data));
@@ -225,41 +225,41 @@ final class DashboardController
 
         return [
             [
-                'label' => 'Pages publiées',
+                'label' => $this->t('admin.ctrl_text_dashboard.pages_publiees'),
                 'value' => (string) ($pageCounts[Entry::STATUS_PUBLISHED] ?? 0),
                 'icon' => 'file-text',
                 'accent' => 'teal',
-                'trend' => sprintf('%d total', ($pageCounts[Entry::STATUS_PUBLISHED] ?? 0) + ($pageCounts[Entry::STATUS_DRAFT] ?? 0)),
+                'trend' => sprintf($this->t('admin.ctrl_text_dashboard.d_total'), ($pageCounts[Entry::STATUS_PUBLISHED] ?? 0) + ($pageCounts[Entry::STATUS_DRAFT] ?? 0)),
                 'trendDirection' => 'flat',
-                'hint' => sprintf('%d brouillon(s)', $pageCounts[Entry::STATUS_DRAFT] ?? 0),
+                'hint' => sprintf($this->t('admin.ctrl_text_dashboard.d_brouillon_s'), $pageCounts[Entry::STATUS_DRAFT] ?? 0),
                 'url' => '/admin/content/page',
             ],
             [
-                'label' => 'Articles publiés',
+                'label' => $this->t('admin.ctrl_text_dashboard.articles_publies'),
                 'value' => (string) ($postCounts[Entry::STATUS_PUBLISHED] ?? 0),
                 'icon' => 'newspaper',
                 'accent' => 'violet',
-                'trend' => sprintf('%d brouillon(s)', $postCounts[Entry::STATUS_DRAFT] ?? 0),
+                'trend' => sprintf($this->t('admin.ctrl_text_dashboard.d_brouillon_s'), $postCounts[Entry::STATUS_DRAFT] ?? 0),
                 'trendDirection' => 'flat',
-                'hint' => sprintf('%d planifié(s)', $postCounts[Entry::STATUS_SCHEDULED] ?? 0),
+                'hint' => sprintf($this->t('admin.ctrl_text_dashboard.d_planifie_s'), $postCounts[Entry::STATUS_SCHEDULED] ?? 0),
                 'url' => '/admin/content/post',
             ],
             [
-                'label' => 'Médias',
+                'label' => $this->t('admin.shared.medias'),
                 'value' => (string) $mediaCount,
                 'icon' => 'image',
                 'accent' => 'sky',
                 'trend' => MediaHelper::formatBytes($mediaBytes),
                 'trendDirection' => $mediaCount > 0 ? 'up' : 'flat',
-                'hint' => sprintf('%d image%s · Médiathèque active', $mediaImages, $mediaImages > 1 ? 's' : ''),
+                'hint' => sprintf($this->t('admin.ctrl_text_dashboard.d_image_s_mediatheque_active'), $mediaImages, $mediaImages > 1 ? 's' : ''),
                 'url' => '/admin/media',
             ],
             [
-                'label' => 'Utilisateurs',
+                'label' => $this->t('admin.shared.utilisateurs'),
                 'value' => (string) $usersTotal,
                 'icon' => 'users',
                 'accent' => 'amber',
-                'trend' => 'Comptes actifs',
+                'trend' => $this->t('admin.ctrl_text_dashboard.comptes_actifs'),
                 'trendDirection' => 'up',
                 'hint' => 'RBAC + 2FA',
                 'url' => '/admin/users',
@@ -298,14 +298,14 @@ final class DashboardController
         $items = [];
         foreach ($recent as $entry) {
             $author = $entry->authorId !== null ? ($authors[$entry->authorId] ?? null) : null;
-            $authorName = $author instanceof User ? $author->displayName : ($entry->authorName ?? 'Système');
+            $authorName = $author instanceof User ? $author->displayName : ($entry->authorName ?? $this->t('admin.ctrl_text_dashboard.systeme'));
             $initials = $author instanceof User ? $author->initials() : 'SY';
             $ct = $this->types?->get($entry->type);
             $typeLabel = $ct !== null ? $ct->label('singular') : $entry->type;
 
             $items[] = [
-                'title' => sprintf('%s « %s »', $typeLabel, $entry->title),
-                'meta' => sprintf('Mis à jour par %s · %s UTC', $authorName, $entry->updatedAt),
+                'title' => sprintf($this->t('admin.ctrl_text_dashboard.titre_activite'), $typeLabel, $entry->title),
+                'meta' => sprintf($this->t('admin.ctrl_text_dashboard.mis_a_jour_par_s_s_utc'), $authorName, $entry->updatedAt),
                 'author' => $authorName,
                 'initials' => $initials,
                 'status' => $entry->statusLabel(),
@@ -338,6 +338,36 @@ final class DashboardController
     /**
      * Placeholder page for upcoming CMS modules (`GET /admin/{module}` and `GET /admin/{module}/{section}`).
      */
+    /**
+     * Blocking problems from « État du système », surfaced on the dashboard for administrators.
+     *
+     * @return list<string>
+     */
+    private function criticalChecks(Request $request): array
+    {
+        if (!$this->auth->can('settings.manage', $request) || !$this->app->container()->has(\Prime\Admin\SystemStatus::class)) {
+            return [];
+        }
+
+        try {
+            $status = $this->app->get(\Prime\Admin\SystemStatus::class);
+            if (!$status instanceof \Prime\Admin\SystemStatus) {
+                return [];
+            }
+
+            $labels = [];
+            foreach ($status->checks() as $check) {
+                if ($check['status'] === \Prime\Admin\SystemStatus::STATUS_ERROR) {
+                    $labels[] = $check['label'];
+                }
+            }
+
+            return $labels;
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
     public function module(Request $request, string $module, ?string $section = null): Response
     {
         $key = $section !== null ? $module . '/' . $section : $module;
@@ -347,14 +377,16 @@ final class DashboardController
             throw new NotFoundException('Module d’administration introuvable.');
         }
 
-        $requiredCap = self::MODULE_CAPABILITIES[$key] ?? null;
+        // A placeholder section inherits its parent module's capability, so `/admin/settings/security`
+        // is no more reachable than `/admin/settings` itself.
+        $requiredCap = self::MODULE_CAPABILITIES[$key] ?? self::MODULE_CAPABILITIES[$module] ?? null;
         if ($requiredCap !== null && !$this->auth->can($requiredCap, $request)) {
-            throw new ForbiddenException('Vous ne disposez pas des permissions nécessaires pour accéder à ce module.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_dashboard.vous_ne_disposez_pas_des_permissions_necessaires_pour_accede'));
         }
 
         $meta = $modules[$key];
         $breadcrumbs = [
-            ['label' => 'Tableau de bord', 'url' => '/admin'],
+            ['label' => $this->t('admin.ctrl_text_dashboard.tableau_de_bord'), 'url' => '/admin'],
         ];
 
         if (isset($meta['parentTitle'], $meta['parentUrl'])) {

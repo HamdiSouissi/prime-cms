@@ -22,9 +22,9 @@ $this->layout('install::layout', [
 ]);
 
 $grouped = [
-    'php' => ['title' => 'Environnement PHP', 'items' => []],
-    'extensions' => ['title' => 'Extensions PHP', 'items' => []],
-    'paths' => ['title' => 'Dossiers et écriture', 'items' => []],
+    'php' => ['title' => $this->t('core.install.view.group_php'), 'items' => []],
+    'extensions' => ['title' => $this->t('core.install.view.group_extensions'), 'items' => []],
+    'paths' => ['title' => $this->t('core.install.view.group_paths'), 'items' => []],
 ];
 
 foreach ($report['checks'] as $item) {
@@ -36,9 +36,9 @@ foreach ($report['checks'] as $item) {
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-install__header">
-    <h1 class="pc-install__title">Vérification des prérequis</h1>
+    <h1 class="pc-install__title"><?= $this->e($this->t('core.install.requirements.verification_prerequis')) ?></h1>
     <p class="pc-install__lead">
-        Assurons-nous que votre environnement dispose de la bonne version de PHP, des extensions indispensables et des droits d'écriture.
+        <?= $this->e($this->t('core.install.requirements.assurons_nous_environnement_dispose_bonne')) ?>
     </p>
 </div>
 
@@ -46,22 +46,17 @@ foreach ($report['checks'] as $item) {
     <?= $this->raw($this->insert('admin::components/alert', [
         'variant' => $report['warnings'] > 0 ? 'warning' : 'success',
         'title' => $report['warnings'] > 0
-            ? 'Prérequis satisfaits avec avertissement'
-            : 'Tous les prérequis sont satisfaits',
+            ? $this->t('core.install.view.req_ok_warning')
+            : $this->t('core.install.view.req_ok'),
         'message' => $report['warnings'] > 0
-            ? 'Vous pouvez poursuivre l\'installation. Consultez les avertissements non bloquants ci-dessous.'
-            : 'Votre serveur est prêt à accueillir Prime CMS.',
+            ? $this->t('core.install.view.req_ok_warning_message')
+            : $this->t('core.install.view.req_ok_message'),
     ])) ?>
 <?php else: ?>
     <?= $this->raw($this->insert('admin::components/alert', [
         'variant' => 'danger',
-        'title' => 'Action requise avant de continuer',
-        'message' => sprintf(
-            '%d exigence%s bloquante%s doit être corrigée sur votre serveur. Suivez les indications ci-dessous puis cliquez sur « Revérifier ».',
-            $report['blocking_errors'],
-            $report['blocking_errors'] > 1 ? 's' : '',
-            $report['blocking_errors'] > 1 ? 's' : '',
-        ),
+        'title' => $this->t('core.install.view.req_blocking_title'),
+        'message' => $this->choice('core.install.view.req_blocking_message', (int) $report['blocking_errors'], ['count' => $report['blocking_errors']]),
     ])) ?>
 <?php endif; ?>
 
@@ -79,8 +74,8 @@ foreach ($report['checks'] as $item) {
                     };
                     $badgeLabel = match ($check['status']) {
                         'ok' => 'OK',
-                        'warning' => 'Avertissement',
-                        default => 'Erreur',
+                        'warning' => $this->t('core.install.view.warning'),
+                        default => $this->t('core.labels.error'),
                     };
                     ?>
                     <li class="pc-req-item">
@@ -107,19 +102,19 @@ foreach ($report['checks'] as $item) {
 <div class="pc-install__actions">
     <a href="/install" class="pc-btn pc-btn--ghost">
         <?= $this->raw($this->icon('chevron-left', 16)) ?>
-        <span>Retour</span>
+        <span><?= $this->e($this->t('core.actions.back')) ?></span>
     </a>
 
     <div class="pc-install__actions-group">
-        <a href="/install/requirements" class="pc-btn pc-btn--secondary">Revérifier</a>
+        <a href="/install/requirements" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('core.install.requirements.reverifier')) ?></a>
         <?php if ($report['passed']): ?>
             <a href="/install/database" class="pc-btn pc-btn--primary">
-                <span>Continuer</span>
+                <span><?= $this->e($this->t('core.actions.continue')) ?></span>
                 <?= $this->raw($this->icon('arrow-right', 16)) ?>
             </a>
         <?php else: ?>
             <button type="button" class="pc-btn pc-btn--primary" disabled aria-disabled="true">
-                <span>Continuer</span>
+                <span><?= $this->e($this->t('core.actions.continue')) ?></span>
                 <?= $this->raw($this->icon('arrow-right', 16)) ?>
             </button>
         <?php endif; ?>

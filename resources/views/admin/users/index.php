@@ -38,7 +38,7 @@ $sortUrl = static function (string $col) use ($filters, $buildQuery): string {
 $headerActions = '';
 if ($canManageRoles) {
     $headerActions .= $this->insert('admin::components/button', [
-        'label' => 'Gérer les rôles',
+        'label' => $this->t('admin.view_users_index.gerer_les_roles'),
         'variant' => 'secondary',
         'icon' => 'shield',
         'href' => '/admin/roles',
@@ -46,7 +46,7 @@ if ($canManageRoles) {
 }
 if ($canCreate) {
     $headerActions .= $this->insert('admin::components/button', [
-        'label' => 'Ajouter un utilisateur',
+        'label' => $this->t('admin.view_users_index.ajouter_un_utilisateur'),
         'variant' => 'primary',
         'icon' => 'plus',
         'href' => '/admin/users/create',
@@ -55,52 +55,52 @@ if ($canCreate) {
 ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Utilisateurs',
-    'subtitle' => sprintf('%d compte%s enregistré%s sur le site.', $pagination['total'], $pagination['total'] > 1 ? 's' : '', $pagination['total'] > 1 ? 's' : ''),
+    'title' => $this->t('admin.shared.utilisateurs'),
+    'subtitle' => sprintf($this->t('admin.view_users_index.d_compte_s_enregistre_s_sur_le_site'), $pagination['total'], $pagination['total'] > 1 ? 's' : '', $pagination['total'] > 1 ? 's' : ''),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $headerActions,
 ])) ?>
 
 <div class="pc-stack pc-stack--lg">
     <!-- Filter & search bar -->
-    <form method="get" action="/admin/users" class="pc-filter-bar" role="search" aria-label="Filtrer les utilisateurs">
+    <form method="get" action="/admin/users" class="pc-filter-bar" role="search" aria-label="<?= t('admin.attr.filtrer_les_utilisateurs') ?>">
         <div class="pc-filter-bar__search">
-            <label class="pc-field__label" for="users-search">Rechercher</label>
+            <label class="pc-field__label" for="users-search"><?= $this->e($this->t('core.actions.search')) ?></label>
             <input
                 type="search"
                 id="users-search"
                 name="search"
                 class="pc-input"
                 value="<?= $this->e($filters['search']) ?>"
-                placeholder="Nom affiché ou adresse e-mail…"
+                placeholder="<?= $this->e($this->t('admin.users.index.nom_affiche_adresse_e_mail')) ?>"
             >
         </div>
 
         <div class="pc-filter-bar__select">
-            <label class="pc-field__label" for="users-filter-role">Rôle</label>
+            <label class="pc-field__label" for="users-filter-role"><?= $this->e($this->t('core.fields.role')) ?></label>
             <select id="users-filter-role" name="role" class="pc-select">
-                <option value="">Tous les rôles</option>
+                <option value=""><?= $this->e($this->t('admin.users.index.roles')) ?></option>
                 <?php foreach ($allRoles as $role): ?>
                     <option value="<?= $this->e($role->slug) ?>"<?= $filters['role'] === $role->slug ? ' selected' : '' ?>>
-                        <?= $this->e($role->name) ?>
+                        <?= $this->e($role->label()) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
         </div>
 
         <div class="pc-filter-bar__select">
-            <label class="pc-field__label" for="users-filter-status">Statut</label>
+            <label class="pc-field__label" for="users-filter-status"><?= $this->e($this->t('core.labels.status')) ?></label>
             <select id="users-filter-status" name="status" class="pc-select">
-                <option value="">Tous les statuts</option>
+                <option value=""><?= $this->e($this->t('admin.users.index.statuts')) ?></option>
                 <option value="active"<?= $filters['status'] === 'active' ? ' selected' : '' ?>>Actif</option>
-                <option value="disabled"<?= $filters['status'] === 'disabled' ? ' selected' : '' ?>>Désactivé</option>
+                <option value="disabled"<?= $filters['status'] === 'disabled' ? ' selected' : '' ?>><?= $this->e($this->t('admin.users.index.desactive')) ?></option>
             </select>
         </div>
 
         <div class="pc-filter-bar__actions">
             <button type="submit" class="pc-btn pc-btn--secondary">Filtrer</button>
             <?php if ($hasFilters): ?>
-                <a href="/admin/users" class="pc-btn pc-btn--ghost">Réinitialiser</a>
+                <a href="/admin/users" class="pc-btn pc-btn--ghost"><?= $this->e($this->t('core.actions.reset')) ?></a>
             <?php endif; ?>
         </div>
     </form>
@@ -109,11 +109,11 @@ if ($canCreate) {
         <?= $this->raw($this->insert('admin::components/card', [
             'body' => $this->insert('admin::components/empty-state', [
                 'icon' => 'users',
-                'title' => $hasFilters ? 'Aucun utilisateur ne correspond à ces critères' : 'Aucun utilisateur',
+                'title' => $hasFilters ? $this->t('admin.view_users_index.aucun_utilisateur_ne_correspond_a_ces_criteres') : $this->t('admin.view_users_index.aucun_utilisateur'),
                 'description' => $hasFilters
-                    ? 'Essayez d\'élargir votre recherche ou de réinitialiser les filtres actifs.'
-                    : 'Commencez par créer un compte utilisateur pour votre équipe.',
-                'secondaryLabel' => $hasFilters ? 'Réinitialiser les filtres' : null,
+                    ? $this->t('admin.view_users_index.essayez_d_elargir_votre_recherche_ou_de_reinitialiser_les_fi')
+                    : $this->t('admin.view_users_index.commencez_par_creer_un_compte_utilisateur_pour_votre_equipe'),
+                'secondaryLabel' => $hasFilters ? $this->t('admin.view_users_index.reinitialiser_les_filtres') : null,
                 'secondaryUrl' => $hasFilters ? '/admin/users' : null,
             ]),
         ])) ?>
@@ -123,18 +123,18 @@ if ($canCreate) {
             <form method="post" action="/admin/users/bulk" id="pc-users-bulk-form">
                 <?= $this->raw($this->csrfField()) ?>
                 <div class="pc-table-bulk" data-prime-table-bulk-bar hidden>
-                    <span class="pc-table-bulk__count" data-prime-table-bulk-count>0 élément sélectionné</span>
+                    <span class="pc-table-bulk__count" data-prime-table-bulk-count><?= $this->e($this->t('admin.users.index.0_element_selectionne')) ?></span>
                     <div class="pc-row pc-row--sm">
-                        <select name="bulk_action" class="pc-select" aria-label="Action groupée" data-prime-bulk-action-select>
-                            <option value="">Choisir une action…</option>
-                            <option value="enable">Activer</option>
-                            <option value="disable">Désactiver</option>
+                        <select name="bulk_action" class="pc-select" aria-label="<?= t('admin.attr.action_groupee') ?>" data-prime-bulk-action-select>
+                            <option value=""><?= $this->e($this->t('admin.users.index.choisir_action')) ?></option>
+                            <option value="enable"><?= $this->e($this->t('admin.actions.activate')) ?></option>
+                            <option value="disable"><?= $this->e($this->t('admin.users.index.desactiver')) ?></option>
                             <?php if ($canDelete): ?>
-                                <option value="delete">Supprimer</option>
+                                <option value="delete"><?= $this->e($this->t('core.actions.delete')) ?></option>
                             <?php endif; ?>
                         </select>
                         <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-bulk-submit>Appliquer</button>
-                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-table-bulk-clear>Annuler</button>
+                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-table-bulk-clear><?= $this->e($this->t('core.actions.cancel')) ?></button>
                     </div>
                 </div>
             </form>
@@ -146,19 +146,19 @@ if ($canCreate) {
                         <tr>
                             <?php if ($canEdit): ?>
                             <th scope="col" class="pc-table__check">
-                                <input type="checkbox" class="pc-checkbox" data-prime-table-select-all aria-label="Tout sélectionner">
+                                <input type="checkbox" class="pc-checkbox" data-prime-table-select-all aria-label="<?= t('admin.attr.tout_selectionner') ?>">
                             </th>
                             <?php endif; ?>
                             <th scope="col">
-                                <a href="<?= $this->e($sortUrl('display_name')) ?>" class="pc-table__sort">Utilisateur</a>
+                                <a href="<?= $this->e($sortUrl('display_name')) ?>" class="pc-table__sort"><?= $this->e($this->t('admin.users.index.utilisateur')) ?></a>
                             </th>
-                            <th scope="col">Rôles</th>
+                            <th scope="col"><?= $this->e($this->t('admin.users.index.roles')) ?></th>
                             <th scope="col">
-                                <a href="<?= $this->e($sortUrl('status')) ?>" class="pc-table__sort">Statut</a>
+                                <a href="<?= $this->e($sortUrl('status')) ?>" class="pc-table__sort"><?= $this->e($this->t('core.labels.status')) ?></a>
                             </th>
                             <th scope="col">2FA</th>
                             <th scope="col">
-                                <a href="<?= $this->e($sortUrl('last_login_at')) ?>" class="pc-table__sort">Dernière connexion</a>
+                                <a href="<?= $this->e($sortUrl('last_login_at')) ?>" class="pc-table__sort"><?= $this->e($this->t('admin.users.index.derniere_connexion')) ?></a>
                             </th>
                             <th scope="col" class="pc-table__actions">Actions</th>
                         </tr>
@@ -167,7 +167,7 @@ if ($canCreate) {
                         <?php foreach ($items as $user): ?>
                             <?php
                             $isSelf = $currentUser['id'] === $user->id;
-                            $rel = $relativeDates[$user->id] ?? ['label' => 'Jamais connecté', 'title' => ''];
+                            $rel = $relativeDates[$user->id] ?? ['label' => $this->t('admin.view_users_index.jamais_connecte'), 'title' => ''];
                             ?>
                             <tr>
                                 <?php if ($canEdit): ?>
@@ -179,7 +179,7 @@ if ($canCreate) {
                                         form="pc-users-bulk-form"
                                         value="<?= $this->e((string) $user->id) ?>"
                                         data-prime-table-select-row
-                                        aria-label="Sélectionner <?= $this->e($user->displayName) ?>"
+                                        aria-label="<?= $this->e($this->t('admin.users.index.selectionner', ['name' => $user->displayName])) ?>"
                                         <?= $isSelf ? 'disabled' : '' ?>
                                     >
                                 </td>
@@ -210,14 +210,14 @@ if ($canCreate) {
                                     </div>
                                 </td>
 
-                                <td data-prime-label="Rôles">
+                                <td data-prime-label="<?= $this->e($this->t('admin.users.roles')) ?>">
                                     <div class="pc-badges-wrap">
                                         <?php if ($user->roles === []): ?>
-                                            <?= $this->raw($this->insert('admin::components/badge', ['label' => 'Sans rôle', 'variant' => 'neutral'])) ?>
+                                            <?= $this->raw($this->insert('admin::components/badge', ['label' => $this->t('admin.view_users_index.sans_role'), 'variant' => 'neutral'])) ?>
                                         <?php else: ?>
                                             <?php foreach ($user->roles as $role): ?>
                                                 <?= $this->raw($this->insert('admin::components/badge', [
-                                                    'label' => $role->name,
+                                                    'label' => $role->label(),
                                                     'variant' => $role->isAdministrator() ? 'brand' : 'info',
                                                 ])) ?>
                                             <?php endforeach; ?>
@@ -225,9 +225,9 @@ if ($canCreate) {
                                     </div>
                                 </td>
 
-                                <td data-prime-label="Statut">
+                                <td data-prime-label="<?= $this->e($this->t('core.labels.status')) ?>">
                                     <?= $this->raw($this->insert('admin::components/badge', [
-                                        'label' => $user->isActive() ? 'Actif' : 'Désactivé',
+                                        'label' => $user->isActive() ? $this->t('core.statuses.active') : $this->t('core.statuses.disabled'),
                                         'variant' => $user->isActive() ? 'success' : 'neutral',
                                         'dot' => true,
                                     ])) ?>
@@ -235,12 +235,12 @@ if ($canCreate) {
 
                                 <td data-prime-label="2FA">
                                     <?= $this->raw($this->insert('admin::components/badge', [
-                                        'label' => $user->hasTwoFactor() ? 'Activée' : 'Inactive',
+                                        'label' => $user->hasTwoFactor() ? $this->t('admin.users.two_factor_on') : $this->t('admin.users.two_factor_off'),
                                         'variant' => $user->hasTwoFactor() ? 'teal' : 'neutral',
                                     ])) ?>
                                 </td>
 
-                                <td data-prime-label="Dernière connexion">
+                                <td data-prime-label="<?= $this->e($this->t('admin.users.last_login')) ?>">
                                     <span title="<?= $this->e($rel['title']) ?>" data-prime-tooltip="<?= $this->e($rel['title']) ?>">
                                         <?= $this->e($rel['label']) ?>
                                     </span>
@@ -256,7 +256,7 @@ if ($canCreate) {
                                                 <form method="post" action="/admin/users/<?= $this->e((string) $user->id) ?>/toggle-status" class="pc-inline-form">
                                                     <?= $this->raw($this->csrfField()) ?>
                                                     <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm">
-                                                        <?= $user->isActive() ? 'Désactiver' : 'Activer' ?>
+                                                        <?= $this->e($user->isActive() ? $this->t('admin.actions.deactivate') : $this->t('admin.actions.activate')) ?>
                                                     </button>
                                                 </form>
                                             <?php endif; ?>
@@ -267,11 +267,11 @@ if ($canCreate) {
                                                 method="post"
                                                 action="/admin/users/<?= $this->e((string) $user->id) ?>/delete"
                                                 class="pc-inline-form"
-                                                data-prime-confirm-form="Supprimer définitivement le compte de <?= $this->e($user->displayName) ?> ?"
+                                                data-prime-confirm-form="<?= $this->e($this->t('admin.users.index.confirmer_suppression_compte', ['name' => $user->displayName])) ?>"
                                             >
                                                 <?= $this->raw($this->csrfField()) ?>
                                                 <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm pc-text-danger">
-                                                    Supprimer
+                                                    <?= $this->e($this->t('core.actions.delete')) ?>
                                                 </button>
                                             </form>
                                         <?php endif; ?>
@@ -286,18 +286,18 @@ if ($canCreate) {
             <?php if ($pagination['totalPages'] > 1): ?>
             <div class="pc-pagination">
                 <span>
-                    Page <?= $this->e((string) $pagination['page']) ?> sur <?= $this->e((string) $pagination['totalPages']) ?>
-                    (<?= $this->e((string) $pagination['total']) ?> résultats)
+                    <?= t('admin.users.list.page_of', ['page' => $this->e((string) $pagination['page']), 'total' => $this->e((string) $pagination['totalPages'])]) ?>
+                    (<?= $this->e($this->choice('core.pagination.results', (int) $pagination['total'])) ?>)
                 </span>
-                <nav class="pc-pagination__nav" aria-label="Pagination des utilisateurs">
+                <nav class="pc-pagination__nav" aria-label="<?= t('admin.attr.pagination_des_utilisateurs') ?>">
                     <?php if ($pagination['page'] > 1): ?>
                         <a href="<?= $this->e($buildQuery(['page' => $pagination['page'] - 1])) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">
-                            ← Précédent
+                            <?= $this->e($this->t('admin.users.index.precedent')) ?>
                         </a>
                     <?php endif; ?>
                     <?php if ($pagination['page'] < $pagination['totalPages']): ?>
                         <a href="<?= $this->e($buildQuery(['page' => $pagination['page'] + 1])) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">
-                            Suivant →
+                            <?= t('admin.users.list.next') ?>
                         </a>
                     <?php endif; ?>
                 </nav>

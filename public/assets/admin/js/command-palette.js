@@ -194,6 +194,13 @@ export function initCommandPalette() {
   /** @param {CommandPaletteItem} item */
   function executeItem(item) {
     close();
+    if (item.id === 'action.purge_cache') {
+      const purgeForm = document.querySelector('form.pc-topbar__purge');
+      if (purgeForm instanceof HTMLFormElement) {
+        purgeForm.requestSubmit();
+        return;
+      }
+    }
     if (item.url) {
       window.location.assign(item.url);
       return;

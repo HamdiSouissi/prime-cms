@@ -4,6 +4,40 @@
 
 const BLOCK_TYPE_RE = /^[a-z][a-z0-9-]*(?:\/[a-z][a-z0-9-]*)?$/;
 
+/** @type {Map<string, {title?: string, description?: string}>|null} */
+let serverMeta = null;
+
+/**
+ * Block titles and descriptions declared in PHP by plugins (`BlockDefinition`) are translated
+ * on the server; prefer them over the literals the plugin script passes, so plugin blocks follow
+ * the user's language without shipping their own JavaScript catalogue.
+ *
+ * @param {string} type
+ * @returns {{title?: string, description?: string}|undefined}
+ */
+function localizedMeta(type) {
+  if (serverMeta === null) {
+    serverMeta = new Map();
+    const script = typeof document !== 'undefined'
+      ? document.querySelector('script[type="application/json"][data-prime-editor-config]')
+      : null;
+    if (script && script.textContent) {
+      try {
+        const config = JSON.parse(script.textContent);
+        (Array.isArray(config.pluginBlocks) ? config.pluginBlocks : []).forEach((meta) => {
+          if (meta && typeof meta.type === 'string') {
+            serverMeta.set(meta.type, meta);
+          }
+        });
+      } catch {
+        // Keep the literals declared by the plugin script.
+      }
+    }
+  }
+
+  return serverMeta.get(type);
+}
+
 export class EditorBlockRegistry {
   constructor() {
     /** @type {Map<string, object>} */
@@ -35,7 +69,8 @@ export class EditorBlockRegistry {
     if (!BLOCK_TYPE_RE.test(type)) {
       throw new Error(`Prime Editor: invalid block type "${type}".`);
     }
-    const title = String(definition.title || '').trim();
+    const meta = localizedMeta(type);
+    const title = String(meta?.title || definition.title || '').trim();
     if (!title) {
       throw new Error(`Prime Editor: block "${type}" must specify a title.`);
     }
@@ -46,7 +81,7 @@ export class EditorBlockRegistry {
     const normalized = {
       type,
       title,
-      description: String(definition.description || ''),
+      description: String(meta?.description || definition.description || ''),
       icon: String(definition.icon || 'sparkles'),
       category: String(definition.category || 'plugins'),
       keywords: Array.isArray(definition.keywords) ? definition.keywords.map(String) : [],

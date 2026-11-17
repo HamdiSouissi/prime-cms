@@ -5,6 +5,7 @@
 
 import { openModal } from './modal.js';
 import { showToast } from './toast.js';
+import { tr } from './i18n.js';
 
 export function initAdminPlugins() {
   initNoticeDismissals();
@@ -177,9 +178,9 @@ function initUploadDrawer() {
     }
 
     if (!file.name.toLowerCase().endsWith('.zip')) {
-      showError('Seules les archives au format .zip sont acceptées.');
+      showError(tr('admin.js.plugins.seules_les_archives_au_format', 'Seules les archives au format .zip sont acceptées.'));
     } else if (file.size > maxMb * 1024 * 1024) {
-      showError(`L’archive dépasse la taille maximale autorisée (${maxMb} Mo).`);
+      showError(tr('admin.js.plugins.archive_trop_volumineuse', 'L’archive dépasse la taille maximale autorisée (:size Mo).', { size: maxMb }));
     }
   };
 
@@ -222,17 +223,17 @@ function initUploadDrawer() {
   const performUpload = () => {
     const file = fileInput.files && fileInput.files[0];
     if (!file) {
-      showError('Veuillez sélectionner une archive ZIP de plugin.');
+      showError(tr('admin.js.plugins.veuillez_selectionner_une_archive_zip', 'Veuillez sélectionner une archive ZIP de plugin.'));
       return;
     }
 
     if (!file.name.toLowerCase().endsWith('.zip')) {
-      showError('Seules les archives au format .zip sont acceptées.');
+      showError(tr('admin.js.plugins.seules_les_archives_au_format', 'Seules les archives au format .zip sont acceptées.'));
       return;
     }
 
     if (file.size > maxMb * 1024 * 1024) {
-      showError(`L’archive dépasse la taille maximale autorisée (${maxMb} Mo).`);
+      showError(tr('admin.js.plugins.archive_trop_volumineuse', 'L’archive dépasse la taille maximale autorisée (:size Mo).', { size: maxMb }));
       return;
     }
 
@@ -254,7 +255,7 @@ function initUploadDrawer() {
       if (progressWrap instanceof HTMLElement) progressWrap.setAttribute('aria-valuenow', String(pct));
       if (progressPct instanceof HTMLElement) progressPct.textContent = `${pct} %`;
       if (progressStatus instanceof HTMLElement) {
-        progressStatus.textContent = pct >= 95 ? 'Validation et extraction sécurisée…' : 'Téléversement en cours…';
+        progressStatus.textContent = pct >= 95 ? tr('admin.js.plugins.validation_et_extraction_securisee', 'Validation et extraction sécurisée…') : tr('admin.js.plugins.televersement_en_cours', 'Téléversement en cours…');
       }
     });
 
@@ -272,8 +273,8 @@ function initUploadDrawer() {
 
       if (xhr.status >= 200 && xhr.status < 300 && payload && payload.ok) {
         showToast({
-          title: payload.replaced ? 'Plugin remplacé' : 'Plugin installé',
-          message: payload.message || 'Le plugin a été installé avec succès.',
+          title: payload.replaced ? tr('admin.js.plugins.plugin_remplace', 'Plugin remplacé') : tr('admin.js.plugins.plugin_installe', 'Plugin installé'),
+          message: payload.message || tr('admin.js.plugins.le_plugin_a_ete_installe', 'Le plugin a été installé avec succès.'),
           type: 'success',
         });
         window.location.assign('/admin/plugins');
@@ -296,13 +297,13 @@ function initUploadDrawer() {
         return;
       }
 
-      showError((payload && payload.message) || 'Une erreur est survenue lors de l’installation du plugin.');
+      showError((payload && payload.message) || tr('admin.js.plugins.une_erreur_est_survenue_lors', 'Une erreur est survenue lors de l’installation du plugin.'));
     });
 
     xhr.addEventListener('error', () => {
       if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
       if (progressBox instanceof HTMLElement) progressBox.hidden = true;
-      showError('Erreur réseau pendant le téléversement de l’archive.');
+      showError(tr('admin.js.plugins.erreur_reseau_pendant_le_televersement', 'Erreur réseau pendant le téléversement de l’archive.'));
     });
 
     xhr.send(new FormData(form));

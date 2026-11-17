@@ -6,6 +6,7 @@ namespace Prime\Admin\Controller;
 
 use InvalidArgumentException;
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Content\EntryQuery;
 use Prime\Http\Request;
 use Prime\Http\Response;
@@ -23,6 +24,8 @@ use Prime\View\View;
  */
 final class SiteSettingsController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly View $view,
         private readonly AdminContext $context,
@@ -41,7 +44,7 @@ final class SiteSettingsController
     {
         $pages = $this->query->newQuery()->type('page')->orderBy('title', 'ASC')->limit(200)->get();
 
-        $html = $this->view->render('admin::settings/reading', $this->context->build($request, 'Lecture', [
+        $html = $this->view->render('admin::settings/reading', $this->context->build($request, t('admin.nav.reading'), [
             'pages' => $pages,
             'frontMode' => $this->permalinks->frontMode(),
             'frontPageId' => $this->permalinks->frontPageId(),
@@ -49,9 +52,9 @@ final class SiteSettingsController
             'postsPerPage' => $this->permalinks->postsPerPage(),
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Réglages', 'url' => '/admin/settings'],
-                ['label' => 'Lecture', 'url' => null],
+                ['label' => $this->t('admin.ctrl_text_sitesettings.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => t('admin.nav.settings'), 'url' => '/admin/settings'],
+                ['label' => t('admin.nav.reading'), 'url' => null],
             ],
         ]));
 
@@ -70,7 +73,7 @@ final class SiteSettingsController
         if ($errors !== []) {
             $this->context->flashToast(implode(' ', $errors), 'danger');
         } else {
-            $this->context->flashToast('Les réglages de lecture ont été enregistrés.', 'success');
+            $this->context->flashToast($this->t('admin.ctrl_text_sitesettings.les_reglages_de_lecture_ont_ete_enregistres'), 'success');
         }
 
         return Response::redirect('/admin/settings/reading');
@@ -81,16 +84,16 @@ final class SiteSettingsController
      */
     public function permalinks(Request $request): Response
     {
-        $html = $this->view->render('admin::settings/permalinks', $this->context->build($request, 'Permaliens', [
+        $html = $this->view->render('admin::settings/permalinks', $this->context->build($request, t('admin.nav.permalinks'), [
             'postStructure' => $this->permalinks->postStructure(),
             'categoryBase' => $this->permalinks->categoryBase(),
             'tagBase' => $this->permalinks->tagBase(),
             'redirects' => $this->redirects->all(100),
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Réglages', 'url' => '/admin/settings'],
-                ['label' => 'Permaliens', 'url' => null],
+                ['label' => $this->t('admin.ctrl_text_sitesettings.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => t('admin.nav.settings'), 'url' => '/admin/settings'],
+                ['label' => t('admin.nav.permalinks'), 'url' => null],
             ],
         ]));
 
@@ -109,7 +112,7 @@ final class SiteSettingsController
         if ($errors !== []) {
             $this->context->flashToast(implode(' ', $errors), 'danger');
         } else {
-            $this->context->flashToast('La structure des permaliens a été enregistrée.', 'success');
+            $this->context->flashToast($this->t('admin.ctrl_text_sitesettings.la_structure_des_permaliens_a_ete_enregistree'), 'success');
         }
 
         return Response::redirect('/admin/settings/permalinks');
@@ -126,9 +129,9 @@ final class SiteSettingsController
         try {
             $created = $this->redirects->registerRedirect($source, $target, 301);
             if ($created) {
-                $this->context->flashToast(sprintf('Redirection 301 créée : %s → %s.', $source, $target), 'success');
+                $this->context->flashToast(sprintf($this->t('admin.ctrl_text_sitesettings.redirection_301_creee_s_s'), $source, $target), 'success');
             } else {
-                $this->context->flashToast('Redirection ignorée (source identique à la cible ou boucle détectée).', 'warning');
+                $this->context->flashToast($this->t('admin.ctrl_text_sitesettings.redirection_ignoree_source_identique_a_la_cible_ou_boucle_de'), 'warning');
             }
         } catch (InvalidArgumentException $e) {
             $this->context->flashToast($e->getMessage(), 'danger');
@@ -143,7 +146,7 @@ final class SiteSettingsController
     public function deleteRedirect(Request $request, string $id): Response
     {
         $this->redirects->delete((int) $id);
-        $this->context->flashToast('La redirection a été supprimée.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_sitesettings.la_redirection_a_ete_supprimee'), 'success');
 
         return Response::redirect('/admin/settings/permalinks');
     }
@@ -156,7 +159,7 @@ final class SiteSettingsController
         $imageId = $this->seoSettings->defaultImageId();
         $defaultImage = ($imageId !== null && $this->media !== null) ? $this->media->find($imageId) : null;
 
-        $html = $this->view->render('admin::settings/seo', $this->context->build($request, 'Référencement', [
+        $html = $this->view->render('admin::settings/seo', $this->context->build($request, t('admin.nav.seo'), [
             'separator' => $this->seoSettings->separator(),
             'titleTemplate' => $this->seoSettings->titleTemplate(),
             'defaultDescription' => $this->seoSettings->defaultDescription(),
@@ -166,9 +169,9 @@ final class SiteSettingsController
             'robotsCustom' => $this->seoSettings->robotsCustom(),
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Réglages', 'url' => '/admin/settings'],
-                ['label' => 'Référencement', 'url' => null],
+                ['label' => $this->t('admin.ctrl_text_sitesettings.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => t('admin.nav.settings'), 'url' => '/admin/settings'],
+                ['label' => t('admin.nav.seo'), 'url' => null],
             ],
         ]));
 
@@ -187,7 +190,7 @@ final class SiteSettingsController
         if ($errors !== []) {
             $this->context->flashToast(implode(' ', $errors), 'danger');
         } else {
-            $this->context->flashToast('Les réglages de référencement ont été enregistrés.', 'success');
+            $this->context->flashToast($this->t('admin.ctrl_text_sitesettings.les_reglages_de_referencement_ont_ete_enregistres'), 'success');
         }
 
         return Response::redirect('/admin/settings/seo');

@@ -9,6 +9,7 @@ use Prime\Admin\Notices;
 use Prime\Auth\Auth;
 use Prime\Auth\RoleRepository;
 use Prime\Auth\UserRepository;
+use Prime\Cache\PageCache;
 use Prime\Content\Entry;
 use Prime\Content\EntryService;
 use Prime\Content\Exception\ContentValidationException;
@@ -38,7 +39,7 @@ use Prime\Themes\ThemeOptions;
 
 /**
  * Real MySQL 8.0 & MariaDB 10.6 integration tests for Phase 8:
- * - Migrations 000019–000023 schema creation, FK cascades, and clean full rollback (23 migrations)
+ * - Migrations up to 000023: schema creation, FK cascades, and a clean full rollback
  * - MenuRepository 3-level hierarchy & ON DELETE CASCADE on menu deletion
  * - ZoneRepository + MediaUsageRepository::syncForZone() tracking
  * - RedirectRepository chain shortening, hit counters, and cycle guard
@@ -52,7 +53,7 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
         $ran = $migrator->run();
-        $this->assertCount(23, $ran);
+        $this->assertCount($this->coreMigrationCount(), $ran);
 
         $this->assertTrue($schema->hasTable('menus'));
         $this->assertTrue($schema->hasTable('menu_items'));
@@ -146,9 +147,9 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $afterHit = $redirects->findBySource('/v1');
         $this->assertSame(1, $afterHit['hits'] ?? 0);
 
-        // 5. Full rollback of all 23 migrations leaves clean DB
+        // 5. Full rollback of every migration leaves a clean DB
         $rolledBack = $migrator->rollback(1);
-        $this->assertCount(23, $rolledBack);
+        $this->assertCount($this->coreMigrationCount(), $rolledBack);
         $this->assertFalse($schema->hasTable('menus'));
         $this->assertFalse($schema->hasTable('zones'));
         $this->assertFalse($schema->hasTable('redirects'));
@@ -159,13 +160,17 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
     {
         $schema = new Schema($this->connection);
         $migrator = new Migrator($this->connection, $schema, [dirname(__DIR__, 2) . '/database/migrations']);
-        $this->assertCount(23, $migrator->run());
+        $this->assertCount($this->coreMigrationCount(), $migrator->run());
 
         $app = new Application(dirname(__DIR__, 2), loadEnv: false, registerErrorHandler: false);
         $app->config()->set('app.env', 'testing');
         $app->config()->set('app.debug', true);
         $app->config()->set('app.url', 'https://prime-db.test');
         $app->config()->set('app.key', 'base64:' . base64_encode(str_repeat('d', 32)));
+        // The page cache is covered by its own suite: here `/blog` must always reach the
+        // database so the SQL query counts measure template efficiency, not cache hits.
+        $app->config()->set('cache.page.enabled', false);
+        $app->config()->set('cache.page.directory', sys_get_temp_dir() . '/prime_pages_' . uniqid('', true));
         $app->boot();
 
         $app->container()->instance(InstallCheckerInterface::class, new class () implements InstallCheckerInterface {
@@ -471,6 +476,13 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
             ], $admin);
         }
 
+        // The page cache would answer one of the two requests from disk without touching MySQL, and
+        // `0 === 0` proves nothing about N+1: pin it off for the measurement, then restore it.
+        $pageCache = $app->get(PageCache::class);
+        $this->assertInstanceOf(PageCache::class, $pageCache);
+        $cacheWasEnabled = $pageCache->isEnabled();
+        $pageCache->setEnabled(false);
+
         $kernel->handle(Request::create('GET', '/blog'));
         $this->connection->enableQueryLog(true);
         $this->connection->clearQueryLog();
@@ -495,7 +507,9 @@ final class SiteDatabaseIntegrationTest extends DatabaseTestCase
         $this->assertSame(200, $res30->status());
         $q30 = count($this->connection->queryLog());
         $this->connection->enableQueryLog(false);
+        $pageCache->setEnabled($cacheWasEnabled);
 
+        $this->assertGreaterThan(0, $q10, 'les deux mesures doivent lire la base pour être comparables');
         $this->assertSame($q10, $q30, sprintf('Expected constant query count on real DB, got %d vs %d.', $q10, $q30));
         $this->assertNotNull($notices);
         $this->assertNotNull($settings);

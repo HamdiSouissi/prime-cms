@@ -19,10 +19,10 @@ $this->layout('install::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-install__header">
-    <h1 class="pc-install__title">Bienvenue dans Prime CMS</h1>
+    <h1 class="pc-install__title"><?= t('core.install.welcome.title') ?></h1>
     <p class="pc-install__lead">
-        Prime CMS est un système de gestion de contenu moderne, rapide et extensible conçu en PHP natif.
-        Cet assistant va vérifier votre serveur, configurer votre base de données et créer votre compte administrateur en quelques minutes.
+        <?= $this->e($this->t('core.install.welcome.prime_cms_systeme_gestion_contenu')) ?>
+        <?= $this->e($this->t('core.install.welcome.cet_assistant_va_verifier_serveur')) ?>
     </p>
 </div>
 
@@ -32,17 +32,17 @@ $this->layout('install::layout', [
     <?= $this->raw($this->insert('admin::components/field', [
         'id' => 'wizard-locale',
         'name' => 'wizard_locale',
-        'label' => 'Langue de l\'assistant',
+        'label' => $this->t('core.install.view.wizard_language'),
         'type' => 'select',
         'value' => $wizardLocale,
         'options' => $locales,
-        'help' => 'Vous pourrez également choisir la langue publique de votre site à l\'étape 4.',
+        'help' => $this->t('core.install.view.wizard_language_help'),
         'required' => true,
     ])) ?>
 
     <div class="pc-install__actions pc-install__actions--end">
         <button type="submit" class="pc-btn pc-btn--primary">
-            <span>Commencer l'installation</span>
+            <span><?= t('core.install.welcome.start') ?></span>
             <?= $this->raw($this->icon('arrow-right', 16)) ?>
         </button>
     </div>

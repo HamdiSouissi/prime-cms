@@ -11,6 +11,5 @@ return [
     'lock_ttl_seconds' => 120,
     'lock_heartbeat_seconds' => 30,
     'autosave_interval_seconds' => 30,
-    'scheduler_interval_seconds' => 60,
     'trash_retention_days' => 30,
 ];

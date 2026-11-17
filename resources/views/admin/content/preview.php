@@ -20,23 +20,23 @@ declare(strict_types=1);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aperçu : <?= $this->e($previewTitle) ?> — <?= $this->e($appName) ?></title>
+    <title><?= $this->e($this->t('admin.content.preview.titre', ['title' => $previewTitle, 'site' => $appName])) ?></title>
     <link rel="stylesheet" href="<?= $this->e(asset('admin/css/admin.css')) ?>">
 </head>
 <body class="pc-preview-shell">
     <header class="pc-preview-banner">
         <div>
-            <strong>Mode prévisualisation</strong>
+            <strong><?= $this->e($this->t('admin.content.preview.mode_previsualisation')) ?></strong>
             · <?= $this->e($contentType->label('singular')) ?>
-            · Statut : <?= $this->e($entry->statusLabel()) ?>
+            · <?= t('admin.content.preview.status') ?> : <?= $this->e($entry->statusLabel()) ?>
             <?php if ($previewRevision !== null): ?>
-                · Révision #<?= $this->e((string) $previewRevision->id) ?> (<?= $this->e($previewRevision->createdAt) ?>)
+                · <?= $this->e($this->t('admin.content.preview.revision', ['id' => $previewRevision->id, 'date' => $previewRevision->createdAt])) ?>
             <?php endif; ?>
         </div>
         <div class="pc-row pc-row--sm">
             <?php if ($canEdit): ?>
                 <a class="pc-btn pc-btn--secondary pc-btn--sm" href="<?= $this->e($entry->editUrl()) ?>">
-                    Retour à l’éditeur
+                    <?= $this->e($this->t('admin.content.preview.retour_a_editeur')) ?>
                 </a>
             <?php endif; ?>
         </div>
@@ -45,7 +45,7 @@ declare(strict_types=1);
     <article class="pc-preview-article">
         <h1><?= $this->e($previewTitle) ?></h1>
         <div class="pc-preview-meta">
-            <span>Par <?= $this->e($author !== null ? $author->displayName : ($entry->authorName ?? 'Auteur inconnu')) ?></span>
+            <span>Par <?= $this->e($author !== null ? $author->displayName : ($entry->authorName ?? $this->t('admin.content.unknown_author'))) ?></span>
             <span>·</span>
             <span>/<?= $this->e($entry->slug) ?></span>
             <?php if ($entry->publishedAt !== null): ?>

@@ -6,6 +6,7 @@ namespace Prime\Editor;
 
 use Closure;
 use InvalidArgumentException;
+use Prime\Content\LabelTranslator;
 use Prime\Security\HtmlSanitizer;
 
 /**
@@ -67,8 +68,8 @@ final readonly class BlockDefinition
     {
         return [
             'type' => $this->type,
-            'title' => $this->title,
-            'description' => $this->description,
+            'title' => LabelTranslator::resolve($this->title),
+            'description' => LabelTranslator::resolve($this->description),
             'icon' => $this->icon,
             'category' => $this->category,
             'keywords' => $this->keywords,

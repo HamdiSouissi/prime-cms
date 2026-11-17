@@ -41,7 +41,7 @@ $author = $item->author();
       <span>&middot;</span>
       <a href="<?= $author['url'] ?>"><?= $author['name'] ?></a>
       <span>&middot;</span>
-      <span><?= $item->readingTime() ?> min</span>
+      <span><?= $site->e($site->t('site.aurora.partials.card.min_lecture', ['count' => $item->readingTime()])) ?></span>
     </div>
   </div>
 </article>

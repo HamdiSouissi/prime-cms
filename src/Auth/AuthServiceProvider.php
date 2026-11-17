@@ -13,6 +13,7 @@ use Prime\Http\Kernel;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Http\Session;
+use Prime\Kernel\Container;
 use Prime\Kernel\ServiceProvider;
 use Prime\Log\Logger;
 use Prime\Mail\MailerInterface;
@@ -21,7 +22,9 @@ use Prime\Security\Encrypter;
 use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
 use Prime\Security\RateLimiter;
+use Prime\Settings\Settings;
 use Prime\View\View;
+use Throwable;
 
 /**
  * Registers authentication, RBAC, 2FA, password reset, security primitives,
@@ -36,7 +39,27 @@ final class AuthServiceProvider extends ServiceProvider
         $app = $this->app;
         $container = $app->container();
 
-        $container->singleton(PasswordPolicy::class, static fn (): PasswordPolicy => new PasswordPolicy());
+        $container->singleton(TwoFactorPolicy::class, static function (Container $container): TwoFactorPolicy {
+            $settings = $container->has(Settings::class) ? $container->get(Settings::class) : null;
+
+            return new TwoFactorPolicy($settings instanceof Settings ? $settings : null);
+        });
+
+        // The administrator-tunable policy is resolved lazily through Settings; a site whose
+        // tables are not installed yet keeps the historic defaults.
+        $container->singleton(PasswordPolicy::class, static function (Container $container): PasswordPolicy {
+            $settings = $container->has(Settings::class) ? $container->get(Settings::class) : null;
+
+            if ($settings instanceof Settings) {
+                try {
+                    return PasswordPolicy::fromSettings($settings);
+                } catch (Throwable) {
+                    // Fall back to the built-in policy below.
+                }
+            }
+
+            return new PasswordPolicy();
+        });
 
         $container->singleton(Hasher::class, static function () use ($app): Hasher {
             $cfg = $app->config()->get('auth', []);
@@ -92,8 +115,7 @@ final class AuthServiceProvider extends ServiceProvider
         });
 
         $container->singleton(PasswordResetService::class, static function () use ($app, $container): PasswordResetService {
-            $cfg = $app->config()->get('auth', []);
-            $cfgArr = is_array($cfg) ? $cfg : [];
+            $cfgArr = self::authConfig($app, $container);
 
             return new PasswordResetService(
                 connection: $container->get(Connection::class),
@@ -113,7 +135,8 @@ final class AuthServiceProvider extends ServiceProvider
         });
 
         $container->singleton(Auth::class, function () use ($app, $container): Auth {
-            $cfg = $app->config()->get('auth', []);
+            /** @var array<string, mixed> $cfg */
+            $cfg = self::authConfig($app, $container);
 
             $auth = new Auth(
                 connection: $container->get(Connection::class),
@@ -124,13 +147,53 @@ final class AuthServiceProvider extends ServiceProvider
                 twoFactor: $container->get(TwoFactorService::class),
                 hooks: $container->get(Hooks::class),
                 logger: $container->get(Logger::class),
-                config: is_array($cfg) ? $cfg : [],
+                config: $cfg,
                 hasher: $container->get(Hasher::class),
             );
             $this->authInstantiated = true;
 
             return $auth;
         });
+    }
+
+    /**
+     * `config/auth.php` overlaid with the administrator-tunable `security.*` settings, so the
+     * login throttle, session timeouts, remember-me duration and token TTLs follow the registry.
+     *
+     * @return array<string, mixed>
+     */
+    private static function authConfig(mixed $app, Container $container): array
+    {
+        $config = $app->config()->get('auth', []);
+        $cfg = is_array($config) ? $config : [];
+
+        $settings = $container->has(Settings::class) ? $container->get(Settings::class) : null;
+        if (!$settings instanceof Settings) {
+            return $cfg;
+        }
+
+        try {
+            $minutes = $settings->getInt('security.session_lifetime', 1440, 15, 43200);
+            $absolute = $settings->getInt('security.session_absolute_lifetime', 0, 0, 43200);
+            $rememberDays = $settings->getInt('security.remember_days', 30, 1, 365);
+
+            $cfg['session_idle_timeout'] = $minutes * 60;
+            if ($absolute > 0) {
+                $cfg['session_absolute_timeout'] = $absolute * 60;
+            }
+
+            $cfg['remember_ttl'] = $rememberDays * 86400;
+            $cfg['login_max_attempts'] = $settings->getInt('security.login_max_attempts', 5, 3, 50);
+            $cfg['login_decay_seconds'] = $settings->getInt('security.login_lockout_minutes', 15, 1, 1440) * 60;
+            $cfg['two_factor_ttl'] = $settings->getInt('security.two_factor_challenge_minutes', 5, 1, 60) * 60;
+            $cfg['reset_token_ttl'] = $settings->getInt('security.reset_token_minutes', 60, 5, 1440) * 60;
+            $cfg['invite_token_ttl'] = $settings->getInt('security.invite_token_minutes', 2880, 60, 20160) * 60;
+        } catch (Throwable) {
+            // Unknown/partial settings (fresh install, migrated site): keep `config/auth.php`.
+            return is_array($config) ? $config : [];
+        }
+
+        return $cfg;
     }
 
     public function boot(): void
@@ -148,6 +211,7 @@ final class AuthServiceProvider extends ServiceProvider
             return new Authenticate(
                 $container->get(Auth::class),
                 $container->get(Session::class),
+                $container->has(TwoFactorPolicy::class) ? $container->get(TwoFactorPolicy::class) : null,
             );
         });
 

@@ -7,8 +7,10 @@ namespace Prime\Console;
 use Prime\Auth\RoleRepository;
 use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
+use Prime\Cache\CacheManager;
 use Prime\Console\Commands\AboutCommand;
 use Prime\Console\Commands\AssetsBuildCommand;
+use Prime\Console\Commands\CacheClearCommand;
 use Prime\Console\Commands\ContentCreateCommand;
 use Prime\Console\Commands\ContentListCommand;
 use Prime\Console\Commands\ContentPublishScheduledCommand;
@@ -17,7 +19,11 @@ use Prime\Console\Commands\ContentRerenderCommand;
 use Prime\Console\Commands\ContentTypesCommand;
 use Prime\Console\Commands\DbCheckCommand;
 use Prime\Console\Commands\InstallCommand;
+use Prime\Console\Commands\LangCheckCommand;
 use Prime\Console\Commands\ListCommand;
+use Prime\Console\Commands\MailLogsCommand;
+use Prime\Console\Commands\MailPruneCommand;
+use Prime\Console\Commands\MailTestCommand;
 use Prime\Console\Commands\MakeMigrationCommand;
 use Prime\Console\Commands\MakePluginCommand;
 use Prime\Console\Commands\MediaCleanupCommand;
@@ -34,9 +40,14 @@ use Prime\Console\Commands\PluginInstallCommand;
 use Prime\Console\Commands\PluginListCommand;
 use Prime\Console\Commands\PluginPublishAssetsCommand;
 use Prime\Console\Commands\PluginUninstallCommand;
+use Prime\Console\Commands\QueueRetryCommand;
+use Prime\Console\Commands\QueueStatusCommand;
+use Prime\Console\Commands\QueueWorkCommand;
 use Prime\Console\Commands\RoleListCommand;
 use Prime\Console\Commands\RoutesCommand;
+use Prime\Console\Commands\ScheduleRunCommand;
 use Prime\Console\Commands\SettingsGetCommand;
+use Prime\Console\Commands\SettingsListCommand;
 use Prime\Console\Commands\SettingsSetCommand;
 use Prime\Console\Commands\ThemeActivateCommand;
 use Prime\Console\Commands\ThemeListCommand;
@@ -57,15 +68,21 @@ use Prime\Database\Migrations\Migrator;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Install\Installer;
+use Prime\Jobs\JobQueue;
+use Prime\Jobs\JobRepository;
 use Prime\Kernel\Application;
+use Prime\Mail\Mailer;
 use Prime\Media\MediaConfig;
 use Prime\Media\MediaRepository;
 use Prime\Media\UploadService;
 use Prime\Media\UploadsGuard;
 use Prime\Plugins\PluginInstaller;
 use Prime\Plugins\PluginManager;
+use Prime\Scheduler\Schedule;
+use Prime\Scheduler\SchedulerRunner;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
+use Prime\Settings\SettingsRegistry;
 use Prime\Themes\ThemeManager;
 
 /**
@@ -152,6 +169,14 @@ final class ConsoleApplication
         $this->register(new AboutCommand($this->app));
         $this->register(new AssetsBuildCommand($this->app));
         $this->register(new RoutesCommand($router));
+        $this->register(new LangCheckCommand($this->app));
+
+        if ($this->app->container()->has(CacheManager::class)) {
+            /** @var CacheManager $cacheManager */
+            $cacheManager = $this->app->get(CacheManager::class);
+
+            $this->register(new CacheClearCommand($cacheManager));
+        }
 
         if ($this->app->container()->has(Connection::class)) {
             /** @var Connection $connection */
@@ -168,12 +193,49 @@ final class ConsoleApplication
             $this->register(new MakeMigrationCommand($this->app));
         }
 
+        if ($this->app->container()->has(Schedule::class) && $this->app->container()->has(SchedulerRunner::class)) {
+            /** @var Schedule $schedule */
+            $schedule = $this->app->get(Schedule::class);
+            /** @var SchedulerRunner $runner */
+            $runner = $this->app->get(SchedulerRunner::class);
+
+            $this->register(new ScheduleRunCommand($schedule, $runner));
+        }
+
+        if ($this->app->container()->has(JobQueue::class) && $this->app->container()->has(JobRepository::class)) {
+            /** @var JobQueue $queue */
+            $queue = $this->app->get(JobQueue::class);
+            /** @var JobRepository $jobs */
+            $jobs = $this->app->get(JobRepository::class);
+
+            $this->register(new QueueWorkCommand($queue, $jobs));
+            $this->register(new QueueStatusCommand($jobs));
+            $this->register(new QueueRetryCommand($jobs));
+        }
+
+        // `bin/prime list` must answer on a site whose database is unreachable, so nothing is resolved
+        // here: the commands take the container and fetch the mailer when they actually run.
+        if ($this->app->container()->has(Mailer::class)) {
+            $c = $this->app->container();
+
+            $this->register(new MailTestCommand($c));
+            $this->register(new MailLogsCommand($c));
+            $this->register(new MailPruneCommand($c));
+        }
+
         if ($this->app->container()->has(Settings::class)) {
             /** @var Settings $settings */
             $settings = $this->app->get(Settings::class);
 
             $this->register(new SettingsGetCommand($settings));
             $this->register(new SettingsSetCommand($settings));
+
+            if ($this->app->container()->has(SettingsRegistry::class)) {
+                /** @var SettingsRegistry $registry */
+                $registry = $this->app->get(SettingsRegistry::class);
+
+                $this->register(new SettingsListCommand($registry, $settings));
+            }
         }
 
         if ($this->app->container()->has(Installer::class)) {

@@ -55,7 +55,7 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
             <span>&middot;</span>
             <a href="<?= $leadAuthor['url'] ?>"><?= $leadAuthor['name'] ?></a>
             <span>&middot;</span>
-            <span><?= $lead->readingTime() ?> min de lecture</span>
+            <span><?= $lead->readingTime() ?> <?= $site->e($site->t('site.aurora.front.min_lecture')) ?></span>
           </div>
         </div>
       </article>
@@ -78,8 +78,8 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
           </div>
         <?php elseif ($lead === null): ?>
           <section class="aurora-empty">
-            <h2>Bienvenue sur <?= $site->name() ?></h2>
-            <p>Aucun article n'a encore été publié. Créez votre premier contenu depuis l'administration.</p>
+            <h2><?= $site->t('site.front.welcome', ['name' => $site->e($site->name())]) ?></h2>
+            <p><?= $site->e($site->t('site.aurora.front.aucun_article_encore_ete_publie')) ?></p>
           </section>
         <?php endif; ?>
 
@@ -87,7 +87,7 @@ $showSidebar = (bool) $site->rawOption('show_sidebar', true) && $site->hasZone('
       </div>
 
       <?php if ($showSidebar): ?>
-        <aside class="aurora-sidebar" aria-label="Barre latérale">
+        <aside class="aurora-sidebar" aria-label="<?= t('site.attr.barre_laterale') ?>">
           <?= $site->zone('sidebar') ?>
         </aside>
       <?php endif; ?>

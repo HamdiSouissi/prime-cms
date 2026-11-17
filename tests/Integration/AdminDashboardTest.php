@@ -65,13 +65,16 @@ final class AdminDashboardTest extends TestCase
             '/admin/roles',
             '/admin/roles/create',
             '/admin/profile',
-            '/admin/settings',
             '/admin/settings/general',
+            '/admin/settings/security',
+            '/admin/settings/emails',
+            '/admin/tools/scheduler',
+            '/admin/tools/queue',
+            '/admin/tools/system',
             '/admin/settings/reading',
             '/admin/settings/permalinks',
             '/admin/settings/seo',
-            '/admin/settings/security',
-            '/admin/settings/emails',
+            '/admin/settings/performance',
         ];
 
         foreach ($paths as $path) {
@@ -168,7 +171,7 @@ final class AdminDashboardTest extends TestCase
         $body = $response->body();
 
         $this->assertSame(200, $response->status());
-        $this->assertStringContainsString('<html lang="fr">', $body);
+        $this->assertStringContainsString('<html lang="fr" dir="ltr">', $body);
         $this->assertStringContainsString('href="#content">Aller au contenu</a>', $body);
         $this->assertStringContainsString('aria-label="Navigation principale"', $body);
         $this->assertStringContainsString('<header class="pc-topbar">', $body);
@@ -179,6 +182,10 @@ final class AdminDashboardTest extends TestCase
         $this->assertStringContainsString('id="prime-command-palette"', $body);
         $this->assertStringContainsString('Bonjour, Camille Admin', $body);
         $this->assertStringContainsString('action="/admin/logout"', $body);
+        // The JS translation catalogue is embedded as inert JSON (strict CSP, no extra request).
+        $this->assertStringContainsString('type="application/json" data-prime-translations', $body);
+        $this->assertStringContainsString('"core.actions.save"', $body);
+        $this->assertStringContainsString('"locale":"fr"', $body);
 
         // Zero external HTTP(S) asset requests (no CDN fonts/scripts/stylesheets)
         $this->assertSame(
@@ -235,13 +242,13 @@ final class AdminDashboardTest extends TestCase
         /** @var Kernel $kernel */
         $kernel = $app->get(Kernel::class);
 
-        $response = $kernel->handle(Request::create('GET', '/admin/settings/security'));
+        $response = $kernel->handle(Request::create('GET', '/admin/settings/performance'));
         $body = $response->body();
 
         $this->assertSame(200, $response->status());
         $this->assertStringContainsString('id="pc-submenu-settings"', $body);
         $this->assertStringNotContainsString('id="pc-submenu-settings" hidden', $body);
-        $this->assertStringContainsString('href="/admin/settings/security"', $body);
+        $this->assertStringContainsString('href="/admin/settings/performance"', $body);
         $this->assertStringContainsString('pc-sidebar__sublink--active', $body);
     }
 
@@ -310,22 +317,10 @@ final class AdminDashboardTest extends TestCase
         /** @var Kernel $kernel */
         $kernel = $app->get(Kernel::class);
 
-        $expectedPhases = [
-            '/admin/settings' => 'Phase 9',
-            '/admin/settings/general' => 'Phase 9',
-            '/admin/settings/security' => 'Phase 9',
-            '/admin/settings/emails' => 'Phase 9',
-        ];
-
-        foreach ($expectedPhases as $path => $expectedPhase) {
-            $response = $kernel->handle(Request::create('GET', $path));
-            $this->assertSame(200, $response->status(), sprintf('Expected 200 for %s.', $path));
-            $this->assertStringContainsString(
-                $expectedPhase,
-                $response->body(),
-                sprintf('Expected %s to announce %s.', $path, $expectedPhase),
-            );
-        }
+        // Phase 9: `/admin/settings` lands on the first registry-driven screen.
+        $hub = $kernel->handle(Request::create('GET', '/admin/settings'));
+        $this->assertSame(302, $hub->status());
+        $this->assertSame('/admin/settings/general', $hub->header('Location'));
 
         // Phase 8 real Appearance & Site Settings UI screens
         $this->assertStringContainsString('Aurora', $kernel->handle(Request::create('GET', '/admin/appearance/themes'))->body());
@@ -335,6 +330,7 @@ final class AdminDashboardTest extends TestCase
         $this->assertStringContainsString('Lecture', $kernel->handle(Request::create('GET', '/admin/settings/reading'))->body());
         $this->assertStringContainsString('Permaliens', $kernel->handle(Request::create('GET', '/admin/settings/permalinks'))->body());
         $this->assertStringContainsString('Référencement', $kernel->handle(Request::create('GET', '/admin/settings/seo'))->body());
+        $this->assertStringContainsString('Performance', $kernel->handle(Request::create('GET', '/admin/settings/performance'))->body());
 
         // Styleguide row actions reflect Phase 6 editing and accurate demo duplicate text.
         $styleguideBody = $kernel->handle(Request::create('GET', '/admin/styleguide'))->body();
@@ -482,6 +478,7 @@ final class AdminDashboardTest extends TestCase
         $pdo->exec('CREATE TABLE pc_password_resets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, token_hash CHAR(64) UNIQUE, expires_at DATETIME, used_at DATETIME NULL, created_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_rate_limits (key CHAR(64) PRIMARY KEY, hits INTEGER DEFAULT 0, reset_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_entries (id INTEGER PRIMARY KEY AUTOINCREMENT, type VARCHAR(40), status VARCHAR(20), title VARCHAR(255), slug VARCHAR(191), excerpt TEXT NULL, content LONGTEXT, content_html LONGTEXT, content_text LONGTEXT, author_id INTEGER NULL, parent_id INTEGER DEFAULT 0, menu_order INTEGER DEFAULT 0, template VARCHAR(100) NULL, published_at DATETIME NULL, previous_status VARCHAR(20) NULL, trashed_at DATETIME NULL, created_at DATETIME, updated_at DATETIME)');
+        $pdo->exec("CREATE TABLE pc_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, queue VARCHAR(64) DEFAULT 'default', handler VARCHAR(191), payload TEXT, attempts INTEGER DEFAULT 0, max_attempts INTEGER DEFAULT 3, available_at DATETIME, reserved_at DATETIME NULL, failed_at DATETIME NULL, last_error TEXT NULL, created_at DATETIME)");
         $pdo->exec('CREATE TABLE pc_entry_meta (id INTEGER PRIMARY KEY AUTOINCREMENT, entry_id INTEGER, meta_key VARCHAR(191), meta_value LONGTEXT)');
         $pdo->exec('CREATE TABLE pc_terms (id INTEGER PRIMARY KEY AUTOINCREMENT, taxonomy VARCHAR(40), name VARCHAR(191), slug VARCHAR(191), description TEXT NULL, parent_id INTEGER DEFAULT 0, menu_order INTEGER DEFAULT 0, count INTEGER DEFAULT 0, created_at DATETIME, updated_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_term_relationships (entry_id INTEGER, term_id INTEGER, term_order INTEGER DEFAULT 0, PRIMARY KEY (entry_id, term_id))');

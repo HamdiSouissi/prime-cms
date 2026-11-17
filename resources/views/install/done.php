@@ -26,35 +26,35 @@ $envWritten = (bool) ($completion['env_written'] ?? true);
     </span>
 
     <div class="pc-install__header">
-        <h1 class="pc-install__title">Prime CMS est installé !</h1>
+        <h1 class="pc-install__title"><?= $this->e($this->t('core.install.done.prime_cms_installe')) ?></h1>
         <p class="pc-install__lead">
-            Le site <strong><?= $this->e($siteName) ?></strong> est prêt. Les tables de la base de données,
-            les réglages initiaux et le compte administrateur ont été créés, et l'assistant d'installation est désormais verrouillé.
+            <?= $this->raw($this->t('core.install.done.site_pret', ['site' => '<strong>' . $this->e($siteName) . '</strong>'])) ?>
+            <?= $this->e($this->t('core.install.done.reglages_initiaux_compte_administrateur_ont')) ?>
         </p>
     </div>
 
     <?= $this->raw($this->insert('admin::components/alert', [
         'variant' => 'info',
-        'title' => 'Accès au tableau de bord',
-        'message' => 'Votre compte administrateur est prêt. Cliquez ci-dessous pour vous connecter à l\'espace d\'administration.',
+        'title' => $this->t('core.install.view.done_title'),
+        'message' => $this->t('core.install.view.done_message'),
     ])) ?>
 
     <?php if (!$envWritten): ?>
         <?= $this->raw($this->insert('admin::components/alert', [
             'variant' => 'warning',
-            'title' => 'Rappel de sécurité',
-            'message' => 'Pensez à restreindre les permissions de votre fichier .env créé manuellement (chmod 640 .env) afin qu\'il ne soit pas lisible par d\'autres utilisateurs du serveur.',
+            'title' => $this->t('core.install.view.security_reminder'),
+            'message' => $this->t('core.install.view.security_reminder_message'),
         ])) ?>
     <?php endif; ?>
 
     <div class="pc-install-done__actions">
         <a href="/" class="pc-btn pc-btn--primary">
             <?= $this->raw($this->icon('home', 16)) ?>
-            <span>Voir le site</span>
+            <span><?= $this->e($this->t('core.install.done.voir_site')) ?></span>
         </a>
         <a href="/admin/login" class="pc-btn pc-btn--secondary">
             <?= $this->raw($this->icon('layout-dashboard', 16)) ?>
-            <span>Ouvrir le tableau de bord</span>
+            <span><?= $this->e($this->t('core.install.done.ouvrir_tableau_bord')) ?></span>
         </a>
     </div>
 </div>

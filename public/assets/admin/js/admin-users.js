@@ -4,6 +4,7 @@
  */
 
 import { showToast } from './toast.js';
+import { tr } from './i18n.js';
 
 function slugify(value) {
   return value
@@ -52,7 +53,7 @@ function initCapabilityGroupToggles() {
 
     const syncLabel = () => {
       const allChecked = checkboxes.every((cb) => cb instanceof HTMLInputElement && cb.checked);
-      toggleBtn.textContent = allChecked ? 'Tout décocher' : 'Tout cocher';
+      toggleBtn.textContent = allChecked ? tr('admin.js.admin-users.tout_decocher', 'Tout décocher') : tr('admin.js.admin-users.check_all', 'Tout cocher');
     };
 
     toggleBtn.addEventListener('click', () => {
@@ -97,14 +98,14 @@ function initCopyAndDownload() {
     const copyBtn = target.closest('[data-prime-copy-text]');
     if (copyBtn instanceof HTMLElement) {
       const text = copyBtn.getAttribute('data-prime-copy-text') || '';
-      const feedback = copyBtn.getAttribute('data-prime-copy-feedback') || 'Copié dans le presse-papiers.';
+      const feedback = copyBtn.getAttribute('data-prime-copy-feedback') || tr('admin.js.admin-users.copie_dans_le_presse_papiers', 'Copié dans le presse-papiers.');
       try {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
           await navigator.clipboard.writeText(text);
           showToast(feedback, 'success');
         }
       } catch {
-        showToast('Impossible de copier automatiquement. Copiez la sélection manuellement.', 'warning');
+        showToast(tr('admin.js.admin-users.impossible_de_copier_automatiquement_copiez', 'Impossible de copier automatiquement. Copiez la sélection manuellement.'), 'warning');
       }
       return;
     }
@@ -145,7 +146,7 @@ function initConfirmForms() {
       if (select instanceof HTMLSelectElement && select.value === 'delete') {
         const confirmMsg = checkedCount > 1
           ? `Supprimer définitivement ${checkedCount} utilisateurs sélectionnés ?`
-          : 'Supprimer définitivement 1 utilisateur sélectionné ?';
+          : tr('admin.js.admin-users.supprimer_definitivement_1_utilisateur_selectionne', 'Supprimer définitivement 1 utilisateur sélectionné ?');
         if (!window.confirm(confirmMsg)) {
           event.preventDefault();
         }
@@ -167,7 +168,7 @@ function initAdminPasswordStrength() {
       const val = input.value;
       if (!val) {
         meter.setAttribute('data-prime-level', '0');
-        labelEl.textContent = 'Minimum 12 caractères (majuscules, chiffres et symboles recommandés).';
+        labelEl.textContent = tr('admin.js.admin-users.password_min', 'Minimum 12 caractères (majuscules, chiffres et symboles recommandés).');
         return;
       }
 
@@ -185,13 +186,13 @@ function initAdminPasswordStrength() {
 
       if (val.length >= 16 && variety >= 3) {
         meter.setAttribute('data-prime-level', '4');
-        labelEl.textContent = 'Robuste — excellente résistance aux attaques.';
+        labelEl.textContent = tr('admin.js.admin-users.strength_strong', 'Robuste — excellente résistance aux attaques.');
       } else if (variety >= 3) {
         meter.setAttribute('data-prime-level', '3');
-        labelEl.textContent = 'Bon — ajoutez encore quelques caractères ou symboles.';
+        labelEl.textContent = tr('admin.js.admin-users.strength_good', 'Bon — ajoutez encore quelques caractères ou symboles.');
       } else {
         meter.setAttribute('data-prime-level', '2');
-        labelEl.textContent = 'Moyen — combinez majuscules, chiffres et symboles.';
+        labelEl.textContent = tr('admin.js.admin-users.strength_medium', 'Moyen — combinez majuscules, chiffres et symboles.');
       }
     };
 

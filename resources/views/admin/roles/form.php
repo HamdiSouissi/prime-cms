@@ -23,13 +23,13 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => $isCreate ? 'Créer un rôle' : ($isReadOnly ? 'Rôle Administrateur (lecture seule)' : 'Modifier le rôle : ' . $old['name']),
+    'title' => $isCreate ? $this->t('admin.view_roles_form.creer_un_role') : ($isReadOnly ? $this->t('admin.view_roles_form.role_administrateur_lecture_seule') : $this->t('admin.roles.edit_title', ['name' => $old['name']])),
     'subtitle' => $isReadOnly
-        ? 'Le rôle Administrateur possède automatiquement l\'ensemble des permissions présentes et futures.'
-        : 'Configurez l\'identité du rôle et cochez précisément les permissions accordées.',
+        ? $this->t('admin.view_roles_form.le_role_administrateur_possede_automatiquement_l_ensemble_de')
+        : $this->t('admin.view_roles_form.configurez_l_identite_du_role_et_cochez_precisement_les_perm'),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $this->insert('admin::components/button', [
-        'label' => 'Retour aux rôles',
+        'label' => $this->t('admin.view_roles_form.retour_aux_roles'),
         'variant' => 'secondary',
         'href' => '/admin/roles',
     ]),
@@ -39,8 +39,8 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
     <?php if ($isReadOnly): ?>
         <?= $this->raw($this->insert('admin::components/alert', [
             'variant' => 'info',
-            'title' => 'Rôle protégé en lecture seule',
-            'message' => 'Le rôle Administrateur détient le privilège universel (*) afin d\'empêcher tout verrouillage accidentel du site. Il ne peut ni être modifié ni supprimé.',
+            'title' => $this->t('admin.view_roles_form.role_protege_en_lecture_seule'),
+            'message' => $this->t('admin.view_roles_form.le_role_administrateur_detient_le_privilege_universel_afin_d'),
         ])) ?>
     <?php endif; ?>
 
@@ -52,7 +52,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
             <div class="pc-grid pc-grid--2">
                 <div class="pc-field<?= isset($errors['name']) ? ' pc-field--error' : '' ?>">
                     <label class="pc-field__label" for="role-name">
-                        <span>Nom du rôle</span>
+                        <span><?= $this->e($this->t('admin.roles.form.nom_role')) ?></span>
                         <span class="pc-field__required" aria-hidden="true">*</span>
                     </label>
                     <input
@@ -61,7 +61,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
                         name="name"
                         class="pc-input"
                         value="<?= $this->e($old['name']) ?>"
-                        placeholder="Ex. Modérateur"
+                        placeholder="<?= $this->e($this->t('admin.roles.form.ex_moderateur')) ?>"
                         <?= $isCreate ? 'data-prime-slug-source="role-slug"' : '' ?>
                         <?= $isReadOnly ? 'disabled' : 'required' ?>
                     >
@@ -80,8 +80,8 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
                     'required' => $isCreate,
                     'disabled' => !$isCreate,
                     'help' => $isCreate
-                        ? 'Généré automatiquement depuis le nom (lettres minuscules, chiffres et tirets).'
-                        : 'L\'identifiant d\'un rôle existant ne peut plus être modifié.',
+                        ? $this->t('admin.view_roles_form.genere_automatiquement_depuis_le_nom_lettres_minuscules_chif')
+                        : $this->t('admin.view_roles_form.l_identifiant_d_un_role_existant_ne_peut_plus_etre_modifie'),
                     'error' => $errors['slug'] ?? null,
                 ])) ?>
             </div>
@@ -92,7 +92,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
                 'label' => 'Description',
                 'type' => 'textarea',
                 'value' => $old['description'],
-                'placeholder' => 'Décrivez le périmètre et les responsabilités de ce rôle…',
+                'placeholder' => $this->t('admin.view_roles_form.decrivez_le_perimetre_et_les_responsabilites_de_ce_role'),
                 'disabled' => $isReadOnly,
                 'error' => $errors['description'] ?? null,
             ])) ?>
@@ -101,7 +101,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
 
         <div class="pc-form-wide">
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Identité du rôle',
+                'title' => $this->t('admin.view_roles_form.identite_du_role'),
                 'body' => $metaBody,
             ])) ?>
         </div>
@@ -119,7 +119,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
                                 class="pc-auth-link-btn"
                                 data-prime-cap-group-toggle="<?= $this->e($groupId) ?>"
                             >
-                                Tout cocher
+                                <?= t('admin.roles.select_all') ?>
                             </button>
                         <?php endif; ?>
                     </header>
@@ -147,12 +147,12 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
         <?php $matrixBody = (string) ob_get_clean(); ?>
 
         <?= $this->raw($this->insert('admin::components/card', [
-            'title' => 'Matrice des permissions',
-            'subtitle' => 'Permissions groupées par domaine fonctionnel.',
+            'title' => $this->t('admin.roles.matrix'),
+            'subtitle' => $this->t('admin.view_roles_form.permissions_groupees_par_domaine_fonctionnel'),
             'body' => $matrixBody,
             'footer' => $isReadOnly
-                ? '<a href="/admin/roles" class="pc-btn pc-btn--secondary">Retour à la liste</a>'
-                : '<a href="/admin/roles" class="pc-btn pc-btn--ghost">Annuler</a><button type="submit" class="pc-btn pc-btn--primary">' . ($isCreate ? 'Créer le rôle' : 'Enregistrer les permissions') . '</button>',
+                ? '<a href="/admin/roles" class="pc-btn pc-btn--secondary">' . $this->e($this->t('admin.actions.back_to_list')) . '</a>'
+                : '<a href="/admin/roles" class="pc-btn pc-btn--ghost">' . $this->e($this->t('core.actions.cancel')) . '</a><button type="submit" class="pc-btn pc-btn--primary">' . ($isCreate ? $this->t('admin.view_roles_form.creer_le_role') : $this->t('admin.roles.save_permissions')) . '</button>',
         ])) ?>
     </form>
 </div>

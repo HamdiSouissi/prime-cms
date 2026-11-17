@@ -6,6 +6,7 @@ namespace Prime\Site\Seo;
 
 use Prime\Content\Entry;
 use Prime\Hooks\Hooks;
+use Prime\I18n\Translator;
 use Prime\Media\MediaRepository;
 use Prime\Settings\Settings;
 use Prime\Site\PageContext;
@@ -27,12 +28,41 @@ final class SeoManager
         private readonly ?MediaRepository $media = null,
         private readonly ?ThemeOptions $themeOptions = null,
         private readonly ?Hooks $hooks = null,
+        private readonly ?Translator $translator = null,
     ) {
+    }
+
+    /**
+     * Translate a `site.*` catalogue key, falling back to the bound translator.
+     *
+     * @param array<string, string|int|float> $replace
+     */
+    private function t(string $key, array $replace = []): string
+    {
+        $translator = $this->translator ?? Translator::fallback();
+
+        return $translator->translate($key, $replace);
     }
 
     /**
      * Compute the document `<title>` for `$context` and run the `seo.title` filter.
      */
+    /**
+     * Open Graph locale (`en_US`, `fr_FR`) derived from the active language.
+     */
+    private function ogLocale(): string
+    {
+        $locale = str_replace('-', '_', ($this->translator ?? Translator::fallback())->locale());
+        if (str_contains($locale, '_')) {
+            return $locale;
+        }
+
+        // Open Graph wants `language_TERRITORY`; the shared default region keeps tags valid.
+        $region = ['en' => 'US', 'fr' => 'FR', 'es' => 'ES', 'de' => 'DE', 'it' => 'IT', 'pt' => 'PT'];
+
+        return $locale . '_' . ($region[$locale] ?? strtoupper($locale));
+    }
+
     public function title(PageContext $context): string
     {
         $siteName = $this->siteName();
@@ -41,19 +71,19 @@ final class SeoManager
 
         $rawTitle = match ($context->type) {
             PageContext::TYPE_FRONT => $this->frontTitle($context, $siteName, $tagline, $sep),
-            PageContext::TYPE_BLOG => $this->formatTitle($context->entry !== null ? $context->entry->title : 'Blog', $siteName, $sep),
+            PageContext::TYPE_BLOG => $this->formatTitle($context->entry !== null ? $context->entry->title : $this->t('site.blog.title'), $siteName, $sep),
             PageContext::TYPE_ENTRY => $this->entryTitle($context->entry, $siteName, $sep),
-            PageContext::TYPE_ARCHIVE => $this->formatTitle($context->contentType !== null ? $context->contentType->label('plural') : 'Archives', $siteName, $sep),
-            PageContext::TYPE_TERM => $this->formatTitle($context->term !== null ? $context->term->name : 'Archive', $siteName, $sep),
-            PageContext::TYPE_AUTHOR => $this->formatTitle($context->author !== null ? $context->author->displayName : 'Auteur', $siteName, $sep),
+            PageContext::TYPE_ARCHIVE => $this->formatTitle($context->contentType !== null ? $context->contentType->label('plural') : $this->t('site.archive.title'), $siteName, $sep),
+            PageContext::TYPE_TERM => $this->formatTitle($context->term !== null ? $context->term->name : $this->t('site.archive.title'), $siteName, $sep),
+            PageContext::TYPE_AUTHOR => $this->formatTitle($context->author !== null ? $context->author->displayName : $this->t('site.archive.author'), $siteName, $sep),
             PageContext::TYPE_SEARCH => $this->formatTitle(
                 $context->searchQuery !== null && $context->searchQuery !== ''
-                    ? sprintf('Recherche : %s', $context->searchQuery)
-                    : 'Recherche',
+                    ? $this->t('site.search.title_with_query', ['query' => $context->searchQuery])
+                    : $this->t('site.search.title'),
                 $siteName,
                 $sep,
             ),
-            default => $this->formatTitle('Page introuvable', $siteName, $sep),
+            default => $this->formatTitle($this->t('site.error.not_found_title'), $siteName, $sep),
         };
 
         if ($context->page > 1) {
@@ -183,7 +213,7 @@ final class SeoManager
             'og:type' => $ogType,
             'og:url' => $canonical,
             'og:site_name' => $this->siteName(),
-            'og:locale' => 'fr_FR',
+            'og:locale' => $this->ogLocale(),
             'og:image' => $imageUrl,
             'twitter:card' => $imageUrl !== null ? 'summary_large_image' : 'summary',
             'twitter:title' => $title,

@@ -11,6 +11,7 @@ use Prime\Editor\BlockRegistry;
 use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
+use Prime\Jobs\JobQueue;
 use Prime\Kernel\ServiceProvider;
 use Prime\Media\MediaRepository;
 use Prime\Media\MediaUsageRepository;
@@ -138,10 +139,10 @@ final class ContentServiceProvider extends ServiceProvider
             $router = $c->has(Router::class) ? $c->get(Router::class) : null;
 
             $revisionsMax = (int) $app->config()->get('content.revisions_max', 25);
-            $interval = (int) $app->config()->get('content.scheduler_interval_seconds', 60);
             $mediaUsage = $c->has(MediaUsageRepository::class) ? $c->get(MediaUsageRepository::class) : null;
             $fields = $c->has(FieldRegistry::class) ? $c->get(FieldRegistry::class) : null;
             $media = $c->has(MediaRepository::class) ? $c->get(MediaRepository::class) : null;
+            $queue = $c->has(JobQueue::class) ? $c->get(JobQueue::class) : null;
 
             return new EntryService(
                 entries: $entries,
@@ -155,8 +156,7 @@ final class ContentServiceProvider extends ServiceProvider
                 hooks: $hooks,
                 router: $router instanceof Router ? $router : null,
                 revisionsMax: max(0, $revisionsMax),
-                schedulerStampPath: $app->storagePath('cache/content_scheduler.ts'),
-                schedulerIntervalSeconds: max(10, $interval),
+                queue: $queue instanceof JobQueue ? $queue : null,
                 mediaUsage: $mediaUsage instanceof MediaUsageRepository ? $mediaUsage : null,
                 fields: $fields instanceof FieldRegistry ? $fields : null,
                 media: $media instanceof MediaRepository ? $media : null,

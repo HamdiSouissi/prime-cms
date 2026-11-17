@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Admin\Controller;
 
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Content\Exception\ContentException;
 use Prime\Content\Taxonomy;
 use Prime\Content\TaxonomyRegistry;
@@ -20,6 +21,8 @@ use Prime\View\View;
  */
 final class TaxonomyController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly View $view,
         private readonly AdminContext $context,
@@ -90,7 +93,7 @@ final class TaxonomyController
             }
 
             $this->context->flashToast(
-                sprintf('« %s » a été ajouté à %s.', $term->name, $tax->label('plural')),
+                sprintf($this->t('admin.ctrl_text_taxonomy.s_a_ete_ajoute_a_s'), $term->name, $tax->label('plural')),
                 'success',
             );
         } catch (ContentException $exception) {
@@ -98,7 +101,7 @@ final class TaxonomyController
                 return Response::json(['ok' => false, 'message' => $exception->getMessage()], 422);
             }
 
-            $this->context->flashToast($exception->getMessage(), 'danger', 'Création impossible');
+            $this->context->flashToast($exception->getMessage(), 'danger', $this->t('admin.ctrl_text_taxonomy.creation_impossible'));
         }
 
         return Response::redirect($tax->adminUrl());
@@ -137,9 +140,9 @@ final class TaxonomyController
                 description: $description !== '' ? $description : null,
                 parentId: $parentId,
             );
-            $this->context->flashToast(sprintf('« %s » a été mis à jour.', $updated->name), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_taxonomy.s_a_ete_mis_a_jour'), $updated->name), 'success');
         } catch (ContentException $exception) {
-            $this->context->flashToast($exception->getMessage(), 'danger', 'Mise à jour impossible');
+            $this->context->flashToast($exception->getMessage(), 'danger', $this->t('admin.ctrl_text_taxonomy.mise_a_jour_impossible'));
 
             return Response::redirect(sprintf('%s/%d/edit', $tax->adminUrl(), $term->id));
         }
@@ -157,7 +160,7 @@ final class TaxonomyController
 
         try {
             $this->terms->delete($term->id);
-            $this->context->flashToast(sprintf('« %s » a été supprimé.', $term->name), 'info');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_taxonomy.s_a_ete_supprime'), $term->name), 'info');
         } catch (ContentException $exception) {
             $this->context->flashToast($exception->getMessage(), 'danger', 'Suppression impossible');
         }
@@ -187,7 +190,7 @@ final class TaxonomyController
             'search' => $search,
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
+                ['label' => $this->t('admin.ctrl_text_taxonomy.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $tax->label('plural'), 'url' => null],
             ],
         ]));

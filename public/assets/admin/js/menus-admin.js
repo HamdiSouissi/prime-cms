@@ -6,6 +6,7 @@
  */
 
 import { showToast } from './toast.js';
+import { tr } from './i18n.js';
 
 export const MAX_MENU_DEPTH = 2; // 0 = root, 1 = child, 2 = grandchild (3 levels max)
 
@@ -129,13 +130,14 @@ export function normalizeDepths(flat) {
   return out;
 }
 
-const TYPE_LABELS = {
-  entry: 'Contenu',
-  term: 'Taxonomie',
-  archive: 'Archive',
-  url: 'Lien',
-  custom: 'Lien',
-};
+// Resolved lazily: this module is imported before `initTranslations()` populates the catalogue.
+const typeLabels = () => ({
+  entry: tr('admin.js.menus-admin.type_contenu', 'Contenu'),
+  term: tr('admin.js.menus-admin.type_taxonomie', 'Taxonomie'),
+  archive: tr('admin.js.menus-admin.type_archive', 'Archive'),
+  url: tr('admin.js.menus-admin.lien', 'Lien'),
+  custom: tr('admin.js.menus-admin.lien', 'Lien'),
+});
 
 export function initMenusAdmin() {
   const form = document.querySelector('[data-prime-menu-editor]');
@@ -225,11 +227,12 @@ export function initMenusAdmin() {
       handle.textContent = '⋮⋮';
 
       const labelSpan = document.createElement('strong');
-      labelSpan.textContent = item.label || 'Lien';
+      labelSpan.textContent = item.label || tr('admin.js.menus-admin.lien', 'Lien');
 
       const badge = document.createElement('span');
       badge.className = 'pc-badge pc-badge--neutral';
-      badge.textContent = TYPE_LABELS[item.type] || item.type;
+      const labels = typeLabels();
+      badge.textContent = labels[item.type] || item.type;
 
       titleWrap.append(handle, labelSpan, badge);
 
@@ -262,22 +265,22 @@ export function initMenusAdmin() {
           dirty = true;
           render();
         }),
-        mkBtn('←', 'Désindenter', !canOutdent, () => {
+        mkBtn('←', tr('admin.js.menus-admin.desindenter', 'Désindenter'), !canOutdent, () => {
           items = outdentMenuItem(items, idx);
           dirty = true;
           render();
         }),
-        mkBtn('→', 'Indenter (sous-menu)', !canIndent, () => {
+        mkBtn('→', tr('admin.js.menus-admin.indenter_sous_menu', 'Indenter (sous-menu)'), !canIndent, () => {
           items = indentMenuItem(items, idx);
           dirty = true;
           render();
         }),
       );
 
-      const toggleBtn = mkBtn('Éditer', 'Modifier les détails', false, () => {
+      const toggleBtn = mkBtn(tr('admin.js.menus-admin.editer', 'Éditer'), tr('admin.js.menus-admin.modifier_les_details', 'Modifier les détails'), false, () => {
         details.hidden = !details.hidden;
       });
-      const delBtn = mkBtn('×', 'Retirer du menu', false, () => {
+      const delBtn = mkBtn('×', tr('admin.js.menus-admin.remove', 'Retirer du menu'), false, () => {
         items.splice(idx, 1);
         items = normalizeDepths(items);
         dirty = true;
@@ -297,14 +300,14 @@ export function initMenusAdmin() {
       labelField.className = 'pc-field';
       const labelL = document.createElement('label');
       labelL.className = 'pc-label';
-      labelL.textContent = 'Libellé affiché';
+      labelL.textContent = tr('admin.js.menus-admin.libelle_affiche', 'Libellé affiché');
       const labelIn = document.createElement('input');
       labelIn.type = 'text';
       labelIn.className = 'pc-input';
       labelIn.value = item.label;
       labelIn.addEventListener('input', () => {
         item.label = labelIn.value;
-        labelSpan.textContent = item.label || 'Lien';
+        labelSpan.textContent = item.label || tr('admin.js.menus-admin.lien', 'Lien');
         dirty = true;
         syncHidden();
       });
@@ -390,7 +393,7 @@ export function initMenusAdmin() {
           return;
         }
         const type = cb.dataset.primeMenuSource || 'custom';
-        const label = cb.dataset.primeSourceLabel || 'Lien';
+        const label = cb.dataset.primeSourceLabel || tr('admin.js.menus-admin.link', 'Lien');
         const targetId = cb.dataset.primeSourceId ? Number(cb.dataset.primeSourceId) : null;
         const url = cb.dataset.primeSourceUrl || '';
         items.push({
@@ -422,7 +425,7 @@ export function initMenusAdmin() {
       const label = labelEl instanceof HTMLInputElement ? labelEl.value.trim() : '';
       const url = urlEl instanceof HTMLInputElement ? urlEl.value.trim() : '';
       if (!label || !url) {
-        showToast('Veuillez saisir un libellé et une URL.', 'warning');
+        showToast(tr('admin.js.menus-admin.veuillez_saisir_un_libelle_et', 'Veuillez saisir un libellé et une URL.'), 'warning');
         return;
       }
       items.push({

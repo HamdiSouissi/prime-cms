@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Prime\Site\View;
 
+use DateTimeInterface;
 use Prime\Content\EntryQuery;
 use Prime\Hooks\Hooks;
+use Prime\I18n\LocaleFormatter;
+use Prime\I18n\Translator;
+use Prime\Kernel\Application;
 use Prime\Media\MediaHelper;
 use Prime\Media\MediaRepository;
 use Prime\Settings\Settings;
@@ -536,6 +540,71 @@ final class SiteView
     public function e(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /**
+     * Translate a `group.key` string in the language the page is rendered in.
+     *
+     * @param array<string|int, mixed> $replace
+     */
+    public function t(string $key, array $replace = [], ?string $locale = null): string
+    {
+        return Translator::fallback()->translate($key, $replace, $locale);
+    }
+
+    /**
+     * Translate a plural key (`'{0} Aucun|{1} Un|[2,*] :count éléments'`).
+     *
+     * @param array<string|int, mixed> $replace
+     */
+    public function choice(string $key, int|float $number, array $replace = [], ?string $locale = null): string
+    {
+        return Translator::fallback()->choice($key, $number, $replace, $locale);
+    }
+
+    /**
+     * Locale code of the page being rendered (for `<html lang>`).
+     */
+    public function locale(): string
+    {
+        return Translator::fallback()->locale();
+    }
+
+    /**
+     * Text direction of the page locale (`ltr` / `rtl`).
+     */
+    public function direction(): string
+    {
+        return LocaleFormatter::fallback()->direction();
+    }
+
+    /**
+     * Localised date (`short`, `medium`, `long`, `full`, `dateTime`, `time`).
+     */
+    public function date(DateTimeInterface|int|string $date, string $preset = 'medium'): string
+    {
+        return $this->formatter()->date($date, $preset, $this->locale());
+    }
+
+    /**
+     * Localised number with the locale separators.
+     */
+    public function number(int|float $value, ?int $decimals = null): string
+    {
+        return $this->formatter()->number($value, $decimals, $this->locale());
+    }
+
+    /**
+     * Container formatter when available (keeps the site language & timezone of the request).
+     */
+    private function formatter(): LocaleFormatter
+    {
+        $application = Application::hasInstance() ? Application::getInstance() : null;
+        if ($application !== null && $application->container()->has(LocaleFormatter::class)) {
+            return $application->get(LocaleFormatter::class);
+        }
+
+        return LocaleFormatter::fallback();
     }
 
     /**

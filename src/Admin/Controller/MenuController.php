@@ -6,6 +6,7 @@ namespace Prime\Admin\Controller;
 
 use InvalidArgumentException;
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\EntryQuery;
 use Prime\Content\TermRepository;
@@ -20,6 +21,8 @@ use Prime\View\View;
  */
 final class MenuController
 {
+    use TranslatesAdminCopy;
+
     public function __construct(
         private readonly View $view,
         private readonly AdminContext $context,
@@ -57,7 +60,7 @@ final class MenuController
         $tags = $this->terms->allForTaxonomy('tag');
 
         $archives = [
-            ['type' => 'post', 'label' => 'Blog (tous les articles)'],
+            ['type' => 'post', 'label' => $this->t('admin.ctrl_text_menu.blog_tous_les_articles')],
         ];
         foreach ($this->types->all() as $ct) {
             if ($ct->public && !in_array($ct->name, ['page', 'post'], true)) {
@@ -67,7 +70,7 @@ final class MenuController
 
         $locations = $this->themes->menuLocations();
 
-        $html = $this->view->render('admin::appearance/menus', $this->context->build($request, 'Menus', [
+        $html = $this->view->render('admin::appearance/menus', $this->context->build($request, t('admin.nav.menus'), [
             'allMenus' => $allMenus,
             'currentMenu' => $currentMenu,
             'itemsTree' => $itemsTree,
@@ -80,9 +83,9 @@ final class MenuController
             'archives' => $archives,
             'primaryCtaInContent' => $currentMenu !== null,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Apparence', 'url' => '/admin/appearance/themes'],
-                ['label' => 'Menus', 'url' => null],
+                ['label' => $this->t('admin.ctrl_text_menu.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => t('admin.nav.appearance'), 'url' => '/admin/appearance/themes'],
+                ['label' => t('admin.nav.menus'), 'url' => null],
             ],
         ]));
 
@@ -101,7 +104,7 @@ final class MenuController
 
         try {
             $id = $this->menus->create($name, $location);
-            $this->context->flashToast(sprintf('Le menu « %s » a été créé.', $name), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_menu.le_menu_s_a_ete_cree'), $name), 'success');
 
             return Response::redirect('/admin/appearance/menus?menu=' . $id);
         } catch (InvalidArgumentException $e) {
@@ -167,12 +170,12 @@ final class MenuController
         if ($request->wantsJson()) {
             return Response::json([
                 'ok' => true,
-                'message' => 'Menu enregistré avec succès.',
+                'message' => $this->t('admin.ctrl_text_menu.menu_enregistre_avec_succes'),
                 'items' => $this->menus->itemsTree($menuId, forPublic: false),
             ]);
         }
 
-        $this->context->flashToast('Le menu a été enregistré.', 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_menu.le_menu_a_ete_enregistre'), 'success');
 
         return Response::redirect('/admin/appearance/menus?menu=' . $menuId);
     }
@@ -186,7 +189,7 @@ final class MenuController
         $menu = $this->menus->find($menuId);
         if ($menu !== null) {
             $this->menus->delete($menuId);
-            $this->context->flashToast(sprintf('Le menu « %s » a été supprimé.', $menu['name']), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_menu.le_menu_s_a_ete_supprime'), $menu['name']), 'success');
         }
 
         return Response::redirect('/admin/appearance/menus');

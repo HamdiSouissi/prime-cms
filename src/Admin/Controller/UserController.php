@@ -7,6 +7,7 @@ namespace Prime\Admin\Controller;
 use DateTimeImmutable;
 use DateTimeZone;
 use Prime\Admin\AdminContext;
+use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Auth\Exception\PolicyException;
 use Prime\Auth\PasswordResetService;
@@ -34,14 +35,12 @@ use Throwable;
  */
 final class UserController
 {
+    use TranslatesAdminCopy;
+
     /**
-     * @var array<string, string>
+     * @var list<string>
      */
-    private const LOCALE_OPTIONS = [
-        'fr' => 'Français (fr)',
-        'en' => 'English (en)',
-        'it' => 'Italiano (it)',
-    ];
+    private const LOCALE_OPTIONS = ['fr', 'en', 'it'];
 
     public function __construct(
         private readonly Application $app,
@@ -57,6 +56,21 @@ final class UserController
         private readonly PasswordPolicy $passwordPolicy,
         private readonly ?MediaRepository $media = null,
     ) {
+    }
+
+    /**
+     * Locale choices offered in the account forms, labelled in the interface language.
+     *
+     * @return array<string, string>
+     */
+    private function localeOptions(): array
+    {
+        $options = [];
+        foreach (self::LOCALE_OPTIONS as $code) {
+            $options[$code] = \Prime\I18n\LocaleFormatter::fallback()->localeName($code);
+        }
+
+        return $options;
     }
 
     public function index(Request $request): Response
@@ -84,7 +98,7 @@ final class UserController
         $relativeDates = [];
         $avatarMediaIds = [];
         foreach ($pagination['items'] as $item) {
-            $relativeDates[$item->id] = self::formatRelativeUtc($item->lastLoginAt);
+            $relativeDates[$item->id] = $this->formatRelativeUtc($item->lastLoginAt);
             if ($item->avatarMediaId !== null) {
                 $avatarMediaIds[$item->avatarMediaId] = true;
             }
@@ -103,7 +117,7 @@ final class UserController
             }
         }
 
-        $data = $this->context->build($request, 'Utilisateurs', [
+        $data = $this->context->build($request, $this->t('admin.shared.utilisateurs'), [
             'pagination' => $pagination,
             'avatarUrls' => $avatarUrls,
             'allRoles' => $allRoles,
@@ -121,8 +135,8 @@ final class UserController
             'canDelete' => $actor !== null && $actor->can('users.delete'),
             'canManageRoles' => $actor !== null && $actor->can('roles.manage'),
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Utilisateurs', 'url' => null],
+                ['label' => $this->t('admin.ctrl_text_user.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => $this->t('admin.shared.utilisateurs'), 'url' => null],
             ],
         ]);
 
@@ -134,9 +148,9 @@ final class UserController
         $actor = $this->requireActor($request);
         $assignableRoles = $this->assignableRolesFor($actor);
 
-        $data = $this->context->build($request, 'Ajouter un utilisateur', [
+        $data = $this->context->build($request, $this->t('admin.ctrl_text_user.ajouter_un_utilisateur'), [
             'assignableRoles' => $assignableRoles,
-            'localeOptions' => self::LOCALE_OPTIONS,
+            'localeOptions' => $this->localeOptions(),
             'old' => [
                 'display_name' => '',
                 'email' => '',
@@ -147,9 +161,9 @@ final class UserController
             ],
             'errors' => [],
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Utilisateurs', 'url' => '/admin/users'],
-                ['label' => 'Ajouter', 'url' => null],
+                ['label' => $this->t('admin.ctrl_text_user.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => $this->t('admin.shared.utilisateurs'), 'url' => '/admin/users'],
+                ['label' => t('admin.nav.add'), 'url' => null],
             ],
         ]);
 
@@ -190,11 +204,11 @@ final class UserController
             ],
             rules: $rules,
             labels: [
-                'display_name' => 'Nom affiché',
+                'display_name' => $this->t('admin.ctrl_text_user.nom_affiche'),
                 'email' => 'Adresse e-mail',
                 'locale' => 'Langue',
                 'status' => 'Statut',
-                'password' => 'Mot de passe',
+                'password' => $this->t('admin.ctrl_text_user.mot_de_passe'),
             ],
             connection: $this->connection,
             passwordPolicy: $this->passwordPolicy,
@@ -214,9 +228,9 @@ final class UserController
         }
 
         if ($errors !== []) {
-            $data = $this->context->build($request, 'Ajouter un utilisateur', [
+            $data = $this->context->build($request, $this->t('admin.ctrl_text_user.ajouter_un_utilisateur'), [
                 'assignableRoles' => $this->assignableRolesFor($actor),
-                'localeOptions' => self::LOCALE_OPTIONS,
+                'localeOptions' => $this->localeOptions(),
                 'old' => [
                     'display_name' => $displayName,
                     'email' => $email,
@@ -227,9 +241,9 @@ final class UserController
                 ],
                 'errors' => $errors,
                 'breadcrumbs' => [
-                    ['label' => 'Tableau de bord', 'url' => '/admin'],
-                    ['label' => 'Utilisateurs', 'url' => '/admin/users'],
-                    ['label' => 'Ajouter', 'url' => null],
+                    ['label' => $this->t('admin.ctrl_text_user.tableau_de_bord'), 'url' => '/admin'],
+                    ['label' => $this->t('admin.shared.utilisateurs'), 'url' => '/admin/users'],
+                    ['label' => t('admin.nav.add'), 'url' => null],
                 ],
             ]);
 
@@ -253,12 +267,12 @@ final class UserController
         if ($mode === 'invite') {
             $this->passwordResets->sendAdminResetOrInvite($created, $this->siteUrl(), $this->siteName(), isInvite: true);
             $this->context->flashToast(
-                sprintf('Utilisateur « %s » créé et lien d\'invitation (48h) envoyé par e-mail.', $created->displayName),
+                sprintf($this->t('admin.ctrl_text_user.utilisateur_s_cree_et_lien_d_invitation_48h_envoye_par_e_mai'), $created->displayName),
                 'success',
             );
         } else {
             $this->context->flashToast(
-                sprintf('Utilisateur « %s » créé avec succès.', $created->displayName),
+                sprintf($this->t('admin.ctrl_text_user.utilisateur_s_cree_avec_succes'), $created->displayName),
                 'success',
             );
         }
@@ -272,7 +286,7 @@ final class UserController
         $target = $this->findTargetOr404($id);
 
         if (!$actor->isAdministrator() && $target->isAdministrator()) {
-            throw new ForbiddenException('Seul un administrateur peut modifier le compte d\'un administrateur.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_user.seul_un_administrateur_peut_modifier_le_compte_d_un_administ'));
         }
 
         return Response::html($this->renderEditView($request, $actor, $target, [
@@ -290,7 +304,7 @@ final class UserController
         $target = $this->findTargetOr404($id);
 
         if (!$actor->isAdministrator() && $target->isAdministrator()) {
-            throw new ForbiddenException('Seul un administrateur peut modifier le compte d\'un administrateur.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_user.seul_un_administrateur_peut_modifier_le_compte_d_un_administ'));
         }
 
         $displayName = trim((string) $request->body('display_name', ''));
@@ -324,11 +338,11 @@ final class UserController
             ],
             rules: $rules,
             labels: [
-                'display_name' => 'Nom affiché',
+                'display_name' => $this->t('admin.ctrl_text_user.nom_affiche'),
                 'email' => 'Adresse e-mail',
                 'locale' => 'Langue',
                 'status' => 'Statut',
-                'password' => 'Nouveau mot de passe',
+                'password' => $this->t('admin.ctrl_text_user.nouveau_mot_de_passe'),
             ],
             connection: $this->connection,
             passwordPolicy: $this->passwordPolicy,
@@ -380,7 +394,7 @@ final class UserController
         }
 
         $this->auth->resetCache();
-        $this->context->flashToast(sprintf('Le compte de « %s » a été mis à jour.', $displayName), 'success');
+        $this->context->flashToast(sprintf($this->t('admin.ctrl_text_user.le_compte_de_s_a_ete_mis_a_jour'), $displayName), 'success');
 
         return Response::redirect('/admin/users/' . $target->id . '/edit', 302);
     }
@@ -401,13 +415,13 @@ final class UserController
 
             $this->users->updateFields($target->id, ['status' => User::STATUS_DISABLED]);
             $this->users->incrementSessionVersionAndRevokeTokens($target->id);
-            $this->context->flashToast(sprintf('Le compte « %s » a été désactivé.', $target->displayName), 'warning');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_user.le_compte_s_a_ete_desactive'), $target->displayName), 'warning');
         } else {
             if (!$actor->isAdministrator() && $target->isAdministrator()) {
-                throw new ForbiddenException('Seul un administrateur peut réactiver un administrateur.');
+                throw new ForbiddenException($this->t('admin.ctrl_text_user.seul_un_administrateur_peut_reactiver_un_administrateur'));
             }
             $this->users->updateFields($target->id, ['status' => User::STATUS_ACTIVE]);
-            $this->context->flashToast(sprintf('Le compte « %s » a été réactivé.', $target->displayName), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_user.le_compte_s_a_ete_reactive'), $target->displayName), 'success');
         }
 
         return Response::redirect('/admin/users', 302);
@@ -427,7 +441,7 @@ final class UserController
         }
 
         $this->users->delete($target->id);
-        $this->context->flashToast(sprintf('Le compte « %s » a été supprimé.', $target->displayName), 'success');
+        $this->context->flashToast(sprintf($this->t('admin.ctrl_text_user.le_compte_s_a_ete_supprime'), $target->displayName), 'success');
 
         return Response::redirect('/admin/users', 302);
     }
@@ -445,7 +459,7 @@ final class UserController
 
         $this->passwordResets->sendAdminResetOrInvite($target, $this->siteUrl(), $this->siteName(), isInvite: false);
         $this->context->flashToast(
-            sprintf('Un lien de réinitialisation de mot de passe a été envoyé à %s.', $target->email),
+            sprintf($this->t('admin.ctrl_text_user.un_lien_de_reinitialisation_de_mot_de_passe_a_ete_envoye_a_s'), $target->email),
             'success',
         );
 
@@ -469,7 +483,7 @@ final class UserController
         }
 
         $this->context->flashToast(
-            sprintf('Toutes les sessions de « %s » ont été révoquées.', $target->displayName),
+            sprintf($this->t('admin.ctrl_text_user.toutes_les_sessions_de_s_ont_ete_revoquees'), $target->displayName),
             'info',
         );
 
@@ -489,7 +503,7 @@ final class UserController
 
         $this->twoFactor->disable($target, $actor->id);
         $this->context->flashToast(
-            sprintf('La 2FA de « %s » a été réinitialisée.', $target->displayName),
+            sprintf($this->t('admin.ctrl_text_user.la_2fa_de_s_a_ete_reinitialisee'), $target->displayName),
             'warning',
         );
 
@@ -504,13 +518,13 @@ final class UserController
         $ids = $this->parseRoleIds($rawIds);
 
         if ($ids === [] || !in_array($action, ['disable', 'enable', 'delete'], true)) {
-            $this->context->flashToast('Sélectionnez au moins un utilisateur et une action valide.', 'warning');
+            $this->context->flashToast($this->t('admin.ctrl_text_user.selectionnez_au_moins_un_utilisateur_et_une_action_valide'), 'warning');
 
             return Response::redirect('/admin/users', 302);
         }
 
         if ($action === 'delete' && !$actor->can('users.delete')) {
-            throw new ForbiddenException('Vous n\'avez pas la permission de supprimer des utilisateurs.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_user.vous_n_avez_pas_la_permission_de_supprimer_des_utilisateurs'));
         }
 
         $applied = 0;
@@ -531,7 +545,7 @@ final class UserController
                     $applied++;
                 } elseif ($action === 'enable') {
                     if (!$actor->isAdministrator() && $target->isAdministrator()) {
-                        throw new PolicyException('Accès refusé.');
+                        throw new PolicyException($this->t('admin.ctrl_text_user.acces_refuse'));
                     }
                     $this->users->updateFields($target->id, ['status' => User::STATUS_ACTIVE]);
                     $applied++;
@@ -546,9 +560,9 @@ final class UserController
         }
 
         $verb = match ($action) {
-            'disable' => 'désactivé(s)',
-            'enable' => 'réactivé(s)',
-            default => 'supprimé(s)',
+            'disable' => $this->t('admin.ctrl_text_user.desactive_s'),
+            'enable' => $this->t('admin.ctrl_text_user.reactive_s'),
+            default => $this->t('admin.ctrl_text_user.supprime_s'),
         };
 
         if ($applied > 0) {
@@ -558,7 +572,7 @@ final class UserController
             }
             $this->context->flashToast($msg, $skipped > 0 ? 'warning' : 'success');
         } else {
-            $this->context->flashToast('Aucun utilisateur n\'a pu être modifié (comptes protégés).', 'danger');
+            $this->context->flashToast($this->t('admin.ctrl_text_user.aucun_utilisateur_n_a_pu_etre_modifie_comptes_proteges'), 'danger');
         }
 
         return Response::redirect('/admin/users', 302);
@@ -569,10 +583,10 @@ final class UserController
      *
      * @return array{label: string, title: string}
      */
-    public static function formatRelativeUtc(?string $utcDateTime): array
+    public function formatRelativeUtc(?string $utcDateTime): array
     {
         if ($utcDateTime === null || $utcDateTime === '') {
-            return ['label' => 'Jamais connecté', 'title' => 'Aucune connexion enregistrée'];
+            return ['label' => $this->t('admin.ctrl_text_user.jamais_connecte'), 'title' => $this->t('admin.ctrl_text_user.aucune_connexion_enregistree')];
         }
 
         $dt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $utcDateTime, new DateTimeZone('UTC'));
@@ -581,19 +595,19 @@ final class UserController
         }
 
         $diff = time() - $dt->getTimestamp();
-        $title = $dt->format('d/m/Y à H:i') . ' UTC';
+        $title = $dt->format($this->t('admin.ctrl_text_user.d_m_y_a_h_i')) . ' UTC';
 
         if ($diff < 60) {
-            return ['label' => 'À l\'instant', 'title' => $title];
+            return ['label' => $this->t('admin.ctrl_text_user.a_l_instant'), 'title' => $title];
         }
         if ($diff < 3600) {
-            return ['label' => sprintf('Il y a %d min', intdiv($diff, 60)), 'title' => $title];
+            return ['label' => sprintf($this->t('admin.ctrl_text_user.il_y_a_d_min'), intdiv($diff, 60)), 'title' => $title];
         }
         if ($diff < 86400) {
-            return ['label' => sprintf('Il y a %d h', intdiv($diff, 3600)), 'title' => $title];
+            return ['label' => sprintf($this->t('admin.ctrl_text_user.il_y_a_d_h'), intdiv($diff, 3600)), 'title' => $title];
         }
         if ($diff < 2592000) {
-            return ['label' => sprintf('Il y a %d j', intdiv($diff, 86400)), 'title' => $title];
+            return ['label' => sprintf($this->t('admin.ctrl_text_user.il_y_a_d_j'), intdiv($diff, 86400)), 'title' => $title];
         }
 
         return ['label' => $dt->format('d/m/Y'), 'title' => $title];
@@ -608,19 +622,19 @@ final class UserController
         $canManageRoles = $actor->can('users.manage_roles');
         $canDelete = $actor->can('users.delete') && $actor->id !== $target->id;
 
-        $data = $this->context->build($request, 'Modifier ' . $target->displayName, [
+        $data = $this->context->build($request, t('admin.users.edit_title', ['name' => $target->displayName]), [
             'targetUser' => $target,
             'assignableRoles' => $canManageRoles ? $this->assignableRolesFor($actor) : $this->roles->all(),
             'canManageRoles' => $canManageRoles,
             'canDelete' => $canDelete,
             'isSelf' => $actor->id === $target->id,
-            'localeOptions' => self::LOCALE_OPTIONS,
-            'lastLoginMeta' => self::formatRelativeUtc($target->lastLoginAt),
+            'localeOptions' => $this->localeOptions(),
+            'lastLoginMeta' => $this->formatRelativeUtc($target->lastLoginAt),
             'old' => $old,
             'errors' => $errors,
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Utilisateurs', 'url' => '/admin/users'],
+                ['label' => $this->t('admin.ctrl_text_user.tableau_de_bord'), 'url' => '/admin'],
+                ['label' => $this->t('admin.shared.utilisateurs'), 'url' => '/admin/users'],
                 ['label' => $target->displayName, 'url' => null],
             ],
         ]);
@@ -701,7 +715,7 @@ final class UserController
     {
         $actor = $this->auth->user($request);
         if ($actor === null) {
-            throw new ForbiddenException('Session expirée.');
+            throw new ForbiddenException($this->t('admin.ctrl_text_user.session_expiree'));
         }
 
         return $actor;

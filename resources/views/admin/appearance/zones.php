@@ -20,23 +20,23 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Zones de blocs',
-    'subtitle' => 'Composez la barre latérale et le pied de page avec Prime Editor et les blocs dynamiques.',
+    'title' => $this->t('admin.appearance.zones_title'),
+    'subtitle' => $this->t('admin.view_appearance_zones.composez_la_barre_laterale_et_le_pied_de_page_avec_prime_edi'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
 
 <?php if ($declaredZones === []): ?>
     <div class="pc-empty-state">
-        <p class="pc-empty-state__title">Aucune zone déclarée</p>
-        <p class="pc-empty-state__desc">Le thème actif ne déclare aucune zone de blocs dans son fichier <code>theme.json</code>.</p>
+        <p class="pc-empty-state__title"><?= $this->e($this->t('admin.appearance.zones.aucune_zone_declaree')) ?></p>
+        <p class="pc-empty-state__desc"><?= $this->raw($this->t('admin.appearance.zones.theme_actif_aucune_zone')) ?></p>
     </div>
 <?php else: ?>
     <div class="pc-zones-layout" data-prime-zones-page>
-        <aside class="pc-card" aria-label="Liste des zones du thème">
+        <aside class="pc-card" aria-label="<?= t('admin.attr.liste_des_zones_du_theme') ?>">
             <div class="pc-card__header">
-                <h2 class="pc-card__title">Zones du thème</h2>
+                <h2 class="pc-card__title"><?= $this->e($this->t('admin.appearance.zones.zones_theme')) ?></h2>
             </div>
-            <nav class="pc-zones-nav" aria-label="Choisir une zone à modifier">
+            <nav class="pc-zones-nav" aria-label="<?= t('admin.attr.choisir_une_zone_a_modifier') ?>">
                 <?php foreach ($declaredZones as $zSlug => $zMeta): ?>
                     <?php $active = $zSlug === $selectedSlug; ?>
                     <a
@@ -44,7 +44,7 @@ $this->layout('admin::layouts/app');
                         class="pc-zones-nav__item<?= $active ? ' is-active' : '' ?>"
                         <?= $active ? 'aria-current="page"' : '' ?>
                     >
-                        <span class="pc-zones-nav__label"><?= $this->e($zMeta['label']) ?></span>
+                        <span class="pc-zones-nav__label"><?= $this->e($this->t((string) $zMeta['label'])) ?></span>
                         <span class="pc-badge pc-badge--neutral"><?= $this->e((string) ($zoneCounts[$zSlug] ?? 0)) ?></span>
                     </a>
                 <?php endforeach; ?>
@@ -52,7 +52,7 @@ $this->layout('admin::layouts/app');
 
             <?php if ($dynamicCatalog !== []): ?>
                 <div class="pc-card__body pc-zones-dyn-panel">
-                    <h3 class="pc-text-xs pc-font-semibold pc-text-muted">Blocs dynamiques disponibles</h3>
+                    <h3 class="pc-text-xs pc-font-semibold pc-text-muted"><?= t('admin.appearance.zones.dynamic_blocks') ?></h3>
                     <div class="pc-stack pc-stack--xs">
                         <?php foreach ($dynamicCatalog as $dyn): ?>
                             <button
@@ -74,9 +74,9 @@ $this->layout('admin::layouts/app');
             <?php if ($selectedZone !== null): ?>
                 <header class="pc-card__header">
                     <div>
-                        <h2 class="pc-card__title"><?= $this->e($selectedZone['label']) ?></h2>
+                        <h2 class="pc-card__title"><?= $this->e($this->t((string) $selectedZone['label'])) ?></h2>
                         <?php if ($selectedZone['description'] !== ''): ?>
-                            <p class="pc-text-xs pc-text-muted"><?= $this->e($selectedZone['description']) ?></p>
+                            <p class="pc-text-xs pc-text-muted"><?= $this->e(\Prime\Content\LabelTranslator::resolve((string) $selectedZone['description'])) ?></p>
                         <?php endif; ?>
                     </div>
                 </header>
@@ -90,14 +90,14 @@ $this->layout('admin::layouts/app');
                         <div class="pc-ed-add-bar">
                             <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-editor-add>
                                 <?= $this->raw($this->icon('plus', 16)) ?>
-                                <span>Ajouter un bloc</span>
+                                <span><?= $this->e($this->t('admin.appearance.zones.ajouter_bloc')) ?></span>
                             </button>
                         </div>
                         <div class="pc-sr-only" aria-live="polite" data-prime-editor-live></div>
                     </div>
 
                     <div class="pc-zones-footer">
-                        <button type="submit" class="pc-btn pc-btn--primary">Enregistrer la zone</button>
+                        <button type="submit" class="pc-btn pc-btn--primary"><?= $this->e($this->t('admin.appearance.zones.enregistrer_zone')) ?></button>
                     </div>
                 </form>
             <?php endif; ?>

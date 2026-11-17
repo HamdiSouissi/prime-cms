@@ -2,6 +2,7 @@
  * Prime Editor — Floating inline formatting toolbar (Bold, Italic, Code, Link + shortcuts).
  */
 
+import { tr } from '../i18n.js';
 import { sanitizeHref } from './utils.js';
 
 export class InlineToolbar {
@@ -13,7 +14,7 @@ export class InlineToolbar {
     this.el = document.createElement('div');
     this.el.className = 'pc-ed-inline-toolbar';
     this.el.setAttribute('role', 'toolbar');
-    this.el.setAttribute('aria-label', 'Mise en forme du texte');
+    this.el.setAttribute('aria-label', tr('admin.js.editor.toolbar.label', 'Mise en forme du texte'));
     this.el.hidden = true;
 
     this.buttonsRow = document.createElement('div');
@@ -40,7 +41,7 @@ export class InlineToolbar {
       { id: 'bold', label: 'Gras (Ctrl+B)', text: 'B', cls: 'is-bold', run: () => this.toggleTag('strong') },
       { id: 'italic', label: 'Italique (Ctrl+I)', text: 'I', cls: 'is-italic', run: () => this.toggleTag('em') },
       { id: 'code', label: 'Code (Ctrl+E)', text: '</>', cls: 'is-mono', run: () => this.toggleTag('code') },
-      { id: 'link', label: 'Lien (Ctrl+K)', text: 'Lien', cls: '', run: () => this.openLinkForm() },
+      { id: 'link', label: tr('admin.js.editor.toolbar.link_title', 'Lien (Ctrl+K)'), text: tr('admin.js.editor.toolbar.link', 'Lien'), cls: '', run: () => this.openLinkForm() },
     ];
 
     actions.forEach((act) => {
@@ -61,7 +62,7 @@ export class InlineToolbar {
     this.urlInput.type = 'url';
     this.urlInput.className = 'pc-ed-itb-input';
     this.urlInput.placeholder = 'https://… ou /page';
-    this.urlInput.setAttribute('aria-label', 'URL du lien');
+    this.urlInput.setAttribute('aria-label', tr('admin.js.editor.toolbar.link_url', 'URL du lien'));
 
     const blankWrap = document.createElement('label');
     blankWrap.className = 'pc-ed-itb-check';

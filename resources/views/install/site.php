@@ -21,10 +21,10 @@ $this->layout('install::layout', [
 ?>
 <?php $this->start('content'); ?>
 <div class="pc-install__header">
-    <h1 class="pc-install__title">Informations du site</h1>
+    <h1 class="pc-install__title"><?= $this->e($this->t('core.install.site.titre')) ?></h1>
     <p class="pc-install__lead">
-        Choisissez le nom, l'adresse publique, la langue et le fuseau horaire de votre site.
-        Ces paramètres resteront modifiables par la suite dans les réglages.
+        <?= $this->e($this->t('core.install.site.choisissez_nom_adresse_langue')) ?>
+        <?= $this->e($this->t('core.install.site.parametres_resteront_modifiables_suite_reglages')) ?>
     </p>
 </div>
 
@@ -34,19 +34,19 @@ $this->layout('install::layout', [
     <?= $this->raw($this->insert('admin::components/field', [
         'id' => 'site-name',
         'name' => 'site_name',
-        'label' => 'Nom du site',
+        'label' => $this->t('core.install.view.site_name'),
         'type' => 'text',
         'value' => $values['site_name'],
-        'placeholder' => 'Mon site Prime CMS',
+        'placeholder' => $this->t('core.install.view.site_name_placeholder'),
         'error' => $errors['site_name'] ?? null,
         'required' => true,
     ])) ?>
 
     <div class="pc-field<?= isset($errors['site_url']) ? ' pc-field--error' : '' ?>">
         <label class="pc-field__label" for="site-url">
-            <span>Adresse du site (URL)</span>
+            <span><?= $this->e($this->t('core.install.site.adresse_site_url')) ?></span>
             <span class="pc-field__required" aria-hidden="true">*</span>
-            <span class="sr-only">(obligatoire)</span>
+            <span class="sr-only"><?= $this->e($this->t('core.install.site.obligatoire')) ?></span>
         </label>
         <input
             type="url"
@@ -60,7 +60,7 @@ $this->layout('install::layout', [
             aria-describedby="site-url-help<?= isset($errors['site_url']) ? ' site-url-error' : '' ?>"
             <?= isset($errors['site_url']) ? 'aria-invalid="true"' : '' ?>
         >
-        <p class="pc-field__help" id="site-url-help">Préremplie depuis la requête en cours (sans slash final).</p>
+        <p class="pc-field__help" id="site-url-help"><?= $this->e($this->t('core.install.site.preremplie_depuis_requete_cours_sans')) ?></p>
         <?php if (isset($errors['site_url'])): ?>
             <p class="pc-field__error" id="site-url-error" role="alert">
                 <?= $this->raw($this->icon('alert-circle', 14)) ?>
@@ -73,7 +73,7 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'site-locale',
             'name' => 'site_locale',
-            'label' => 'Langue du site',
+            'label' => $this->t('core.install.view.site_language'),
             'type' => 'select',
             'value' => $values['site_locale'],
             'options' => $locales,
@@ -84,7 +84,7 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'site-timezone',
             'name' => 'timezone',
-            'label' => 'Fuseau horaire',
+            'label' => $this->t('core.fields.timezone'),
             'type' => 'select',
             'value' => $values['timezone'],
             'options' => $timezones,
@@ -96,11 +96,11 @@ $this->layout('install::layout', [
     <div class="pc-install__actions">
         <a href="/install/database" class="pc-btn pc-btn--ghost">
             <?= $this->raw($this->icon('chevron-left', 16)) ?>
-            <span>Retour</span>
+            <span><?= $this->e($this->t('core.actions.back')) ?></span>
         </a>
 
         <button type="submit" class="pc-btn pc-btn--primary">
-            <span>Continuer</span>
+            <span><?= $this->e($this->t('core.actions.continue')) ?></span>
             <?= $this->raw($this->icon('arrow-right', 16)) ?>
         </button>
     </div>

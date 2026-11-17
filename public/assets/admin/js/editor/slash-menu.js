@@ -2,6 +2,7 @@
  * Prime Editor — Keyboard-accessible Slash Menu (`/`) and Block Inserter (`+`).
  */
 
+import { tr } from '../i18n.js';
 function iconMarkup(name) {
   return `<svg class="pc-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/admin/icons/sprite.svg#${name}"></use></svg>`;
 }
@@ -19,14 +20,14 @@ export class SlashMenu {
     this.el = document.createElement('div');
     this.el.className = 'pc-ed-slash-menu';
     this.el.setAttribute('role', 'dialog');
-    this.el.setAttribute('aria-label', 'Insérer un bloc');
+    this.el.setAttribute('aria-label', tr('admin.js.editor.slash-menu.inserer_un_bloc', 'Insérer un bloc'));
     this.el.hidden = true;
 
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'search';
     this.searchInput.className = 'pc-ed-slash-search';
     this.searchInput.placeholder = 'Filtrer un bloc (ex. titre, image, tableau)…';
-    this.searchInput.setAttribute('aria-label', 'Filtrer les types de blocs');
+    this.searchInput.setAttribute('aria-label', tr('admin.js.editor.filter_blocks', 'Filtrer les types de blocs'));
 
     this.listEl = document.createElement('div');
     this.listEl.className = 'pc-ed-slash-list';
@@ -84,7 +85,7 @@ export class SlashMenu {
     if (this.items.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'pc-ed-slash-empty';
-      empty.textContent = 'Aucun bloc correspondant.';
+      empty.textContent = tr('admin.js.editor.no_matching_block', 'Aucun bloc correspondant.');
       this.listEl.appendChild(empty);
       return;
     }

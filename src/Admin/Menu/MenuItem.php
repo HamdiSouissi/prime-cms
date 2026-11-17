@@ -6,6 +6,7 @@ namespace Prime\Admin\Menu;
 
 use Prime\Admin\Data\FilterValueHelper;
 use Prime\Admin\Exception\InvalidMenuItemException;
+use Prime\Content\LabelTranslator;
 
 /**
  * Immutable definition of an admin sidebar menu entry.
@@ -57,6 +58,42 @@ final readonly class MenuItem
                 implode(', ', self::ALLOWED_ACCENTS),
             ));
         }
+    }
+
+    /**
+     * Resolve the menu label through the translator.
+     *
+     * Core items are declared with an `admin.menu.*` key so they follow the active locale;
+     * a plugin that passes a literal (`label: 'Shop'`) keeps its own text untouched.
+     */
+    public function translatedLabel(): string
+    {
+        return self::translate($this->label);
+    }
+
+    /**
+     * Resolve the section label (`Contenu`, `Système`, …) through the translator.
+     */
+    public function translatedGroup(): ?string
+    {
+        return $this->group === null ? null : self::translate($this->group);
+    }
+
+    /**
+     * Resolve the badge through the translator (same key convention as the label).
+     */
+    public function translatedBadge(): ?string
+    {
+        return $this->badge === null ? null : self::translate($this->badge);
+    }
+
+    /**
+     * A label is a translation key when it is a dotted identifier (`admin.menu.pages`,
+     * `hello-prime::menu.title`); anything else is a literal kept as declared.
+     */
+    private static function translate(string $value): string
+    {
+        return LabelTranslator::resolve($value);
     }
 
     /**

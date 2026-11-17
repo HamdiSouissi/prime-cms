@@ -3,6 +3,7 @@
  * duplicate detection warnings, retry, and cancel/abort support.
  */
 
+import { tr } from '../i18n.js';
 let nextItemSeq = 1;
 
 /**
@@ -59,11 +60,11 @@ export function xhrUploadTransport({ file, folderId, url, csrfToken, onProgress,
     });
 
     xhr.addEventListener('error', () => {
-      reject(new Error('Erreur réseau lors du téléversement.'));
+      reject(new Error(tr('admin.js.media.upload-queue.erreur_reseau_lors_du_televersement', 'Erreur réseau lors du téléversement.')));
     });
 
     xhr.addEventListener('abort', () => {
-      const err = new Error('Téléversement annulé.');
+      const err = new Error(tr('admin.js.media.upload-queue.televersement_annule', 'Téléversement annulé.'));
       err.name = 'AbortError';
       reject(err);
     });
@@ -178,14 +179,14 @@ export class UploadQueue {
 
     if (entry.status === 'queued') {
       entry.status = 'cancelled';
-      entry.error = 'Annulé';
+      entry.error = tr('admin.js.media.upload.cancelled', 'Annulé');
       this.emitChange();
       return true;
     }
 
     if (entry.status === 'uploading') {
       entry.status = 'cancelled';
-      entry.error = 'Annulé';
+      entry.error = tr('admin.js.media.upload.cancelled', 'Annulé');
       if (typeof entry._abort === 'function') {
         try {
           entry._abort();
@@ -274,7 +275,7 @@ export class UploadQueue {
         entry._abort = null;
         if (entry.status === 'cancelled' || (err && err.name === 'AbortError')) {
           entry.status = 'cancelled';
-          entry.error = 'Annulé';
+          entry.error = tr('admin.js.media.upload.cancelled', 'Annulé');
           this.emitChange();
           return;
         }

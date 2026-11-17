@@ -40,8 +40,8 @@ final class HelloPrimeController
             'entries' => $entries,
             'pluginVersion' => $this->plugin->version(),
             'breadcrumbs' => [
-                ['label' => 'Tableau de bord', 'url' => '/admin'],
-                ['label' => 'Plugins', 'url' => '/admin/plugins'],
+                ['label' => t('admin.nav.dashboard'), 'url' => '/admin'],
+                ['label' => t('admin.nav.plugins'), 'url' => '/admin/plugins'],
                 ['label' => 'Hello Prime', 'url' => null],
             ],
         ]));
@@ -49,33 +49,14 @@ final class HelloPrimeController
         return Response::html($html);
     }
 
-    public function saveSettings(Request $request): Response
-    {
-        $greeting = trim((string) $request->body('greeting', ''));
-        if ($greeting === '' || mb_strlen($greeting) > 160) {
-            $this->adminContext->flashToast(
-                'Le message d’accueil doit contenir entre 1 et 160 caractères.',
-                'danger',
-                'Validation échouée',
-            );
-
-            return Response::redirect('/admin/hello-prime');
-        }
-
-        $this->plugin->settings()->set('greeting', $greeting);
-        $this->adminContext->flashToast('Le message d’accueil a été enregistré.', 'success', 'Réglages sauvegardés');
-
-        return Response::redirect('/admin/hello-prime');
-    }
-
     public function addGreeting(Request $request): Response
     {
         $message = trim((string) $request->body('message', ''));
         if ($message === '' || mb_strlen($message) > 280) {
             $this->adminContext->flashToast(
-                'Le message doit contenir entre 1 et 280 caractères.',
+                t('plugin::hello-prime.ui.message_invalid'),
                 'danger',
-                'Message invalide',
+                t('plugin::hello-prime.ui.message_invalid_title'),
             );
 
             return Response::redirect('/admin/hello-prime');
@@ -93,7 +74,7 @@ final class HelloPrimeController
             'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s'),
         ]);
 
-        $this->adminContext->flashToast('Nouveau message ajouté dans la base de données.', 'success', 'Message enregistré');
+        $this->adminContext->flashToast(t('plugin::hello-prime.ui.message_added'), 'success', t('plugin::hello-prime.ui.message_saved'));
 
         return Response::redirect('/admin/hello-prime');
     }
@@ -101,7 +82,7 @@ final class HelloPrimeController
     public function deleteGreeting(Request $request, string $id): Response
     {
         $this->plugin->db()->table(self::TABLE)->where('id', '=', (int) $id)->delete();
-        $this->adminContext->flashToast('Message supprimé.', 'info');
+        $this->adminContext->flashToast(t('plugin::hello-prime.ui.message_deleted'), 'info');
 
         return Response::redirect('/admin/hello-prime');
     }
@@ -114,7 +95,7 @@ final class HelloPrimeController
             ->limit(20)
             ->get();
 
-        $appName = (string) $this->plugin->app()->config()->get('app.name', 'Prime CMS');
+        $appName = (string) $this->plugin->app()->config()->get('app.name');
 
         $html = $this->plugin->views()->render('hello-prime::public', [
             'appName' => $appName,

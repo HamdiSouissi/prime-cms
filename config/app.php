@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 use Prime\Admin\AdminServiceProvider;
 use Prime\Auth\AuthServiceProvider;
+use Prime\Cache\CacheServiceProvider;
 use Prime\Content\ContentServiceProvider;
 use Prime\Database\DatabaseServiceProvider;
 use Prime\Http\Middleware\RedirectIfNotInstalled;
 use Prime\Http\Middleware\SecurityHeaders;
 use Prime\Http\Middleware\TrailingSlash;
 use Prime\Http\Middleware\VerifyCsrfToken;
+use Prime\I18n\I18nServiceProvider;
 use Prime\Install\InstallServiceProvider;
+use Prime\Jobs\JobsServiceProvider;
 use Prime\Kernel\Env;
 use Prime\Kernel\Providers\HooksServiceProvider;
 use Prime\Kernel\Providers\HttpServiceProvider;
@@ -19,6 +22,7 @@ use Prime\Kernel\Providers\ViewServiceProvider;
 use Prime\Mail\MailServiceProvider;
 use Prime\Media\MediaServiceProvider;
 use Prime\Plugins\PluginServiceProvider;
+use Prime\Scheduler\SchedulerServiceProvider;
 use Prime\Settings\SettingsServiceProvider;
 use Prime\Site\SiteServiceProvider;
 use Prime\Themes\ThemeServiceProvider;
@@ -38,12 +42,16 @@ return [
         ViewServiceProvider::class,
         DatabaseServiceProvider::class,
         SettingsServiceProvider::class,
+        CacheServiceProvider::class,
+        I18nServiceProvider::class,
         MailServiceProvider::class,
         HttpServiceProvider::class,
         AuthServiceProvider::class,
         InstallServiceProvider::class,
         MediaServiceProvider::class,
         ContentServiceProvider::class,
+        JobsServiceProvider::class,
+        SchedulerServiceProvider::class,
         AdminServiceProvider::class,
         PluginServiceProvider::class,
         ThemeServiceProvider::class,
@@ -54,6 +62,11 @@ return [
         SecurityHeaders::class,
         TrailingSlash::class,
         RedirectIfNotInstalled::class,
+        // Registered as aliases so a site whose tables do not exist yet still answers: the
+        // factories in I18nServiceProvider / CacheServiceProvider degrade to a passthrough.
+        'locale',
+        'page_cache',
+        'scheduler',
     ],
 
     'route_middleware' => [

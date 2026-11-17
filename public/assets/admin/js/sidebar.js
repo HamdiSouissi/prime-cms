@@ -4,6 +4,7 @@
  */
 
 import { createFocusTrap } from './focus-trap.js';
+import { tr } from './i18n.js';
 
 const STORAGE_KEY = 'prime.admin.sidebar.collapsed';
 const MOBILE_MAX = 767;
@@ -56,11 +57,11 @@ export function initSidebar() {
       collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
       collapseBtn.setAttribute(
         'aria-label',
-        collapsed ? 'Déplier la barre latérale' : 'Réduire la barre latérale',
+        collapsed ? tr('admin.js.sidebar.deplier_la_barre_laterale', 'Déplier la barre latérale') : tr('admin.js.sidebar.reduire_la_barre_laterale', 'Réduire la barre latérale'),
       );
       const label = collapseBtn.querySelector('[data-prime-sidebar-collapse-label]');
       if (label) {
-        label.textContent = collapsed ? 'Déplier' : 'Réduire';
+        label.textContent = collapsed ? tr('admin.js.sidebar.deplier', 'Déplier') : tr('admin.js.sidebar.reduire', 'Réduire');
       }
       const iconUse = collapseBtn.querySelector('use');
       if (iconUse) {

@@ -199,7 +199,7 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
 
         // Run core migrations
         $ran = $migrator->run();
-        $this->assertCount(23, $ran);
+        $this->assertCount($this->coreMigrationCount(), $ran);
         $this->assertTrue($schema->hasTable('settings'));
         $this->assertTrue($schema->hasTable('plugins'));
         $this->assertTrue($schema->hasColumn('migrations', 'source'));
@@ -212,6 +212,17 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
         $this->assertTrue($schema->hasTable('remember_tokens'));
         $this->assertTrue($schema->hasTable('password_resets'));
         $this->assertTrue($schema->hasTable('rate_limits'));
+        // Phase 9 brings two more core tables: the queue and the mail log. They must be created by the
+        // same `run()` as everything else — an install that misses them leaves `queue:work` and every
+        // `mail:*` command failing on a missing table long after the installer said "done".
+        $this->assertTrue($schema->hasTable('jobs'));
+        $this->assertTrue($schema->hasColumn('jobs', 'available_at'));
+        $this->assertTrue($schema->hasColumn('jobs', 'failed_at'));
+        $this->assertTrue($schema->hasTable('mail_log'));
+        $this->assertTrue($schema->hasColumn('mail_log', 'job_id'));
+        // The scheduler keeps its tick in `pc_settings` rather than in a table of its own, so assert the
+        // storage it depends on is the one `Settings::put()` writes to.
+        $this->assertTrue($schema->hasColumn('settings', 'autoload'));
         $this->assertSame(4, $this->connection->table('roles')->count());
 
         // Idempotent second run
@@ -219,23 +230,27 @@ final class DatabaseIntegrationTest extends DatabaseTestCase
 
         // Status reflects all core migrations as ran in batch 1
         $status = $migrator->status();
-        $this->assertCount(23, $status);
+        $this->assertCount($this->coreMigrationCount(), $status);
         $this->assertSame('ran', $status[0]['status']);
         $this->assertSame(1, $status[0]['batch']);
 
         // Rollback removes all batch-1 migrations cleanly
         $rolledBack = $migrator->rollback(1);
-        $this->assertCount(23, $rolledBack);
+        $this->assertCount($this->coreMigrationCount(), $rolledBack);
         $this->assertFalse($schema->hasTable('roles'));
         $this->assertFalse($schema->hasTable('users'));
         $this->assertFalse($schema->hasTable('settings'));
+        $this->assertFalse($schema->hasTable('jobs'));
+        $this->assertFalse($schema->hasTable('mail_log'));
 
         // Fresh recreates cleanly
         $freshRan = $migrator->fresh();
-        $this->assertCount(23, $freshRan);
+        $this->assertCount($this->coreMigrationCount(), $freshRan);
         $this->assertTrue($schema->hasTable('settings'));
         $this->assertTrue($schema->hasTable('users'));
         $this->assertTrue($schema->hasTable('roles'));
+        $this->assertTrue($schema->hasTable('jobs'));
+        $this->assertTrue($schema->hasTable('mail_log'));
 
         // Partial failure test: migration 1 succeeds, migration 2 fails → migration 1 stays recorded!
         $tempDir = sys_get_temp_dir() . '/prime_mig_fail_' . uniqid('', true);

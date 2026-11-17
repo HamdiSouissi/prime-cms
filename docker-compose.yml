@@ -3,12 +3,13 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+    image: prime-cms:local
     container_name: prime-cms-app
     ports:
       - "${APP_PORT:-8080}:80"
     volumes:
       - .:/var/www/html
-    environment:
+    environment: &php-env
       APP_NAME: "${APP_NAME:-Prime CMS}"
       APP_KEY: "${APP_KEY:-base64:cHJpbWUtY21zLWxvY2FsLWRldi1rZXktMzItYnl0ZXM=}"
       APP_ENV: "${APP_ENV:-local}"
@@ -25,6 +26,51 @@ services:
       DB_PASSWORD: "${DB_PASSWORD:-secret}"
       DB_PREFIX: "${DB_PREFIX:-pc_}"
     depends_on:
+      db:
+        condition: service_started
+    restart: unless-stopped
+
+  # Neither `cron` nor a supervisor can be assumed inside a single PHP container, so the two
+  # long-running loops the platform needs get their own service. They reuse the image `app` builds,
+  # idle until the install lock appears (a fresh checkout must not spam failed tasks), and run as
+  # `www-data` so every stamp they write stays writable by the web process.
+  scheduler:
+    image: prime-cms:local
+    container_name: prime-cms-scheduler
+    user: www-data
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while [ ! -f storage/installed.lock ]; do sleep 5; done
+        while :; do php bin/prime schedule:run || true; sleep "$${SCHEDULER_INTERVAL:-60}"; done
+    volumes:
+      - .:/var/www/html
+    environment:
+      <<: *php-env
+      SCHEDULER_INTERVAL: "${SCHEDULER_INTERVAL:-60}"
+    depends_on:
+      app:
+        condition: service_started
+      db:
+        condition: service_started
+    restart: unless-stopped
+
+  worker:
+    image: prime-cms:local
+    container_name: prime-cms-worker
+    user: www-data
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while [ ! -f storage/installed.lock ]; do sleep 5; done
+        while :; do php bin/prime queue:work --forever --sleep=2 || true; sleep 5; done
+    volumes:
+      - .:/var/www/html
+    environment:
+      <<: *php-env
+    depends_on:
+      app:
+        condition: service_started
       db:
         condition: service_started
     restart: unless-stopped

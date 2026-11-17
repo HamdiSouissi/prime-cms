@@ -2,7 +2,7 @@
   "slug": "aurora",
   "name": "Aurora",
   "version": "1.0.0",
-  "description": "Thème éditorial par défaut de Prime CMS : sobre, rapide, accessible (WCAG AA) et sans dépendance externe.",
+  "description": "site.aurora.theme.description",
   "author": {
     "name": "Prime CMS",
     "url": "https://github.com/HamdiSouissi/prime-cms"
@@ -20,20 +20,20 @@
   },
   "zones": {
     "sidebar": {
-      "label": "Barre latérale",
-      "description": "Colonne latérale affichée sur le blog, les archives et les articles lorsqu'elle contient des blocs."
+      "description": "site.aurora.theme.zones.sidebar.description",
+      "label_key": "site.aurora.theme.zones.sidebar.barre_laterale"
     },
     "footer_1": {
-      "label": "Pied de page — Colonne 1",
-      "description": "Première colonne du pied de page (présentation ou coordonnées)."
+      "description": "site.aurora.theme.zones.footer_1.description",
+      "label_key": "site.aurora.theme.zones.footer_1.pied_de_page_colonne_1"
     },
     "footer_2": {
-      "label": "Pied de page — Colonne 2",
-      "description": "Deuxième colonne du pied de page (liens utiles ou catégories)."
+      "description": "site.aurora.theme.zones.footer_2.description",
+      "label_key": "site.aurora.theme.zones.footer_2.pied_de_page_colonne_2"
     },
     "footer_3": {
-      "label": "Pied de page — Colonne 3",
-      "description": "Troisième colonne du pied de page (derniers articles ou recherche)."
+      "description": "site.aurora.theme.zones.footer_3.description",
+      "label_key": "site.aurora.theme.zones.footer_3.pied_de_page_colonne_3"
     }
   },
   "templates": {
@@ -57,135 +57,135 @@
   "options": {
     "sections": {
       "colors": {
-        "label": "Couleurs",
-        "description": "Palette principale du site. Le corail par défaut (#C9441F) respecte le contraste WCAG AA."
+        "description": "site.aurora.theme.options.sections.colors.description",
+        "label_key": "site.aurora.theme.options.sections.colors.couleurs"
       },
       "typography": {
-        "label": "Typographie",
-        "description": "Polices locales chargées directement depuis le serveur (zéro ressource externe)."
+        "description": "site.aurora.theme.options.sections.typography.description",
+        "label_key": "site.aurora.theme.options.sections.typography.typographie"
       },
       "layout": {
-        "label": "Mise en page",
-        "description": "Largeur maximale du contenu et affichage des éléments d'article."
+        "description": "site.aurora.theme.options.sections.layout.description",
+        "label_key": "site.aurora.theme.options.sections.layout.mise_en_page"
       },
       "header": {
-        "label": "En-tête",
-        "description": "Comportement de la barre de navigation et de la recherche."
+        "description": "site.aurora.theme.options.sections.header.description",
+        "label_key": "site.aurora.theme.options.sections.header.en_tete"
       },
       "footer": {
-        "label": "Pied de page",
-        "description": "Mentions affichées en bas de chaque page."
+        "description": "site.aurora.theme.options.sections.footer.description",
+        "label_key": "site.aurora.theme.options.sections.footer.pied_de_page"
       }
     },
     "fields": {
       "accent_color": {
         "section": "colors",
         "type": "color",
-        "label": "Couleur d'accentuation",
         "default": "#C9441F",
-        "css_var": "--aurora-accent"
+        "css_var": "--aurora-accent",
+        "label_key": "site.aurora.theme.options.fields.accent_color.couleur_d_accentuation"
       },
       "bg_color": {
         "section": "colors",
         "type": "color",
-        "label": "Couleur d'arrière-plan",
         "default": "#FAF9F7",
-        "css_var": "--aurora-bg"
+        "css_var": "--aurora-bg",
+        "label_key": "site.aurora.theme.options.fields.bg_color.couleur_d_arriere_plan"
       },
       "surface_color": {
         "section": "colors",
         "type": "color",
-        "label": "Couleur des cartes",
         "default": "#FFFFFF",
-        "css_var": "--aurora-surface"
+        "css_var": "--aurora-surface",
+        "label_key": "site.aurora.theme.options.fields.surface_color.couleur_des_cartes"
       },
       "text_color": {
         "section": "colors",
         "type": "color",
-        "label": "Couleur du texte principal",
         "default": "#171717",
-        "css_var": "--aurora-ink"
+        "css_var": "--aurora-ink",
+        "label_key": "site.aurora.theme.options.fields.text_color.couleur_du_texte_principal"
       },
       "font_heading": {
         "section": "typography",
         "type": "font",
-        "label": "Police des titres",
         "default": "jakarta",
         "choices": {
-          "jakarta": "Plus Jakarta Sans (Éditorial)",
-          "inter": "Inter (Neutre)",
-          "serif": "Georgia / Serif classique"
+          "jakarta": "site.aurora.theme.options.fields.font_heading.choices.jakarta",
+          "inter": "site.aurora.theme.options.fields.font_heading.choices.inter",
+          "serif": "site.aurora.theme.options.fields.font_heading.choices.serif"
         },
         "css_var": "--aurora-font-heading",
         "css_map": {
           "jakarta": "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif",
           "inter": "'Inter', system-ui, sans-serif",
           "serif": "Georgia, 'Times New Roman', serif"
-        }
+        },
+        "label_key": "site.aurora.theme.options.fields.font_heading.police_des_titres"
       },
       "font_body": {
         "section": "typography",
         "type": "font",
-        "label": "Police du texte courant",
         "default": "inter",
         "choices": {
-          "inter": "Inter (Par défaut)",
-          "jakarta": "Plus Jakarta Sans",
-          "system": "Police système native"
+          "inter": "site.aurora.theme.options.fields.font_body.choices.inter",
+          "jakarta": "site.aurora.theme.options.fields.font_body.choices.jakarta",
+          "system": "site.aurora.theme.options.fields.font_body.choices.system"
         },
         "css_var": "--aurora-font-body",
         "css_map": {
           "inter": "'Inter', system-ui, -apple-system, sans-serif",
           "jakarta": "'Plus Jakarta Sans', system-ui, sans-serif",
           "system": "system-ui, -apple-system, 'Segoe UI', sans-serif"
-        }
+        },
+        "label_key": "site.aurora.theme.options.fields.font_body.police_du_texte_courant"
       },
       "container_width": {
         "section": "layout",
         "type": "range",
-        "label": "Largeur maximale du site (px)",
         "default": 1160,
         "min": 960,
         "max": 1400,
         "step": 20,
         "css_var": "--aurora-container",
-        "css_unit": "px"
+        "css_unit": "px",
+        "label_key": "site.aurora.theme.options.fields.container_width.largeur_maximale_du_site_px"
       },
       "show_sidebar": {
         "section": "layout",
         "type": "toggle",
-        "label": "Afficher la barre latérale quand elle contient des blocs",
-        "default": true
+        "default": true,
+        "label_key": "site.aurora.theme.options.fields.show_sidebar.afficher_la_barre_laterale_quand_elle_contient_des_blocs"
       },
       "show_author_box": {
         "section": "layout",
         "type": "toggle",
-        "label": "Afficher l'encart auteur sous les articles",
-        "default": true
+        "default": true,
+        "label_key": "site.aurora.theme.options.fields.show_author_box.afficher_l_encart_auteur_sous_les_articles"
       },
       "show_related": {
         "section": "layout",
         "type": "toggle",
-        "label": "Afficher les articles similaires",
-        "default": true
+        "default": true,
+        "label_key": "site.aurora.theme.options.fields.show_related.afficher_les_articles_similaires"
       },
       "header_sticky": {
         "section": "header",
         "type": "toggle",
-        "label": "Fixer l'en-tête au défilement",
-        "default": true
+        "default": true,
+        "label_key": "site.aurora.theme.options.fields.header_sticky.fixer_l_en_tete_au_defilement"
       },
       "show_header_search": {
         "section": "header",
         "type": "toggle",
-        "label": "Afficher le bouton de recherche dans l'en-tête",
-        "default": true
+        "default": true,
+        "label_key": "site.aurora.theme.options.fields.show_header_search.afficher_le_bouton_de_recherche_dans_l_en_tete"
       },
       "footer_text": {
         "section": "footer",
         "type": "textarea",
-        "label": "Texte de pied de page",
-        "default": "Propulsé par Prime CMS."
+        "default": "",
+        "label_key": "site.aurora.theme.options.fields.footer_text.texte_de_pied_de_page"
       }
     }
   }

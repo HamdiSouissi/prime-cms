@@ -300,7 +300,7 @@
             <source srcset="<?= $this->e(asset('brand/logo-64.webp')) ?>" type="image/webp">
             <img src="<?= $this->e(asset('brand/logo-64.png')) ?>" alt="Prime CMS" width="28" height="28">
           </picture>
-          <span>Prime CMS · Mode développement</span>
+          <span><?= $this->e($this->t('core.errors.debug.prime_cms_mode_developpement')) ?></span>
         </div>
         <div>
           <span class="dbg-pill dbg-pill--coral">HTTP <?= $this->e($status ?? 500) ?></span>
@@ -321,10 +321,10 @@
       <?php if (!empty($excerpt)): ?>
         <section class="dbg-card" aria-labelledby="excerpt-heading">
           <div class="dbg-card-header">
-            <h2 id="excerpt-heading" class="dbg-card-title">Extrait du code source</h2>
+            <h2 id="excerpt-heading" class="dbg-card-title"><?= $this->e($this->t('core.errors.debug.extrait_code_source')) ?></h2>
             <span class="dbg-frame-file"><?= $this->e($file ?? '') ?></span>
           </div>
-          <div class="dbg-code-wrap" role="region" aria-label="Code autour de la ligne en erreur">
+          <div class="dbg-code-wrap" role="region" aria-label="<?= t('admin.attr.code_autour_de_la_ligne_en_erreur') ?>">
             <?php foreach ($excerpt as $row): ?>
               <div class="dbg-code-line<?= !empty($row['highlight']) ? ' dbg-code-line--active' : '' ?>">
                 <span class="dbg-line-num"><?= $this->e($row['number']) ?></span>

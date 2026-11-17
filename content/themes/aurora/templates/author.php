@@ -24,7 +24,7 @@ $authorInitials = ($entries !== []) ? $entries[0]->author()['initials'] : strtou
         <?php endif; ?>
       </div>
       <div>
-        <span class="aurora-page-header__eyebrow">Auteur</span>
+        <span class="aurora-page-header__eyebrow"><?= $site->e($site->t('site.aurora.templates.author.eyebrow')) ?></span>
         <h1 class="aurora-page-header__title"><?= $site->e($authorName) ?></h1>
         <?php if ($authorBio !== ''): ?>
           <p class="aurora-page-header__lead"><?= $site->e($authorBio) ?></p>
@@ -43,8 +43,8 @@ $authorInitials = ($entries !== []) ? $entries[0]->author()['initials'] : strtou
         </div>
       <?php else: ?>
         <section class="aurora-empty">
-          <h2>Aucun article publié</h2>
-          <p><?= $site->e($authorName) ?> n'a pas encore publié d'article.</p>
+          <h2><?= $site->e($site->t('site.aurora.author.aucun_article_publie')) ?></h2>
+          <p><?= $site->e($authorName) ?> <?= $site->e($site->t('site.aurora.author.pas_encore_publie_article')) ?></p>
         </section>
       <?php endif; ?>
 
@@ -52,7 +52,7 @@ $authorInitials = ($entries !== []) ? $entries[0]->author()['initials'] : strtou
     </div>
 
     <?php if ($showSidebar): ?>
-      <aside class="aurora-sidebar" aria-label="Barre latérale">
+      <aside class="aurora-sidebar" aria-label="<?= t('site.attr.barre_laterale') ?>">
         <?= $site->zone('sidebar') ?>
       </aside>
     <?php endif; ?>

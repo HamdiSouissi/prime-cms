@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace Prime\Settings;
 
+use Closure;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use JsonException;
+use Prime\Cache\CacheInterface;
 use Prime\Database\Connection;
 use Prime\Database\Identifier;
 use Prime\Hooks\Hooks;
+use Prime\Security\Encrypter;
+use RuntimeException;
+use Stringable;
+use Throwable;
 
 /**
  * Persistent JSON-typed key/value settings store backed by `pc_settings`.
@@ -21,6 +27,11 @@ use Prime\Hooks\Hooks;
 final class Settings
 {
     private const TABLE = 'settings';
+
+    /**
+     * Key used inside the JSON payload to flag an encrypted (secret) value.
+     */
+    public const ENCRYPTED_MARKER = '__prime_encrypted';
 
     private bool $autoloaded = false;
 
@@ -38,9 +49,15 @@ final class Settings
      */
     private array $missing = [];
 
+    /**
+     * @param CacheInterface|null $dataCache Optional PSR-16 style store used by {@see self::remember()}
+     * @param Encrypter|null      $crypt     Used to seal `secret` settings (`pc_settings.value` stays opaque)
+     */
     public function __construct(
         private readonly Connection $connection,
         private readonly ?Hooks $hooks = null,
+        private readonly ?CacheInterface $dataCache = null,
+        private readonly ?Encrypter $crypt = null,
     ) {
     }
 
@@ -143,6 +160,8 @@ final class Settings
         $this->cache[$cleanName] = $value;
         unset($this->missing[$cleanName]);
 
+        $this->invalidateRemembered();
+
         $this->hooks?->emit('settings.updated', $cleanName, $oldValue, $value);
     }
 
@@ -160,12 +179,214 @@ final class Settings
 
         unset($this->cache[$name]);
         $this->missing[$name] = true;
+        $this->invalidateRemembered();
 
         if ($deleted > 0) {
             $this->hooks?->emit('settings.updated', $name, $oldValue, null);
         }
 
         return $deleted > 0;
+    }
+
+    /**
+     * Read a boolean setting, accepting `true`/`false`, `1`/`0`, `'1'`/`'0'` and `'yes'`/`'no'`.
+     */
+    public function getBool(string $name, bool $default = false): bool
+    {
+        $value = $this->get($name, $default);
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return $value != 0;
+        }
+
+        return $default;
+    }
+
+    /**
+     * Read an integer setting, clamped to an optional inclusive range.
+     */
+    public function getInt(string $name, int $default = 0, ?int $min = null, ?int $max = null): int
+    {
+        $value = $this->get($name, $default);
+        $int = is_numeric($value) ? (int) $value : $default;
+
+        if ($min !== null && $int < $min) {
+            return $min;
+        }
+
+        if ($max !== null && $int > $max) {
+            return $max;
+        }
+
+        return $int;
+    }
+
+    public function getFloat(string $name, float $default = 0.0): float
+    {
+        $value = $this->get($name, $default);
+
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    public function getString(string $name, string $default = ''): string
+    {
+        $value = $this->get($name, $default);
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        if ($value instanceof Stringable) {
+            return (string) $value;
+        }
+
+        return $default;
+    }
+
+    /**
+     * Read a list- or map-shaped setting, falling back to `$default` for any other type.
+     *
+     * @param array<array-key, mixed> $default
+     *
+     * @return array<array-key, mixed>
+     */
+    public function getArray(string $name, array $default = []): array
+    {
+        $value = $this->get($name, $default);
+
+        return is_array($value) ? $value : $default;
+    }
+
+    /**
+     * Persist several settings in one pass, emitting one `settings.updated` event per change.
+     *
+     * @param array<string, mixed> $values
+     *
+     * @return list<string> Names whose stored value actually changed
+     */
+    public function setMany(array $values, bool $autoload = true): array
+    {
+        $changed = [];
+
+        foreach ($values as $name => $value) {
+            $clean = (string) $name;
+            if ($this->get($clean) === $value) {
+                continue;
+            }
+
+            $this->set($clean, $value, $autoload);
+            $changed[] = $clean;
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Store a secret in encrypted form (AES-256-GCM through `Prime\Security\Encrypter`).
+     */
+    public function setSecret(string $name, ?string $plaintext): void
+    {
+        $encrypter = $this->requireEncrypter();
+
+        if ($plaintext === null || trim($plaintext) === '') {
+            $this->delete($name);
+
+            return;
+        }
+
+        $this->set($name, [self::ENCRYPTED_MARKER => $encrypter->encrypt($plaintext)]);
+    }
+
+    /**
+     * Read a setting written by {@see self::setSecret()}, transparently decrypting it.
+     */
+    public function getSecret(string $name, ?string $default = null): ?string
+    {
+        $value = $this->get($name);
+
+        if (!is_array($value) || !isset($value[self::ENCRYPTED_MARKER]) || !is_string($value[self::ENCRYPTED_MARKER])) {
+            // Tolerate a plain value stored by an older install or a plugin.
+            return is_string($value) && $value !== '' ? $value : $default;
+        }
+
+        try {
+            return $this->requireEncrypter()->decrypt($value[self::ENCRYPTED_MARKER]);
+        } catch (Throwable) {
+            return $default;
+        }
+    }
+
+    /**
+     * Determine whether a setting is stored encrypted.
+     */
+    public function isSecret(string $name): bool
+    {
+        $value = $this->get($name);
+
+        return is_array($value) && array_key_exists(self::ENCRYPTED_MARKER, $value);
+    }
+
+    /**
+     * Memoize an expensive derived value (a resolved menu, a sitemap payload, a health report) in
+     * the shared data cache; `CachePurgeSubscriber` invalidates the `settings` namespace whenever a
+     * setting is saved.
+     *
+     * @template T
+     * @param Closure(): T $loader
+     * @return T
+     */
+    public function remember(string $key, ?int $ttl, Closure $loader): mixed
+    {
+        if ($this->dataCache === null) {
+            return $loader();
+        }
+
+        return $this->dataCache->namespace('settings')->remember($key, $ttl, $loader);
+    }
+
+    /**
+     * The loader may hand back anything the cache held — a scalar from an older release, for
+     * instance — which is why `$default` exists rather than a bare cast.
+     *
+     * @param Closure(): mixed            $loader
+     * @param array<array-key, mixed>     $default
+     *
+     * @return array<array-key, mixed>
+     */
+    public function rememberArray(string $key, ?int $ttl, Closure $loader, array $default = []): array
+    {
+        $value = $this->remember($key, $ttl, $loader);
+
+        return is_array($value) ? $value : $default;
+    }
+
+    /**
+     * Drop memoized derived values so readers never see a value computed from stale settings.
+     */
+    private function invalidateRemembered(): void
+    {
+        $this->dataCache?->namespace('settings')->flush();
+    }
+
+    private function requireEncrypter(): Encrypter
+    {
+        if ($this->crypt === null) {
+            throw new RuntimeException('Aucun chiffreur n\'est configuré : impossible de stocker un secret.');
+        }
+
+        return $this->crypt;
     }
 
     /**

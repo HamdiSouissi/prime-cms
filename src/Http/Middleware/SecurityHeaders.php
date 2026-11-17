@@ -24,6 +24,16 @@ final class SecurityHeaders implements MiddlewareInterface
         'Content-Security-Policy' => "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
     ];
 
+    /**
+     * Headers applied to every response (shown read-only on « Réglages › Sécurité »).
+     *
+     * @return array<string, string>
+     */
+    public static function defaults(): array
+    {
+        return self::HEADERS;
+    }
+
     public function process(Request $request, callable $next): Response
     {
         $response = $next($request);

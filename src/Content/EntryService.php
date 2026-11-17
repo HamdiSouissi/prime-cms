@@ -17,6 +17,8 @@ use Prime\Content\Fields\FieldValidator;
 use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
+use Prime\Jobs\ContentPublishHandler;
+use Prime\Jobs\JobQueue;
 use Prime\Media\MediaRepository;
 use Prime\Media\MediaUsageRepository;
 use Prime\Support\Str;
@@ -56,8 +58,7 @@ final class EntryService
         private readonly Hooks $hooks,
         private readonly ?Router $router = null,
         private readonly int $revisionsMax = 25,
-        private readonly string $schedulerStampPath = '',
-        private readonly int $schedulerIntervalSeconds = 60,
+        private readonly ?JobQueue $queue = null,
         private readonly ?MediaUsageRepository $mediaUsage = null,
         private readonly ?FieldRegistry $fields = null,
         private readonly ?MediaRepository $media = null,
@@ -666,54 +667,29 @@ final class EntryService
     }
 
     /**
-     * Lightweight request-time scheduler trigger: executes `publishScheduled()` at most
-     * once per `$schedulerIntervalSeconds` (default 60s) via a lock timestamp file.
+     * Lightweight request-time trigger used by the admin screens.
+     *
+     * The publishing itself belongs to the scheduler: `content.publish_scheduled` is a queued job
+     * run by `queue:work`, by `bin/prime schedule:run`, or by the visitor-time fallback middleware.
+     * This method only makes sure the work is in the queue, and folds a burst of requests into a
+     * single job because an already queued attempt covers every entry that becomes due meanwhile.
+     * Sites without the queue layer keep publishing inline, as before.
+     *
+     * @return int Number of entries published by this call (`0` when the work was queued)
      */
     public function maybePublishScheduled(): int
     {
-        if ($this->schedulerStampPath === '') {
-            return 0;
-        }
-
-        $nowTs = time();
-        if (is_file($this->schedulerStampPath)) {
-            $lastRun = (int) trim((string) @file_get_contents($this->schedulerStampPath));
-            if (($nowTs - $lastRun) < $this->schedulerIntervalSeconds) {
-                return 0;
-            }
-        }
-
-        $dir = dirname($this->schedulerStampPath);
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
-        }
-
-        $fp = @fopen($this->schedulerStampPath, 'c+');
-        if ($fp === false) {
-            return 0;
-        }
-
-        try {
-            if (!flock($fp, LOCK_EX | LOCK_NB)) {
-                return 0;
-            }
-
-            $content = stream_get_contents($fp);
-            $lastRun = (int) trim(is_string($content) ? $content : '');
-            if (($nowTs - $lastRun) < $this->schedulerIntervalSeconds) {
-                return 0;
-            }
-
-            rewind($fp);
-            ftruncate($fp, 0);
-            fwrite($fp, (string) $nowTs);
-            fflush($fp);
-
+        if ($this->queue === null) {
             return $this->publishScheduled();
-        } finally {
-            flock($fp, LOCK_UN);
-            fclose($fp);
         }
+
+        if ($this->queue->isQueued(ContentPublishHandler::NAME)) {
+            return 0;
+        }
+
+        $this->queue->dispatch(ContentPublishHandler::NAME);
+
+        return 0;
     }
 
     /**

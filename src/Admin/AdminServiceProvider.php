@@ -9,12 +9,15 @@ use Prime\Admin\Controller\DashboardController;
 use Prime\Admin\Controller\MediaController;
 use Prime\Admin\Controller\MenuController;
 use Prime\Admin\Controller\NoticeController;
+use Prime\Admin\Controller\PerformanceController;
 use Prime\Admin\Controller\PluginController;
 use Prime\Admin\Controller\ProfileController;
 use Prime\Admin\Controller\RoleController;
+use Prime\Admin\Controller\SettingsPageController;
 use Prime\Admin\Controller\SiteSettingsController;
 use Prime\Admin\Controller\TaxonomyController;
 use Prime\Admin\Controller\ThemeController;
+use Prime\Admin\Controller\ToolsController;
 use Prime\Admin\Controller\UserController;
 use Prime\Admin\Controller\ZoneController;
 use Prime\Admin\Demo\DemoDashboardData;
@@ -28,6 +31,7 @@ use Prime\Auth\RoleRepository;
 use Prime\Auth\TwoFactorService;
 use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
+use Prime\Cache\CacheManager;
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\EntryLockRepository;
 use Prime\Content\EntryQuery;
@@ -44,6 +48,8 @@ use Prime\Hooks\Hooks;
 use Prime\Http\Response;
 use Prime\Http\Router;
 use Prime\Http\Session;
+use Prime\I18n\LocaleFormatter;
+use Prime\I18n\Translator;
 use Prime\Kernel\ServiceProvider;
 use Prime\Log\Logger;
 use Prime\Media\MediaConfig;
@@ -108,6 +114,12 @@ final class AdminServiceProvider extends ServiceProvider
             $media = $this->app->container()->has(MediaRepository::class)
                 ? $this->app->get(MediaRepository::class)
                 : null;
+            $translator = $this->app->container()->has(Translator::class)
+                ? $this->app->get(Translator::class)
+                : null;
+            $formatter = $this->app->container()->has(LocaleFormatter::class)
+                ? $this->app->get(LocaleFormatter::class)
+                : null;
 
             return new AdminContext(
                 $this->app,
@@ -121,6 +133,8 @@ final class AdminServiceProvider extends ServiceProvider
                 $taxonomies instanceof TaxonomyRegistry ? $taxonomies : null,
                 $entries instanceof EntryRepository ? $entries : null,
                 $media instanceof MediaRepository ? $media : null,
+                $translator instanceof Translator ? $translator : null,
+                $formatter instanceof LocaleFormatter ? $formatter : null,
             );
         });
 
@@ -225,6 +239,85 @@ final class AdminServiceProvider extends ServiceProvider
                 seoSettings: $this->app->get(SeoSettings::class),
                 query: $this->app->get(EntryQuery::class),
                 media: $media instanceof MediaRepository ? $media : null,
+            );
+        });
+
+        $container->singleton(SystemStatus::class, function (): SystemStatus {
+            $c = $this->app->container();
+            $opt = static function (string $id) use ($c): mixed {
+                if (!$c->has($id)) {
+                    return null;
+                }
+
+                try {
+                    return $c->get($id);
+                } catch (\Throwable) {
+                    return null;
+                }
+            };
+            $db = $opt(Connection::class);
+            $hooks = $opt(Hooks::class);
+            $runner = $opt(\Prime\Scheduler\SchedulerRunner::class);
+            $jobs = $opt(\Prime\Jobs\JobRepository::class);
+            $mailer = $opt(\Prime\Mail\Mailer::class);
+            $cache = $opt(CacheManager::class);
+            $plugins = $opt(PluginManager::class);
+
+            return new SystemStatus(
+                app: $this->app,
+                db: $db instanceof Connection ? $db : null,
+                hooks: $hooks instanceof Hooks ? $hooks : null,
+                scheduler: $runner instanceof \Prime\Scheduler\SchedulerRunner ? $runner : null,
+                jobs: $jobs instanceof \Prime\Jobs\JobRepository ? $jobs : null,
+                mailer: $mailer instanceof \Prime\Mail\Mailer ? $mailer : null,
+                cache: $cache instanceof CacheManager ? $cache : null,
+                plugins: $plugins instanceof PluginManager ? $plugins : null,
+            );
+        });
+
+        $container->singleton(SettingsPageController::class, function (): SettingsPageController {
+            $c = $this->app->container();
+            $mailer = $c->has(\Prime\Mail\Mailer::class) ? $c->get(\Prime\Mail\Mailer::class) : null;
+            $log = $c->has(\Prime\Mail\MailLogRepository::class) ? $c->get(\Prime\Mail\MailLogRepository::class) : null;
+
+            return new SettingsPageController(
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                registry: $this->app->get(\Prime\Settings\SettingsRegistry::class),
+                processor: $this->app->get(\Prime\Settings\SettingsFormProcessor::class),
+                settings: $this->app->get(Settings::class),
+                session: $this->app->get(Session::class),
+                mailer: $mailer instanceof \Prime\Mail\Mailer ? $mailer : null,
+                mailLog: $log instanceof \Prime\Mail\MailLogRepository ? $log : null,
+                cache: $c->has(CacheManager::class) ? $c->get(CacheManager::class) : null,
+            );
+        });
+
+        $container->singleton(ToolsController::class, function (): ToolsController {
+            $c = $this->app->container();
+            $schedule = $c->has(\Prime\Scheduler\Schedule::class) ? $c->get(\Prime\Scheduler\Schedule::class) : null;
+            $runner = $c->has(\Prime\Scheduler\SchedulerRunner::class) ? $c->get(\Prime\Scheduler\SchedulerRunner::class) : null;
+            $jobs = $c->has(\Prime\Jobs\JobRepository::class) ? $c->get(\Prime\Jobs\JobRepository::class) : null;
+            $registry = $c->has(\Prime\Settings\SettingsRegistry::class) ? $c->get(\Prime\Settings\SettingsRegistry::class) : null;
+            $processor = $c->has(\Prime\Settings\SettingsFormProcessor::class) ? $c->get(\Prime\Settings\SettingsFormProcessor::class) : null;
+
+            return new ToolsController(
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                status: $this->app->get(SystemStatus::class),
+                schedule: $schedule instanceof \Prime\Scheduler\Schedule ? $schedule : null,
+                runner: $runner instanceof \Prime\Scheduler\SchedulerRunner ? $runner : null,
+                jobs: $jobs instanceof \Prime\Jobs\JobRepository ? $jobs : null,
+                registry: $registry instanceof \Prime\Settings\SettingsRegistry ? $registry : null,
+                processor: $processor instanceof \Prime\Settings\SettingsFormProcessor ? $processor : null,
+            );
+        });
+
+        $container->singleton(PerformanceController::class, function (): PerformanceController {
+            return new PerformanceController(
+                view: $this->app->get(View::class),
+                context: $this->app->get(AdminContext::class),
+                cache: $this->app->get(CacheManager::class),
             );
         });
 
@@ -674,6 +767,59 @@ final class AdminServiceProvider extends ServiceProvider
                 $r->post('/settings/seo', [SiteSettingsController::class, 'saveSeo'])
                     ->middleware('can:settings.manage')
                     ->name('settings.seo.save');
+                $r->get('/settings/performance', [PerformanceController::class, 'index'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.performance');
+                $r->post('/settings/performance', [PerformanceController::class, 'save'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.performance.save');
+                $r->post('/settings/performance/purge', [PerformanceController::class, 'purge'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.performance.purge');
+
+                // Registry-driven settings screens and « Outils » (Phase 9)
+                $r->get('/settings', [SettingsPageController::class, 'landing'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings');
+                $r->post('/settings/emails/test', [SettingsPageController::class, 'sendTest'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.emails.test');
+                $r->post('/settings/emails/log/{id:\d+}/resend', [SettingsPageController::class, 'resend'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.emails.resend');
+                $r->get('/settings/{page:general|security|emails}', [SettingsPageController::class, 'show'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.page');
+                $r->post('/settings/{page:general|security|emails}', [SettingsPageController::class, 'save'])
+                    ->middleware('can:settings.manage')
+                    ->name('settings.page.save');
+                $r->get('/tools', [ToolsController::class, 'landing'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools');
+                $r->get('/tools/scheduler', [ToolsController::class, 'scheduler'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.scheduler');
+                $r->post('/tools/scheduler/settings', [ToolsController::class, 'saveSchedulerSettings'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.scheduler.settings');
+                $r->post('/tools/scheduler/{name:[a-z0-9][a-z0-9_.\-]{0,63}}/run', [ToolsController::class, 'runTask'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.scheduler.run');
+                $r->get('/tools/queue', [ToolsController::class, 'queue'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.queue');
+                $r->post('/tools/queue/retry-all', [ToolsController::class, 'retryAll'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.queue.retry_all');
+                $r->post('/tools/queue/{id:\d+}/retry', [ToolsController::class, 'retryJob'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.queue.retry');
+                $r->post('/tools/queue/{id:\d+}/delete', [ToolsController::class, 'deleteJob'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.queue.delete');
+                $r->get('/tools/system', [ToolsController::class, 'system'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.system');
 
                 // Backwards-compatible redirects from Phase 2 placeholder content routes
                 $r->get('/pages', static fn (): Response => Response::redirect('/admin/content/page'))
@@ -683,11 +829,6 @@ final class AdminServiceProvider extends ServiceProvider
                     ->middleware('can:content.view')
                     ->name('legacy.articles');
 
-                // Remaining Phase 9 settings placeholders (capability verified in DashboardController::module)
-                $r->get('/{module:settings}', [DashboardController::class, 'module'])
-                    ->name('module');
-                $r->get('/{module:settings}/{section:[a-z0-9-]+}', [DashboardController::class, 'module'])
-                    ->name('module.section');
             },
         );
     }
@@ -699,7 +840,7 @@ final class AdminServiceProvider extends ServiceProvider
         // Top-level overview
         $menu->add(new MenuItem(
             id: 'dashboard',
-            label: 'Tableau de bord',
+            label: 'admin.menu.dashboard',
             icon: 'layout-dashboard',
             url: '/admin',
             position: 10,
@@ -711,30 +852,30 @@ final class AdminServiceProvider extends ServiceProvider
         // Contenu group (teal) — dynamic ContentType items are injected in AdminContext::build()
         $menu->add(new MenuItem(
             id: 'media',
-            label: 'Médias',
+            label: 'admin.menu.media',
             icon: 'image',
             url: '/admin/media',
             position: 40,
             accent: 'teal',
             capability: 'media.view',
-            group: 'Contenu',
+            group: 'admin.menu.groups.content',
         ));
 
         // Système group (violet, sky, neutral)
         $menu->add(new MenuItem(
             id: 'appearance',
-            label: 'Apparence',
+            label: 'admin.menu.appearance_title',
             icon: 'palette',
             url: '/admin/appearance/themes',
             position: 50,
             accent: 'violet',
             capability: 'themes.manage',
-            group: 'Système',
+            group: 'admin.menu.groups.system',
         ));
 
         $menu->addChild('appearance', new MenuItem(
             id: 'appearance.themes',
-            label: 'Thèmes',
+            label: 'admin.menu.appearance.themes',
             icon: 'palette',
             url: '/admin/appearance/themes',
             position: 10,
@@ -744,7 +885,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('appearance', new MenuItem(
             id: 'appearance.customizer',
-            label: 'Personnaliser',
+            label: 'admin.menu.appearance.customizer',
             icon: 'sparkles',
             url: '/admin/appearance/customizer',
             position: 15,
@@ -754,7 +895,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('appearance', new MenuItem(
             id: 'appearance.menus',
-            label: 'Menus',
+            label: 'admin.menu.appearance.menus',
             icon: 'layers',
             url: '/admin/appearance/menus',
             position: 20,
@@ -764,7 +905,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('appearance', new MenuItem(
             id: 'appearance.zones',
-            label: 'Zones',
+            label: 'admin.menu.appearance.zones',
             icon: 'layout-dashboard',
             url: '/admin/appearance/zones',
             position: 30,
@@ -774,29 +915,29 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->add(new MenuItem(
             id: 'plugins',
-            label: 'Plugins',
+            label: 'admin.menu.plugins',
             icon: 'plug',
             url: '/admin/plugins',
             position: 60,
             accent: 'violet',
             capability: 'plugins.manage',
-            group: 'Système',
+            group: 'admin.menu.groups.system',
         ));
 
         $menu->add(new MenuItem(
             id: 'users',
-            label: 'Utilisateurs',
+            label: 'admin.menu.users_title',
             icon: 'users',
             url: '/admin/users',
             position: 70,
             accent: 'sky',
             capability: 'users.view',
-            group: 'Système',
+            group: 'admin.menu.groups.system',
         ));
 
         $menu->addChild('users', new MenuItem(
             id: 'users.list',
-            label: 'Tous les utilisateurs',
+            label: 'admin.menu.users.list',
             icon: 'users',
             url: '/admin/users',
             position: 10,
@@ -806,7 +947,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('users', new MenuItem(
             id: 'users.create',
-            label: 'Ajouter',
+            label: 'admin.menu.users.create',
             icon: 'plus',
             url: '/admin/users/create',
             position: 20,
@@ -816,7 +957,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('users', new MenuItem(
             id: 'users.roles',
-            label: 'Rôles',
+            label: 'admin.menu.users.roles',
             icon: 'shield',
             url: '/admin/roles',
             position: 30,
@@ -826,18 +967,18 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->add(new MenuItem(
             id: 'settings',
-            label: 'Réglages',
+            label: 'admin.menu.settings_title',
             icon: 'settings',
             url: '/admin/settings',
             position: 80,
             accent: 'neutral',
             capability: 'settings.manage',
-            group: 'Système',
+            group: 'admin.menu.groups.system',
         ));
 
         $menu->addChild('settings', new MenuItem(
             id: 'settings.general',
-            label: 'Général',
+            label: 'admin.menu.settings.general',
             icon: 'settings',
             url: '/admin/settings/general',
             position: 10,
@@ -847,7 +988,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('settings', new MenuItem(
             id: 'settings.reading',
-            label: 'Lecture',
+            label: 'admin.menu.settings.reading',
             icon: 'file-text',
             url: '/admin/settings/reading',
             position: 15,
@@ -857,7 +998,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('settings', new MenuItem(
             id: 'settings.permalinks',
-            label: 'Permaliens',
+            label: 'admin.menu.settings.permalinks',
             icon: 'link',
             url: '/admin/settings/permalinks',
             position: 20,
@@ -867,7 +1008,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('settings', new MenuItem(
             id: 'settings.seo',
-            label: 'Référencement',
+            label: 'admin.menu.settings.seo',
             icon: 'globe',
             url: '/admin/settings/seo',
             position: 25,
@@ -877,7 +1018,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('settings', new MenuItem(
             id: 'settings.security',
-            label: 'Sécurité',
+            label: 'admin.menu.settings.security',
             icon: 'shield',
             url: '/admin/settings/security',
             position: 30,
@@ -887,7 +1028,7 @@ final class AdminServiceProvider extends ServiceProvider
 
         $menu->addChild('settings', new MenuItem(
             id: 'settings.emails',
-            label: 'E-mails',
+            label: 'admin.menu.settings.emails',
             icon: 'inbox',
             url: '/admin/settings/emails',
             position: 40,
@@ -895,17 +1036,54 @@ final class AdminServiceProvider extends ServiceProvider
             capability: 'settings.manage',
         ));
 
+        $menu->addChild('settings', new MenuItem(
+            id: 'settings.performance',
+            label: 'admin.menu.settings.performance',
+            icon: 'activity',
+            url: '/admin/settings/performance',
+            position: 50,
+            accent: 'neutral',
+            capability: 'settings.manage',
+        ));
+
+        $menu->add(new MenuItem(
+            id: 'tools',
+            label: 'admin.menu.tools',
+            icon: 'command',
+            url: '/admin/tools',
+            position: 85,
+            accent: 'neutral',
+            capability: 'settings.manage',
+            group: 'admin.menu.groups.system',
+        ));
+
+        foreach ([
+            ['tools.scheduler', 'admin.menu.tools_items.scheduler', 'clock', '/admin/tools/scheduler', 10],
+            ['tools.queue', 'admin.menu.tools_items.queue', 'layers', '/admin/tools/queue', 20],
+            ['tools.system', 'admin.menu.tools_items.system', 'activity', '/admin/tools/system', 30],
+        ] as [$id, $label, $icon, $url, $position]) {
+            $menu->addChild('tools', new MenuItem(
+                id: $id,
+                label: $label,
+                icon: $icon,
+                url: $url,
+                position: $position,
+                accent: 'neutral',
+                capability: 'settings.manage',
+            ));
+        }
+
         if ($this->app->environment() === 'local') {
             $menu->add(new MenuItem(
                 id: 'styleguide',
-                label: 'Design System',
+                label: 'admin.menu.styleguide',
                 icon: 'sparkles',
                 url: '/admin/styleguide',
                 position: 90,
                 accent: 'amber',
-                badge: 'Dev',
+                badge: 'admin.menu.badge_dev',
                 capability: '*',
-                group: 'Système',
+                group: 'admin.menu.groups.system',
             ));
         }
 
