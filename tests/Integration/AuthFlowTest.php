@@ -8,6 +8,7 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Prime\Auth\Auth;
 use Prime\Auth\AuthResult;
+use Prime\Auth\TwoFactorPolicy;
 use Prime\Auth\TwoFactorService;
 use Prime\Auth\UserRepository;
 use Prime\Database\Connection;
@@ -21,6 +22,8 @@ use Prime\Mail\MailerInterface;
 use Prime\Mail\Message;
 use Prime\Security\Csrf;
 use Prime\Security\Totp;
+use Prime\Settings\Settings;
+use Prime\Tests\Support\MysqlEmulatingPdo;
 
 final class AuthFlowTest extends TestCase
 {
@@ -372,6 +375,72 @@ final class AuthFlowTest extends TestCase
         $reloaded = $users->find(1);
         $this->assertNotNull($reloaded);
         $this->assertFalse($reloaded->hasTwoFactor());
+    }
+
+    public function testMandatoryTwoFactorHoldsTheAccountOnTheEnrollmentScreenUntilItIsActivated(): void
+    {
+        $app = $this->createApp();
+
+        $settingsPdo = new MysqlEmulatingPdo('name');
+        $settingsPdo->exec(
+            'CREATE TABLE `pc_settings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT UNIQUE NOT NULL,'
+            . ' `value` TEXT NULL, `autoload` INTEGER NOT NULL DEFAULT 1, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL)',
+        );
+        $settings = new Settings(new Connection(['prefix' => 'pc_'], hooks: new Hooks(), debug: false, pdo: $settingsPdo));
+        $settings->set(TwoFactorPolicy::SETTING_ENABLED, true);
+        $settings->set(TwoFactorPolicy::SETTING_ROLES, ['administrator']);
+        $app->container()->instance(TwoFactorPolicy::class, new TwoFactorPolicy($settings));
+
+        /** @var Kernel $kernel */
+        $kernel = $app->get(Kernel::class);
+        /** @var Auth $auth */
+        $auth = $app->get(Auth::class);
+        /** @var UserRepository $users */
+        $users = $app->get(UserRepository::class);
+        /** @var Session $session */
+        $session = $app->get(Session::class);
+
+        $user = $users->find(1);
+        $this->assertNotNull($user);
+        $auth->login($user);
+
+        // Any admin screen sends the account to the enrollment step of its profile.
+        $dashboard = $kernel->handle(Request::create('GET', '/admin'));
+        $this->assertSame(302, $dashboard->status());
+        $this->assertSame(TwoFactorPolicy::ENROLLMENT_URL, $dashboard->header('Location'));
+
+        // JSON callers get a 403 carrying the redirect instead of an HTML bounce.
+        $json = $kernel->handle(Request::create('GET', '/admin/content/post', headers: ['Accept' => 'application/json']));
+        $this->assertSame(403, $json->status());
+        $this->assertStringContainsString('two-factor', $json->body());
+
+        // The profile itself stays reachable and shows the QR code once setup has started.
+        $profile = $kernel->handle(Request::create('GET', '/admin/profile', query: ['enroll' => 'two-factor']));
+        $this->assertSame(200, $profile->status());
+        $this->assertStringContainsString('data-prime-two-factor-required', $profile->body());
+
+        $start = $kernel->handle(Request::create('POST', '/admin/profile/2fa/start', body: [
+            '_csrf_token' => $this->csrfToken($app),
+        ]));
+        $this->assertSame(302, $start->status());
+        $this->assertStringStartsWith('/admin/profile', (string) $start->header('Location'));
+
+        $withQr = $kernel->handle(Request::create('GET', '/admin/profile', query: ['tab' => 'security']));
+        $this->assertSame(200, $withQr->status());
+        $this->assertStringContainsString('data-prime-totp-qr', $withQr->body());
+        $this->assertMatchesRegularExpression('/<svg[^>]+role="img"[^>]+aria-label="[^"]+"/', $withQr->body());
+
+        $pending = $session->get('_profile.2fa_pending_secret');
+        $this->assertIsArray($pending);
+        $confirm = $kernel->handle(Request::create('POST', '/admin/profile/2fa/confirm', body: [
+            '_csrf_token' => $this->csrfToken($app),
+            'code' => Totp::code((string) $pending['secret'], time()),
+        ]));
+        $this->assertSame(302, $confirm->status());
+
+        // Once enrolled, the rest of the admin opens up again.
+        $after = $kernel->handle(Request::create('GET', '/admin'));
+        $this->assertNotSame(TwoFactorPolicy::ENROLLMENT_URL, $after->header('Location'));
     }
 
     private function createApp(): Application

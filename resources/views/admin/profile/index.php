@@ -270,6 +270,12 @@ ob_start();
         <?php endif; ?>
 
         <?php if (!$profileUser->hasTwoFactor()): ?>
+            <?php if (!empty($twoFactorRequired)): ?>
+                <div class="pc-alert pc-alert--warning" role="alert" data-prime-two-factor-required>
+                    <?= $this->raw($this->icon('shield', 18)) ?>
+                    <p><?= $this->e($this->t('admin.profile.two_factor_required')) ?></p>
+                </div>
+            <?php endif; ?>
             <?php if ($pendingTwoFactor === null): ?>
                 <p class="pc-text-sm pc-text-muted">
                     <?= $this->e($this->t('admin.profile.code_temporaire_application_totp')) ?>
@@ -287,24 +293,29 @@ ob_start();
                     <?= $this->raw($this->t('admin.profile.two_factor_step1')) ?>
                 </p>
 
-                <div class="pc-totp-secret-box">
-                    <span class="pc-totp-secret-code" id="pc-totp-secret-display"><?= $this->e($pendingTwoFactor['formatted']) ?></span>
-                    <button
-                        type="button"
-                        class="pc-btn pc-btn--secondary pc-btn--sm"
-                        data-prime-copy-text="<?= $this->e($pendingTwoFactor['secret']) ?>"
-                        data-prime-copy-feedback="<?= $this->e($this->t('admin.profile.index.cle_secrete_copiee')) ?>"
-                    >
-                        <?= $this->e($this->t('admin.profile.index.copier_cle')) ?>
-                    </button>
+                <div class="pc-totp-qr">
+                    <div class="pc-totp-qr__code" data-prime-totp-qr>
+                        <?= $this->raw(str_replace('aria-label="QR Code"', 'aria-label="' . $this->e($this->t('admin.profile.two_factor_qr_label')) . '"', \Prime\Support\Barcode::toSvg($pendingTwoFactor['uri'], 4, 4))) ?>
+                    </div>
+                    <div class="pc-totp-qr__aside">
+                        <p class="pc-text-sm pc-text-muted"><?= $this->e($this->t('admin.profile.two_factor_manual_key')) ?></p>
+                        <div class="pc-totp-secret-box">
+                            <span class="pc-totp-secret-code" id="pc-totp-secret-display"><?= $this->e($pendingTwoFactor['formatted']) ?></span>
+                            <button
+                                type="button"
+                                class="pc-btn pc-btn--secondary pc-btn--sm"
+                                data-prime-copy-text="<?= $this->e($pendingTwoFactor['secret']) ?>"
+                                data-prime-copy-feedback="<?= $this->e($this->t('admin.profile.index.cle_secrete_copiee')) ?>"
+                            >
+                                <?= $this->e($this->t('admin.profile.index.copier_cle')) ?>
+                            </button>
+                        </div>
+                        <p class="pc-text-xs pc-text-muted">
+                            <?= t('admin.profile.direct_link') ?>
+                            <a href="<?= $this->e($pendingTwoFactor['uri']) ?>" class="pc-auth-link"><?= $this->e($this->t('admin.profile.two_factor_open_app')) ?></a>
+                        </p>
+                    </div>
                 </div>
-
-                <p class="pc-text-xs pc-text-muted">
-                    <?= t('admin.profile.direct_link') ?>
-                    <a href="<?= $this->e($pendingTwoFactor['uri']) ?>" class="pc-auth-link">
-                        Ouvrir dans l'application d'authentification (otpauth://)
-                    </a>
-                </p>
 
                 <form method="post" action="/admin/profile/2fa/confirm" class="pc-stack pc-stack--md">
                     <?= $this->raw($this->csrfField()) ?>

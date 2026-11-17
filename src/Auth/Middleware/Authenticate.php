@@ -94,8 +94,8 @@ final class Authenticate implements MiddlewareInterface
             return null;
         }
 
-        // Keep the media picker and auth endpoints reachable so the profile stays usable.
-        foreach (['/admin/logout', '/admin/login', '/admin/media'] as $allowed) {
+        // Keep the profile (2FA start/confirm included), the media picker and auth endpoints reachable.
+        foreach (['/admin/logout', '/admin/login', '/admin/media', '/admin/profile'] as $allowed) {
             if ($path === $allowed || str_starts_with($path, $allowed . '/') || str_starts_with($path, $allowed . '?')) {
                 return null;
             }
@@ -105,7 +105,7 @@ final class Authenticate implements MiddlewareInterface
             return Response::json([
                 'error' => [
                     'code' => 403,
-                    'message' => 'La double authentification est requise pour votre rôle.',
+                    'message' => t('admin.profile.two_factor_required'),
                     'redirect' => $target,
                 ],
             ], 403)->withHeaders(NoStoreHeaders::HEADERS);

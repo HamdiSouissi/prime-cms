@@ -8,6 +8,7 @@ use Prime\Admin\AdminContext;
 use Prime\Admin\TranslatesAdminCopy;
 use Prime\Auth\Auth;
 use Prime\Auth\PasswordResetService;
+use Prime\Auth\TwoFactorPolicy;
 use Prime\Auth\TwoFactorService;
 use Prime\Auth\User;
 use Prime\Auth\UserRepository;
@@ -76,7 +77,9 @@ final class ProfileController
     public function index(Request $request): Response
     {
         $user = $this->requireUser($request);
-        $activeTab = $request->query('tab') === 'security' ? 'security' : (string) $this->session->getFlash('_profile.tab', 'info');
+        $activeTab = $request->query('tab') === 'security' || $request->query('enroll') === 'two-factor'
+            ? 'security'
+            : (string) $this->session->getFlash('_profile.tab', 'info');
 
         return Response::html($this->renderProfile($request, $user, $activeTab));
     }
@@ -428,6 +431,7 @@ final class ProfileController
             'passwordErrors' => $passwordErrors,
             'twoFactorError' => $twoFactorError,
             'devicesError' => $devicesError,
+            'twoFactorRequired' => $this->twoFactorRequired($user),
             'pendingTwoFactor' => is_array($pendingSetup) && !$user->hasTwoFactor() ? $pendingSetup : null,
             'recoveryCodesOnce' => is_array($recoveryOnce) ? $recoveryOnce : null,
             'remainingRecoveryCount' => $user->hasTwoFactor() ? $this->twoFactor->remainingRecoveryCodesCount($user->id) : 0,
@@ -438,6 +442,21 @@ final class ProfileController
         ]);
 
         return $this->view->render('admin::profile/index', $data);
+    }
+
+    /**
+     * Whether the security policy forces this account to enroll before using the admin.
+     */
+    private function twoFactorRequired(User $user): bool
+    {
+        $container = $this->app->container();
+        if (!$container->has(TwoFactorPolicy::class)) {
+            return false;
+        }
+
+        $policy = $container->get(TwoFactorPolicy::class);
+
+        return $policy instanceof TwoFactorPolicy && $policy->isRequired($user);
     }
 
     private function verifyCurrentPassword(int $userId, string $plainPassword): bool
