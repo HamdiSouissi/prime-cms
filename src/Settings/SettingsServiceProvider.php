@@ -8,7 +8,6 @@ use DateTimeZone;
 use Prime\Auth\RoleRepository;
 use Prime\Cache\CacheInterface;
 use Prime\Content\EntryQuery;
-use Prime\Content\Term;
 use Prime\Content\TermRepository;
 use Prime\Database\Connection;
 use Prime\Hooks\Hooks;
@@ -219,9 +218,7 @@ final class SettingsServiceProvider extends ServiceProvider
 
         $options = [];
         foreach ($rows as $term) {
-            if ($term instanceof Term) {
-                $options[$term->id] = $term->name;
-            }
+            $options[$term->id] = $term->name;
         }
 
         return $options;

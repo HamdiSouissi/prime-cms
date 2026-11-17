@@ -178,6 +178,8 @@ final class Barcode
             $data[intdiv($index, 8)] |= $bit << (7 - $index % 8);
         }
 
+        $data = array_values($data);
+
         $best = null;
         $bestPenalty = PHP_INT_MAX;
         $chosenMask = 0;
@@ -251,7 +253,7 @@ final class Barcode
 
         $codewords = [];
         foreach (str_split(implode('', $bits), 8) as $byte) {
-            $codewords[] = bindec($byte);
+            $codewords[] = (int) bindec($byte);
         }
 
         $pad = true;
@@ -383,7 +385,7 @@ final class Barcode
             $poly = $next;
         }
 
-        return $poly;
+        return array_values($poly);
     }
 
     private static function gfPow(int $base, int $exponent): int
@@ -415,7 +417,11 @@ final class Barcode
         /** @var list<int> $log */
         $log = self::$gfLog;
 
-        return $exp[$log[$a] + $log[$b]];
+        // The exponent table repeats every 255 entries, so the sum is folded back into it: same value,
+        // and an offset PHPStan can prove is inside the table.
+        $sum = ($log[$a] ?? 0) + ($log[$b] ?? 0);
+
+        return $exp[$sum % 255];
     }
 
     private static function initGf(): void
@@ -442,8 +448,8 @@ final class Barcode
             $exp[$i] = $exp[$i - 255];
         }
 
-        self::$gfExp = $exp;
-        self::$gfLog = $log;
+        self::$gfExp = array_values($exp);
+        self::$gfLog = array_values($log);
     }
 
     /**
@@ -518,6 +524,11 @@ final class Barcode
                 self::set($base, $functions, $size, $row, $size - 11 + $col, $bit);
             }
         }
+
+        // Writes through a reference at computed offsets widen the rows from `list<bool>` to
+        // `array<int, bool>`; re-indexing them keeps the promise every helper below makes.
+        $base = self::asListMatrix($base);
+        $functions = self::asListMatrix($functions);
     }
 
     /**
@@ -577,6 +588,8 @@ final class Barcode
                 }
             }
         }
+
+        $matrix = self::asListMatrix($matrix);
     }
 
     /**
@@ -596,6 +609,8 @@ final class Barcode
                 }
             }
         }
+
+        $matrix = self::asListMatrix($matrix);
     }
 
     private static function maskHit(int $mask, int $x, int $y): bool
@@ -652,6 +667,8 @@ final class Barcode
 
         // Always-dark module below the top-right copy of the format information.
         $matrix[$size - 8][8] = true;
+
+        $matrix = self::asListMatrix($matrix);
     }
 
     /**
@@ -740,6 +757,27 @@ final class Barcode
      * @param list<list<bool>> $base
      * @param list<list<bool>> $functions
      */
+    /**
+     * PHPStan reads a write at a computed offset as `array<int, bool>` rather than `list<bool>`, which
+     * a caller holding a `list<list<bool>>` may not be given back. Re-indexing the rows is a no-op on a
+     * matrix that was dense to begin with — the size loop never leaves a hole — and it is what lets the
+     * four drawing helpers keep taking their matrix by reference.
+     *
+     * @param array<int, array<int, bool>> $matrix
+     *
+     * @return list<list<bool>>
+     */
+    private static function asListMatrix(array $matrix): array
+    {
+        $rows = [];
+
+        foreach ($matrix as $row) {
+            $rows[] = array_values($row);
+        }
+
+        return $rows;
+    }
+
     private static function set(array &$base, array &$functions, int $size, int $x, int $y, bool $on): void
     {
         if ($x < 0 || $y < 0 || $x >= $size || $y >= $size) {

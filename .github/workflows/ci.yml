@@ -51,13 +51,45 @@ jobs:
       - name: Run static analysis (PHPStan level 8)
         run: |
           set -o pipefail
-          # GitHub keeps only ten annotations per job, which hides the rest of a failing run: ask for
-          # the table format, and put the whole report in a single annotation.
-          if ! php -d memory_limit=1G vendor/bin/phpstan analyse --error-format=table --no-progress 2>&1 | tee /tmp/stan.log; then
-            SUMMARY=$(sed -n '/^ *Line /,$p' /tmp/stan.log | tr '\n' '|' | sed 's/||*/ | /g' | cut -c1-3000)
-            echo "::error title=PHPStan niveau 8::$SUMMARY"
-            exit 1
-          fi
+          # GitHub caps a job at ten failure annotations and PHPStan fills them, so the list is read
+          # back from the JSON report and spread over warnings instead: the whole report survives, not
+          # its first ten lines.
+          php -d memory_limit=1G vendor/bin/phpstan analyse --error-format=json --no-progress > /tmp/stan.json || true
+          python3 - <<'PY'
+          import json, re, sys
+
+          try:
+              report = json.load(open('/tmp/stan.json', encoding='utf-8'))
+          except Exception as exc:  # noqa: BLE001 — phpstan died before printing anything usable
+              print('::error title=PHPStan::aucune sortie JSON exploitable : %s' % exc)
+              sys.exit(1)
+
+          files = report.get('files') or {}
+          if isinstance(files, dict):  # phpstan keys the report by absolute path
+              grouped = [(path, node.get('messages') or []) for path, node in files.items()]
+          else:
+              grouped = [(str(node.get('name', '')), node.get('messages') or []) for node in files]
+
+          items = []
+          for path, messages in grouped:
+              name = '/'.join(path.replace(chr(92), '/').split('/')[-2:])
+              for message in messages:
+                  text = re.sub(r'\s+', ' ', str(message.get('message', '')))[:170]
+                  items.append('%s·%s· %s' % (name, message.get('line', '?'), text))
+
+          total = int(report.get('total_errors', 0) or 0)
+          if total == 0 and not items:
+              print('PHPStan niveau 8 : aucune erreur.')
+              sys.exit(0)
+
+          print('PHPStan niveau 8 : %d erreur(s), %d message(s).' % (total, len(items)))
+          chunks = [' | '.join(items[i:i + 4]) for i in range(0, len(items), 4)] or ['aucun détail']
+          for index in range(8):
+              if index >= len(chunks):
+                  break
+              print('::warning title=PHPStan %d/%d::%s' % (index + 1, len(chunks), chunks[index][:1400]))
+          sys.exit(1)
+          PY
 
       - name: Run unit and HTTP test suite (PHPUnit 11)
         run: vendor/bin/phpunit --exclude-group database

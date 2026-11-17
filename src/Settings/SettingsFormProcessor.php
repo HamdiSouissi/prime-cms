@@ -496,9 +496,11 @@ final class SettingsFormProcessor
                 continue;
             }
 
-            // PHP 8.2 hands back both counters, so a rollover is a fact and not a maybe.
+            // `getLastErrors()` is documented to answer on PHP >= 8.2 but the signature still allows
+            // `false`, so the counters are only read once the array is in hand: a rollover (`25:00`,
+            // `31/02/2026`) lands here instead of being silently rolled over by `createFromFormat()`.
             $issues = DateTimeImmutable::getLastErrors();
-            $hasIssues = $issues['warning_count'] > 0 || $issues['error_count'] > 0;
+            $hasIssues = is_array($issues) && ($issues['warning_count'] > 0 || $issues['error_count'] > 0);
 
             // A lossless round-trip keeps `25:00` and `31/02/2026` from being silently rolled over:
             // the raw input reaches the declared `regex` rule and the screen shows why it was refused.
