@@ -42,9 +42,12 @@ jobs:
       - name: Check code style (PSR-12)
         run: |
           set -o pipefail
-          if ! composer cs:check 2>&1 | tee /tmp/cs.log; then
-            SUMMARY=$(tail -n 60 /tmp/cs.log | tr '\n' ' ' | cut -c1-1200)
-            echo "::error title=PHP-CS-Fixer::$SUMMARY"
+          # php-cs-fixer prints one line per offending file ahead of its diff, and that list is the part
+          # worth an annotation: the log of a finished job cannot be read from here.
+          if ! PHP_CS_FIXER_IGNORE_ENV=1 composer cs:check > /tmp/cs.log 2>&1; then
+            grep -E '^ +[0-9]+\) ' /tmp/cs.log | sed 's/^ *//' | head -n 20 | tr '\n' ' ' \
+              | sed 's/^/::error title=php-cs-fixer : fichiers à reprendre ::/' || true
+            sed -n '1,80p' /tmp/cs.log
             exit 1
           fi
 
@@ -357,15 +360,27 @@ jobs:
           curl -sf http://localhost:8080/ | grep -q "Purge Cible"
           prime9_cache HIT http://localhost:8080/
 
+          # `prime9_cli <libellé> <motif> <arguments de bin/prime…>` runs a CLI assertion and quotes what
+          # the container answered when the pattern is missing — same reason `prime9_cache` exists.
+          prime9_cli() {
+            label=$1; pattern=$2; shift 2
+            status=0
+            out=$(docker compose exec -T app php bin/prime "$@" 2>&1) || status=$?
+            if [ $status -ne 0 ] || ! printf '%s' "$out" | grep -q "$pattern"; then
+              printf '::error::phase9 %s (statut %s) : %s\n' "$label" "$status" "$(printf '%s' "$out" | tr '\n' ' ' | cut -c1-700)"
+              exit 1
+            fi
+          }
+
           # Phase 9 — registry, queue, scheduler and mail log on the live database (migrations 24 & 25).
-          docker compose exec -T app php bin/prime migrate:status | grep -q "2026_11_15_000025_create_jobs_table"
-          docker compose exec -T app php bin/prime settings:list mail | grep -q "mail.driver"
-          docker compose exec -T app php bin/prime queue:status --json | grep -q '"pending"'
-          docker compose exec -T app php bin/prime queue:work --once
-          docker compose exec -T app php bin/prime schedule:run --list --json | grep -q '"name"'
-          docker compose exec -T app php bin/prime schedule:run | grep -q "Aucune tâche à exécuter\|tâche(s) examinée"
-          docker compose exec -T app php bin/prime mail:test --to=verify@prime-docker.test --json | grep -q '"ok": true'
-          docker compose exec -T app php bin/prime mail:logs --json | grep -q "verify@prime-docker.test"
+          prime9_cli "migrations 24 et 25" "2026_11_15_000025_create_jobs_table" migrate:status
+          prime9_cli "registre des réglages" '"name": "mail.driver"' settings:list --json
+          prime9_cli "file d attente" '"pending"' queue:status --json
+          prime9_cli "worker de la file" "" queue:work --once
+          prime9_cli "tâches déclarées" '"name"' schedule:run --list --json
+          prime9_cli "horloge du planifieur" "Aucune tâche à exécuter\|tâche(s) examinée" schedule:run
+          prime9_cli "test d envoi" '"ok": true' mail:test --to=verify@prime-docker.test --json
+          prime9_cli "journal des envois" "verify@prime-docker.test" mail:logs --json
 
           # The same session, in English: the per-user language wins over `language.admin`, so the
           # preference is saved through the profile form and the admin must follow it immediately.
