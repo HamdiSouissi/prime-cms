@@ -13,6 +13,7 @@ use Prime\Http\Kernel;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Http\Session;
+use Prime\Kernel\Container;
 use Prime\Kernel\ServiceProvider;
 use Prime\Log\Logger;
 use Prime\Mail\MailerInterface;
