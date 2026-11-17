@@ -35,8 +35,12 @@ use Prime\Console\Commands\PluginInstallCommand;
 use Prime\Console\Commands\PluginListCommand;
 use Prime\Console\Commands\PluginPublishAssetsCommand;
 use Prime\Console\Commands\PluginUninstallCommand;
+use Prime\Console\Commands\QueueRetryCommand;
+use Prime\Console\Commands\QueueStatusCommand;
+use Prime\Console\Commands\QueueWorkCommand;
 use Prime\Console\Commands\RoleListCommand;
 use Prime\Console\Commands\RoutesCommand;
+use Prime\Console\Commands\ScheduleRunCommand;
 use Prime\Console\Commands\SettingsGetCommand;
 use Prime\Console\Commands\SettingsListCommand;
 use Prime\Console\Commands\SettingsSetCommand;
@@ -59,6 +63,8 @@ use Prime\Database\Migrations\Migrator;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
 use Prime\Install\Installer;
+use Prime\Jobs\JobQueue;
+use Prime\Jobs\JobRepository;
 use Prime\Kernel\Application;
 use Prime\Media\MediaConfig;
 use Prime\Media\MediaRepository;
@@ -66,6 +72,8 @@ use Prime\Media\UploadService;
 use Prime\Media\UploadsGuard;
 use Prime\Plugins\PluginInstaller;
 use Prime\Plugins\PluginManager;
+use Prime\Scheduler\Schedule;
+use Prime\Scheduler\SchedulerRunner;
 use Prime\Security\PasswordPolicy;
 use Prime\Settings\Settings;
 use Prime\Settings\SettingsRegistry;
@@ -170,6 +178,26 @@ final class ConsoleApplication
             $this->register(new MigrateResetCommand($migrator));
             $this->register(new MigrateFreshCommand($this->app, $connection, $migrator));
             $this->register(new MakeMigrationCommand($this->app));
+        }
+
+        if ($this->app->container()->has(Schedule::class) && $this->app->container()->has(SchedulerRunner::class)) {
+            /** @var Schedule $schedule */
+            $schedule = $this->app->get(Schedule::class);
+            /** @var SchedulerRunner $runner */
+            $runner = $this->app->get(SchedulerRunner::class);
+
+            $this->register(new ScheduleRunCommand($schedule, $runner));
+        }
+
+        if ($this->app->container()->has(JobQueue::class) && $this->app->container()->has(JobRepository::class)) {
+            /** @var JobQueue $queue */
+            $queue = $this->app->get(JobQueue::class);
+            /** @var JobRepository $jobs */
+            $jobs = $this->app->get(JobRepository::class);
+
+            $this->register(new QueueWorkCommand($queue, $jobs));
+            $this->register(new QueueStatusCommand($jobs));
+            $this->register(new QueueRetryCommand($jobs));
         }
 
         if ($this->app->container()->has(Settings::class)) {

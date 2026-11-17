@@ -13,6 +13,7 @@ use Prime\Http\Middleware\TrailingSlash;
 use Prime\Http\Middleware\VerifyCsrfToken;
 use Prime\I18n\I18nServiceProvider;
 use Prime\Install\InstallServiceProvider;
+use Prime\Jobs\JobsServiceProvider;
 use Prime\Kernel\Env;
 use Prime\Kernel\Providers\HooksServiceProvider;
 use Prime\Kernel\Providers\HttpServiceProvider;
@@ -21,6 +22,7 @@ use Prime\Kernel\Providers\ViewServiceProvider;
 use Prime\Mail\MailServiceProvider;
 use Prime\Media\MediaServiceProvider;
 use Prime\Plugins\PluginServiceProvider;
+use Prime\Scheduler\SchedulerServiceProvider;
 use Prime\Settings\SettingsServiceProvider;
 use Prime\Site\SiteServiceProvider;
 use Prime\Themes\ThemeServiceProvider;
@@ -48,6 +50,8 @@ return [
         InstallServiceProvider::class,
         MediaServiceProvider::class,
         ContentServiceProvider::class,
+        JobsServiceProvider::class,
+        SchedulerServiceProvider::class,
         AdminServiceProvider::class,
         PluginServiceProvider::class,
         ThemeServiceProvider::class,
@@ -62,6 +66,7 @@ return [
         // factories in I18nServiceProvider / CacheServiceProvider degrade to a passthrough.
         'locale',
         'page_cache',
+        'scheduler',
     ],
 
     'route_middleware' => [

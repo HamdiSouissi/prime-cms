@@ -30,6 +30,10 @@ use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
 use Prime\Http\Response;
 use Prime\Http\Router;
+use Prime\Jobs\ContentPublishHandler;
+use Prime\Jobs\JobHandlerRegistry;
+use Prime\Jobs\JobQueue;
+use Prime\Jobs\JobRepository;
 use Prime\Security\HtmlSanitizer;
 use Prime\Tests\Support\MysqlEmulatingPdo;
 
@@ -37,6 +41,12 @@ final class EntryServiceAndQueryTest extends TestCase
 {
     private Connection $db;
     private Hooks $hooks;
+    private ContentTypeRegistry $types;
+    private TaxonomyRegistry $taxonomies;
+    private Renderer $renderer;
+    private FieldRegistry $fields;
+    private HtmlSanitizer $sanitizer;
+    private Router $router;
     private EntryRepository $entries;
     private TermRepository $terms;
     private RevisionRepository $revisions;
@@ -62,6 +72,7 @@ final class EntryServiceAndQueryTest extends TestCase
             '2026_11_15_000012_create_revisions_table.php',
             '2026_11_15_000013_create_terms_tables.php',
             '2026_11_15_000014_create_entry_locks_table.php',
+            '2026_11_15_000025_create_jobs_table.php',
         ] as $file) {
             /** @var Migration $m */
             $m = require dirname(__DIR__, 3) . '/database/migrations/' . $file;
@@ -82,42 +93,30 @@ final class EntryServiceAndQueryTest extends TestCase
         ]);
 
         $this->hooks = new Hooks();
-        $types = new ContentTypeRegistry($this->hooks);
-        $taxonomies = new TaxonomyRegistry($this->hooks);
-        $sanitizer = new HtmlSanitizer();
+        $this->types = new ContentTypeRegistry($this->hooks);
+        $this->taxonomies = new TaxonomyRegistry($this->hooks);
+        $this->sanitizer = new HtmlSanitizer();
         $blocks = new BlockRegistry($this->hooks);
-        $renderer = new Renderer($blocks, $sanitizer, $this->hooks);
+        $this->renderer = new Renderer($blocks, $this->sanitizer, $this->hooks);
 
-        $fields = new FieldRegistry($this->hooks);
-        $fields->registerGroup(new FieldGroup(
+        $this->fields = new FieldRegistry($this->hooks);
+        $this->fields->registerGroup(new FieldGroup(
             id: 'test.seo',
             title: 'SEO',
             contentTypes: ['post', 'page'],
             fields: [new Field(name: 'seo_score', type: 'number', label: 'Score', min: 0, max: 100)],
         ));
 
-        $router = new Router();
-        $router->get('/custom-route/test', static fn (): Response => Response::text('ok'));
+        $this->router = new Router();
+        $this->router->get('/custom-route/test', static fn (): Response => Response::text('ok'));
 
         $this->entries = new EntryRepository($this->db);
-        $this->terms = new TermRepository($this->db, $taxonomies);
+        $this->terms = new TermRepository($this->db, $this->taxonomies);
         $this->revisions = new RevisionRepository($this->db);
         $this->locks = new EntryLockRepository($this->db, ttlSeconds: 120);
         $this->query = new EntryQuery($this->db, $this->entries);
 
-        $this->service = new EntryService(
-            entries: $this->entries,
-            terms: $this->terms,
-            revisions: $this->revisions,
-            locks: $this->locks,
-            types: $types,
-            taxonomies: $taxonomies,
-            renderer: $renderer,
-            fieldValidator: new FieldValidator($fields, $sanitizer, $this->db),
-            hooks: $this->hooks,
-            router: $router,
-            revisionsMax: 3,
-        );
+        $this->service = $this->makeService();
     }
 
     public function testCompleteRolePermissionsMatrixAcrossTransitions(): void
@@ -298,6 +297,67 @@ final class EntryServiceAndQueryTest extends TestCase
         $this->assertSame($this->admin->id, $hb['lock']->userId);
     }
 
+    /**
+     * The admin screens used to publish overdue entries themselves, behind a stamp file of their own.
+     * The queue layer owns that work now: the request only makes sure it is coming.
+     */
+    public function testAQueuedSiteHandsThePublishingToTheWorker(): void
+    {
+        $scheduled = $this->service->create('post', [
+            'title' => 'Attendra le worker',
+            'status' => Entry::STATUS_PUBLISHED,
+            'published_at' => '2030-01-01 12:00:00',
+        ], $this->admin);
+        $this->assertSame(Entry::STATUS_SCHEDULED, $scheduled->status);
+
+        $repository = new JobRepository($this->db);
+        $handlers = new JobHandlerRegistry();
+        $handlers->register(ContentPublishHandler::NAME, new ContentPublishHandler($this->service));
+        $queue = new JobQueue($repository, $handlers);
+
+        $service = $this->makeService($queue);
+
+        $this->assertSame(0, $service->maybePublishScheduled());
+        $this->assertSame(Entry::STATUS_SCHEDULED, $this->entries->find($scheduled->id)?->status);
+        $this->assertSame(1, $repository->queuedCount(ContentPublishHandler::NAME));
+
+        // Ten admin page views in one minute stay a single queued attempt.
+        $service->maybePublishScheduled();
+        $service->maybePublishScheduled();
+        $this->assertSame(1, $repository->queuedCount(ContentPublishHandler::NAME));
+
+        // The worker picks it up; the window has not come, so the entry keeps waiting.
+        $this->assertNotNull($queue->runNext('worker-1'));
+        $this->assertSame(Entry::STATUS_SCHEDULED, $this->entries->find($scheduled->id)?->status);
+        $this->assertSame(0, $repository->queuedCount(ContentPublishHandler::NAME));
+
+        // Once the window has passed, the queued job is what publishes the entry.
+        $this->entries->updateRow($scheduled->id, [
+            'status' => Entry::STATUS_SCHEDULED,
+            'published_at' => '2020-01-02 09:00:00',
+        ]);
+        $service->maybePublishScheduled();
+        $this->assertNotNull($queue->runNext('worker-1'));
+        $this->assertSame(Entry::STATUS_PUBLISHED, $this->entries->find($scheduled->id)?->status);
+    }
+
+    public function testWithoutAQueueTheAdminRequestStillPublishesInline(): void
+    {
+        $scheduled = $this->service->create('post', [
+            'title' => 'En retard',
+            'status' => Entry::STATUS_PUBLISHED,
+            'published_at' => '2030-01-01 12:00:00',
+        ], $this->admin);
+
+        $this->entries->updateRow($scheduled->id, [
+            'status' => Entry::STATUS_SCHEDULED,
+            'published_at' => '2020-01-02 09:00:00',
+        ]);
+
+        $this->assertSame(1, $this->service->maybePublishScheduled());
+        $this->assertSame(Entry::STATUS_PUBLISHED, $this->entries->find($scheduled->id)?->status);
+    }
+
     public function testEntryQueryVisibilityFiltersAndConstantQueryCount(): void
     {
         $catTech = $this->terms->create('category', 'Tech');
@@ -375,6 +435,24 @@ final class EntryServiceAndQueryTest extends TestCase
     /**
      * @param list<string> $capabilities
      */
+    private function makeService(?JobQueue $queue = null): EntryService
+    {
+        return new EntryService(
+            entries: $this->entries,
+            terms: $this->terms,
+            revisions: $this->revisions,
+            locks: $this->locks,
+            types: $this->types,
+            taxonomies: $this->taxonomies,
+            renderer: $this->renderer,
+            fieldValidator: new FieldValidator($this->fields, $this->sanitizer, $this->db),
+            hooks: $this->hooks,
+            router: $this->router,
+            revisionsMax: 3,
+            queue: $queue,
+        );
+    }
+
     private function seedUser(int $id, string $name, string $email, array $capabilities): User
     {
         $now = '2026-11-15 10:00:00';
