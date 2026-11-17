@@ -47,14 +47,14 @@ final class LanguageChecker
     public function locales(): array
     {
         if ($this->locales !== null) {
-            return array_values($this->locales);
+            return $this->locales;
         }
 
         $locales = [];
         $entries = is_dir($this->langPath) ? (@scandir($this->langPath) ?: []) : [];
 
         foreach ($entries as $entry) {
-            if (!is_string($entry) || $entry === '.' || $entry === '..') {
+            if ($entry === '.' || $entry === '..') {
                 continue;
             }
 
@@ -99,7 +99,7 @@ final class LanguageChecker
                 $referenceLine = $this->raw($this->reference, $key);
                 $localeLine = $this->raw($locale, $key);
 
-                if ($localeLine === null) {
+                if ($localeLine === null || $referenceLine === null) {
                     continue;
                 }
 
