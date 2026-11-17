@@ -14,13 +14,7 @@ final readonly class Taxonomy
     public const NAME_PATTERN = '/^[a-z][a-z0-9_]{1,39}$/';
 
     /**
-     * @var array{
-     *   singular: string,
-     *   plural: string,
-     *   add_new: string,
-     *   parent_label: string,
-     *   empty_title: string
-     * }
+     * @var array<string, string> Raw labels (translation keys or literals); read them through label().
      */
     public array $labels;
 
@@ -30,7 +24,7 @@ final readonly class Taxonomy
     public array $contentTypes;
 
     /**
-     * @param array<string, string> $labels
+     * @param array<array-key, mixed> $labels
      * @param list<string> $contentTypes
      */
     public function __construct(
@@ -52,16 +46,18 @@ final readonly class Taxonomy
             ));
         }
 
-        $singular = trim($labels['singular'] ?? ucfirst($name));
-        $plural = trim($labels['plural'] ?? ($singular . 's'));
-
-        $this->labels = [
-            'singular' => $singular,
-            'plural' => $plural,
-            'add_new' => trim($labels['add_new'] ?? ('Ajouter : ' . mb_strtolower($singular))),
-            'parent_label' => trim($labels['parent_label'] ?? ($singular . ' parent')),
-            'empty_title' => trim($labels['empty_title'] ?? ('Aucun terme dans « ' . $plural . ' »')),
-        ];
+        $clean = [];
+        foreach ($labels as $labelKey => $value) {
+            if (!is_string($labelKey) || !is_string($value)) {
+                continue;
+            }
+            $value = trim($value);
+            if ($value !== '') {
+                $clean[$labelKey] = $value;
+            }
+        }
+        $clean['singular'] ??= ucfirst($name);
+        $this->labels = $clean;
 
         $types = [];
         foreach ($contentTypes as $ct) {
@@ -73,9 +69,27 @@ final readonly class Taxonomy
         $this->contentTypes = $types;
     }
 
+    /**
+     * Label in the active locale (translation key or literal, see {@see ContentType::label()}).
+     */
     public function label(string $key): string
     {
-        return $this->labels[$key] ?? $this->labels['singular'];
+        if (isset($this->labels[$key])) {
+            return LabelTranslator::resolve($this->labels[$key]);
+        }
+
+        $singular = LabelTranslator::resolve($this->labels['singular']);
+        $plural = isset($this->labels['plural']) ? LabelTranslator::resolve($this->labels['plural']) : $singular . 's';
+        if ($key === 'plural') {
+            return $plural;
+        }
+
+        $translated = t('core.taxonomies.defaults.' . $key, [
+            'singular' => mb_strtolower($singular),
+            'plural' => $plural,
+        ]);
+
+        return $translated === 'core.taxonomies.defaults.' . $key ? $singular : $translated;
     }
 
     public function appliesTo(string $contentType): bool

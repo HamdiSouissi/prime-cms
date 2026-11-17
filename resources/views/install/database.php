@@ -32,7 +32,7 @@ $this->layout('install::layout', [
     <div class="pc-install__alert-block">
         <?= $this->raw($this->insert('admin::components/alert', [
             'variant' => $dbStatus['ok'] ? 'success' : ($dbStatus['status'] === 'prefix_conflict' ? 'warning' : 'danger'),
-            'title' => $dbStatus['ok'] ? 'Connexion vérifiée' : 'Impossible de valider cette base de données',
+            'title' => $dbStatus['ok'] ? $this->t('core.install.view.db_ok') : $this->t('core.install.view.db_failed'),
             'message' => $dbStatus['message'],
         ])) ?>
     </div>
@@ -45,7 +45,7 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'db-host',
             'name' => 'db_host',
-            'label' => 'Hôte de la base',
+            'label' => $this->t('core.install.view.db_host'),
             'type' => 'text',
             'value' => $values['db_host'],
             'placeholder' => '127.0.0.1 ou db',
@@ -56,7 +56,7 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'db-port',
             'name' => 'db_port',
-            'label' => 'Port',
+            'label' => $this->t('core.install.view.db_port'),
             'type' => 'number',
             'value' => $values['db_port'],
             'placeholder' => '3306',
@@ -69,7 +69,7 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'db-database',
             'name' => 'db_database',
-            'label' => 'Nom de la base',
+            'label' => $this->t('core.install.view.db_name'),
             'type' => 'text',
             'value' => $values['db_database'],
             'placeholder' => 'prime_cms',
@@ -109,7 +109,7 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'db-username',
             'name' => 'db_username',
-            'label' => 'Utilisateur',
+            'label' => $this->t('core.install.view.db_user'),
             'type' => 'text',
             'value' => $values['db_username'],
             'placeholder' => 'prime',
@@ -120,11 +120,11 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'db-password',
             'name' => 'db_password',
-            'label' => 'Mot de passe',
+            'label' => $this->t('core.fields.password'),
             'type' => 'password',
             'value' => '',
-            'placeholder' => $hasStoredPassword ? 'Laisser vide pour conserver' : 'Mot de passe de la base',
-            'help' => $hasStoredPassword ? 'Un mot de passe est déjà conservé en session ; laissez ce champ vide pour ne pas le modifier.' : null,
+            'placeholder' => $hasStoredPassword ? $this->t('core.install.view.db_password_keep') : $this->t('core.install.view.db_password'),
+            'help' => $hasStoredPassword ? $this->t('core.install.view.db_password_kept_help') : null,
         ])) ?>
     </div>
 
@@ -139,7 +139,7 @@ $this->layout('install::layout', [
     <div class="pc-install__actions">
         <a href="/install/requirements" class="pc-btn pc-btn--ghost">
             <?= $this->raw($this->icon('chevron-left', 16)) ?>
-            <span>Retour</span>
+            <span><?= $this->e($this->t('core.actions.back')) ?></span>
         </a>
 
         <div class="pc-install__actions-group">
@@ -147,7 +147,7 @@ $this->layout('install::layout', [
                 <?= $this->e($this->t('core.install.db_test')) ?>
             </button>
             <button type="submit" name="intent" value="continue" class="pc-btn pc-btn--primary">
-                <span>Continuer</span>
+                <span><?= $this->e($this->t('core.actions.continue')) ?></span>
                 <?= $this->raw($this->icon('arrow-right', 16)) ?>
             </button>
         </div>

@@ -51,7 +51,7 @@ function initPasswordToggles() {
     const revealing = input.type === 'password';
     input.type = revealing ? 'text' : 'password';
     toggle.setAttribute('aria-pressed', revealing ? 'true' : 'false');
-    toggle.setAttribute('aria-label', revealing ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+    toggle.setAttribute('aria-label', revealing ? tr('admin.js.common.hide_password', 'Masquer le mot de passe') : tr('admin.js.common.show_password', 'Afficher le mot de passe'));
 
     const useEl = toggle.querySelector('use');
     if (useEl) {
@@ -352,11 +352,11 @@ function initCopyButtons() {
         document.execCommand('copy');
       }
       if (statusEl) {
-        statusEl.textContent = 'Contenu .env copié dans le presse-papiers.';
+        statusEl.textContent = tr('admin.js.install.env_copied', 'Contenu .env copié dans le presse-papiers.');
       }
     } catch {
       if (statusEl) {
-        statusEl.textContent = 'Sélectionnez le texte ci-dessous et copiez-le avec Ctrl+C / ⌘+C.';
+        statusEl.textContent = tr('admin.js.install.env_copy_manual', 'Sélectionnez le texte ci-dessous et copiez-le avec Ctrl+C / ⌘+C.');
       }
     }
   });

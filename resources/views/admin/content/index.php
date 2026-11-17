@@ -37,9 +37,9 @@ if ($isTrash && $canDelete && ($counts['trash'] ?? 0) > 0) {
     $actionsHtml .= '<button type="button" class="pc-btn pc-btn--danger pc-btn--sm"'
         . ' data-prime-confirm-delete'
         . ' data-prime-action="' . $this->e($baseUrl . '/trash/empty') . '"'
-        . ' data-prime-item-name="tous les éléments de la corbeille"'
-        . ' data-prime-warning="Tous les contenus dans la corbeille seront définitivement supprimés.">'
-        . $this->icon('trash', 16) . '<span>Vider la corbeille</span></button>';
+        . ' data-prime-item-name="' . $this->e($this->t('admin.content.trash_all_items')) . '"'
+        . ' data-prime-warning="' . $this->e($this->t('admin.content.empty_trash_warning')) . '">'
+        . $this->icon('trash', 16) . '<span>' . $this->e($this->t('admin.content.empty_trash')) . '</span></button>';
 }
 if ($canCreate) {
     $actionsHtml .= $this->insert('admin::components/button', [
@@ -63,13 +63,13 @@ if ($canCreate) {
 <nav class="pc-content-tabs" aria-label="Filtrer par statut">
     <?php
     $tabs = [
-        ['key' => 'all', 'label' => 'Tous', 'count' => $allTotal],
-        ['key' => 'published', 'label' => 'Publiés', 'count' => $counts['published'] ?? 0],
-        ['key' => 'draft', 'label' => 'Brouillons', 'count' => $counts['draft'] ?? 0],
-        ['key' => 'pending', 'label' => 'En attente', 'count' => $counts['pending'] ?? 0],
-        ['key' => 'scheduled', 'label' => 'Planifiés', 'count' => $counts['scheduled'] ?? 0],
-        ['key' => 'private', 'label' => 'Privés', 'count' => $counts['private'] ?? 0],
-        ['key' => 'trash', 'label' => 'Corbeille', 'count' => $counts['trash'] ?? 0],
+        ['key' => 'all', 'label' => $this->t('admin.content.tabs.all'), 'count' => $allTotal],
+        ['key' => 'published', 'label' => $this->t('admin.content.tabs.published'), 'count' => $counts['published'] ?? 0],
+        ['key' => 'draft', 'label' => $this->t('admin.content.tabs.draft'), 'count' => $counts['draft'] ?? 0],
+        ['key' => 'pending', 'label' => $this->t('admin.content.tabs.pending'), 'count' => $counts['pending'] ?? 0],
+        ['key' => 'scheduled', 'label' => $this->t('admin.content.tabs.scheduled'), 'count' => $counts['scheduled'] ?? 0],
+        ['key' => 'private', 'label' => $this->t('admin.content.tabs.private'), 'count' => $counts['private'] ?? 0],
+        ['key' => 'trash', 'label' => $this->t('core.statuses.trash'), 'count' => $counts['trash'] ?? 0],
     ];
     foreach ($tabs as $tab):
         $active = $filters['status'] === $tab['key'];
@@ -134,7 +134,7 @@ if ($canCreate) {
         <select name="sort" class="pc-select" aria-label="Trier par">
             <option value="updated_at"<?= $filters['sort'] === 'updated_at' ? ' selected' : '' ?>><?= $this->e($this->t('core.fields.updated_at')) ?></option>
             <option value="published_at"<?= $filters['sort'] === 'published_at' ? ' selected' : '' ?>><?= $this->e($this->t('admin.content.index.date_publication')) ?></option>
-            <option value="title"<?= $filters['sort'] === 'title' ? ' selected' : '' ?>>Titre</option>
+            <option value="title"<?= $filters['sort'] === 'title' ? ' selected' : '' ?>><?= $this->e($this->t('core.fields.title')) ?></option>
             <?php if ($contentType->hierarchical): ?>
                 <option value="menu_order"<?= $filters['sort'] === 'menu_order' ? ' selected' : '' ?>><?= $this->e($this->t('admin.content.index.ordre_menu')) ?></option>
             <?php endif; ?>
@@ -151,7 +151,7 @@ if ($canCreate) {
         <?= $this->raw($this->insert('admin::components/empty-state', [
             'icon' => $contentType->icon,
             'accent' => $contentType->accent,
-            'title' => $isTrash ? 'La corbeille est vide' : $contentType->label('empty_title'),
+            'title' => $isTrash ? $this->t('admin.content.trash_empty') : $contentType->label('empty_title'),
             'description' => $isTrash
                 ? $this->t('admin.view_content_index.les_elements_places_dans_la_corbeille_apparaitront_ici')
                 : $contentType->label('empty_description'),
@@ -173,7 +173,7 @@ if ($canCreate) {
                         <?php endif; ?>
                     <?php else: ?>
                         <?php if ($canPublish): ?>
-                            <option value="publish">Publier</option>
+                            <option value="publish"><?= $this->e($this->t('core.actions.publish')) ?></option>
                         <?php endif; ?>
                         <option value="draft"><?= t('admin.content.list.to_draft') ?></option>
                         <?php if ($canDelete): ?>
@@ -191,9 +191,9 @@ if ($canCreate) {
                             <th style="width: 36px;">
                                 <input type="checkbox" data-prime-table-select-all aria-label="<?= t('admin.attr.tout_selectionner') ?>">
                             </th>
-                            <th>Titre</th>
-                            <th>Statut</th>
-                            <th>Auteur</th>
+                            <th><?= $this->e($this->t('core.fields.title')) ?></th>
+                            <th><?= $this->e($this->t('core.labels.status')) ?></th>
+                            <th><?= $this->e($this->t('core.fields.author')) ?></th>
                             <th><?= $this->e($this->t('admin.content.index.mise_a_jour')) ?></th>
                             <th>Actions</th>
                         </tr>
@@ -221,7 +221,7 @@ if ($canCreate) {
                                         aria-label="<?= $this->e($this->t('admin.content.index.selectionner', ['title' => $entry->title])) ?>"
                                     >
                                 </td>
-                                <td data-prime-label="Titre">
+                                <td data-prime-label="<?= $this->e($this->t('core.fields.title')) ?>">
                                     <?php $thumb = is_array($featuredThumbs[$entry->id] ?? null) ? $featuredThumbs[$entry->id] : null; ?>
                                     <div style="display:flex;align-items:center;gap:10px;">
                                         <?php if ($thumb !== null): ?>
@@ -263,7 +263,7 @@ if ($canCreate) {
                                         </div>
                                     </div>
                                 </td>
-                                <td data-prime-label="Statut">
+                                <td data-prime-label="<?= $this->e($this->t('core.labels.status')) ?>">
                                     <?= $this->raw($this->insert('admin::components/badge', [
                                         'label' => $entry->statusLabel(),
                                         'variant' => $entry->statusVariant(),
@@ -273,10 +273,10 @@ if ($canCreate) {
                                         <div class="pc-text-xs pc-text-muted"><?= $this->e($entry->publishedAt) ?> UTC</div>
                                     <?php endif; ?>
                                 </td>
-                                <td data-prime-label="Auteur">
+                                <td data-prime-label="<?= $this->e($this->t('core.fields.author')) ?>">
                                     <?= $this->e($author !== null ? $author->displayName : ($entry->authorName ?? '—')) ?>
                                 </td>
-                                <td data-prime-label="Mise à jour">
+                                <td data-prime-label="<?= $this->e($this->t('core.labels.updated')) ?>">
                                     <span class="pc-text-xs pc-text-muted"><?= $this->e($entry->updatedAt) ?></span>
                                 </td>
                                 <td data-prime-label="Actions">
@@ -299,12 +299,12 @@ if ($canCreate) {
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <?php if ($canEditRow): ?>
-                                                <a href="<?= $this->e($editUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">Modifier</a>
+                                                <a href="<?= $this->e($editUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($this->t('core.actions.edit')) ?></a>
                                             <?php elseif ($isPendingReadOnly): ?>
                                                 <a href="<?= $this->e($editUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">Consulter</a>
                                             <?php endif; ?>
                                             <?php if ($entry->status === \Prime\Content\Entry::STATUS_PUBLISHED): ?>
-                                                <a href="<?= $this->e($entry->url()) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener">Voir</a>
+                                                <a href="<?= $this->e($entry->url()) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener"><?= $this->e($this->t('core.actions.view')) ?></a>
                                             <?php endif; ?>
                                             <a href="<?= $this->e($previewUrl) ?>" class="pc-btn pc-btn--ghost pc-btn--sm" target="_blank" rel="noopener"><?= $this->e($this->t('admin.content.index.apercu')) ?></a>
                                             <?php if ($canCreate): ?>

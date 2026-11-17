@@ -23,7 +23,7 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => $isCreate ? $this->t('admin.view_roles_form.creer_un_role') : ($isReadOnly ? $this->t('admin.view_roles_form.role_administrateur_lecture_seule') : 'Modifier le rôle : ' . $old['name']),
+    'title' => $isCreate ? $this->t('admin.view_roles_form.creer_un_role') : ($isReadOnly ? $this->t('admin.view_roles_form.role_administrateur_lecture_seule') : $this->t('admin.roles.edit_title', ['name' => $old['name']])),
     'subtitle' => $isReadOnly
         ? $this->t('admin.view_roles_form.le_role_administrateur_possede_automatiquement_l_ensemble_de')
         : $this->t('admin.view_roles_form.configurez_l_identite_du_role_et_cochez_precisement_les_perm'),
@@ -147,12 +147,12 @@ $hasWildcard = in_array('*', $old['capabilities'], true);
         <?php $matrixBody = (string) ob_get_clean(); ?>
 
         <?= $this->raw($this->insert('admin::components/card', [
-            'title' => 'Matrice des permissions',
+            'title' => $this->t('admin.roles.matrix'),
             'subtitle' => $this->t('admin.view_roles_form.permissions_groupees_par_domaine_fonctionnel'),
             'body' => $matrixBody,
             'footer' => $isReadOnly
-                ? '<a href="/admin/roles" class="pc-btn pc-btn--secondary">Retour à la liste</a>'
-                : '<a href="/admin/roles" class="pc-btn pc-btn--ghost">Annuler</a><button type="submit" class="pc-btn pc-btn--primary">' . ($isCreate ? $this->t('admin.view_roles_form.creer_le_role') : 'Enregistrer les permissions') . '</button>',
+                ? '<a href="/admin/roles" class="pc-btn pc-btn--secondary">' . $this->e($this->t('admin.actions.back_to_list')) . '</a>'
+                : '<a href="/admin/roles" class="pc-btn pc-btn--ghost">' . $this->e($this->t('core.actions.cancel')) . '</a><button type="submit" class="pc-btn pc-btn--primary">' . ($isCreate ? $this->t('admin.view_roles_form.creer_le_role') : $this->t('admin.roles.save_permissions')) . '</button>',
         ])) ?>
     </form>
 </div>

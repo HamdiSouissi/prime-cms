@@ -15,13 +15,13 @@ $this->layout('admin::layouts/app');
 
 $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferrer" class="pc-btn pc-btn--secondary">'
     . $this->icon('external-link', 16)
-    . '<span>Voir /hello-prime</span></a>';
+    . '<span>' . $this->e($this->t('plugin::hello-prime.ui.view_public')) . '</span></a>';
 ?>
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => 'Hello Prime',
-    'subtitle' => sprintf('Plugin de référence v%s — démonstration complète de l’API plugins Prime CMS.', $pluginVersion),
+    'subtitle' => $this->t('plugin::hello-prime.ui.subtitle', ['version' => $pluginVersion]),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $headerActions,
 ])) ?>
@@ -68,7 +68,7 @@ $headerActions = '<a href="/hello-prime" target="_blank" rel="noopener noreferre
             <form method="post" action="/admin/hello-prime/greetings" class="pc-stack pc-stack--md">
                 <?= $this->raw($this->csrfField()) ?>
                 <div class="pc-field">
-                    <label class="pc-field__label" for="hp-author-input">Auteur</label>
+                    <label class="pc-field__label" for="hp-author-input"><?= $this->e($this->t('core.fields.author')) ?></label>
                     <input
                         id="hp-author-input"
                         type="text"

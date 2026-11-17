@@ -759,7 +759,7 @@ final class ContentController
             );
         }
 
-        $html = $this->view->render('admin::content/revisions', $this->context->build($request, 'Révisions — ' . $entry->title, [
+        $html = $this->view->render('admin::content/revisions', $this->context->build($request, t('admin.nav.revisions') . ' — ' . $entry->title, [
             'contentType' => $contentType,
             'entry' => $entry,
             'revisions' => $revisions,
@@ -771,7 +771,7 @@ final class ContentController
                 ['label' => $this->t('admin.ctrl_text_content.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $contentType->label('plural'), 'url' => $contentType->adminListUrl()],
                 ['label' => $entry->title, 'url' => $entry->editUrl()],
-                ['label' => 'Révisions', 'url' => null],
+                ['label' => t('admin.nav.revisions'), 'url' => null],
             ],
         ]));
 

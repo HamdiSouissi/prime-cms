@@ -53,10 +53,10 @@ function ensurePickerModal() {
     <div class="pc-modal pc-modal--xl pc-media-picker" role="dialog" aria-modal="true" aria-labelledby="pc-media-picker-title">
       <div class="pc-modal__header">
         <div>
-          <h2 class="pc-modal__title" id="pc-media-picker-title" data-prime-picker-title>Sélectionner un média</h2>
-          <p class="pc-text-xs pc-text-muted" data-prime-picker-subtitle>Choisissez un fichier existant ou téléversez-en un nouveau.</p>
+          <h2 class="pc-modal__title" id="pc-media-picker-title" data-prime-picker-title>${escapeHtml(tr('admin.js.media.picker.title', 'Sélectionner un média'))}</h2>
+          <p class="pc-text-xs pc-text-muted" data-prime-picker-subtitle>${escapeHtml(tr('admin.js.media.picker.subtitle', 'Choisissez un fichier existant ou téléversez-en un nouveau.'))}</p>
         </div>
-        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-picker-close aria-label="Fermer la fenêtre">
+        <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-picker-close aria-label="${escapeHtml(tr('admin.js.media.picker.close', 'Fermer la fenêtre'))}">
           ${iconSvg('x', 18)}
         </button>
       </div>
@@ -64,30 +64,30 @@ function ensurePickerModal() {
       <div class="pc-media-picker__tabs" role="tablist" aria-label="${escapeHtml(tr('admin.js.media.picker.source_du_media', 'Source du média'))}">
         <button type="button" class="pc-media-picker__tab is-active" role="tab" aria-selected="true" data-prime-picker-tab="library">
           ${iconSvg('grid', 15)}
-          <span>Médiathèque</span>
+          <span>${escapeHtml(tr('admin.js.media.picker.tab_library', 'Médiathèque'))}</span>
         </button>
         <button type="button" class="pc-media-picker__tab" role="tab" aria-selected="false" data-prime-picker-tab="upload">
           ${iconSvg('upload', 15)}
-          <span>Téléverser</span>
+          <span>${escapeHtml(tr('admin.js.media.picker.tab_upload', 'Téléverser'))}</span>
         </button>
       </div>
 
       <div class="pc-media-picker__panel" data-prime-picker-panel="library">
         <div class="pc-media-picker__toolbar">
           <div class="pc-media-picker__search">
-            <label class="pc-sr-only" for="pc-picker-search-input">Rechercher un média</label>
-            <input id="pc-picker-search-input" type="search" class="pc-input pc-input--sm" placeholder="Rechercher par nom, titre ou texte alternatif…" data-prime-picker-search>
+            <label class="pc-sr-only" for="pc-picker-search-input">${escapeHtml(tr('admin.js.media.picker.search_label', 'Rechercher un média'))}</label>
+            <input id="pc-picker-search-input" type="search" class="pc-input pc-input--sm" placeholder="${escapeHtml(tr('admin.js.media.picker.search_placeholder', 'Rechercher par nom, titre ou texte alternatif…'))}" data-prime-picker-search>
           </div>
-          <select class="pc-select pc-select--sm" aria-label="Dossier" data-prime-picker-folder>
-            <option value="">Tous les dossiers</option>
-            <option value="unclassified">Non classés</option>
+          <select class="pc-select pc-select--sm" aria-label="${escapeHtml(tr('admin.js.media.picker.folder', 'Dossier'))}" data-prime-picker-folder>
+            <option value="">${escapeHtml(tr('admin.js.media.picker.all_folders', 'Tous les dossiers'))}</option>
+            <option value="unclassified">${escapeHtml(tr('admin.js.media.picker.unclassified', 'Non classés'))}</option>
           </select>
           <select class="pc-select pc-select--sm" aria-label="Type de fichier" data-prime-picker-kind>
-            <option value="">Tous les types</option>
+            <option value="">${escapeHtml(tr('admin.js.media.picker.all_types', 'Tous les types'))}</option>
             <option value="image">Images</option>
             <option value="document">Documents</option>
-            <option value="audio">Audio</option>
-            <option value="video">Vidéo</option>
+            <option value="audio">${escapeHtml(tr('admin.js.media.picker.kind_audio', 'Audio'))}</option>
+            <option value="video">${escapeHtml(tr('admin.js.media.picker.kind_video', 'Vidéo'))}</option>
             <option value="archive">Archives</option>
           </select>
         </div>
@@ -95,7 +95,7 @@ function ensurePickerModal() {
         <div class="pc-media-picker__body" data-prime-picker-scroll>
           <div class="pc-media-grid pc-media-grid--picker" role="listbox" data-prime-picker-grid></div>
           <div class="pc-media-picker__empty" data-prime-picker-empty hidden>
-            <p class="pc-text-sm pc-text-muted" data-prime-picker-empty-text>Aucun média trouvé.</p>
+            <p class="pc-text-sm pc-text-muted" data-prime-picker-empty-text>${escapeHtml(tr('admin.js.media.picker.empty', 'Aucun média trouvé.'))}</p>
           </div>
           <div class="pc-media-picker__more" data-prime-picker-more-wrap hidden>
             <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-picker-more>Charger plus</button>
@@ -106,8 +106,8 @@ function ensurePickerModal() {
       <div class="pc-media-picker__panel" data-prime-picker-panel="upload" hidden>
         <div class="pc-media-picker__upload-zone" data-prime-picker-dropzone>
           <div class="pc-media-picker__upload-icon">${iconSvg('upload', 28)}</div>
-          <p class="pc-media-picker__upload-title">Déposez vos fichiers ici</p>
-          <p class="pc-text-xs pc-text-muted">Les fichiers téléversés seront automatiquement sélectionnés.</p>
+          <p class="pc-media-picker__upload-title">${escapeHtml(tr('admin.js.media.picker.drop', 'Déposez vos fichiers ici'))}</p>
+          <p class="pc-text-xs pc-text-muted">${escapeHtml(tr('admin.js.media.picker.drop_help', 'Les fichiers téléversés seront automatiquement sélectionnés.'))}</p>
           <label class="pc-btn pc-btn--secondary pc-btn--sm" style="margin-top:12px;">
             <span>Parcourir l’ordinateur</span>
             <input type="file" multiple hidden data-prime-picker-file-input>
@@ -117,12 +117,12 @@ function ensurePickerModal() {
       </div>
 
       <div class="pc-modal__footer pc-media-picker__footer">
-        <div class="pc-media-picker__selection-summary" data-prime-picker-summary>Aucun média sélectionné</div>
+        <div class="pc-media-picker__selection-summary" data-prime-picker-summary>${escapeHtml(tr('admin.js.media.picker.none_selected', 'Aucun média sélectionné'))}</div>
         <div class="pc-media-picker__actions">
-          <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-picker-close>Annuler</button>
+          <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-picker-close>${escapeHtml(tr('admin.js.media.picker.cancel', 'Annuler'))}</button>
           <button type="button" class="pc-btn pc-btn--primary pc-btn--sm" data-prime-picker-confirm disabled>
             ${iconSvg('check', 16)}
-            <span data-prime-picker-confirm-label>Insérer la sélection</span>
+            <span data-prime-picker-confirm-label>${escapeHtml(tr('admin.js.media.picker.insert', 'Insérer la sélection'))}</span>
           </button>
         </div>
       </div>
@@ -268,12 +268,12 @@ export function openMediaPicker(options = {}) {
     }
     if (summaryEl) {
       if (count === 0) {
-        summaryEl.textContent = 'Aucun média sélectionné';
+        summaryEl.textContent = tr('admin.js.media.picker.none_selected', 'Aucun média sélectionné');
       } else if (count === 1) {
         const one = itemsById.get(ids[0]);
-        summaryEl.textContent = one ? `1 média sélectionné : ${one.display_title}` : tr('admin.js.media.picker.1_media_selectionne', '1 média sélectionné');
+        summaryEl.textContent = one ? tr('admin.js.media.picker.one_selected', '1 média sélectionné : :name', { name: one.display_title }) : tr('admin.js.media.picker.1_media_selectionne', '1 média sélectionné');
       } else {
-        summaryEl.textContent = `${count} médias sélectionnés`;
+        summaryEl.textContent = tr('admin.js.media.picker.many_selected', ':count médias sélectionnés', { count });
       }
     }
 
@@ -408,8 +408,8 @@ export function openMediaPicker(options = {}) {
       const data = await res.json();
       const flat = Array.isArray(data.flat_folders) ? data.flat_folders : [];
       folderSelect.innerHTML = `
-        <option value="">Tous les dossiers (${Number(data.counts?.all ?? 0)})</option>
-        <option value="unclassified">Non classés (${Number(data.counts?.unclassified ?? 0)})</option>
+        <option value="">${escapeHtml(tr('admin.js.media.picker.all_folders', 'Tous les dossiers'))} (${Number(data.counts?.all ?? 0)})</option>
+        <option value="unclassified">${escapeHtml(tr('admin.js.media.picker.unclassified', 'Non classés'))} (${Number(data.counts?.unclassified ?? 0)})</option>
       `;
       flat.forEach((f) => {
         const opt = document.createElement('option');
@@ -647,7 +647,7 @@ export function initMediaFields(scope = document) {
             <span class="pc-media-field__name">${escapeHtml(item.display_title || item.original_name || `#${item.id}`)}</span>
             <span class="pc-media-field__meta">${escapeHtml(item.human_size || '')}</span>
           </span>
-          <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-tile-remove aria-label="Retirer ce média">
+          <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-tile-remove aria-label="${escapeHtml(tr('admin.js.media.picker.remove', 'Retirer ce média'))}">
             ${iconSvg('x', 14)}
           </button>
         `;

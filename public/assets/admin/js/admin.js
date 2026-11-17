@@ -4,7 +4,7 @@
  */
 
 import { initAdminUsers } from './admin-users.js';
-import { choice, initTranslations, t, tr } from './i18n.js';
+import { choice, initTranslations, t, tr, trChoice } from './i18n.js';
 import { initAdminPlugins } from './plugins.js';
 import { initContentAdmin } from './content-admin.js';
 import { initCustomizer } from './customizer.js';
@@ -49,7 +49,7 @@ function initPasswordToggles() {
     button.setAttribute('aria-pressed', reveal ? 'true' : 'false');
     button.setAttribute(
       'aria-label',
-      reveal ? 'Masquer le mot de passe' : 'Afficher le mot de passe',
+      reveal ? tr('admin.js.common.hide_password', 'Masquer le mot de passe') : tr('admin.js.common.show_password', 'Afficher le mot de passe'),
     );
 
     const iconUse = button.querySelector('use');
@@ -104,7 +104,7 @@ function initBulkTables() {
 
       if (countEl instanceof HTMLElement) {
         countEl.textContent =
-          count > 1 ? `${count} éléments sélectionnés` : `${count} élément sélectionné`;
+          trChoice('admin.js.bulk.selected', count, '{0} :count élément sélectionné|{1} :count élément sélectionné|[2,*] :count éléments sélectionnés');
       }
     }
 

@@ -70,7 +70,7 @@ final class MenuController
 
         $locations = $this->themes->menuLocations();
 
-        $html = $this->view->render('admin::appearance/menus', $this->context->build($request, 'Menus', [
+        $html = $this->view->render('admin::appearance/menus', $this->context->build($request, t('admin.nav.menus'), [
             'allMenus' => $allMenus,
             'currentMenu' => $currentMenu,
             'itemsTree' => $itemsTree,
@@ -84,8 +84,8 @@ final class MenuController
             'primaryCtaInContent' => $currentMenu !== null,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_menu.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Apparence', 'url' => '/admin/appearance/themes'],
-                ['label' => 'Menus', 'url' => null],
+                ['label' => t('admin.nav.appearance'), 'url' => '/admin/appearance/themes'],
+                ['label' => t('admin.nav.menus'), 'url' => null],
             ],
         ]));
 

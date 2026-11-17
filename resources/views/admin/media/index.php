@@ -40,7 +40,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
         <div class="pc-page-header__left">
             <h1 class="pc-page-header__title"><?= $this->e($this->t('admin.media.index.mediatheque')) ?></h1>
             <p class="pc-page-header__subtitle">
-                <span data-prime-media-total-label><?= $this->e($initialTotal > 1 ? $initialTotal . ' médias' : $initialTotal . ' média') ?></span>
+                <span data-prime-media-total-label><?= $this->e($this->choice('admin.media.total', $initialTotal, ['count' => $initialTotal])) ?></span>
                 · <?= t('admin.media.max_per_file', ['size' => $this->e(number_format($limit['megabytes'], 1, ',', ' '))]) ?>
                 <?php if ($limit['phpLimited']): ?>
                     <span class="pc-text-muted"><?= $this->e($this->t('admin.media.index.limite_php')) ?></span>
@@ -64,7 +64,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
             <div class="pc-media-sidebar__head">
                 <h2 class="pc-media-sidebar__title">Dossiers</h2>
                 <?php if ($canUpload): ?>
-                    <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-media-folder-create aria-label="<?= t('admin.attr.creer_un_dossier') ?>" title="Nouveau dossier">
+                    <button type="button" class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm" data-prime-media-folder-create aria-label="<?= t('admin.attr.creer_un_dossier') ?>" title="<?= $this->e($this->t('admin.media.new_folder')) ?>">
                         <?= $this->raw($this->icon('folder-plus', 16)) ?>
                     </button>
                 <?php endif; ?>
@@ -76,7 +76,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
         <section class="pc-media-main" aria-label="<?= t('admin.attr.liste_des_medias') ?>">
             <!-- Mobile folder dropdown (< 960px) -->
             <div class="pc-media-mobile-folder">
-                <label class="pc-sr-only" for="pc-media-folder-mobile">Dossier</label>
+                <label class="pc-sr-only" for="pc-media-folder-mobile"><?= $this->e($this->t('admin.media.folder')) ?></label>
                 <select id="pc-media-folder-mobile" class="pc-select pc-select--sm" data-prime-media-folder-mobile></select>
                 <?php if ($canUpload): ?>
                     <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-folder-create aria-label="<?= t('admin.attr.creer_un_dossier') ?>">
@@ -105,7 +105,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                         <option value=""><?= $this->e($this->t('admin.media.index.types')) ?></option>
                         <option value="image"<?= ($initialFilters['kind'] ?? '') === 'image' ? ' selected' : '' ?>>Images</option>
                         <option value="document"<?= ($initialFilters['kind'] ?? '') === 'document' ? ' selected' : '' ?>>Documents</option>
-                        <option value="audio"<?= ($initialFilters['kind'] ?? '') === 'audio' ? ' selected' : '' ?>>Audio</option>
+                        <option value="audio"<?= ($initialFilters['kind'] ?? '') === 'audio' ? ' selected' : '' ?>><?= $this->e($this->t('admin.media.kinds.audio')) ?></option>
                         <option value="video"<?= ($initialFilters['kind'] ?? '') === 'video' ? ' selected' : '' ?>><?= $this->e($this->t('admin.media.index.videos')) ?></option>
                         <option value="archive"<?= ($initialFilters['kind'] ?? '') === 'archive' ? ' selected' : '' ?>>Archives</option>
                     </select>
@@ -179,7 +179,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                         <thead>
                             <tr>
                                 <th class="pc-table__check" scope="col"><span class="pc-sr-only"><?= $this->e($this->t('admin.media.index.selection')) ?></span></th>
-                                <th scope="col">Fichier</th>
+                                <th scope="col"><?= $this->e($this->t('admin.media.file')) ?></th>
                                 <th scope="col">Type</th>
                                 <th scope="col">Dimensions</th>
                                 <th scope="col">Poids</th>
@@ -260,7 +260,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                     <input id="pc-drawer-url" type="text" class="pc-input pc-input--sm pc-mono" readonly data-prime-drawer-url>
                     <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-drawer-copy-url>
                         <?= $this->raw($this->icon('copy', 14)) ?>
-                        <span>Copier</span>
+                        <span><?= $this->e($this->t('core.actions.copy')) ?></span>
                     </button>
                 </div>
             </div>
@@ -269,7 +269,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
 
             <form class="pc-stack pc-stack--sm" data-prime-drawer-form>
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-drawer-folder">Dossier</label>
+                    <label class="pc-label" for="pc-drawer-folder"><?= $this->e($this->t('admin.media.folder')) ?></label>
                     <select id="pc-drawer-folder" class="pc-select pc-select--sm" data-prime-drawer-folder></select>
                 </div>
                 <div class="pc-field">
@@ -277,7 +277,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                     <input id="pc-drawer-alt" type="text" class="pc-input pc-input--sm" maxlength="255" placeholder="<?= t('admin.attr.decrivez_brievement_l_image_pour_l_accessibilite') ?>" data-prime-drawer-alt>
                 </div>
                 <div class="pc-field">
-                    <label class="pc-label" for="pc-drawer-title">Titre</label>
+                    <label class="pc-label" for="pc-drawer-title"><?= $this->e($this->t('core.fields.title')) ?></label>
                     <input id="pc-drawer-title" type="text" class="pc-input pc-input--sm" maxlength="255" data-prime-drawer-title>
                 </div>
                 <div class="pc-field">

@@ -47,20 +47,20 @@ final class Plugin extends AbstractPlugin
         // 1. Register custom capability grouped under "Hello Prime"
         $context->capabilities()->register(
             self::CAPABILITY_MANAGE,
-            'Gérer les réglages et messages Hello Prime',
+            'plugin::hello-prime.capability',
         );
 
         // 2. Register custom Content Type ("Témoignages")
         $context->contentTypes()->register(new ContentType(
             name: self::CPT_TESTIMONIAL,
             labels: [
-                'singular' => 'Témoignage',
-                'plural' => 'Témoignages',
-                'add_new' => 'Nouveau témoignage',
-                'edit' => 'Modifier le témoignage',
-                'empty_title' => 'Aucun témoignage enregistré',
-                'empty_description' => 'Ajoutez des retours clients à mettre en valeur sur votre site.',
-                'search_placeholder' => 'Rechercher un témoignage…',
+                'singular' => 'plugin::hello-prime.types.testimonial.singular',
+                'plural' => 'plugin::hello-prime.types.testimonial.plural',
+                'add_new' => 'plugin::hello-prime.types.testimonial.add_new',
+                'edit' => 'plugin::hello-prime.types.testimonial.edit',
+                'empty_title' => 'plugin::hello-prime.types.testimonial.empty_title',
+                'empty_description' => 'plugin::hello-prime.types.testimonial.empty_description',
+                'search_placeholder' => 'plugin::hello-prime.types.testimonial.search_placeholder',
             ],
             icon: 'star',
             accent: 'violet',
@@ -76,10 +76,10 @@ final class Plugin extends AbstractPlugin
         $context->taxonomies()->register(new Taxonomy(
             name: self::TAX_SOURCE,
             labels: [
-                'singular' => 'Source',
-                'plural' => 'Sources',
-                'add_new' => 'Ajouter une source',
-                'empty_title' => 'Aucune source enregistrée',
+                'singular' => 'plugin::hello-prime.types.source.singular',
+                'plural' => 'plugin::hello-prime.types.source.plural',
+                'add_new' => 'plugin::hello-prime.types.source.add_new',
+                'empty_title' => 'plugin::hello-prime.types.source.empty_title',
             ],
             hierarchical: false,
             contentTypes: [self::CPT_TESTIMONIAL],
@@ -90,19 +90,19 @@ final class Plugin extends AbstractPlugin
         // 4. Register Custom Field Group attached to `testimonial`
         $context->fields()->registerGroup(new FieldGroup(
             id: 'hello-prime.testimonial_details',
-            title: 'Détails du témoignage',
+            title: 'plugin::hello-prime.fields.group_title',
             contentTypes: [self::CPT_TESTIMONIAL],
             fields: [
                 new Field(
                     name: 'author_role',
                     type: 'text',
-                    label: 'Fonction / Entreprise',
-                    placeholder: 'Ex. Directrice produit chez Studio Horizon',
+                    label: 'plugin::hello-prime.fields.author_role',
+                    placeholder: 'plugin::hello-prime.fields.author_role_placeholder',
                 ),
                 new Field(
                     name: 'rating',
                     type: 'number',
-                    label: 'Note (1 à 5)',
+                    label: 'plugin::hello-prime.fields.rating',
                     default: 5,
                     min: 1.0,
                     max: 5.0,
@@ -111,27 +111,27 @@ final class Plugin extends AbstractPlugin
                 new Field(
                     name: 'author_photo',
                     type: 'media',
-                    label: 'Photo du client',
-                    description: 'Portrait sélectionné depuis la médiathèque (optionnel).',
+                    label: 'plugin::hello-prime.fields.author_photo',
+                    description: 'plugin::hello-prime.fields.author_photo_help',
                     mediaKinds: ['image'],
                 ),
                 new Field(
                     name: 'featured',
                     type: 'checkbox',
-                    label: 'Mettre en avant sur la page publique',
+                    label: 'plugin::hello-prime.fields.featured',
                     default: false,
                 ),
             ],
             location: FieldGroup::LOCATION_SIDEBAR,
             order: 15,
-            description: 'Métadonnées déclarées par le plugin Hello Prime.',
+            description: 'plugin::hello-prime.fields.group_description',
         ));
 
         // 5. Register custom Prime Editor block (`hello-prime/highlight`) + client module
         $context->blocks()->register(new BlockDefinition(
             type: self::BLOCK_HIGHLIGHT,
-            title: 'Mise en avant Hello Prime',
-            description: 'Encart violet mettant en lumière un message clé ou un témoignage.',
+            title: 'plugin::hello-prime.blocks.highlight.title',
+            description: 'plugin::hello-prime.blocks.highlight.description',
             icon: 'sparkles',
             category: 'plugins',
             validator: static function (array $data, HtmlSanitizer $sanitizer): array {
@@ -190,7 +190,7 @@ final class Plugin extends AbstractPlugin
                     position: 62,
                     accent: 'violet',
                     capability: self::CAPABILITY_MANAGE,
-                    group: 'Système',
+                    group: 'admin.menu.groups.system',
                 ));
             }
 
@@ -217,7 +217,7 @@ final class Plugin extends AbstractPlugin
 
             $shortcuts[] = [
                 'title' => 'Hello Prime',
-                'description' => 'Configurer le message d’accueil et le livre d’or.',
+                'description' => t('plugin::hello-prime.ui.shortcut'),
                 'icon' => 'sparkles',
                 'accent' => 'violet',
                 'url' => '/admin/hello-prime',
@@ -256,10 +256,10 @@ final class Plugin extends AbstractPlugin
             }
 
             $blocks['hello_testimonial'] = [
-                'label' => 'Témoignage au hasard (Hello Prime)',
-                'description' => 'Affiche un témoignage client publié tiré au sort.',
+                'label' => 'plugin::hello-prime.dynamic.label',
+                'description' => 'plugin::hello-prime.dynamic.description',
                 'defaults' => [
-                    'title' => 'Témoignage client',
+                    'title' => t('plugin::hello-prime.dynamic.default_title'),
                     'min_rating' => 1,
                     'show_stars' => true,
                     'style' => 'card',
@@ -268,14 +268,14 @@ final class Plugin extends AbstractPlugin
                     [
                         'name' => 'title',
                         'type' => 'text',
-                        'label' => 'Titre affiché',
-                        'placeholder' => 'Témoignage client',
-                        'default' => 'Témoignage client',
+                        'label' => 'plugin::hello-prime.dynamic.title',
+                        'placeholder' => t('plugin::hello-prime.dynamic.default_title'),
+                        'default' => t('plugin::hello-prime.dynamic.default_title'),
                     ],
                     [
                         'name' => 'min_rating',
                         'type' => 'number',
-                        'label' => 'Note minimale (1 à 5)',
+                        'label' => 'plugin::hello-prime.dynamic.min_rating',
                         'min' => 1,
                         'max' => 5,
                         'step' => 1,
@@ -284,16 +284,16 @@ final class Plugin extends AbstractPlugin
                     [
                         'name' => 'show_stars',
                         'type' => 'toggle',
-                        'label' => 'Afficher les étoiles',
+                        'label' => 'plugin::hello-prime.dynamic.show_stars',
                         'default' => true,
                     ],
                     [
                         'name' => 'style',
                         'type' => 'select',
-                        'label' => 'Style d’affichage',
+                        'label' => 'plugin::hello-prime.dynamic.style',
                         'options' => [
-                            ['value' => 'card', 'label' => 'Carte complète'],
-                            ['value' => 'compact', 'label' => 'Compact'],
+                            ['value' => 'card', 'label' => 'plugin::hello-prime.dynamic.style_card'],
+                            ['value' => 'compact', 'label' => 'plugin::hello-prime.dynamic.style_compact'],
                         ],
                         'default' => 'card',
                     ],
@@ -327,9 +327,9 @@ final class Plugin extends AbstractPlugin
         $context->notices()->add(
             id: 'welcome',
             type: Notice::TYPE_SUCCESS,
-            title: 'Hello Prime est activé !',
-            message: 'Personnalisez votre message d’accueil, gérez vos Témoignages et testez le bloc Mise en avant.',
-            actionLabel: 'Ouvrir Hello Prime',
+            title: 'plugin::hello-prime.notices.welcome.title',
+            message: 'plugin::hello-prime.notices.welcome.message',
+            actionLabel: 'plugin::hello-prime.notices.welcome.action',
             actionUrl: '/admin/hello-prime',
             capability: self::CAPABILITY_MANAGE,
             dismissible: true,

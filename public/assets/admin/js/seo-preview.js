@@ -2,6 +2,8 @@
  * Prime CMS Admin — Live SERP preview and character counters in the content editor SEO panel.
  */
 
+import { tr } from './i18n.js';
+
 /**
  * Compute live SEO counters and preview strings.
  *
@@ -11,7 +13,7 @@ export function computeSerpPreview(input) {
   const rawTitle = (input.seoTitle || '').trim();
   const baseTitle = rawTitle || (input.fallbackTitle || '').trim() || 'Sans titre';
   const renderedTitle = rawTitle || (input.siteName ? `${baseTitle} ${input.sep || '—'} ${input.siteName}` : baseTitle);
-  const desc = (input.seoDesc || '').trim() || (input.fallbackDesc || '').trim() || 'Aperçu de la méta-description dans les résultats de recherche.';
+  const desc = (input.seoDesc || '').trim() || (input.fallbackDesc || '').trim() || tr('admin.js.seo.preview_fallback', 'Aperçu de la méta-description dans les résultats de recherche.');
 
   return {
     title: renderedTitle,

@@ -74,7 +74,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
         <h1 style="margin-bottom:12px;"><?= $this->e($entry->title) ?></h1>
         <p class="pc-text-sm pc-text-muted" style="margin-bottom:18px;"><?= $this->e($this->t('admin.content.edit.permalien_mis_a_jour', ['url' => $entry->url(), 'date' => $entry->updatedAt])) ?></p>
         <div class="pc-preview-body">
-            <?= $this->raw($entry->contentHtml !== '' ? $entry->contentHtml : '<p class="pc-text-muted">Aucun contenu saisi.</p>') ?>
+            <?= $this->raw($entry->contentHtml !== '' ? $entry->contentHtml : '<p class="pc-text-muted">' . $this->e($this->t('admin.content.no_content')) . '</p>') ?>
         </div>
     </div>
 <?php else: ?>
@@ -177,7 +177,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
         <div class="pc-editor-main">
             <div class="pc-editor-sheet">
-                <label class="pc-sr-only" for="pc-entry-title">Titre</label>
+                <label class="pc-sr-only" for="pc-entry-title"><?= $this->e($this->t('core.fields.title')) ?></label>
                 <input
                     id="pc-entry-title"
                     type="text"
@@ -227,9 +227,9 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
 
                 <div class="pc-stack pc-stack--sm">
                     <div class="pc-field">
-                        <label class="pc-label" for="pc-entry-status">Statut</label>
+                        <label class="pc-label" for="pc-entry-status"><?= $this->e($this->t('core.labels.status')) ?></label>
                         <select id="pc-entry-status" name="status" class="pc-select" data-prime-status-select>
-                            <option value="draft"<?= $form['status'] === 'draft' ? ' selected' : '' ?>>Brouillon</option>
+                            <option value="draft"<?= $form['status'] === 'draft' ? ' selected' : '' ?>><?= $this->e($this->t('core.statuses.draft')) ?></option>
                             <option value="pending"<?= $form['status'] === 'pending' ? ' selected' : '' ?>><?= $this->e($this->t('admin.content.edit.attente_relecture')) ?></option>
                             <?php if ($canPublish || $form['status'] === 'published'): ?>
                                 <option value="published"<?= $form['status'] === 'published' ? ' selected' : '' ?>><?= $this->e($this->t('core.statuses.published')) ?></option>
@@ -541,7 +541,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                         <?php foreach ($recentRevisions as $rev): ?>
                             <li>
                                 <span><?= $this->e($rev->createdAt) ?><?= $rev->isAutosave ? ' (auto)' : '' ?></span>
-                                <a href="<?= $this->e(sprintf('%s/%d/revisions?compare=%d', $baseUrl, $entry->id, $rev->id)) ?>">Voir</a>
+                                <a href="<?= $this->e(sprintf('%s/%d/revisions?compare=%d', $baseUrl, $entry->id, $rev->id)) ?>"><?= $this->e($this->t('core.actions.view')) ?></a>
                             </li>
                         <?php endforeach; ?>
                     </ul>

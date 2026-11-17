@@ -5,7 +5,7 @@
  */
 
 import { editorApi } from './editor/core.js';
-import { tr } from './i18n.js';
+import { tr, trChoice } from './i18n.js';
 
 /**
  * Fallback catalog used only when editor config has not provided `dynamicBlocks`.
@@ -30,12 +30,12 @@ const FALLBACK_CATALOG = [
       },
       { name: 'limit', type: 'number', label: tr('admin.js.zones-admin.nombre_d_elements_1_a', 'Nombre d’éléments (1 à 12)'), min: 1, max: 12, step: 1, default: 5 },
       { name: 'show_image', type: 'toggle', label: tr('admin.js.zones-admin.afficher_l_image_mise_en', 'Afficher l’image mise en avant'), default: false },
-      { name: 'show_excerpt', type: 'toggle', label: 'Afficher l’extrait', default: false },
+      { name: 'show_excerpt', type: 'toggle', label: tr('admin.js.zones-admin.show_excerpt', 'Afficher l’extrait'), default: false },
     ],
   },
   {
     name: 'term_list',
-    label: 'Liste de termes',
+    label: tr('admin.js.zones-admin.term_list', 'Liste de termes'),
     description: tr('admin.js.zones-admin.affiche_les_categories_ou_etiquettes', 'Affiche les catégories ou étiquettes du site.'),
     defaults: { title: tr('admin.js.zones-admin.categories', 'Catégories'), taxonomy: 'category', show_count: true },
     fields: [
@@ -50,7 +50,7 @@ const FALLBACK_CATALOG = [
         ],
         default: 'category',
       },
-      { name: 'show_count', type: 'toggle', label: 'Afficher le nombre de contenus', default: true },
+      { name: 'show_count', type: 'toggle', label: tr('admin.js.zones-admin.show_count', 'Afficher le nombre de contenus'), default: true },
     ],
   },
   {
@@ -179,13 +179,13 @@ export function formatDynamicSummary(entry, attrs) {
       const match = options.find((opt) => String(opt.value) === String(val ?? ''));
       const label = match ? String(match.label) : String(val ?? '');
       if (label !== '') {
-        parts.push(key === 'menu_id' ? `Menu : ${label}` : label);
+        parts.push(key === 'menu_id' ? tr('admin.js.zones-admin.summary_menu', 'Menu : :name', { name: label }) : label);
       }
     } else if (field.type === 'number') {
       const num = Number(val ?? field.default ?? 0);
       if (!Number.isNaN(num)) {
         if (key === 'limit') {
-          parts.push(num > 1 ? `${num} éléments` : `${num} élément`);
+          parts.push(trChoice('admin.js.zones-admin.summary_items', num, '{0} :count élément|{1} :count élément|[2,*] :count éléments'));
         } else {
           parts.push(`${field.label} : ${num}`);
         }
@@ -193,15 +193,15 @@ export function formatDynamicSummary(entry, attrs) {
     } else if (field.type === 'toggle') {
       const active = toBoolean(val);
       if (key === 'show_image') {
-        parts.push(active ? 'avec image' : 'sans image');
+        parts.push(active ? tr('admin.js.zones-admin.with_image', 'avec image') : tr('admin.js.zones-admin.without_image', 'sans image'));
       } else if (key === 'show_excerpt') {
-        parts.push(active ? 'avec extrait' : 'sans extrait');
+        parts.push(active ? tr('admin.js.zones-admin.with_excerpt', 'avec extrait') : tr('admin.js.zones-admin.without_excerpt', 'sans extrait'));
       } else if (key === 'show_count') {
-        parts.push(active ? 'avec compteur' : 'sans compteur');
+        parts.push(active ? tr('admin.js.zones-admin.with_count', 'avec compteur') : tr('admin.js.zones-admin.without_count', 'sans compteur'));
       } else if (key === 'show_stars') {
         parts.push(active ? tr('admin.js.zones-admin.avec_etoiles', 'avec étoiles') : tr('admin.js.zones-admin.sans_etoiles', 'sans étoiles'));
       } else {
-        parts.push(`${field.label} : ${active ? 'oui' : 'non'}`);
+        parts.push(`${field.label} : ${active ? tr('admin.js.common.yes', 'oui') : tr('admin.js.common.no', 'non')}`);
       }
     }
   }
@@ -291,7 +291,7 @@ export function buildDynamicBlockElement({ data, updateData, catalog }) {
     if (fields.length === 0) {
       const emptyNote = document.createElement('p');
       emptyNote.className = 'pc-ed-dynamic__empty pc-text-xs pc-text-muted';
-      emptyNote.textContent = 'Ce bloc ne nécessite aucun réglage supplémentaire.';
+      emptyNote.textContent = tr('admin.js.zones-admin.no_settings', 'Ce bloc ne nécessite aucun réglage supplémentaire.');
       fieldsHost.append(emptyNote);
       return;
     }

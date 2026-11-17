@@ -1,4 +1,4 @@
-<?php $this->layout('layouts.base', ['title' => '419 — Session expirée · Prime CMS']); ?>
+<?php $this->layout('layouts.base', ['title' => $this->t('core.errors.page_titles.419')]); ?>
 
 <?php $this->start('content'); ?>
   <section class="pc-card pc-error-card" aria-labelledby="error-419-title">

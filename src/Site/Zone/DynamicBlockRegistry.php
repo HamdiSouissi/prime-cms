@@ -6,6 +6,7 @@ namespace Prime\Site\Zone;
 
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\EntryQuery;
+use Prime\Content\LabelTranslator;
 use Prime\Content\TaxonomyRegistry;
 use Prime\Content\TermRepository;
 use Prime\Hooks\Hooks;
@@ -94,8 +95,8 @@ final class DynamicBlockRegistry
 
                     $blocks[$key] = [
                         'name' => $key,
-                        'label' => is_string($def['label'] ?? null) && $def['label'] !== '' ? $def['label'] : $key,
-                        'description' => is_string($def['description'] ?? null) ? $def['description'] : '',
+                        'label' => is_string($def['label'] ?? null) && $def['label'] !== '' ? LabelTranslator::resolve($def['label']) : $key,
+                        'description' => is_string($def['description'] ?? null) ? LabelTranslator::resolve($def['description']) : '',
                         'defaults' => $defaults,
                         'fields' => $fields,
                         'render' => $def['render'],
@@ -188,10 +189,10 @@ final class DynamicBlockRegistry
         return [
             'latest_entries' => [
                 'name' => 'latest_entries',
-                'label' => 'Derniers contenus',
-                'description' => 'Affiche la liste des derniers articles ou contenus publiés.',
+                'label' => t('site.dynamic_blocks.latest_entries.label'),
+                'description' => t('site.dynamic_blocks.latest_entries.description'),
                 'defaults' => [
-                    'title' => 'Derniers articles',
+                    'title' => t('site.dynamic_blocks.latest_entries.default_title'),
                     'type' => 'post',
                     'limit' => 5,
                     'show_image' => false,
@@ -201,21 +202,21 @@ final class DynamicBlockRegistry
                     [
                         'name' => 'title',
                         'type' => 'text',
-                        'label' => 'Titre affiché',
-                        'placeholder' => 'Derniers articles',
-                        'default' => 'Derniers articles',
+                        'label' => t('site.dynamic_blocks.fields.title'),
+                        'placeholder' => t('site.dynamic_blocks.latest_entries.default_title'),
+                        'default' => t('site.dynamic_blocks.latest_entries.default_title'),
                     ],
                     [
                         'name' => 'type',
                         'type' => 'select',
-                        'label' => 'Type de contenu',
+                        'label' => t('site.dynamic_blocks.fields.type'),
                         'options' => $typeOptions,
                         'default' => 'post',
                     ],
                     [
                         'name' => 'limit',
                         'type' => 'number',
-                        'label' => 'Nombre d’éléments (1 à 12)',
+                        'label' => t('site.dynamic_blocks.fields.limit'),
                         'min' => 1,
                         'max' => 12,
                         'step' => 1,
@@ -224,13 +225,13 @@ final class DynamicBlockRegistry
                     [
                         'name' => 'show_image',
                         'type' => 'toggle',
-                        'label' => 'Afficher l’image mise en avant',
+                        'label' => t('site.dynamic_blocks.fields.show_image'),
                         'default' => false,
                     ],
                     [
                         'name' => 'show_excerpt',
                         'type' => 'toggle',
-                        'label' => 'Afficher l’extrait',
+                        'label' => t('site.dynamic_blocks.fields.show_excerpt'),
                         'default' => false,
                     ],
                 ],
@@ -238,10 +239,10 @@ final class DynamicBlockRegistry
             ],
             'term_list' => [
                 'name' => 'term_list',
-                'label' => 'Liste de termes',
-                'description' => 'Affiche les catégories ou étiquettes du site.',
+                'label' => t('site.dynamic_blocks.term_list.label'),
+                'description' => t('site.dynamic_blocks.term_list.description'),
                 'defaults' => [
-                    'title' => 'Catégories',
+                    'title' => t('site.dynamic_blocks.term_list.default_title'),
                     'taxonomy' => 'category',
                     'show_count' => true,
                 ],
@@ -249,21 +250,21 @@ final class DynamicBlockRegistry
                     [
                         'name' => 'title',
                         'type' => 'text',
-                        'label' => 'Titre affiché',
-                        'placeholder' => 'Catégories',
-                        'default' => 'Catégories',
+                        'label' => t('site.dynamic_blocks.fields.title'),
+                        'placeholder' => t('site.dynamic_blocks.term_list.default_title'),
+                        'default' => t('site.dynamic_blocks.term_list.default_title'),
                     ],
                     [
                         'name' => 'taxonomy',
                         'type' => 'select',
-                        'label' => 'Taxonomie',
+                        'label' => t('site.dynamic_blocks.fields.taxonomy'),
                         'options' => $taxonomyOptions,
                         'default' => 'category',
                     ],
                     [
                         'name' => 'show_count',
                         'type' => 'toggle',
-                        'label' => 'Afficher le nombre de contenus',
+                        'label' => t('site.dynamic_blocks.fields.show_count'),
                         'default' => true,
                     ],
                 ],
@@ -271,8 +272,8 @@ final class DynamicBlockRegistry
             ],
             'menu' => [
                 'name' => 'menu',
-                'label' => 'Menu de navigation',
-                'description' => 'Affiche un menu de navigation enregistré.',
+                'label' => t('site.dynamic_blocks.menu.label'),
+                'description' => t('site.dynamic_blocks.menu.description'),
                 'defaults' => [
                     'title' => '',
                     'menu_id' => $defaultMenuId,
@@ -281,17 +282,17 @@ final class DynamicBlockRegistry
                     [
                         'name' => 'title',
                         'type' => 'text',
-                        'label' => 'Titre affiché (optionnel)',
-                        'placeholder' => 'Navigation',
+                        'label' => t('site.dynamic_blocks.fields.title_optional'),
+                        'placeholder' => t('site.dynamic_blocks.menu.placeholder'),
                         'default' => '',
                     ],
                     [
                         'name' => 'menu_id',
                         'type' => 'select',
-                        'label' => 'Menu à afficher',
+                        'label' => t('site.dynamic_blocks.fields.menu_id'),
                         'options' => $menuOptions !== []
                             ? $menuOptions
-                            : [['value' => '0', 'label' => 'Aucun menu enregistré']],
+                            : [['value' => '0', 'label' => t('site.dynamic_blocks.menu.none')]],
                         'default' => (string) $defaultMenuId,
                     ],
                 ],
@@ -299,8 +300,8 @@ final class DynamicBlockRegistry
             ],
             'search_form' => [
                 'name' => 'search_form',
-                'label' => 'Formulaire de recherche',
-                'description' => 'Champ de recherche accessible pointant vers la page de recherche.',
+                'label' => t('site.dynamic_blocks.search_form.label'),
+                'description' => t('site.dynamic_blocks.search_form.description'),
                 'defaults' => [],
                 'fields' => [],
                 'render' => fn (array $attrs): string => $this->renderSearchForm($attrs),
@@ -328,8 +329,8 @@ final class DynamicBlockRegistry
 
         if ($options === []) {
             return [
-                ['value' => 'post', 'label' => 'Articles'],
-                ['value' => 'page', 'label' => 'Pages'],
+                ['value' => 'post', 'label' => t('core.content_types.post.plural')],
+                ['value' => 'page', 'label' => t('core.content_types.page.plural')],
             ];
         }
 
@@ -354,8 +355,8 @@ final class DynamicBlockRegistry
 
         if ($options === []) {
             return [
-                ['value' => 'category', 'label' => 'Catégories'],
-                ['value' => 'tag', 'label' => 'Étiquettes'],
+                ['value' => 'category', 'label' => t('core.taxonomies.category.plural')],
+                ['value' => 'tag', 'label' => t('core.taxonomies.tag.plural')],
             ];
         }
 
@@ -408,7 +409,7 @@ final class DynamicBlockRegistry
                 continue;
             }
             $label = is_string($field['label'] ?? null) && trim($field['label']) !== ''
-                ? trim($field['label'])
+                ? LabelTranslator::resolve(trim($field['label']))
                 : $name;
 
             $item = [
@@ -424,7 +425,7 @@ final class DynamicBlockRegistry
             }
 
             if ($type === 'text' && is_string($field['placeholder'] ?? null)) {
-                $item['placeholder'] = $field['placeholder'];
+                $item['placeholder'] = LabelTranslator::resolve($field['placeholder']);
             }
 
             if ($type === 'number') {
@@ -446,7 +447,7 @@ final class DynamicBlockRegistry
                         if (is_array($optVal) && isset($optVal['value'])) {
                             $val = is_scalar($optVal['value']) ? (string) $optVal['value'] : '';
                             $optLabel = is_string($optVal['label'] ?? null) && $optVal['label'] !== '' ? $optVal['label'] : $val;
-                            $opts[] = ['value' => $val, 'label' => $optLabel];
+                            $opts[] = ['value' => $val, 'label' => LabelTranslator::resolve($optLabel)];
                         } elseif (is_scalar($optVal)) {
                             $opts[] = ['value' => (string) $optKey, 'label' => (string) $optVal];
                         }

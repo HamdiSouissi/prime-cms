@@ -60,6 +60,31 @@ function pluralize(line, count) {
     return line;
   }
 
+  // Explicit forms shared with the PHP translator: `{0} none|{1} one|[2,*] :count many`.
+  const explicit = /^(\{\s*-?\d+\s*\}|\[\s*-?\d+\s*,\s*(?:-?\d+|\*)\s*\])\s*/;
+  if (segments.some((segment) => explicit.test(segment))) {
+    for (const segment of segments) {
+      const match = segment.match(explicit);
+      if (!match) {
+        continue;
+      }
+      const rule = match[1];
+      const text = segment.slice(match[0].length);
+      if (rule.startsWith('{')) {
+        if (Number(rule.slice(1, -1)) === count) {
+          return text;
+        }
+      } else {
+        const [min, max] = rule.slice(1, -1).split(',').map((part) => part.trim());
+        if (count >= Number(min) && (max === '*' || count <= Number(max))) {
+          return text;
+        }
+      }
+    }
+
+    return segments[segments.length - 1].replace(explicit, '');
+  }
+
   // French treats 0 and 1 as singular, English only 1: the catalogue ships both rules,
   // so the segment count and the first (`one`) segment decide.
   const isSingular = segments.length === 2 ? Math.abs(count) < 2 : Math.abs(count) === 1;
@@ -191,4 +216,29 @@ export function messages() {
 export function resetTranslations() {
   catalogue = {};
   fallbackCatalogue = {};
+}
+
+// Load the embedded catalogue as soon as this module is evaluated. Module scripts run after
+// the document is parsed, so the JSON block is already there; block definitions and other
+// module-level `tr()` calls would otherwise resolve before `initTranslations()` and keep the
+// French fallback in every locale. Calling `initTranslations()` again later is harmless.
+if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+  initTranslations(document);
+}
+
+/**
+ * Plural lookup with a French fallback, like {@see tr} for singular strings: a missing key
+ * renders the fallback (same `{0}|{1}|[2,*]` syntax) rather than leaking the key.
+ *
+ * @param {string} key
+ * @param {number} count
+ * @param {string} fallback
+ * @param {Record<string, string|number>} [replace]
+ * @returns {string}
+ */
+export function trChoice(key, count, fallback, replace = {}) {
+  const line = catalogue[key] ?? fallbackCatalogue[key];
+  const source = typeof line === 'string' && line !== '' ? line : fallback;
+
+  return replacePlaceholders(pluralize(source, count), { count, ...replace });
 }

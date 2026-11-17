@@ -22,14 +22,14 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
 
 <?= $this->raw($this->insert('admin::components/page-header', [
     'title' => $taxonomy->label('plural'),
-    'subtitle' => 'Organisez et classez vos contenus.',
+    'subtitle' => $this->t('admin.taxonomies.subtitle'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
 
 <div class="pc-taxonomy-grid">
     <section class="pc-card">
         <div class="pc-card__header">
-            <h2 class="pc-card__title"><?= $this->e($isEdit ? 'Modifier : ' . $editing->name : $taxonomy->label('add_new')) ?></h2>
+            <h2 class="pc-card__title"><?= $this->e($isEdit ? $this->t('admin.taxonomies.edit_title', ['name' => $editing->name]) : $taxonomy->label('add_new')) ?></h2>
         </div>
         <div class="pc-card__body">
             <form method="post" action="<?= $this->e($formAction) ?>" class="pc-stack pc-stack--md">
@@ -81,7 +81,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
 
                 <div class="pc-row pc-row--sm">
                     <button type="submit" class="pc-btn pc-btn--primary">
-                        <?= $this->e($isEdit ? 'Enregistrer' : 'Ajouter') ?>
+                        <?= $this->e($isEdit ? $this->t('core.actions.save') : $this->t('core.actions.add')) ?>
                     </button>
                     <?php if ($isEdit): ?>
                         <a href="<?= $this->e($baseUrl) ?>" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('core.actions.cancel')) ?></a>
@@ -151,7 +151,7 @@ $formAction = $isEdit ? sprintf('%s/%d', $baseUrl, $editing->id) : $baseUrl;
                                 </td>
                                 <td data-prime-label="Actions">
                                     <div class="pc-row-actions">
-                                        <a href="<?= $this->e(sprintf('%s/%d/edit', $baseUrl, $term->id)) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">Modifier</a>
+                                        <a href="<?= $this->e(sprintf('%s/%d/edit', $baseUrl, $term->id)) ?>" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($this->t('core.actions.edit')) ?></a>
                                         <form method="post" action="<?= $this->e(sprintf('%s/%d/delete', $baseUrl, $term->id)) ?>" class="pc-row-action-form">
                                             <?= $this->raw($this->csrfField()) ?>
                                             <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm"><?= $this->e($this->t('core.actions.delete')) ?></button>

@@ -259,12 +259,15 @@ final readonly class Media
 
     public function kindLabel(): string
     {
-        return self::KIND_LABELS[$this->kind] ?? 'Fichier';
+        $key = 'core.media.kinds.' . (isset(self::KIND_LABELS[$this->kind]) ? $this->kind : self::KIND_OTHER);
+        $translated = t($key);
+
+        return $translated !== $key ? $translated : (self::KIND_LABELS[$this->kind] ?? 'Fichier');
     }
 
     public function humanSize(): string
     {
-        return self::formatBytes($this->sizeBytes);
+        return \Prime\I18n\LocaleFormatter::fallback()->bytes($this->sizeBytes);
     }
 
     public static function formatBytes(int $bytes): string

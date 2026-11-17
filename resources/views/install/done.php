@@ -35,15 +35,15 @@ $envWritten = (bool) ($completion['env_written'] ?? true);
 
     <?= $this->raw($this->insert('admin::components/alert', [
         'variant' => 'info',
-        'title' => 'Accès au tableau de bord',
-        'message' => 'Votre compte administrateur est prêt. Cliquez ci-dessous pour vous connecter à l\'espace d\'administration.',
+        'title' => $this->t('core.install.view.done_title'),
+        'message' => $this->t('core.install.view.done_message'),
     ])) ?>
 
     <?php if (!$envWritten): ?>
         <?= $this->raw($this->insert('admin::components/alert', [
             'variant' => 'warning',
-            'title' => 'Rappel de sécurité',
-            'message' => 'Pensez à restreindre les permissions de votre fichier .env créé manuellement (chmod 640 .env) afin qu\'il ne soit pas lisible par d\'autres utilisateurs du serveur.',
+            'title' => $this->t('core.install.view.security_reminder'),
+            'message' => $this->t('core.install.view.security_reminder_message'),
         ])) ?>
     <?php endif; ?>
 

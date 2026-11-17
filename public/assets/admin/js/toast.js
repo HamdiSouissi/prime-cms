@@ -155,7 +155,7 @@ export function showToast(message, type = 'info', options = {}) {
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
   closeBtn.className = 'pc-toast__close';
-  closeBtn.setAttribute('aria-label', 'Fermer la notification');
+  closeBtn.setAttribute('aria-label', tr('admin.js.toast.close', 'Fermer la notification'));
   closeBtn.appendChild(createSpriteIcon('x', 16));
 
   toast.appendChild(iconWrap);

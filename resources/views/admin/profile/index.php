@@ -141,7 +141,7 @@ ob_start();
             <div class="pc-badges-wrap">
                 <?php foreach ($profileUser->roles as $role): ?>
                     <?= $this->raw($this->insert('admin::components/badge', [
-                        'label' => $role->name,
+                        'label' => $role->label(),
                         'variant' => $role->isAdministrator() ? 'brand' : 'info',
                     ])) ?>
                 <?php endforeach; ?>
@@ -151,10 +151,10 @@ ob_start();
     <?php $infoCardBody = (string) ob_get_clean(); ?>
 
     <?= $this->raw($this->insert('admin::components/card', [
-        'title' => 'Informations personnelles',
+        'title' => $this->t('admin.profile.personal_info'),
         'subtitle' => $this->t('admin.view_profile_index.gerez_votre_nom_public_votre_adresse_de_connexion_et_la_lang'),
         'body' => $infoCardBody,
-        'footer' => '<button type="submit" class="pc-btn pc-btn--primary">Enregistrer</button>',
+        'footer' => '<button type="submit" class="pc-btn pc-btn--primary">' . $this->e($this->t('core.actions.save')) . '</button>',
     ])) ?>
 </form>
 <?php
@@ -221,7 +221,7 @@ ob_start();
             'title' => $this->t('admin.view_profile_index.changer_le_mot_de_passe'),
             'subtitle' => $this->t('admin.view_profile_index.la_modification_deconnecte_automatiquement_vos_autres_appare'),
             'body' => $pwdCardBody,
-            'footer' => '<button type="submit" class="pc-btn pc-btn--primary">Mettre à jour le mot de passe</button>',
+            'footer' => '<button type="submit" class="pc-btn pc-btn--primary">' . $this->e($this->t('admin.profile.update_password')) . '</button>',
         ])) ?>
     </form>
 
@@ -284,7 +284,7 @@ ob_start();
                 </form>
             <?php else: ?>
                 <p class="pc-text-sm">
-                    <strong>Étape 1 :</strong> Ajoutez cette clé secrète dans votre application d'authentification (ou ouvrez le lien <code>otpauth://</code>) :
+                    <?= $this->raw($this->t('admin.profile.two_factor_step1')) ?>
                 </p>
 
                 <div class="pc-totp-secret-box">
@@ -429,7 +429,7 @@ ob_start();
             'title' => $this->t('admin.view_profile_index.sessions_et_appareils_connectes'),
             'subtitle' => $this->t('admin.view_profile_index.revoquez_immediatement_toutes_vos_autres_sessions_actives_et'),
             'body' => $devicesCardBody,
-            'footer' => '<button type="submit" class="pc-btn pc-btn--secondary">Déconnecter tous mes autres appareils</button>',
+            'footer' => '<button type="submit" class="pc-btn pc-btn--secondary">' . $this->e($this->t('admin.profile.logout_others')) . '</button>',
         ])) ?>
     </form>
 </div>
@@ -449,7 +449,7 @@ $securityTabHtml = (string) ob_get_clean();
         ],
         [
             'id' => 'security',
-            'label' => 'Sécurité',
+            'label' => $this->t('admin.profile.security'),
             'badge' => $profileUser->hasTwoFactor() ? '2FA' : null,
             'content' => $securityTabHtml,
         ],

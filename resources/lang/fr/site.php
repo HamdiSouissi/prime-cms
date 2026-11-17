@@ -110,6 +110,7 @@ return [
             ],
         ],
         'theme' => [
+            'description' => 'Thème éditorial par défaut de Prime CMS : sobre, rapide, accessible (WCAG AA) et sans dépendance externe.',
             'options' => [
                 'fields' => [
                     'accent_color' => [
@@ -122,9 +123,19 @@ return [
                         'largeur_maximale_du_site_px' => 'Largeur maximale du site (px)',
                     ],
                     'font_body' => [
+                        'choices' => [
+                            'inter' => 'Inter (Par défaut)',
+                            'jakarta' => 'Plus Jakarta Sans',
+                            'system' => 'Police système native',
+                        ],
                         'police_du_texte_courant' => 'Police du texte courant',
                     ],
                     'font_heading' => [
+                        'choices' => [
+                            'inter' => 'Inter (Neutre)',
+                            'jakarta' => 'Plus Jakarta Sans (Éditorial)',
+                            'serif' => 'Georgia / Serif classique',
+                        ],
                         'police_des_titres' => 'Police des titres',
                     ],
                     'footer_text' => [
@@ -155,33 +166,42 @@ return [
                 'sections' => [
                     'colors' => [
                         'couleurs' => 'Couleurs',
+                        'description' => 'Palette principale du site. Le corail par défaut (#C9441F) respecte le contraste WCAG AA.',
                     ],
                     'footer' => [
+                        'description' => 'Mentions affichées en bas de chaque page.',
                         'pied_de_page' => 'Pied de page',
                     ],
                     'header' => [
+                        'description' => 'Comportement de la barre de navigation et de la recherche.',
                         'en_tete' => 'En-tête',
                     ],
                     'layout' => [
+                        'description' => 'Largeur maximale du contenu et affichage des éléments d\'article.',
                         'mise_en_page' => 'Mise en page',
                     ],
                     'typography' => [
+                        'description' => 'Polices locales chargées directement depuis le serveur (zéro ressource externe).',
                         'typographie' => 'Typographie',
                     ],
                 ],
             ],
             'zones' => [
                 'footer_1' => [
+                    'description' => 'Première colonne du pied de page (présentation ou coordonnées).',
                     'pied_de_page_colonne_1' => 'Pied de page — Colonne 1',
                 ],
                 'footer_2' => [
+                    'description' => 'Deuxième colonne du pied de page (liens utiles ou catégories).',
                     'pied_de_page_colonne_2' => 'Pied de page — Colonne 2',
                 ],
                 'footer_3' => [
+                    'description' => 'Troisième colonne du pied de page (derniers articles ou recherche).',
                     'pied_de_page_colonne_3' => 'Pied de page — Colonne 3',
                 ],
                 'sidebar' => [
                     'barre_laterale' => 'Barre latérale',
+                    'description' => 'Colonne latérale affichée sur le blog, les archives et les articles lorsqu\'elle contient des blocs.',
                 ],
             ],
         ],
@@ -207,6 +227,39 @@ return [
         'website' => 'Site web',
     ],
     'continue_reading' => 'Continuer la lecture',
+    'dynamic_blocks' => [
+        'fields' => [
+            'limit' => 'Nombre d’éléments (1 à 12)',
+            'menu_id' => 'Menu à afficher',
+            'show_count' => 'Afficher le nombre de contenus',
+            'show_excerpt' => 'Afficher l’extrait',
+            'show_image' => 'Afficher l’image mise en avant',
+            'taxonomy' => 'Taxonomie',
+            'title' => 'Titre affiché',
+            'title_optional' => 'Titre affiché (optionnel)',
+            'type' => 'Type de contenu',
+        ],
+        'latest_entries' => [
+            'default_title' => 'Derniers articles',
+            'description' => 'Affiche la liste des derniers articles ou contenus publiés.',
+            'label' => 'Derniers contenus',
+        ],
+        'menu' => [
+            'description' => 'Affiche un menu de navigation enregistré.',
+            'label' => 'Menu de navigation',
+            'none' => 'Aucun menu enregistré',
+            'placeholder' => 'Navigation',
+        ],
+        'search_form' => [
+            'description' => 'Champ de recherche accessible pointant vers la page de recherche.',
+            'label' => 'Formulaire de recherche',
+        ],
+        'term_list' => [
+            'default_title' => 'Catégories',
+            'description' => 'Affiche les catégories ou étiquettes du site.',
+            'label' => 'Liste de termes',
+        ],
+    ],
     'error' => [
         'not_found_title' => 'Page introuvable',
     ],

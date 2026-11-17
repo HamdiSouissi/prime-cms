@@ -6,6 +6,7 @@ namespace Prime\Admin\Menu;
 
 use Prime\Admin\Data\FilterValueHelper;
 use Prime\Admin\Exception\InvalidMenuItemException;
+use Prime\Content\LabelTranslator;
 
 /**
  * Immutable definition of an admin sidebar menu entry.
@@ -87,15 +88,12 @@ final readonly class MenuItem
     }
 
     /**
-     * A label is a translation key when it is a dotted `admin.*` / `core.*` identifier.
+     * A label is a translation key when it is a dotted identifier (`admin.menu.pages`,
+     * `hello-prime::menu.title`); anything else is a literal kept as declared.
      */
     private static function translate(string $value): string
     {
-        if (preg_match('/^(?:admin|core)\.[a-z0-9_.]+$/', $value) !== 1) {
-            return $value;
-        }
-
-        return t($value);
+        return LabelTranslator::resolve($value);
     }
 
     /**

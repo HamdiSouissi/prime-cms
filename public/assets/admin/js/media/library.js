@@ -8,7 +8,7 @@
 
 import { SelectionState } from './selection.js';
 import { UploadQueue } from './upload-queue.js';
-import { tr } from '../i18n.js';
+import { tr, trChoice } from '../i18n.js';
 
 const VIEW_STORAGE_KEY = 'prime.media.view';
 
@@ -224,7 +224,7 @@ export function initMediaLibrary() {
   }
 
   // ---- Folder Tree & Selects ----
-  function renderFolderSelectOptions(selectEl, { includeRoot = true, rootLabel = 'Aucun dossier (racine)', excludeId = null } = {}) {
+  function renderFolderSelectOptions(selectEl, { includeRoot = true, rootLabel = tr('admin.js.media.library.root', 'Aucun dossier (racine)'), excludeId = null } = {}) {
     if (!(selectEl instanceof HTMLSelectElement)) return;
     const prev = selectEl.value;
     selectEl.innerHTML = '';
@@ -312,7 +312,7 @@ export function initMediaLibrary() {
             const editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'pc-btn pc-btn--ghost pc-btn--icon pc-btn--xs';
-            editBtn.setAttribute('aria-label', `Renommer ou déplacer le dossier ${node.name}`);
+            editBtn.setAttribute('aria-label', tr('admin.js.media.library.folder_edit', 'Renommer ou déplacer le dossier :name', { name: node.name }));
             editBtn.innerHTML = iconSvg('pencil', 13);
             editBtn.addEventListener('click', (e) => {
               e.stopPropagation();
@@ -322,7 +322,7 @@ export function initMediaLibrary() {
             const delBtn = document.createElement('button');
             delBtn.type = 'button';
             delBtn.className = 'pc-btn pc-btn--ghost pc-btn--icon pc-btn--xs';
-            delBtn.setAttribute('aria-label', `Supprimer le dossier ${node.name}`);
+            delBtn.setAttribute('aria-label', tr('admin.js.media.library.folder_delete', 'Supprimer le dossier :name', { name: node.name }));
             delBtn.innerHTML = iconSvg('trash', 13);
             delBtn.addEventListener('click', (e) => {
               e.stopPropagation();
@@ -348,8 +348,8 @@ export function initMediaLibrary() {
     // Mobile folder dropdown
     if (mobileFolderSelect instanceof HTMLSelectElement) {
       mobileFolderSelect.innerHTML = `
-        <option value="">Tous les médias (${Number(state.counts.all || 0)})</option>
-        <option value="unclassified">Non classés (${Number(state.counts.unclassified || 0)})</option>
+        <option value="">${escapeHtml(tr('admin.js.media.library.tous_les_medias', 'Tous les médias'))} (${Number(state.counts.all || 0)})</option>
+        <option value="unclassified">${escapeHtml(tr('admin.js.media.picker.unclassified', 'Non classés'))} (${Number(state.counts.unclassified || 0)})</option>
       `;
       state.flatFolders.forEach((f) => {
         const opt = document.createElement('option');
@@ -411,7 +411,7 @@ export function initMediaLibrary() {
     if (!folderModal) return;
     editingFolderId = folder ? Number(folder.id) : null;
     if (folderModalTitle) {
-      folderModalTitle.textContent = folder ? `Modifier le dossier « ${folder.name} »` : 'Nouveau dossier';
+      folderModalTitle.textContent = folder ? tr('admin.js.media.library.edit_folder', 'Modifier le dossier « :name »', { name: folder.name }) : tr('admin.js.media.library.new_folder', 'Nouveau dossier');
     }
     if (folderNameInput instanceof HTMLInputElement) {
       folderNameInput.value = folder ? folder.name : '';
@@ -433,7 +433,7 @@ export function initMediaLibrary() {
       title: `Supprimer le dossier « ${folder.name} » ?`,
       message: tr('admin.js.media.library.les_medias_et_sous_dossiers', 'Les médias et sous-dossiers contenus dans ce dossier ne seront pas supprimés : ils seront déplacés vers le dossier parent.'),
       warning: null,
-      confirmLabel: 'Supprimer le dossier',
+      confirmLabel: tr('admin.js.media.library.delete_folder', 'Supprimer le dossier'),
       onConfirm: async () => {
         const res = await apiJson(`${apiBase}/folders/${folder.id}/delete`, { method: 'POST', body: '{}' });
         state.folders = res.folders || [];
@@ -477,7 +477,7 @@ export function initMediaLibrary() {
   });
 
   // ---- Confirm Modal ----
-  function openConfirmModal({ title, message, warning, confirmLabel = 'Supprimer', onConfirm }) {
+  function openConfirmModal({ title, message, warning, confirmLabel = tr('admin.js.media.library.delete', 'Supprimer'), onConfirm }) {
     if (!confirmModal) return;
     if (confirmTitle) confirmTitle.textContent = title;
     if (confirmMessage) confirmMessage.textContent = message;
@@ -516,7 +516,7 @@ export function initMediaLibrary() {
       bulkBar.hidden = count === 0;
     }
     if (bulkCountEl) {
-      bulkCountEl.textContent = count > 1 ? `${count} médias sélectionnés` : `${count} média sélectionné`;
+      bulkCountEl.textContent = trChoice('admin.js.media.library.selected', count, '{0} :count média sélectionné|{1} :count média sélectionné|[2,*] :count médias sélectionnés');
     }
 
     root.querySelectorAll('[data-prime-media-card]').forEach((card) => {
@@ -573,10 +573,10 @@ export function initMediaLibrary() {
         : null;
 
     openConfirmModal({
-      title: ids.length > 1 ? `Supprimer ${ids.length} médias ?` : tr('admin.js.media.library.supprimer_1_media', 'Supprimer 1 média ?'),
+      title: ids.length > 1 ? tr('admin.js.media.library.delete_many_title', 'Supprimer :count médias ?', { count: ids.length }) : tr('admin.js.media.library.supprimer_1_media', 'Supprimer 1 média ?'),
       message: tr('admin.js.media.library.les_fichiers_originaux_et_toutes', 'Les fichiers originaux et toutes leurs variantes générées seront définitivement supprimés du disque.'),
       warning,
-      confirmLabel: ids.length > 1 ? `Supprimer (${ids.length})` : 'Supprimer',
+      confirmLabel: ids.length > 1 ? tr('admin.js.media.library.delete_many', 'Supprimer (:count)', { count: ids.length }) : tr('admin.js.media.library.delete', 'Supprimer'),
       onConfirm: async () => {
         await apiJson(`${apiBase}/bulk`, {
           method: 'POST',
@@ -616,7 +616,7 @@ export function initMediaLibrary() {
   function renderMonths() {
     if (!(monthSelect instanceof HTMLSelectElement)) return;
     const prev = state.filters.month;
-    monthSelect.innerHTML = '<option value="">Toutes les dates</option>';
+    monthSelect.innerHTML = tr('admin.js.media.library.all_dates_option', '<option value="">Toutes les dates</option>');
     state.months.forEach((ym) => {
       const opt = document.createElement('option');
       opt.value = ym;
@@ -684,12 +684,12 @@ export function initMediaLibrary() {
 
         const usageBadge =
           Number(item.usage_count || 0) > 0
-            ? `<span class="pc-media-card__usage" title="Utilisé dans ${item.usage_count} contenu(s)">${item.usage_count}</span>`
+            ? `<span class="pc-media-card__usage" title="${escapeHtml(tr('admin.js.media.library.used_in', 'Utilisé dans :count contenu(s)', { count: item.usage_count }))}">${item.usage_count}</span>`
             : '';
 
         card.innerHTML = `
-          <label class="pc-media-card__select" title="Sélectionner (Maj+clic pour une plage)">
-            <input type="checkbox" data-prime-media-checkbox aria-label="Sélectionner ${escapeHtml(item.display_title)}">
+          <label class="pc-media-card__select" title="${escapeHtml(tr('admin.js.media.library.select_hint', 'Sélectionner (Maj+clic pour une plage)'))}">
+            <input type="checkbox" data-prime-media-checkbox aria-label="${escapeHtml(tr('admin.js.media.library.select_item', 'Sélectionner :name', { name: item.display_title }))}">
           </label>
           ${usageBadge}
           <div class="pc-media-card__thumb">${thumb}</div>
@@ -727,8 +727,8 @@ export function initMediaLibrary() {
     if (listTbody) {
       listTbody.innerHTML = '';
       state.items.forEach((item) => {
-        const tr = document.createElement('tr');
-        tr.setAttribute('data-prime-media-row', String(item.id));
+        const rowEl = document.createElement('tr');
+        rowEl.setAttribute('data-prime-media-row', String(item.id));
 
         const thumb =
           item.kind === 'image'
@@ -738,9 +738,9 @@ export function initMediaLibrary() {
         const dims = item.width && item.height ? `${item.width} × ${item.height}` : '—';
         const dateLabel = item.created_at ? item.created_at.slice(0, 10) : '—';
 
-        tr.innerHTML = `
+        rowEl.innerHTML = `
           <td class="pc-table__check">
-            <input type="checkbox" class="pc-checkbox" data-prime-media-checkbox aria-label="Sélectionner ${escapeHtml(item.display_title)}">
+            <input type="checkbox" class="pc-checkbox" data-prime-media-checkbox aria-label="${escapeHtml(tr('admin.js.media.library.select_item', 'Sélectionner :name', { name: item.display_title }))}">
           </td>
           <td class="pc-table__primary">
             <button type="button" class="pc-media-list__open" data-prime-row-open>
@@ -755,24 +755,24 @@ export function initMediaLibrary() {
           <td class="pc-mono pc-text-xs">${escapeHtml(dims)}</td>
           <td class="pc-text-xs">${escapeHtml(item.human_size)}</td>
           <td class="pc-text-xs pc-text-muted">${escapeHtml(dateLabel)}</td>
-          <td class="pc-text-xs">${Number(item.usage_count || 0) > 0 ? `${item.usage_count} usage(s)` : '<span class="pc-text-muted">Non utilisé</span>'}</td>
+          <td class="pc-text-xs">${Number(item.usage_count || 0) > 0 ? escapeHtml(tr('admin.js.media.library.usage_count', ':count usage(s)', { count: item.usage_count })) : `<span class="pc-text-muted">${escapeHtml(tr('admin.js.media.library.unused', 'Non utilisé'))}</span>`}</td>
           <td class="pc-table__actions">
-            <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-row-open>Détails</button>
+            <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-row-open>${escapeHtml(tr('admin.js.media.library.details', 'Détails'))}</button>
           </td>
         `;
 
-        const cb = tr.querySelector('[data-prime-media-checkbox]');
+        const cb = rowEl.querySelector('[data-prime-media-checkbox]');
         cb?.addEventListener('click', (e) => {
           e.stopPropagation();
           selection.toggle(item.id, { multiple: true, shiftKey: e.shiftKey, orderedIds });
           syncSelectionUi();
         });
 
-        tr.querySelectorAll('[data-prime-row-open]').forEach((btn) => {
+        rowEl.querySelectorAll('[data-prime-row-open]').forEach((btn) => {
           btn.addEventListener('click', () => openDetailDrawer(item.id));
         });
 
-        listTbody.appendChild(tr);
+        listTbody.appendChild(rowEl);
       });
     }
 
@@ -840,7 +840,7 @@ export function initMediaLibrary() {
       renderSkeletons();
     } else if (loadMoreBtn instanceof HTMLButtonElement) {
       loadMoreBtn.disabled = true;
-      loadMoreBtn.textContent = 'Chargement…';
+      loadMoreBtn.textContent = tr('admin.js.media.library.loading', 'Chargement…');
     }
 
     const params = new URLSearchParams();
@@ -914,7 +914,7 @@ export function initMediaLibrary() {
           stage.setAttribute('role', 'application');
           stage.setAttribute(
             'aria-label',
-            `Point focal de l'image : ${Math.round(state.focalDraft.x * 100)}% horizontal, ${Math.round(state.focalDraft.y * 100)}% vertical. Utilisez les flèches pour déplacer le point focal.`,
+            tr('admin.js.media.library.focal_image', "Point focal de l'image : :x % horizontal, :y % vertical. Utilisez les flèches pour déplacer le point focal.", { x: Math.round(state.focalDraft.x * 100), y: Math.round(state.focalDraft.y * 100) }),
           );
         }
 
@@ -938,7 +938,7 @@ export function initMediaLibrary() {
           coords.textContent = `${Math.round(pctX)}% × ${Math.round(pctY)}%`;
           stage.setAttribute(
             'aria-label',
-            `Point focal : ${Math.round(pctX)}% horizontal, ${Math.round(pctY)}% vertical. Utilisez les flèches directionnelles pour ajuster.`,
+            tr('admin.js.media.library.focal_point', 'Point focal : :x % horizontal, :y % vertical. Utilisez les flèches directionnelles pour ajuster.', { x: Math.round(pctX), y: Math.round(pctY) }),
           );
         };
         syncFocalDot();
@@ -1014,7 +1014,7 @@ export function initMediaLibrary() {
             <p class="pc-text-sm" style="margin:8px 0 12px;font-weight:500;">${escapeHtml(item.original_name)}</p>
             <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" class="pc-btn pc-btn--secondary pc-btn--sm">
               ${iconSvg('external-link', 14)}
-              <span>Ouvrir le fichier</span>
+              <span>${escapeHtml(tr('admin.js.media.library.open_file', 'Ouvrir le fichier'))}</span>
             </a>
           </div>
         `;
@@ -1026,11 +1026,11 @@ export function initMediaLibrary() {
       const dims = item.width && item.height ? `${item.width} × ${item.height} px` : '—';
       const variantsCount = item.variants ? Object.keys(item.variants).filter((k) => !k.startsWith('_')).length : 0;
       drawerMetaSpecs.innerHTML = `
-        <dt>Fichier</dt><dd class="pc-mono">${escapeHtml(item.original_name)}</dd>
+        <dt>${escapeHtml(tr('admin.js.media.library.file', 'Fichier'))}</dt><dd class="pc-mono">${escapeHtml(item.original_name)}</dd>
         <dt>Type</dt><dd>${escapeHtml(item.kind_label)} <span class="pc-mono pc-text-muted">(${escapeHtml(item.mime_type)})</span></dd>
         <dt>Poids</dt><dd>${escapeHtml(item.human_size)}</dd>
         ${item.kind === 'image' ? `<dt>Dimensions</dt><dd>${escapeHtml(dims)} (${variantsCount} variante${variantsCount > 1 ? 's' : ''})</dd>` : ''}
-        <dt>Téléversé par</dt><dd>${escapeHtml(item.author_name || tr('admin.js.media.library.systeme', 'Système'))} · ${escapeHtml((item.created_at || '').slice(0, 16))} UTC</dd>
+        <dt>${escapeHtml(tr('admin.js.media.library.uploaded_by', 'Téléversé par'))}</dt><dd>${escapeHtml(item.author_name || tr('admin.js.media.library.systeme', 'Système'))} · ${escapeHtml((item.created_at || '').slice(0, 16))} UTC</dd>
       `;
     }
 
@@ -1065,7 +1065,7 @@ export function initMediaLibrary() {
 
     if (drawerUsagesList) {
       if (state.activeUsages.length === 0) {
-        drawerUsagesList.innerHTML = '<li class="pc-text-xs pc-text-muted">Ce média n’est référencé dans aucun contenu.</li>';
+        drawerUsagesList.innerHTML = tr('admin.js.media.library.no_usage_html', '<li class="pc-text-xs pc-text-muted">Ce média n’est référencé dans aucun contenu.</li>');
       } else {
         drawerUsagesList.innerHTML = state.activeUsages
           .map(
@@ -1231,11 +1231,11 @@ export function initMediaLibrary() {
 
     if (queueTitle) {
       if (active > 0) {
-        queueTitle.textContent = `Téléversement en cours (${done}/${entries.length})`;
+        queueTitle.textContent = tr('admin.js.media.library.queue_running', 'Téléversement en cours (:done/:total)', { done, total: entries.length });
       } else if (failed > 0) {
-        queueTitle.textContent = `Téléversement terminé (${failed} erreur${failed > 1 ? 's' : ''})`;
+        queueTitle.textContent = tr('admin.js.media.library.queue_done_errors', 'Téléversement terminé (:count erreur(s))', { count: failed });
       } else {
-        queueTitle.textContent = `${done} fichier${done > 1 ? 's' : ''} téléversé${done > 1 ? 's' : ''}`;
+        queueTitle.textContent = tr('admin.js.media.library.queue_done', ':count fichier(s) téléversé(s)', { count: done });
       }
     }
 
@@ -1248,7 +1248,7 @@ export function initMediaLibrary() {
         entry.status === 'done'
           ? tr('admin.js.media.library.termine', 'Terminé')
           : entry.status === 'error'
-            ? entry.error || 'Erreur'
+            ? entry.error || tr('admin.js.media.library.error', 'Erreur')
             : entry.status === 'cancelled'
               ? tr('admin.js.media.library.annule', 'Annulé')
               : entry.status === 'queued'
@@ -1260,12 +1260,12 @@ export function initMediaLibrary() {
           <span class="pc-upload-row__name" title="${escapeHtml(entry.name)}">${escapeHtml(entry.name)}</span>
           <div class="pc-upload-row__actions">
             <span class="pc-upload-row__status">${escapeHtml(statusMeta)}</span>
-            ${entry.status === 'error' || entry.status === 'cancelled' ? `<button type="button" class="pc-btn pc-btn--ghost pc-btn--xs" data-prime-q-retry="${entry.id}">Réessayer</button>` : ''}
-            ${entry.status === 'queued' || entry.status === 'uploading' ? `<button type="button" class="pc-btn pc-btn--ghost pc-btn--xs" data-prime-q-cancel="${entry.id}">Annuler</button>` : ''}
+            ${entry.status === 'error' || entry.status === 'cancelled' ? `<button type="button" class="pc-btn pc-btn--ghost pc-btn--xs" data-prime-q-retry="${entry.id}">${escapeHtml(tr('admin.js.media.library.retry', 'Réessayer'))}</button>` : ''}
+            ${entry.status === 'queued' || entry.status === 'uploading' ? `<button type="button" class="pc-btn pc-btn--ghost pc-btn--xs" data-prime-q-cancel="${entry.id}">${escapeHtml(tr('admin.js.media.library.cancel', 'Annuler'))}</button>` : ''}
           </div>
         </div>
         <div class="pc-progress pc-progress--sm"><div class="pc-progress__bar" style="width:${entry.progress}%"></div></div>
-        ${entry.duplicate ? `<div class="pc-upload-row__dup">${iconSvg('alert-triangle', 13)} <span>Doublon détecté : <button type="button" class="pc-link-btn" data-prime-q-open-dup="${Number(entry.duplicate.id)}">${escapeHtml(entry.duplicate.title)}</button></span></div>` : ''}
+        ${entry.duplicate ? `<div class="pc-upload-row__dup">${iconSvg('alert-triangle', 13)} <span>${escapeHtml(tr('admin.js.media.library.duplicate', 'Doublon détecté :'))} <button type="button" class="pc-link-btn" data-prime-q-open-dup="${Number(entry.duplicate.id)}">${escapeHtml(entry.duplicate.title)}</button></span></div>` : ''}
       `;
 
       li.querySelector('[data-prime-q-retry]')?.addEventListener('click', () => queue.retry(entry.id));

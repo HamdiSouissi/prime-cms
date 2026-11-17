@@ -21,7 +21,7 @@ $editUrl = $entry->editUrl();
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Révisions — ' . $entry->title,
+    'title' => $this->t('admin.content.revisions_title', ['title' => $entry->title]),
     'subtitle' => $this->t('admin.view_content_revisions.comparez_une_version_anterieure_avec_la_version_actuelle_ou_'),
     'breadcrumbs' => $breadcrumbs,
     'actions' => $this->insert('admin::components/button', [
@@ -63,7 +63,7 @@ $editUrl = $entry->editUrl();
                                 <strong>#<?= $this->e((string) $rev->id) ?></strong> · <?= $this->e($rev->createdAt) ?>
                                 <br>
                                 <span class="pc-text-xs pc-text-muted">
-                                    <?= $this->e($revAuthor !== null ? $revAuthor->displayName : ($rev->authorName ?? 'Système')) ?>
+                                    <?= $this->e($revAuthor !== null ? $revAuthor->displayName : ($rev->authorName ?? $this->t('admin.common.system'))) ?>
                                     <?= $rev->isAutosave ? ' · Auto' : '' ?>
                                 </span>
                             </span>
@@ -99,7 +99,7 @@ $editUrl = $entry->editUrl();
                     </div>
 
                     <?php if ($titleDiff !== null): ?>
-                        <div style="padding:10px 14px;border-bottom:1px solid var(--ink-200);font-size:12px;font-weight:600;color:var(--ink-500);">Titre</div>
+                        <div style="padding:10px 14px;border-bottom:1px solid var(--ink-200);font-size:12px;font-weight:600;color:var(--ink-500);"><?= $this->e($this->t('core.fields.title')) ?></div>
                         <div class="pc-diff-lines">
                             <?php foreach ($titleDiff as $row): ?>
                                 <?php $marker = $row['op'] === 'added' ? '+' : ($row['op'] === 'removed' ? '−' : ' '); ?>

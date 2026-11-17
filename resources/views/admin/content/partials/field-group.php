@@ -13,9 +13,9 @@ declare(strict_types=1);
  */
 ?>
 <section class="pc-inspector-card" style="margin-bottom:14px;">
-    <h2 class="pc-inspector-card__title"><?= $this->e($group->title) ?></h2>
+    <h2 class="pc-inspector-card__title"><?= $this->e(\Prime\Content\LabelTranslator::resolve($group->title)) ?></h2>
     <?php if ($group->description !== ''): ?>
-        <p class="pc-text-xs pc-text-muted" style="margin:-6px 0 12px;"><?= $this->e($group->description) ?></p>
+        <p class="pc-text-xs pc-text-muted" style="margin:-6px 0 12px;"><?= $this->e(\Prime\Content\LabelTranslator::resolve($group->description)) ?></p>
     <?php endif; ?>
 
     <div class="pc-stack pc-stack--sm">
@@ -30,7 +30,7 @@ declare(strict_types=1);
             <div class="pc-field">
                 <?php if ($field->type !== 'checkbox' && $field->type !== 'toggle'): ?>
                     <label class="pc-label" for="<?= $this->e($inputId) ?>">
-                        <?= $this->e($field->label) ?>
+                        <?= $this->e(\Prime\Content\LabelTranslator::resolve($field->label)) ?>
                         <?php if ($field->required): ?><span aria-hidden="true">*</span><?php endif; ?>
                     </label>
                 <?php endif; ?>
@@ -41,7 +41,7 @@ declare(strict_types=1);
                         name="<?= $this->e($inputName) ?>"
                         rows="3"
                         class="pc-textarea"
-                        placeholder="<?= $this->e($field->placeholder) ?>"
+                        placeholder="<?= $this->e(\Prime\Content\LabelTranslator::resolve($field->placeholder)) ?>"
                         <?= $field->required ? 'required' : '' ?>
                     ><?= $this->e($strVal) ?></textarea>
 
@@ -64,7 +64,7 @@ declare(strict_types=1);
                             value="1"
                             <?= !empty($val) ? ' checked' : '' ?>
                         >
-                        <span><?= $this->e($field->label) ?></span>
+                        <span><?= $this->e(\Prime\Content\LabelTranslator::resolve($field->label)) ?></span>
                     </label>
 
                 <?php elseif ($field->type === 'media'): ?>
@@ -81,7 +81,7 @@ declare(strict_types=1);
                         data-prime-media-field
                         data-prime-media-multiple="<?= $field->multiple ? '1' : '0' ?>"
                         data-prime-media-kinds="<?= $this->e($kindsAttr) ?>"
-                        data-prime-media-title="<?= $this->e($field->label) ?>"
+                        data-prime-media-title="<?= $this->e(\Prime\Content\LabelTranslator::resolve($field->label)) ?>"
                     >
                         <script type="application/json" data-prime-media-initial><?= $this->raw(is_string($initialMediaJson) ? $initialMediaJson : '[]') ?></script>
                         <input
@@ -147,7 +147,7 @@ declare(strict_types=1);
                         name="<?= $this->e($inputName) ?>"
                         value="<?= $this->e($inputVal) ?>"
                         class="pc-input"
-                        placeholder="<?= $this->e($field->placeholder) ?>"
+                        placeholder="<?= $this->e(\Prime\Content\LabelTranslator::resolve($field->placeholder)) ?>"
                         <?php if ($field->min !== null): ?>min="<?= $this->e((string) $field->min) ?>"<?php endif; ?>
                         <?php if ($field->max !== null): ?>max="<?= $this->e((string) $field->max) ?>"<?php endif; ?>
                         <?php if ($field->step !== null): ?>step="<?= $this->e((string) $field->step) ?>"<?php endif; ?>
@@ -156,7 +156,7 @@ declare(strict_types=1);
                 <?php endif; ?>
 
                 <?php if ($field->description !== ''): ?>
-                    <span class="pc-text-xs pc-text-muted"><?= $this->e($field->description) ?></span>
+                    <span class="pc-text-xs pc-text-muted"><?= $this->e(\Prime\Content\LabelTranslator::resolve($field->description)) ?></span>
                 <?php endif; ?>
                 <?php if ($errorMsg !== null): ?>
                     <span class="pc-field__error"><?= $this->e($errorMsg) ?></span>

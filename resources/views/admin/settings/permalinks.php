@@ -17,7 +17,7 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Permaliens',
+    'title' => $this->t('admin.nav.permalinks'),
     'subtitle' => $this->t('admin.view_settings_permalinks.configurez_la_structure_des_urls_publiques_et_gerez_les_redi'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>

@@ -36,7 +36,7 @@ $this->layout('install::layout', [
     <div class="pc-install__alert-block">
         <?= $this->raw($this->insert('admin::components/alert', [
             'variant' => $manualEnvContent !== null ? 'warning' : 'danger',
-            'title' => 'Étape interrompue : ' . $installError['step'],
+            'title' => $this->t('core.install.view.step_failed', ['step' => $installError['step']]),
             'message' => $installError['message'],
         ])) ?>
     </div>
@@ -53,7 +53,7 @@ $this->layout('install::layout', [
                 data-prime-copy-status="install-manual-env-status"
             >
                 <?= $this->raw($this->icon('copy', 15)) ?>
-                <span>Copier</span>
+                <span><?= $this->e($this->t('core.actions.copy')) ?></span>
             </button>
         </div>
         <label class="sr-only" for="install-manual-env-content"><?= $this->e($this->t('core.install.run.contenu_exact_fichier_env')) ?></label>
@@ -69,8 +69,8 @@ $this->layout('install::layout', [
     <div class="pc-install__alert-block">
         <?= $this->raw($this->insert('admin::components/alert', [
             'variant' => 'warning',
-            'title' => 'Fichier .env en lecture seule',
-            'message' => 'Le serveur ne peut pas écrire le fichier .env automatiquement. En lançant l\'installation, l\'assistant vous affichera le contenu exact à copier manuellement.',
+            'title' => $this->t('core.install.view.env_readonly'),
+            'message' => $this->t('core.install.view.env_readonly_message'),
         ])) ?>
     </div>
 <?php endif; ?>
@@ -79,12 +79,12 @@ $this->layout('install::layout', [
     <section class="pc-install-summary__section" aria-label="<?= t('admin.attr.base_de_donnees') ?>">
         <div class="pc-install-summary__heading">
             <h2 class="pc-install-summary__title"><?= $this->e($this->t('core.install.database.titre')) ?></h2>
-            <a href="/install/database" class="pc-install-summary__edit">Modifier</a>
+            <a href="/install/database" class="pc-install-summary__edit"><?= $this->e($this->t('core.actions.edit')) ?></a>
         </div>
         <dl class="pc-install-dl">
-            <dt>Serveur</dt>
+            <dt><?= $this->e($this->t('core.install.view.summary_server')) ?></dt>
             <dd><?= $this->e($summary['database']['host'] . ':' . (string) $summary['database']['port']) ?></dd>
-            <dt>Base</dt>
+            <dt><?= $this->e($this->t('core.install.view.summary_database')) ?></dt>
             <dd><?= $this->e($summary['database']['database']) ?></dd>
             <dt><?= $this->e($this->t('core.install.run.utilisateur')) ?></dt>
             <dd><?= $this->e($summary['database']['username']) ?></dd>
@@ -95,15 +95,15 @@ $this->layout('install::layout', [
 
     <section class="pc-install-summary__section" aria-label="Site">
         <div class="pc-install-summary__heading">
-            <h2 class="pc-install-summary__title">Site</h2>
-            <a href="/install/site" class="pc-install-summary__edit">Modifier</a>
+            <h2 class="pc-install-summary__title"><?= $this->e($this->t('core.install.view.summary_site')) ?></h2>
+            <a href="/install/site" class="pc-install-summary__edit"><?= $this->e($this->t('core.actions.edit')) ?></a>
         </div>
         <dl class="pc-install-dl">
             <dt><?= $this->e($this->t('core.install.run.nom_site')) ?></dt>
             <dd><?= $this->e($summary['site']['name']) ?></dd>
             <dt><?= t('core.install.run.public_url') ?></dt>
             <dd><?= $this->e($summary['site']['url']) ?></dd>
-            <dt>Langue</dt>
+            <dt><?= $this->e($this->t('core.fields.language')) ?></dt>
             <dd><?= $this->e(strtoupper($summary['site']['locale'])) ?></dd>
             <dt><?= t('core.install.run.timezone') ?></dt>
             <dd><?= $this->e($summary['site']['timezone']) ?></dd>
@@ -112,8 +112,8 @@ $this->layout('install::layout', [
 
     <section class="pc-install-summary__section" aria-label="Administrateur">
         <div class="pc-install-summary__heading">
-            <h2 class="pc-install-summary__title">Administrateur</h2>
-            <a href="/install/admin" class="pc-install-summary__edit">Modifier</a>
+            <h2 class="pc-install-summary__title"><?= $this->e($this->t('core.roles.administrator.name')) ?></h2>
+            <a href="/install/admin" class="pc-install-summary__edit"><?= $this->e($this->t('core.actions.edit')) ?></a>
         </div>
         <dl class="pc-install-dl">
             <dt><?= $this->e($this->t('core.fields.display_name')) ?></dt>
@@ -132,11 +132,11 @@ $this->layout('install::layout', [
     <div class="pc-install__actions">
         <a href="/install/admin" class="pc-btn pc-btn--ghost">
             <?= $this->raw($this->icon('chevron-left', 16)) ?>
-            <span>Retour</span>
+            <span><?= $this->e($this->t('core.actions.back')) ?></span>
         </a>
 
         <button type="submit" class="pc-btn pc-btn--primary">
-            <span><?= $this->e($manualEnvContent !== null ? 'J\'ai créé le fichier, continuer' : 'Installer Prime CMS') ?></span>
+            <span><?= $this->e($manualEnvContent !== null ? $this->t('core.install.view.env_created_continue') : $this->t('core.install.view.install_button')) ?></span>
             <?= $this->raw($this->icon('arrow-right', 16)) ?>
         </button>
     </div>

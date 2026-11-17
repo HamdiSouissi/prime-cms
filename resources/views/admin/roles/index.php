@@ -44,17 +44,17 @@ $this->layout('admin::layouts/app');
                             <div class="pc-stack pc-stack--xs">
                                 <div class="pc-row pc-row--sm">
                                     <a href="/admin/roles/<?= $this->e((string) $role->id) ?>/edit" class="pc-user-cell__name">
-                                        <?= $this->e($role->name) ?>
+                                        <?= $this->e($role->label()) ?>
                                     </a>
                                     <?php if ($role->isSystem): ?>
                                         <?= $this->raw($this->insert('admin::components/badge', [
-                                            'label' => 'Système',
+                                            'label' => $this->t('admin.common.system'),
                                             'variant' => $role->isAdministrator() ? 'brand' : 'neutral',
                                         ])) ?>
                                     <?php endif; ?>
                                 </div>
                                 <?php if ($role->description !== null): ?>
-                                    <span class="pc-text-xs pc-text-muted"><?= $this->e($role->description) ?></span>
+                                    <span class="pc-text-xs pc-text-muted"><?= $this->e((string) $role->summary()) ?></span>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -82,7 +82,7 @@ $this->layout('admin::layouts/app');
                         <td class="pc-table__actions">
                             <div class="pc-row pc-row--sm">
                                 <a href="/admin/roles/<?= $this->e((string) $role->id) ?>/edit" class="pc-btn pc-btn--ghost pc-btn--sm">
-                                    <?= $role->isAdministrator() ? 'Consulter' : 'Modifier' ?>
+                                    <?= $this->e($role->isAdministrator() ? $this->t('admin.actions.consult') : $this->t('core.actions.edit')) ?>
                                 </a>
 
                                 <?php if (!$role->isSystem): ?>

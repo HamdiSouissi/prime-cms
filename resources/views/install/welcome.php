@@ -32,11 +32,11 @@ $this->layout('install::layout', [
     <?= $this->raw($this->insert('admin::components/field', [
         'id' => 'wizard-locale',
         'name' => 'wizard_locale',
-        'label' => 'Langue de l\'assistant',
+        'label' => $this->t('core.install.view.wizard_language'),
         'type' => 'select',
         'value' => $wizardLocale,
         'options' => $locales,
-        'help' => 'Vous pourrez également choisir la langue publique de votre site à l\'étape 4.',
+        'help' => $this->t('core.install.view.wizard_language_help'),
         'required' => true,
     ])) ?>
 

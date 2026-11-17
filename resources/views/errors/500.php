@@ -1,4 +1,4 @@
-<?php $this->layout('layouts.base', ['title' => '500 — Erreur serveur · Prime CMS']); ?>
+<?php $this->layout('layouts.base', ['title' => $this->t('core.errors.page_titles.500')]); ?>
 
 <?php $this->start('content'); ?>
   <section class="pc-card pc-error-card" aria-labelledby="error-500-title">
@@ -12,7 +12,7 @@
         class="pc-logo"
       >
     </picture>
-    <span class="pc-badge pc-badge--danger">Erreur <?= $this->e($status ?? 500) ?></span>
+    <span class="pc-badge pc-badge--danger"><?= $this->e($this->t('core.errors.badge', ['status' => $status ?? 500])) ?></span>
     <h1 id="error-500-title" class="pc-error-heading"><?= $this->e($this->t('core.errors.500.erreur_survenue')) ?></h1>
     <p class="pc-error-text">
       <?= $this->e($this->t('core.errors.500.serveur_pas_pu_traiter_demande')) ?>

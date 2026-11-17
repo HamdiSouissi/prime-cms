@@ -2,7 +2,7 @@
   "slug": "aurora",
   "name": "Aurora",
   "version": "1.0.0",
-  "description": "Thème éditorial par défaut de Prime CMS : sobre, rapide, accessible (WCAG AA) et sans dépendance externe.",
+  "description": "site.aurora.theme.description",
   "author": {
     "name": "Prime CMS",
     "url": "https://github.com/HamdiSouissi/prime-cms"
@@ -20,19 +20,19 @@
   },
   "zones": {
     "sidebar": {
-      "description": "Colonne latérale affichée sur le blog, les archives et les articles lorsqu'elle contient des blocs.",
+      "description": "site.aurora.theme.zones.sidebar.description",
       "label_key": "site.aurora.theme.zones.sidebar.barre_laterale"
     },
     "footer_1": {
-      "description": "Première colonne du pied de page (présentation ou coordonnées).",
+      "description": "site.aurora.theme.zones.footer_1.description",
       "label_key": "site.aurora.theme.zones.footer_1.pied_de_page_colonne_1"
     },
     "footer_2": {
-      "description": "Deuxième colonne du pied de page (liens utiles ou catégories).",
+      "description": "site.aurora.theme.zones.footer_2.description",
       "label_key": "site.aurora.theme.zones.footer_2.pied_de_page_colonne_2"
     },
     "footer_3": {
-      "description": "Troisième colonne du pied de page (derniers articles ou recherche).",
+      "description": "site.aurora.theme.zones.footer_3.description",
       "label_key": "site.aurora.theme.zones.footer_3.pied_de_page_colonne_3"
     }
   },
@@ -57,23 +57,23 @@
   "options": {
     "sections": {
       "colors": {
-        "description": "Palette principale du site. Le corail par défaut (#C9441F) respecte le contraste WCAG AA.",
+        "description": "site.aurora.theme.options.sections.colors.description",
         "label_key": "site.aurora.theme.options.sections.colors.couleurs"
       },
       "typography": {
-        "description": "Polices locales chargées directement depuis le serveur (zéro ressource externe).",
+        "description": "site.aurora.theme.options.sections.typography.description",
         "label_key": "site.aurora.theme.options.sections.typography.typographie"
       },
       "layout": {
-        "description": "Largeur maximale du contenu et affichage des éléments d'article.",
+        "description": "site.aurora.theme.options.sections.layout.description",
         "label_key": "site.aurora.theme.options.sections.layout.mise_en_page"
       },
       "header": {
-        "description": "Comportement de la barre de navigation et de la recherche.",
+        "description": "site.aurora.theme.options.sections.header.description",
         "label_key": "site.aurora.theme.options.sections.header.en_tete"
       },
       "footer": {
-        "description": "Mentions affichées en bas de chaque page.",
+        "description": "site.aurora.theme.options.sections.footer.description",
         "label_key": "site.aurora.theme.options.sections.footer.pied_de_page"
       }
     },
@@ -111,9 +111,9 @@
         "type": "font",
         "default": "jakarta",
         "choices": {
-          "jakarta": "Plus Jakarta Sans (Éditorial)",
-          "inter": "Inter (Neutre)",
-          "serif": "Georgia / Serif classique"
+          "jakarta": "site.aurora.theme.options.fields.font_heading.choices.jakarta",
+          "inter": "site.aurora.theme.options.fields.font_heading.choices.inter",
+          "serif": "site.aurora.theme.options.fields.font_heading.choices.serif"
         },
         "css_var": "--aurora-font-heading",
         "css_map": {
@@ -128,9 +128,9 @@
         "type": "font",
         "default": "inter",
         "choices": {
-          "inter": "Inter (Par défaut)",
-          "jakarta": "Plus Jakarta Sans",
-          "system": "Police système native"
+          "inter": "site.aurora.theme.options.fields.font_body.choices.inter",
+          "jakarta": "site.aurora.theme.options.fields.font_body.choices.jakarta",
+          "system": "site.aurora.theme.options.fields.font_body.choices.system"
         },
         "css_var": "--aurora-font-body",
         "css_map": {

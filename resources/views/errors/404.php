@@ -1,4 +1,4 @@
-<?php $this->layout('layouts.base', ['title' => '404 — Page introuvable · Prime CMS']); ?>
+<?php $this->layout('layouts.base', ['title' => $this->t('core.errors.page_titles.404')]); ?>
 
 <?php $this->start('content'); ?>
   <section class="pc-card pc-error-card" aria-labelledby="error-404-title">

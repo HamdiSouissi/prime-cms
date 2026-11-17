@@ -56,7 +56,7 @@ final class ThemeController
         $maxUploadMb = (int) $this->app->config()->get('themes.max_upload_mb', 20);
         $fallbackError = $this->themes->fallbackError();
 
-        $html = $this->view->render('admin::appearance/themes', $this->context->build($request, 'Thèmes', [
+        $html = $this->view->render('admin::appearance/themes', $this->context->build($request, t('admin.nav.themes'), [
             'themes' => array_values($all),
             'activeTheme' => $active,
             'allowUpload' => $allowUpload,
@@ -66,8 +66,8 @@ final class ThemeController
             'primaryCtaInContent' => $allowUpload,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_theme.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Apparence', 'url' => '/admin/appearance/themes'],
-                ['label' => 'Thèmes', 'url' => null],
+                ['label' => t('admin.nav.appearance'), 'url' => '/admin/appearance/themes'],
+                ['label' => t('admin.nav.themes'), 'url' => null],
             ],
         ]));
 
@@ -177,7 +177,7 @@ final class ThemeController
             }
         }
 
-        $html = $this->view->render('admin::appearance/customizer', $this->context->build($request, 'Personnaliser', [
+        $html = $this->view->render('admin::appearance/customizer', $this->context->build($request, t('admin.nav.customize'), [
             'activeTheme' => $active,
             'schema' => $schema,
             'values' => $values,
@@ -194,8 +194,8 @@ final class ThemeController
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_theme.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Apparence', 'url' => '/admin/appearance/themes'],
-                ['label' => 'Personnaliser', 'url' => null],
+                ['label' => t('admin.nav.appearance'), 'url' => '/admin/appearance/themes'],
+                ['label' => t('admin.nav.customize'), 'url' => null],
             ],
         ]));
 

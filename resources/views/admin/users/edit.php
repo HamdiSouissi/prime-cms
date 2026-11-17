@@ -86,7 +86,7 @@ $this->layout('admin::layouts/app');
                         'disabled' => $isSelf,
                         'options' => [
                             'active' => 'Actif',
-                            'disabled' => 'Désactivé',
+                            'disabled' => $this->t('core.statuses.disabled'),
                         ],
                         'help' => $isSelf ? $this->t('admin.view_users_edit.vous_ne_pouvez_pas_desactiver_votre_propre_compte') : null,
                         'error' => $errors['status'] ?? null,
@@ -96,7 +96,7 @@ $this->layout('admin::layouts/app');
             <?php $infoBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Informations du compte',
+                'title' => $this->t('admin.users.account_info'),
                 'body' => $infoBody,
             ])) ?>
 
@@ -107,7 +107,7 @@ $this->layout('admin::layouts/app');
                     <div class="pc-badges-wrap">
                         <?php foreach ($targetUser->roles as $role): ?>
                             <?= $this->raw($this->insert('admin::components/badge', [
-                                'label' => $role->name,
+                                'label' => $role->label(),
                                 'variant' => $role->isAdministrator() ? 'brand' : 'info',
                             ])) ?>
                         <?php endforeach; ?>
@@ -119,9 +119,9 @@ $this->layout('admin::layouts/app');
                             <label class="pc-checkbox-card">
                                 <input type="checkbox" name="roles[]" value="<?= $this->e((string) $role->id) ?>"<?= $checked ? ' checked' : '' ?>>
                                 <span>
-                                    <span class="pc-checkbox-card__title"><?= $this->e($role->name) ?></span>
+                                    <span class="pc-checkbox-card__title"><?= $this->e($role->label()) ?></span>
                                     <?php if ($role->description !== null): ?>
-                                        <span class="pc-checkbox-card__desc"><?= $this->e($role->description) ?></span>
+                                        <span class="pc-checkbox-card__desc"><?= $this->e((string) $role->summary()) ?></span>
                                     <?php endif; ?>
                                 </span>
                             </label>
@@ -132,7 +132,7 @@ $this->layout('admin::layouts/app');
             <?php $rolesBody = (string) ob_get_clean(); ?>
 
             <?= $this->raw($this->insert('admin::components/card', [
-                'title' => 'Rôles',
+                'title' => $this->t('admin.users.roles'),
                 'body' => $rolesBody,
             ])) ?>
 
@@ -177,7 +177,7 @@ $this->layout('admin::layouts/app');
             <?= $this->raw($this->insert('admin::components/card', [
                 'title' => $this->t('admin.view_users_edit.definir_un_nouveau_mot_de_passe'),
                 'body' => $pwdBody,
-                'footer' => '<button type="submit" class="pc-btn pc-btn--primary">Enregistrer les modifications</button>',
+                'footer' => '<button type="submit" class="pc-btn pc-btn--primary">' . $this->e($this->t('core.actions.save_changes')) . '</button>',
             ])) ?>
         </form>
 
@@ -186,10 +186,10 @@ $this->layout('admin::layouts/app');
             <?php ob_start(); ?>
             <dl class="pc-kv-list">
                 <div class="pc-kv-row">
-                    <dt>Statut</dt>
+                    <dt><?= $this->e($this->t('core.labels.status')) ?></dt>
                     <dd>
                         <?= $this->raw($this->insert('admin::components/badge', [
-                            'label' => $targetUser->isActive() ? 'Actif' : 'Désactivé',
+                            'label' => $targetUser->isActive() ? $this->t('core.statuses.active') : $this->t('core.statuses.disabled'),
                             'variant' => $targetUser->isActive() ? 'success' : 'neutral',
                             'dot' => true,
                         ])) ?>
@@ -199,7 +199,7 @@ $this->layout('admin::layouts/app');
                     <dt><?= t('admin.users.edit.two_factor') ?></dt>
                     <dd>
                         <?= $this->raw($this->insert('admin::components/badge', [
-                            'label' => $targetUser->hasTwoFactor() ? 'Activée' : $this->t('admin.view_users_edit.non_activee'),
+                            'label' => $targetUser->hasTwoFactor() ? $this->t('admin.users.two_factor_on') : $this->t('admin.view_users_edit.non_activee'),
                             'variant' => $targetUser->hasTwoFactor() ? 'teal' : 'neutral',
                         ])) ?>
                     </dd>

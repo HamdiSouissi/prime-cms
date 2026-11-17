@@ -184,7 +184,7 @@ function initEntryRelationFields() {
           if (items.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'pc-entry-rel-empty';
-            empty.textContent = 'Aucun contenu trouvé.';
+            empty.textContent = tr('admin.js.content-admin.no_results', 'Aucun contenu trouvé.');
             resultsBox.appendChild(empty);
           } else {
             items.forEach((item) => {

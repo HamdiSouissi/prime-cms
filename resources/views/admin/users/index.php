@@ -82,14 +82,14 @@ if ($canCreate) {
                 <option value=""><?= $this->e($this->t('admin.users.index.roles')) ?></option>
                 <?php foreach ($allRoles as $role): ?>
                     <option value="<?= $this->e($role->slug) ?>"<?= $filters['role'] === $role->slug ? ' selected' : '' ?>>
-                        <?= $this->e($role->name) ?>
+                        <?= $this->e($role->label()) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
         </div>
 
         <div class="pc-filter-bar__select">
-            <label class="pc-field__label" for="users-filter-status">Statut</label>
+            <label class="pc-field__label" for="users-filter-status"><?= $this->e($this->t('core.labels.status')) ?></label>
             <select id="users-filter-status" name="status" class="pc-select">
                 <option value=""><?= $this->e($this->t('admin.users.index.statuts')) ?></option>
                 <option value="active"<?= $filters['status'] === 'active' ? ' selected' : '' ?>>Actif</option>
@@ -127,7 +127,7 @@ if ($canCreate) {
                     <div class="pc-row pc-row--sm">
                         <select name="bulk_action" class="pc-select" aria-label="<?= t('admin.attr.action_groupee') ?>" data-prime-bulk-action-select>
                             <option value=""><?= $this->e($this->t('admin.users.index.choisir_action')) ?></option>
-                            <option value="enable">Activer</option>
+                            <option value="enable"><?= $this->e($this->t('admin.actions.activate')) ?></option>
                             <option value="disable"><?= $this->e($this->t('admin.users.index.desactiver')) ?></option>
                             <?php if ($canDelete): ?>
                                 <option value="delete"><?= $this->e($this->t('core.actions.delete')) ?></option>
@@ -154,7 +154,7 @@ if ($canCreate) {
                             </th>
                             <th scope="col"><?= $this->e($this->t('admin.users.index.roles')) ?></th>
                             <th scope="col">
-                                <a href="<?= $this->e($sortUrl('status')) ?>" class="pc-table__sort">Statut</a>
+                                <a href="<?= $this->e($sortUrl('status')) ?>" class="pc-table__sort"><?= $this->e($this->t('core.labels.status')) ?></a>
                             </th>
                             <th scope="col">2FA</th>
                             <th scope="col">
@@ -210,14 +210,14 @@ if ($canCreate) {
                                     </div>
                                 </td>
 
-                                <td data-prime-label="Rôles">
+                                <td data-prime-label="<?= $this->e($this->t('admin.users.roles')) ?>">
                                     <div class="pc-badges-wrap">
                                         <?php if ($user->roles === []): ?>
                                             <?= $this->raw($this->insert('admin::components/badge', ['label' => $this->t('admin.view_users_index.sans_role'), 'variant' => 'neutral'])) ?>
                                         <?php else: ?>
                                             <?php foreach ($user->roles as $role): ?>
                                                 <?= $this->raw($this->insert('admin::components/badge', [
-                                                    'label' => $role->name,
+                                                    'label' => $role->label(),
                                                     'variant' => $role->isAdministrator() ? 'brand' : 'info',
                                                 ])) ?>
                                             <?php endforeach; ?>
@@ -225,9 +225,9 @@ if ($canCreate) {
                                     </div>
                                 </td>
 
-                                <td data-prime-label="Statut">
+                                <td data-prime-label="<?= $this->e($this->t('core.labels.status')) ?>">
                                     <?= $this->raw($this->insert('admin::components/badge', [
-                                        'label' => $user->isActive() ? 'Actif' : 'Désactivé',
+                                        'label' => $user->isActive() ? $this->t('core.statuses.active') : $this->t('core.statuses.disabled'),
                                         'variant' => $user->isActive() ? 'success' : 'neutral',
                                         'dot' => true,
                                     ])) ?>
@@ -235,12 +235,12 @@ if ($canCreate) {
 
                                 <td data-prime-label="2FA">
                                     <?= $this->raw($this->insert('admin::components/badge', [
-                                        'label' => $user->hasTwoFactor() ? 'Activée' : 'Inactive',
+                                        'label' => $user->hasTwoFactor() ? $this->t('admin.users.two_factor_on') : $this->t('admin.users.two_factor_off'),
                                         'variant' => $user->hasTwoFactor() ? 'teal' : 'neutral',
                                     ])) ?>
                                 </td>
 
-                                <td data-prime-label="Dernière connexion">
+                                <td data-prime-label="<?= $this->e($this->t('admin.users.last_login')) ?>">
                                     <span title="<?= $this->e($rel['title']) ?>" data-prime-tooltip="<?= $this->e($rel['title']) ?>">
                                         <?= $this->e($rel['label']) ?>
                                     </span>
@@ -256,7 +256,7 @@ if ($canCreate) {
                                                 <form method="post" action="/admin/users/<?= $this->e((string) $user->id) ?>/toggle-status" class="pc-inline-form">
                                                     <?= $this->raw($this->csrfField()) ?>
                                                     <button type="submit" class="pc-btn pc-btn--ghost pc-btn--sm">
-                                                        <?= $user->isActive() ? 'Désactiver' : 'Activer' ?>
+                                                        <?= $this->e($user->isActive() ? $this->t('admin.actions.deactivate') : $this->t('admin.actions.activate')) ?>
                                                     </button>
                                                 </form>
                                             <?php endif; ?>

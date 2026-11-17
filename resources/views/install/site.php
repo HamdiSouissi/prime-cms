@@ -34,10 +34,10 @@ $this->layout('install::layout', [
     <?= $this->raw($this->insert('admin::components/field', [
         'id' => 'site-name',
         'name' => 'site_name',
-        'label' => 'Nom du site',
+        'label' => $this->t('core.install.view.site_name'),
         'type' => 'text',
         'value' => $values['site_name'],
-        'placeholder' => 'Mon site Prime CMS',
+        'placeholder' => $this->t('core.install.view.site_name_placeholder'),
         'error' => $errors['site_name'] ?? null,
         'required' => true,
     ])) ?>
@@ -73,7 +73,7 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'site-locale',
             'name' => 'site_locale',
-            'label' => 'Langue du site',
+            'label' => $this->t('core.install.view.site_language'),
             'type' => 'select',
             'value' => $values['site_locale'],
             'options' => $locales,
@@ -84,7 +84,7 @@ $this->layout('install::layout', [
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'site-timezone',
             'name' => 'timezone',
-            'label' => 'Fuseau horaire',
+            'label' => $this->t('core.fields.timezone'),
             'type' => 'select',
             'value' => $values['timezone'],
             'options' => $timezones,
@@ -96,11 +96,11 @@ $this->layout('install::layout', [
     <div class="pc-install__actions">
         <a href="/install/database" class="pc-btn pc-btn--ghost">
             <?= $this->raw($this->icon('chevron-left', 16)) ?>
-            <span>Retour</span>
+            <span><?= $this->e($this->t('core.actions.back')) ?></span>
         </a>
 
         <button type="submit" class="pc-btn pc-btn--primary">
-            <span>Continuer</span>
+            <span><?= $this->e($this->t('core.actions.continue')) ?></span>
             <?= $this->raw($this->icon('arrow-right', 16)) ?>
         </button>
     </div>

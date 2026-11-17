@@ -53,7 +53,7 @@ function initCapabilityGroupToggles() {
 
     const syncLabel = () => {
       const allChecked = checkboxes.every((cb) => cb instanceof HTMLInputElement && cb.checked);
-      toggleBtn.textContent = allChecked ? tr('admin.js.admin-users.tout_decocher', 'Tout décocher') : 'Tout cocher';
+      toggleBtn.textContent = allChecked ? tr('admin.js.admin-users.tout_decocher', 'Tout décocher') : tr('admin.js.admin-users.check_all', 'Tout cocher');
     };
 
     toggleBtn.addEventListener('click', () => {
@@ -168,7 +168,7 @@ function initAdminPasswordStrength() {
       const val = input.value;
       if (!val) {
         meter.setAttribute('data-prime-level', '0');
-        labelEl.textContent = 'Minimum 12 caractères (majuscules, chiffres et symboles recommandés).';
+        labelEl.textContent = tr('admin.js.admin-users.password_min', 'Minimum 12 caractères (majuscules, chiffres et symboles recommandés).');
         return;
       }
 
@@ -186,13 +186,13 @@ function initAdminPasswordStrength() {
 
       if (val.length >= 16 && variety >= 3) {
         meter.setAttribute('data-prime-level', '4');
-        labelEl.textContent = 'Robuste — excellente résistance aux attaques.';
+        labelEl.textContent = tr('admin.js.admin-users.strength_strong', 'Robuste — excellente résistance aux attaques.');
       } else if (variety >= 3) {
         meter.setAttribute('data-prime-level', '3');
-        labelEl.textContent = 'Bon — ajoutez encore quelques caractères ou symboles.';
+        labelEl.textContent = tr('admin.js.admin-users.strength_good', 'Bon — ajoutez encore quelques caractères ou symboles.');
       } else {
         meter.setAttribute('data-prime-level', '2');
-        labelEl.textContent = 'Moyen — combinez majuscules, chiffres et symboles.';
+        labelEl.textContent = tr('admin.js.admin-users.strength_medium', 'Moyen — combinez majuscules, chiffres et symboles.');
       }
     };
 

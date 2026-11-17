@@ -75,7 +75,7 @@ $this->layout('admin::layouts/app');
                         'value' => $old['status'],
                         'options' => [
                             'active' => 'Actif',
-                            'disabled' => 'Désactivé',
+                            'disabled' => $this->t('core.statuses.disabled'),
                         ],
                         'error' => $errors['status'] ?? null,
                     ])) ?>
@@ -167,9 +167,9 @@ $this->layout('admin::layouts/app');
                         <label class="pc-checkbox-card">
                             <input type="checkbox" name="roles[]" value="<?= $this->e((string) $role->id) ?>"<?= $checked ? ' checked' : '' ?>>
                             <span>
-                                <span class="pc-checkbox-card__title"><?= $this->e($role->name) ?></span>
+                                <span class="pc-checkbox-card__title"><?= $this->e($role->label()) ?></span>
                                 <?php if ($role->description !== null): ?>
-                                    <span class="pc-checkbox-card__desc"><?= $this->e($role->description) ?></span>
+                                    <span class="pc-checkbox-card__desc"><?= $this->e((string) $role->summary()) ?></span>
                                 <?php endif; ?>
                             </span>
                         </label>
@@ -182,7 +182,7 @@ $this->layout('admin::layouts/app');
                 'title' => $this->t('admin.view_users_create.roles_attribues'),
                 'subtitle' => $this->t('admin.view_users_create.un_utilisateur_peut_cumuler_plusieurs_roles'),
                 'body' => $rolesBody,
-                'footer' => '<button type="submit" class="pc-btn pc-btn--primary pc-auth-submit">Créer l\'utilisateur</button>',
+                'footer' => '<button type="submit" class="pc-btn pc-btn--primary pc-auth-submit">' . $this->e($this->t('admin.users.create_submit')) . '</button>',
             ])) ?>
         </div>
     </div>

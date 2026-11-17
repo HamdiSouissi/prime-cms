@@ -69,7 +69,7 @@ final class ZoneController
 
         $selectedZone = $declaredZones[$selectedSlug] ?? null;
 
-        $html = $this->view->render('admin::appearance/zones', $this->context->build($request, 'Zones', [
+        $html = $this->view->render('admin::appearance/zones', $this->context->build($request, t('admin.nav.zones'), [
             'declaredZones' => $declaredZones,
             'savedZones' => $savedZones,
             'zoneCounts' => $zoneCounts,
@@ -81,8 +81,8 @@ final class ZoneController
             'primaryCtaInContent' => $selectedZone !== null,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_zone.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Apparence', 'url' => '/admin/appearance/themes'],
-                ['label' => 'Zones', 'url' => null],
+                ['label' => t('admin.nav.appearance'), 'url' => '/admin/appearance/themes'],
+                ['label' => t('admin.nav.zones'), 'url' => null],
             ],
         ]));
 

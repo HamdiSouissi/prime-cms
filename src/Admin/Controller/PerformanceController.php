@@ -46,8 +46,8 @@ final class PerformanceController
                 'lastPurgedAt' => $this->lastPurgedAt(),
                 'breadcrumbs' => [
                     ['label' => $this->t('admin.ctrl_text_performance.tableau_de_bord'), 'url' => '/admin'],
-                    ['label' => 'Réglages', 'url' => '/admin/settings'],
-                    ['label' => 'Performance', 'url' => null],
+                    ['label' => t('admin.nav.settings'), 'url' => '/admin/settings'],
+                    ['label' => t('admin.nav.performance'), 'url' => null],
                 ],
             ],
         )));

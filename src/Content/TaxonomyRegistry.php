@@ -102,11 +102,11 @@ final class TaxonomyRegistry
         $this->register(new Taxonomy(
             name: 'category',
             labels: [
-                'singular' => 'Catégorie',
-                'plural' => 'Catégories',
-                'add_new' => 'Ajouter une catégorie',
-                'parent_label' => 'Catégorie parente',
-                'empty_title' => 'Aucune catégorie',
+                'singular' => 'core.taxonomies.category.singular',
+                'plural' => 'core.taxonomies.category.plural',
+                'add_new' => 'core.taxonomies.category.add_new',
+                'parent_label' => 'core.taxonomies.category.parent_label',
+                'empty_title' => 'core.taxonomies.category.empty_title',
             ],
             hierarchical: true,
             contentTypes: ['post'],
@@ -120,11 +120,11 @@ final class TaxonomyRegistry
         $this->register(new Taxonomy(
             name: 'tag',
             labels: [
-                'singular' => 'Étiquette',
-                'plural' => 'Étiquettes',
-                'add_new' => 'Ajouter une étiquette',
-                'parent_label' => 'Parent',
-                'empty_title' => 'Aucune étiquette pour le moment',
+                'singular' => 'core.taxonomies.tag.singular',
+                'plural' => 'core.taxonomies.tag.plural',
+                'add_new' => 'core.taxonomies.tag.add_new',
+                'parent_label' => 'core.taxonomies.tag.parent_label',
+                'empty_title' => 'core.taxonomies.tag.empty_title',
             ],
             hierarchical: false,
             contentTypes: ['post'],

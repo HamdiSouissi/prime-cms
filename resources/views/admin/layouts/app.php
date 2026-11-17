@@ -303,16 +303,16 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                 <div class="pc-notif-menu__list">
                                     <?php foreach ($noticesList as $noticeItem): ?>
                                         <div class="pc-notif-menu__item pc-notif-menu__item--<?= $this->e($noticeItem->type) ?>" data-prime-notice-id="<?= $this->e($noticeItem->id) ?>">
-                                            <div class="pc-notif-menu__title"><?= $this->e($noticeItem->title) ?></div>
-                                            <p class="pc-notif-menu__text"><?= $this->e($noticeItem->message) ?></p>
+                                            <div class="pc-notif-menu__title"><?= $this->e($noticeItem->translatedTitle()) ?></div>
+                                            <p class="pc-notif-menu__text"><?= $this->e($noticeItem->translatedMessage()) ?></p>
                                             <?php if ($noticeItem->actionUrl !== null && $noticeItem->actionLabel !== null): ?>
                                                 <?php if ($noticeItem->actionMethod === 'POST'): ?>
                                                     <form method="post" action="<?= $this->e($noticeItem->actionUrl) ?>" class="pc-notif-menu__action">
                                                         <?= $this->raw($this->csrfField()) ?>
-                                                        <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($noticeItem->actionLabel) ?></button>
+                                                        <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($noticeItem->translatedActionLabel()) ?></button>
                                                     </form>
                                                 <?php else: ?>
-                                                    <a class="pc-notif-menu__link" href="<?= $this->e($noticeItem->actionUrl) ?>"><?= $this->e($noticeItem->actionLabel) ?> →</a>
+                                                    <a class="pc-notif-menu__link" href="<?= $this->e($noticeItem->actionUrl) ?>"><?= $this->e($noticeItem->translatedActionLabel()) ?> →</a>
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
@@ -421,8 +421,8 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                     <?= $this->raw($this->icon($noticeIcon, 18)) ?>
                                 </span>
                                 <div class="pc-alert__body">
-                                    <p class="pc-alert__title"><?= $this->e($noticeItem->title) ?></p>
-                                    <p class="pc-alert__text"><?= $this->e($noticeItem->message) ?></p>
+                                    <p class="pc-alert__title"><?= $this->e($noticeItem->translatedTitle()) ?></p>
+                                    <p class="pc-alert__text"><?= $this->e($noticeItem->translatedMessage()) ?></p>
                                 </div>
                                 <div class="pc-notice__actions">
                                     <?php if ($noticeItem->actionUrl !== null && $noticeItem->actionLabel !== null): ?>
@@ -430,12 +430,12 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                             <form method="post" action="<?= $this->e($noticeItem->actionUrl) ?>">
                                                 <?= $this->raw($this->csrfField()) ?>
                                                 <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm">
-                                                    <?= $this->e($noticeItem->actionLabel) ?>
+                                                    <?= $this->e($noticeItem->translatedActionLabel()) ?>
                                                 </button>
                                             </form>
                                         <?php else: ?>
                                             <a href="<?= $this->e($noticeItem->actionUrl) ?>" class="pc-btn pc-btn--secondary pc-btn--sm">
-                                                <?= $this->e($noticeItem->actionLabel) ?>
+                                                <?= $this->e($noticeItem->translatedActionLabel()) ?>
                                             </a>
                                         <?php endif; ?>
                                     <?php endif; ?>
@@ -449,7 +449,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
                                             <button
                                                 type="submit"
                                                 class="pc-btn pc-btn--ghost pc-btn--icon pc-btn--sm"
-                                                aria-label="<?= $this->e($this->t('admin.layouts.app.fermer_notification', ['title' => $noticeItem->title])) ?>"
+                                                aria-label="<?= $this->e($this->t('admin.layouts.app.fermer_notification', ['title' => $noticeItem->translatedTitle()])) ?>"
                                             >
                                                 <?= $this->raw($this->icon('x', 16)) ?>
                                             </button>
@@ -504,7 +504,7 @@ $htmlDirection = isset($htmlDirection) && is_string($htmlDirection) && $htmlDire
             <div class="pc-cmd__hints">
                 <span class="pc-cmd__hint"><?= $this->raw($this->insert('admin::components/kbd', ['keys' => '↑↓'])) ?> Naviguer</span>
                 <span class="pc-cmd__hint"><?= $this->raw($this->insert('admin::components/kbd', ['keys' => '↵'])) ?> Ouvrir</span>
-                <span class="pc-cmd__hint"><?= $this->raw($this->insert('admin::components/kbd', ['keys' => 'Échap'])) ?> Fermer</span>
+                <span class="pc-cmd__hint"><?= $this->raw($this->insert('admin::components/kbd', ['keys' => $this->t('admin.keys.escape')])) ?> <?= $this->e($this->t('core.actions.close')) ?></span>
             </div>
             <span>Prime CMS</span>
         </footer>

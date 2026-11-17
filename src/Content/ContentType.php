@@ -43,15 +43,7 @@ final readonly class ContentType
     public const VALID_EDITORS = ['blocks', 'builder'];
 
     /**
-     * @var array{
-     *   singular: string,
-     *   plural: string,
-     *   add_new: string,
-     *   edit: string,
-     *   empty_title: string,
-     *   empty_description: string,
-     *   search_placeholder: string
-     * }
+     * @var array<string, string> Raw labels (translation keys or literals); read them through label().
      */
     public array $labels;
 
@@ -79,7 +71,7 @@ final readonly class ContentType
     public array $capabilities;
 
     /**
-     * @param array<string, string> $labels
+     * @param array<array-key, mixed> $labels
      * @param list<string> $supports
      * @param list<string> $taxonomies
      * @param array<string, string> $capabilities
@@ -115,18 +107,18 @@ final readonly class ContentType
             throw new InvalidArgumentException(sprintf('Invalid editor [%s] for content type [%s].', $editor, $name));
         }
 
-        $singular = trim($labels['singular'] ?? ucfirst($name));
-        $plural = trim($labels['plural'] ?? ($singular . 's'));
-
-        $this->labels = [
-            'singular' => $singular,
-            'plural' => $plural,
-            'add_new' => trim($labels['add_new'] ?? ('Créer un élément (' . mb_strtolower($singular) . ')')),
-            'edit' => trim($labels['edit'] ?? ('Modifier : ' . mb_strtolower($singular))),
-            'empty_title' => trim($labels['empty_title'] ?? ('Aucun contenu de type « ' . $singular . ' »')),
-            'empty_description' => trim($labels['empty_description'] ?? 'Commencez par créer votre premier contenu.'),
-            'search_placeholder' => trim($labels['search_placeholder'] ?? ('Rechercher dans ' . mb_strtolower($plural) . '…')),
-        ];
+        $clean = [];
+        foreach ($labels as $labelKey => $value) {
+            if (!is_string($labelKey) || !is_string($value)) {
+                continue;
+            }
+            $value = trim($value);
+            if ($value !== '') {
+                $clean[$labelKey] = $value;
+            }
+        }
+        $clean['singular'] ??= ucfirst($name);
+        $this->labels = $clean;
 
         $cleanSupports = [];
         foreach ($supports as $feature) {
@@ -168,9 +160,31 @@ final readonly class ContentType
         return in_array($feature, $this->supports, true);
     }
 
+    /**
+     * Label in the active locale.
+     *
+     * A declared value may be a translation key (`core.content_types.post.plural`,
+     * `hello-prime::types.testimonial.plural`) or a literal. Missing labels are derived from the
+     * singular and plural forms through the `core.content_types.defaults.*` catalogue keys.
+     */
     public function label(string $key): string
     {
-        return $this->labels[$key] ?? $this->labels['singular'];
+        if (isset($this->labels[$key])) {
+            return LabelTranslator::resolve($this->labels[$key]);
+        }
+
+        $singular = LabelTranslator::resolve($this->labels['singular']);
+        $plural = isset($this->labels['plural']) ? LabelTranslator::resolve($this->labels['plural']) : $singular . 's';
+        if ($key === 'plural') {
+            return $plural;
+        }
+
+        $translated = t('core.content_types.defaults.' . $key, [
+            'singular' => mb_strtolower($singular),
+            'plural' => mb_strtolower($plural),
+        ]);
+
+        return $translated === 'core.content_types.defaults.' . $key ? $singular : $translated;
     }
 
     public function capability(string $action): string

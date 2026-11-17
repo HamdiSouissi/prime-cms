@@ -89,8 +89,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 1. Paragraph
   registry.registerBlock({
     type: 'paragraph',
-    title: 'Paragraphe',
-    description: 'Texte enrichi standard.',
+    title: tr('admin.js.editor.bloc_paragraphe', 'Paragraphe'),
+    description: tr('admin.js.editor.blocks.paragraph_description', 'Texte enrichi standard.'),
     icon: 'file-text',
     category: 'text',
     keywords: ['texte', 'paragraphe', 'p'],
@@ -104,7 +104,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         className: 'pc-ed-p-input',
         html: ctx.data.text || '',
         placeholder: tr('admin.js.editor.blocks.ecrivez_du_texte_ou_tapez', 'Écrivez du texte ou tapez « / » pour insérer un bloc…'),
-        ariaLabel: 'Paragraphe',
+        ariaLabel: tr('admin.js.editor.bloc_paragraphe', 'Paragraphe'),
         onChange: (html, el) => {
           ctx.updateData({ text: html });
           ctx.handleSlashTrigger(el);
@@ -121,7 +121,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 2. Heading (H2–H4 + anchor)
   registry.registerBlock({
     type: 'heading',
-    title: 'Titre',
+    title: tr('admin.js.editor.bloc_titre', 'Titre'),
     description: tr('admin.js.editor.blocks.sous_titre_h2_h3_ou', 'Sous-titre H2, H3 ou H4 avec ancre automatique.'),
     icon: 'heading',
     category: 'text',
@@ -137,7 +137,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const levelGroup = document.createElement('div');
       levelGroup.className = 'pc-ed-segmented';
       levelGroup.setAttribute('role', 'group');
-      levelGroup.setAttribute('aria-label', 'Niveau du titre');
+      levelGroup.setAttribute('aria-label', tr('admin.js.editor.blocks.heading_level', 'Niveau du titre'));
 
       const currentLevel = [2, 3, 4].includes(Number(ctx.data.level)) ? Number(ctx.data.level) : 2;
       [2, 3, 4].forEach((lvl) => {
@@ -156,7 +156,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       anchorLabel.className = 'pc-ed-anchor-pill';
       const anchorVal = ctx.data.anchor || slugify(stripHtml(ctx.data.text || ''), 80);
       anchorLabel.textContent = anchorVal ? `#${anchorVal}` : '#ancre';
-      anchorLabel.title = 'Ancre générée automatiquement';
+      anchorLabel.title = tr('admin.js.editor.blocks.anchor_auto', 'Ancre générée automatiquement');
 
       controls.append(levelGroup, anchorLabel);
 
@@ -183,7 +183,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 3. List (ul/ol + 1 nesting level)
   registry.registerBlock({
     type: 'list',
-    title: 'Liste',
+    title: tr('admin.js.editor.bloc_liste', 'Liste'),
     description: tr('admin.js.editor.blocks.liste_a_puces_ou_numerotee', 'Liste à puces ou numérotée (avec sous-éléments).'),
     icon: 'list',
     category: 'text',
@@ -223,7 +223,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
       addBtn.className = 'pc-ed-mini-btn';
-      addBtn.textContent = '+ Élément';
+      addBtn.textContent = tr('admin.js.editor.blocks.add_item', '+ Élément');
       addBtn.addEventListener('click', () => {
         items.push({ text: '', children: [] });
         ctx.updateData({ style, items }, { rerender: true, recordHistory: true });
@@ -323,8 +323,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         const subBtn = document.createElement('button');
         subBtn.type = 'button';
         subBtn.className = 'pc-ed-mini-btn';
-        subBtn.title = 'Ajouter un sous-élément';
-        subBtn.textContent = '+ Sous-élément';
+        subBtn.title = tr('admin.js.editor.blocks.add_subitem_title', 'Ajouter un sous-élément');
+        subBtn.textContent = tr('admin.js.editor.blocks.add_subitem', '+ Sous-élément');
         subBtn.addEventListener('click', () => {
           items[idx].children.push('');
           ctx.updateData({ style, items }, { rerender: true, recordHistory: true });
@@ -390,7 +390,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 4. Quote
   registry.registerBlock({
     type: 'quote',
-    title: 'Citation',
+    title: tr('admin.js.editor.bloc_citation', 'Citation'),
     description: tr('admin.js.editor.blocks.citation_mise_en_valeur_avec', 'Citation mise en valeur avec auteur optionnel.'),
     icon: 'quote',
     category: 'text',
@@ -405,7 +405,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         className: 'pc-ed-quote-text',
         html: ctx.data.text || '',
         placeholder: tr('admin.js.editor.blocks.ecrivez_la_citation', 'Écrivez la citation…'),
-        ariaLabel: 'Texte de la citation',
+        ariaLabel: tr('admin.js.editor.blocks.quote_text', 'Texte de la citation'),
         onChange: (html) => ctx.updateData({ text: html }),
         onKeyDown: (e, el) => ctx.handleRichKeyDown(e, el, { allowSplit: false }),
         onPaste: (e, el) => ctx.handlePaste(e, el),
@@ -415,8 +415,8 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
         tag: 'cite',
         className: 'pc-ed-quote-cite',
         html: ctx.data.citation || '',
-        placeholder: 'Auteur ou source (optionnel)…',
-        ariaLabel: 'Auteur de la citation',
+        placeholder: tr('admin.js.editor.blocks.quote_cite_placeholder', 'Auteur ou source (optionnel)…'),
+        ariaLabel: tr('admin.js.editor.blocks.quote_cite', 'Auteur de la citation'),
         onChange: (html) => ctx.updateData({ citation: html }),
       });
 
@@ -428,7 +428,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 5. Image (Media Library picker or URL, required alt unless decorative, caption, normal/wide/full)
   registry.registerBlock({
     type: 'image',
-    title: 'Image',
+    title: tr('admin.js.editor.blocks.image_title', 'Image'),
     description: tr('admin.js.editor.blocks.image_issue_de_la_mediatheque', 'Image issue de la médiathèque ou via URL, avec texte alternatif et légende.'),
     icon: 'image',
     category: 'media',
@@ -500,7 +500,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       captionInput.type = 'text';
       captionInput.className = 'pc-input';
       captionInput.value = stripHtml(ctx.data.caption || '');
-      captionInput.placeholder = 'Légende optionnelle…';
+      captionInput.placeholder = tr('admin.js.editor.blocks.caption_optional', 'Légende optionnelle…');
       captionInput.setAttribute('aria-label', tr('admin.js.editor.blocks.legende_de_l_image', 'Légende de l\'image'));
 
       const alignGroup = document.createElement('div');
@@ -527,7 +527,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
             multiple: false,
             kinds: ['image'],
             selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
-            title: 'Choisir une image',
+            title: tr('admin.js.editor.blocks.choose_image', 'Choisir une image'),
           },
           (chosen) => {
             const media = chosen[0];
@@ -587,7 +587,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       langInput.className = 'pc-ed-code-lang';
       langInput.value = ctx.data.language || '';
       langInput.placeholder = 'Langage (ex. php, js, css, html, sql)';
-      langInput.setAttribute('aria-label', 'Langage du bloc code');
+      langInput.setAttribute('aria-label', tr('admin.js.editor.blocks.code_language', 'Langage du bloc code'));
       langInput.addEventListener('input', () => ctx.updateData({ language: langInput.value.trim().toLowerCase() }));
       header.appendChild(langInput);
 
@@ -595,7 +595,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       textarea.className = 'pc-ed-code-textarea';
       textarea.value = ctx.data.code || '';
       textarea.rows = Math.max(4, String(ctx.data.code || '').split('\n').length + 1);
-      textarea.placeholder = '// Collez ou saisissez votre code ici…';
+      textarea.placeholder = tr('admin.js.editor.blocks.code_placeholder', '// Collez ou saisissez votre code ici…');
       textarea.spellcheck = false;
       textarea.setAttribute('aria-label', 'Code source');
       textarea.addEventListener('input', () => {
@@ -653,12 +653,12 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       titleInput.type = 'text';
       titleInput.className = 'pc-input';
       titleInput.value = ctx.data.title || '';
-      titleInput.placeholder = 'Titre accessible de la vidéo (ex. Présentation Prime CMS)';
+      titleInput.placeholder = tr('admin.js.editor.blocks.embed_title_placeholder', 'Titre accessible de la vidéo (ex. Présentation Prime CMS)');
       titleInput.setAttribute('aria-label', tr('admin.js.editor.blocks.titre_accessible_de_la_video', 'Titre accessible de la vidéo'));
 
       const syncStatus = (val) => {
         if (!val) {
-          status.textContent = 'Seules les URL YouTube (youtube-nocookie.com) et Vimeo sont autorisées.';
+          status.textContent = tr('admin.js.editor.blocks.embed_only_allowed', 'Seules les URL YouTube (youtube-nocookie.com) et Vimeo sont autorisées.');
           status.dataset.state = 'neutral';
           return;
         }
@@ -688,7 +688,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 9. Table
   registry.registerBlock({
     type: 'table',
-    title: 'Tableau',
+    title: tr('admin.js.editor.blocks.table_title', 'Tableau'),
     description: tr('admin.js.editor.blocks.tableau_editable_avec_ligne_d', 'Tableau éditable avec ligne d\'en-tête.'),
     icon: 'table',
     category: 'layout',
@@ -742,7 +742,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       const table = document.createElement('table');
 
       rows.forEach((row, rIdx) => {
-        const tr = document.createElement('tr');
+        const rowEl = document.createElement('tr');
         const isHead = hasHeader && rIdx === 0;
         row.forEach((cellVal, cIdx) => {
           const cell = document.createElement(isHead ? 'th' : 'td');
@@ -750,17 +750,17 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
             tag: 'div',
             className: 'pc-ed-table-cell',
             html: cellVal,
-            placeholder: isHead ? `En-tête ${cIdx + 1}` : '…',
-            ariaLabel: `Cellule ligne ${rIdx + 1} colonne ${cIdx + 1}`,
+            placeholder: isHead ? tr('admin.js.editor.blocks.table_header', 'En-tête :n', { n: cIdx + 1 }) : '…',
+            ariaLabel: tr('admin.js.editor.blocks.table_cell', 'Cellule ligne :row colonne :col', { row: rIdx + 1, col: cIdx + 1 }),
             onChange: (html) => {
               rows[rIdx][cIdx] = html;
               ctx.updateData({ hasHeader, rows });
             },
           });
           cell.appendChild(cellEdit);
-          tr.appendChild(cell);
+          rowEl.appendChild(cell);
         });
-        table.appendChild(tr);
+        table.appendChild(rowEl);
       });
 
       tableWrap.appendChild(table);
@@ -852,7 +852,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       textarea.rows = Math.max(4, String(ctx.data.html || '').split('\n').length + 1);
       textarea.spellcheck = false;
       textarea.readOnly = !canEditHtml;
-      textarea.placeholder = '<div>Votre HTML personnalisé…</div>';
+      textarea.placeholder = tr('admin.js.editor.blocks.html_placeholder', '<div>Votre HTML personnalisé…</div>');
       textarea.setAttribute('aria-label', 'Code HTML libre');
 
       if (canEditHtml) {
@@ -870,7 +870,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 12. Gallery (multi-image grid from Media Library)
   registry.registerBlock({
     type: 'gallery',
-    title: 'Galerie',
+    title: tr('admin.js.editor.blocks.gallery_title', 'Galerie'),
     description: tr('admin.js.editor.blocks.grille_d_images_selectionnees_depuis', 'Grille d\'images sélectionnées depuis la médiathèque (2 à 4 colonnes).'),
     icon: 'images',
     category: 'media',
@@ -932,7 +932,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       if (items.length === 0) {
         const hint = document.createElement('p');
         hint.className = 'pc-text-sm pc-text-muted';
-        hint.textContent = 'Aucune image sélectionnée. Cliquez sur « Ajouter des images » pour composer votre galerie.';
+        hint.textContent = tr('admin.js.editor.blocks.gallery_empty', 'Aucune image sélectionnée. Cliquez sur « Ajouter des images » pour composer votre galerie.');
         wrap.appendChild(hint);
       } else {
         const grid = document.createElement('div');
@@ -980,7 +980,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
           const removeBtn = document.createElement('button');
           removeBtn.type = 'button';
           removeBtn.className = 'pc-ed-icon-btn';
-          removeBtn.setAttribute('aria-label', 'Retirer de la galerie');
+          removeBtn.setAttribute('aria-label', tr('admin.js.editor.blocks.gallery_remove', 'Retirer de la galerie'));
           removeBtn.appendChild(createIconSvg('x', 13));
           removeBtn.addEventListener('click', () => {
             const copy = items.filter((_, i) => i !== idx);
@@ -993,7 +993,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
           cap.type = 'text';
           cap.className = 'pc-ed-gallery-card__cap';
           cap.value = stripHtml(item.caption || '');
-          cap.placeholder = 'Légende…';
+          cap.placeholder = tr('admin.js.editor.blocks.caption', 'Légende…');
           cap.setAttribute('aria-label', `Légende image ${idx + 1}`);
           cap.addEventListener('input', () => {
             items[idx].caption = escapeHtml(cap.value);
@@ -1012,7 +1012,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       galleryCaption.className = 'pc-input';
       galleryCaption.style.marginTop = '10px';
       galleryCaption.value = stripHtml(ctx.data.caption || '');
-      galleryCaption.placeholder = 'Légende globale de la galerie (optionnelle)…';
+      galleryCaption.placeholder = tr('admin.js.editor.blocks.gallery_caption', 'Légende globale de la galerie (optionnelle)…');
       galleryCaption.setAttribute('aria-label', tr('admin.js.editor.blocks.legende_de_la_galerie', 'Légende de la galerie'));
       galleryCaption.addEventListener('input', () => ctx.updateData({ caption: escapeHtml(galleryCaption.value) }));
 
@@ -1069,7 +1069,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
             multiple: false,
             kinds: ['image'],
             selected: ctx.data.posterMediaId ? [Number(ctx.data.posterMediaId)] : [],
-            title: 'Choisir une image poster',
+            title: tr('admin.js.editor.blocks.choose_poster', 'Choisir une image poster'),
           },
           (chosen) => {
             const m = chosen[0];
@@ -1118,7 +1118,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       capInput.type = 'text';
       capInput.className = 'pc-input';
       capInput.value = stripHtml(ctx.data.caption || '');
-      capInput.placeholder = 'Légende de la vidéo (optionnelle)…';
+      capInput.placeholder = tr('admin.js.editor.blocks.video_caption', 'Légende de la vidéo (optionnelle)…');
       capInput.addEventListener('input', () => ctx.updateData({ caption: escapeHtml(capInput.value) }));
 
       wrap.append(opts, capInput);
@@ -1129,7 +1129,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
   // 14. Audio (self-hosted HTML5 audio)
   registry.registerBlock({
     type: 'audio',
-    title: 'Audio',
+    title: tr('admin.js.editor.blocks.audio_title', 'Audio'),
     description: tr('admin.js.editor.blocks.lecteur_audio_html5_mp3_ogg', 'Lecteur audio HTML5 (MP3, OGG, WAV, M4A) depuis la médiathèque.'),
     icon: 'music',
     category: 'media',
@@ -1151,7 +1151,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
             multiple: false,
             kinds: ['audio'],
             selected: ctx.data.mediaId ? [Number(ctx.data.mediaId)] : [],
-            title: 'Choisir un fichier audio',
+            title: tr('admin.js.editor.blocks.choose_audio', 'Choisir un fichier audio'),
           },
           (chosen) => {
             const m = chosen[0];
@@ -1186,14 +1186,14 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       titleInput.type = 'text';
       titleInput.className = 'pc-input';
       titleInput.value = ctx.data.title || '';
-      titleInput.placeholder = 'Titre de l\'enregistrement audio…';
+      titleInput.placeholder = tr('admin.js.editor.blocks.audio_title_placeholder', 'Titre de l\'enregistrement audio…');
       titleInput.addEventListener('input', () => ctx.updateData({ title: titleInput.value }));
 
       const capInput = document.createElement('input');
       capInput.type = 'text';
       capInput.className = 'pc-input';
       capInput.value = stripHtml(ctx.data.caption || '');
-      capInput.placeholder = 'Légende optionnelle…';
+      capInput.placeholder = tr('admin.js.editor.blocks.caption_optional', 'Légende optionnelle…');
       capInput.addEventListener('input', () => ctx.updateData({ caption: escapeHtml(capInput.value) }));
 
       grid.append(titleInput, capInput);
@@ -1258,7 +1258,7 @@ export function registerCoreBlocks(registry = defaultBlockRegistry) {
       labelInput.type = 'text';
       labelInput.className = 'pc-input';
       labelInput.value = ctx.data.label || '';
-      labelInput.placeholder = 'Libellé du bouton de téléchargement (ex. Télécharger la brochure PDF)';
+      labelInput.placeholder = tr('admin.js.editor.blocks.file_label_placeholder', 'Libellé du bouton de téléchargement (ex. Télécharger la brochure PDF)');
       labelInput.addEventListener('input', () => ctx.updateData({ label: labelInput.value }));
       wrap.appendChild(labelInput);
 

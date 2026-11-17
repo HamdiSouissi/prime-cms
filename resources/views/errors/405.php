@@ -1,4 +1,4 @@
-<?php $this->layout('layouts.base', ['title' => '405 — Méthode non autorisée · Prime CMS']); ?>
+<?php $this->layout('layouts.base', ['title' => $this->t('core.errors.page_titles.405')]); ?>
 
 <?php $this->start('content'); ?>
   <section class="pc-card pc-error-card" aria-labelledby="error-405-title">

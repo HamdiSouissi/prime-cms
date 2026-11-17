@@ -43,7 +43,7 @@ final class RoleController
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $this->t('admin.shared.utilisateurs'), 'url' => '/admin/users'],
-                ['label' => 'Rôles', 'url' => null],
+                ['label' => t('admin.nav.roles'), 'url' => null],
             ],
         ]);
 
@@ -66,8 +66,8 @@ final class RoleController
             'errors' => [],
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Rôles', 'url' => '/admin/roles'],
-                ['label' => 'Créer', 'url' => null],
+                ['label' => t('admin.nav.roles'), 'url' => '/admin/roles'],
+                ['label' => t('admin.nav.create'), 'url' => null],
             ],
         ]);
 
@@ -123,8 +123,8 @@ final class RoleController
                 'errors' => $errors,
                 'breadcrumbs' => [
                     ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
-                    ['label' => 'Rôles', 'url' => '/admin/roles'],
-                    ['label' => 'Créer', 'url' => null],
+                    ['label' => t('admin.nav.roles'), 'url' => '/admin/roles'],
+                    ['label' => t('admin.nav.create'), 'url' => null],
                 ],
             ]);
 
@@ -142,7 +142,7 @@ final class RoleController
         $role = $this->findRoleOr404($id);
         $isReadOnly = $role->slug === Role::ADMINISTRATOR_SLUG;
 
-        $data = $this->context->build($request, 'Modifier le rôle ' . $role->name, [
+        $data = $this->context->build($request, $this->t('admin.roles.edit_title', ['name' => $role->label()]), [
             'mode' => 'edit',
             'role' => $role,
             'isReadOnly' => $isReadOnly,
@@ -156,8 +156,8 @@ final class RoleController
             'errors' => [],
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Rôles', 'url' => '/admin/roles'],
-                ['label' => $role->name, 'url' => null],
+                ['label' => t('admin.nav.roles'), 'url' => '/admin/roles'],
+                ['label' => $role->label(), 'url' => null],
             ],
         ]);
 
@@ -193,7 +193,7 @@ final class RoleController
 
         $errors = $validator->errors();
         if ($errors !== []) {
-            $data = $this->context->build($request, 'Modifier le rôle ' . $role->name, [
+            $data = $this->context->build($request, $this->t('admin.roles.edit_title', ['name' => $role->label()]), [
                 'mode' => 'edit',
                 'role' => $role,
                 'isReadOnly' => false,
@@ -207,8 +207,8 @@ final class RoleController
                 'errors' => $errors,
                 'breadcrumbs' => [
                     ['label' => $this->t('admin.ctrl_text_role.tableau_de_bord'), 'url' => '/admin'],
-                    ['label' => 'Rôles', 'url' => '/admin/roles'],
-                    ['label' => $role->name, 'url' => null],
+                    ['label' => t('admin.nav.roles'), 'url' => '/admin/roles'],
+                    ['label' => $role->label(), 'url' => null],
                 ],
             ]);
 
@@ -231,7 +231,7 @@ final class RoleController
 
         try {
             $this->roles->delete($role->id);
-            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_role.le_role_s_a_ete_supprime'), $role->name), 'success');
+            $this->context->flashToast(sprintf($this->t('admin.ctrl_text_role.le_role_s_a_ete_supprime'), $role->label()), 'success');
         } catch (PolicyException $exception) {
             $this->context->flashToast($exception->getMessage(), 'danger');
         }

@@ -45,7 +45,7 @@ declare(strict_types=1);
     <article class="pc-preview-article">
         <h1><?= $this->e($previewTitle) ?></h1>
         <div class="pc-preview-meta">
-            <span>Par <?= $this->e($author !== null ? $author->displayName : ($entry->authorName ?? 'Auteur inconnu')) ?></span>
+            <span>Par <?= $this->e($author !== null ? $author->displayName : ($entry->authorName ?? $this->t('admin.content.unknown_author'))) ?></span>
             <span>·</span>
             <span>/<?= $this->e($entry->slug) ?></span>
             <?php if ($entry->publishedAt !== null): ?>

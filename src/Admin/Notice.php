@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use Prime\Admin\Data\FilterValueHelper;
+use Prime\Content\LabelTranslator;
 
 /**
  * Immutable value object representing a persistent admin dashboard notice.
@@ -59,6 +60,24 @@ final readonly class Notice
         $this->createdAt = $createdAt !== null && $createdAt !== ''
             ? $createdAt
             : (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Title in the active locale (`title` may be a translation key such as `hello-prime::notices.welcome.title`).
+     */
+    public function translatedTitle(): string
+    {
+        return LabelTranslator::resolve($this->title);
+    }
+
+    public function translatedMessage(): string
+    {
+        return LabelTranslator::resolve($this->message);
+    }
+
+    public function translatedActionLabel(): string
+    {
+        return $this->actionLabel === null ? '' : LabelTranslator::resolve($this->actionLabel);
     }
 
     /**

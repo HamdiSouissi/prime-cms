@@ -127,7 +127,7 @@ final class MediaController
 
         $bootstrapJson = json_encode($bootstrap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
 
-        $html = $this->view->render('admin::media/index', $this->context->build($request, 'Médiathèque', [
+        $html = $this->view->render('admin::media/index', $this->context->build($request, t('admin.nav.media_library'), [
             'canUpload' => $user->can('media.upload'),
             'canDeleteAny' => $user->can('media.delete_any'),
             'limit' => $limit,
@@ -143,7 +143,7 @@ final class MediaController
             'primaryCtaInContent' => $user->can('media.upload'),
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_media.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Médiathèque', 'url' => null],
+                ['label' => t('admin.nav.media_library'), 'url' => null],
             ],
         ]));
 

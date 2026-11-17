@@ -67,7 +67,7 @@ final class PluginController
                 $haystack = mb_strtolower(implode(' ', [
                     $info->name(),
                     $info->slug,
-                    $info->manifest !== null ? $info->manifest->description : '',
+                    $info->manifest !== null ? \Prime\Content\LabelTranslator::resolve($info->manifest->description) : '',
                     $info->manifest !== null ? $info->manifest->authorName : '',
                 ]));
                 if (!str_contains($haystack, $searchLower)) {
@@ -81,7 +81,7 @@ final class PluginController
         $allowUpload = (bool) $this->app->config()->get('plugins.allow_upload', true);
         $maxUploadMb = max(1, (int) $this->app->config()->get('plugins.max_upload_mb', 20));
 
-        $html = $this->view->render('admin::plugins/index', $this->context->build($request, 'Plugins', [
+        $html = $this->view->render('admin::plugins/index', $this->context->build($request, t('admin.nav.plugins'), [
             'plugins' => array_values($filtered),
             'allPlugins' => $allPlugins,
             'counts' => $counts,
@@ -94,7 +94,7 @@ final class PluginController
             'primaryCtaInContent' => $allowUpload,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_plugin.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Plugins', 'url' => null],
+                ['label' => t('admin.nav.plugins'), 'url' => null],
             ],
         ]));
 

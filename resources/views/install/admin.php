@@ -183,11 +183,11 @@ $this->layout('install::layout', [
     <div class="pc-install__actions">
         <a href="/install/site" class="pc-btn pc-btn--ghost">
             <?= $this->raw($this->icon('chevron-left', 16)) ?>
-            <span>Retour</span>
+            <span><?= $this->e($this->t('core.actions.back')) ?></span>
         </a>
 
         <button type="submit" class="pc-btn pc-btn--primary">
-            <span>Continuer</span>
+            <span><?= $this->e($this->t('core.actions.continue')) ?></span>
             <?= $this->raw($this->icon('arrow-right', 16)) ?>
         </button>
     </div>

@@ -27,7 +27,7 @@ export class SlashMenu {
     this.searchInput.type = 'search';
     this.searchInput.className = 'pc-ed-slash-search';
     this.searchInput.placeholder = 'Filtrer un bloc (ex. titre, image, tableau)…';
-    this.searchInput.setAttribute('aria-label', 'Filtrer les types de blocs');
+    this.searchInput.setAttribute('aria-label', tr('admin.js.editor.filter_blocks', 'Filtrer les types de blocs'));
 
     this.listEl = document.createElement('div');
     this.listEl.className = 'pc-ed-slash-list';
@@ -85,7 +85,7 @@ export class SlashMenu {
     if (this.items.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'pc-ed-slash-empty';
-      empty.textContent = 'Aucun bloc correspondant.';
+      empty.textContent = tr('admin.js.editor.no_matching_block', 'Aucun bloc correspondant.');
       this.listEl.appendChild(empty);
       return;
     }

@@ -20,7 +20,7 @@ $this->layout('admin::layouts/app');
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Zones de blocs',
+    'title' => $this->t('admin.appearance.zones_title'),
     'subtitle' => $this->t('admin.view_appearance_zones.composez_la_barre_laterale_et_le_pied_de_page_avec_prime_edi'),
     'breadcrumbs' => $breadcrumbs,
 ])) ?>
@@ -76,7 +76,7 @@ $this->layout('admin::layouts/app');
                     <div>
                         <h2 class="pc-card__title"><?= $this->e($this->t((string) $selectedZone['label'])) ?></h2>
                         <?php if ($selectedZone['description'] !== ''): ?>
-                            <p class="pc-text-xs pc-text-muted"><?= $this->e($selectedZone['description']) ?></p>
+                            <p class="pc-text-xs pc-text-muted"><?= $this->e(\Prime\Content\LabelTranslator::resolve((string) $selectedZone['description'])) ?></p>
                         <?php endif; ?>
                     </div>
                 </header>

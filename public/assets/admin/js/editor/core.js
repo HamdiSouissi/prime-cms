@@ -24,7 +24,7 @@ import {
 import { SlashMenu } from './slash-menu.js';
 import { InlineToolbar } from './toolbar.js';
 import { countWords, estimateReadingTime, generateBlockId, stripHtml } from './utils.js';
-import { tr } from '../i18n.js';
+import { tr, trChoice } from '../i18n.js';
 
 registerCoreBlocks(defaultBlockRegistry);
 
@@ -245,7 +245,7 @@ export class PrimeEditor {
       const plusBtn = document.createElement('button');
       plusBtn.type = 'button';
       plusBtn.className = 'pc-ed-gutter-btn';
-      plusBtn.title = 'Insérer un bloc après celui-ci';
+      plusBtn.title = tr('admin.js.editor.insert_after', 'Insérer un bloc après celui-ci');
       plusBtn.setAttribute('aria-label', tr('admin.js.editor.core.inserer_un_bloc_apres', 'Insérer un bloc après'));
       plusBtn.innerHTML = iconSvg('plus', 15);
       plusBtn.addEventListener('click', (e) => {
@@ -260,7 +260,7 @@ export class PrimeEditor {
       handleBtn.type = 'button';
       handleBtn.className = 'pc-ed-gutter-btn pc-ed-drag-handle';
       handleBtn.draggable = true;
-      handleBtn.title = 'Options du bloc (Alt+↑ / Alt+↓ pour déplacer)';
+      handleBtn.title = tr('admin.js.editor.block_options', 'Options du bloc (Alt+↑ / Alt+↓ pour déplacer)');
       handleBtn.setAttribute('aria-label', tr('admin.js.editor.core.options_et_deplacement_du_bloc', 'Options et déplacement du bloc'));
       handleBtn.setAttribute('aria-haspopup', 'menu');
       handleBtn.innerHTML = iconSvg('grip-vertical', 15);
@@ -406,7 +406,7 @@ export class PrimeEditor {
     sepDel.className = 'pc-ed-menu-sep';
     menu.appendChild(sepDel);
 
-    addAction('Supprimer le bloc', 'trash', false, () => this.removeBlock(index), true);
+    addAction(tr('admin.js.editor.delete_block', 'Supprimer le bloc'), 'trash', false, () => this.removeBlock(index), true);
     return menu;
   }
 
@@ -815,8 +815,8 @@ export class PrimeEditor {
     const plain = `${titleVal}\n${blocksToPlainText(this.blocks)}`;
     const words = countWords(plain);
     const minutes = estimateReadingTime(words);
-    const wordLabel = words > 1 ? `${words} mots` : `${words} mot`;
-    const readLabel = minutes > 0 ? `· ${minutes} min de lecture` : '';
+    const wordLabel = trChoice('admin.js.editor.word_count', words, '{0} :count mot|{1} :count mot|[2,*] :count mots');
+    const readLabel = minutes > 0 ? tr('admin.js.editor.reading_time', '· :count min de lecture', { count: minutes }) : '';
     this.statsEl.textContent = `${wordLabel} ${readLabel}`.trim();
   }
 

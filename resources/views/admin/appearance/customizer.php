@@ -29,10 +29,10 @@ foreach ($schema['fields'] as $key => $field) {
         <header class="pc-customizer__head">
             <div>
                 <a href="/admin/appearance/themes" class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.appearance.customizer.larr_retour_themes')) ?></a>
-                <h1 class="pc-customizer__title">Personnaliser <?= $this->e($activeTheme->name()) ?></h1>
+                <h1 class="pc-customizer__title"><?= $this->e($this->t('admin.appearance.customize_title', ['name' => $activeTheme->name()])) ?></h1>
             </div>
             <div class="pc-customizer__actions">
-                <button type="button" class="pc-btn pc-btn--primary pc-btn--sm" data-prime-customizer-publish>Publier</button>
+                <button type="button" class="pc-btn pc-btn--primary pc-btn--sm" data-prime-customizer-publish><?= $this->e($this->t('core.actions.publish')) ?></button>
             </div>
         </header>
 
@@ -78,7 +78,7 @@ foreach ($schema['fields'] as $key => $field) {
                                 placeholder="<?= $this->e($this->t('admin.appearance.customizer.aucun')) ?>"
                                 data-prime-identity-field="logo_id"
                             >
-                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-pick-media="pc-cust-logo-id">Choisir</button>
+                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-pick-media="pc-cust-logo-id"><?= $this->e($this->t('admin.actions.choose')) ?></button>
                         </div>
                         <?php if ($siteIdentity['logo_url'] !== null): ?>
                             <img src="<?= $this->e($siteIdentity['logo_url']) ?>" alt="Logo actuel" class="pc-customizer__thumb">
@@ -97,7 +97,7 @@ foreach ($schema['fields'] as $key => $field) {
                                 placeholder="<?= $this->e($this->t('admin.appearance.customizer.aucun')) ?>"
                                 data-prime-identity-field="icon_id"
                             >
-                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-pick-media="pc-cust-icon-id">Choisir</button>
+                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-pick-media="pc-cust-icon-id"><?= $this->e($this->t('admin.actions.choose')) ?></button>
                         </div>
                         <p class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.appearance.customizer.genere_automatiquement_favicons_32_180')) ?></p>
                     </div>
@@ -112,7 +112,7 @@ foreach ($schema['fields'] as $key => $field) {
                     <summary class="pc-customizer__summary"><?= $this->e($this->t((string) $secMeta['label'])) ?></summary>
                     <div class="pc-customizer__fields pc-stack pc-stack--sm">
                         <?php if ($secMeta['description'] !== ''): ?>
-                            <p class="pc-text-xs pc-text-muted"><?= $this->e($secMeta['description']) ?></p>
+                            <p class="pc-text-xs pc-text-muted"><?= $this->e(\Prime\Content\LabelTranslator::resolve((string) $secMeta['description'])) ?></p>
                         <?php endif; ?>
 
                         <?php foreach ($secFields as $fieldKey => $field): ?>
@@ -175,7 +175,7 @@ foreach ($schema['fields'] as $key => $field) {
                                         >
                                             <?php foreach ((array) ($field['choices'] ?? []) as $cKey => $cLabel): ?>
                                                 <option value="<?= $this->e((string) $cKey) ?>"<?= (string) $val === (string) $cKey ? ' selected' : '' ?>>
-                                                    <?= $this->e((string) $cLabel) ?>
+                                                    <?= $this->e(\Prime\Content\LabelTranslator::resolve((string) $cLabel)) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -208,7 +208,7 @@ foreach ($schema['fields'] as $key => $field) {
                                                 data-prime-opt-key="<?= $this->e($fieldKey) ?>"
                                                 data-prime-opt-type="media"
                                             >
-                                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-pick-media="<?= $this->e($inputId) ?>">Choisir</button>
+                                            <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-pick-media="<?= $this->e($inputId) ?>"><?= $this->e($this->t('admin.actions.choose')) ?></button>
                                         </div>
                                     <?php else: ?>
                                         <input

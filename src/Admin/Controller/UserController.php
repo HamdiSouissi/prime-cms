@@ -163,7 +163,7 @@ final class UserController
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_user.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $this->t('admin.shared.utilisateurs'), 'url' => '/admin/users'],
-                ['label' => 'Ajouter', 'url' => null],
+                ['label' => t('admin.nav.add'), 'url' => null],
             ],
         ]);
 
@@ -243,7 +243,7 @@ final class UserController
                 'breadcrumbs' => [
                     ['label' => $this->t('admin.ctrl_text_user.tableau_de_bord'), 'url' => '/admin'],
                     ['label' => $this->t('admin.shared.utilisateurs'), 'url' => '/admin/users'],
-                    ['label' => 'Ajouter', 'url' => null],
+                    ['label' => t('admin.nav.add'), 'url' => null],
                 ],
             ]);
 
@@ -622,7 +622,7 @@ final class UserController
         $canManageRoles = $actor->can('users.manage_roles');
         $canDelete = $actor->can('users.delete') && $actor->id !== $target->id;
 
-        $data = $this->context->build($request, 'Modifier ' . $target->displayName, [
+        $data = $this->context->build($request, t('admin.users.edit_title', ['name' => $target->displayName]), [
             'targetUser' => $target,
             'assignableRoles' => $canManageRoles ? $this->assignableRolesFor($actor) : $this->roles->all(),
             'canManageRoles' => $canManageRoles,

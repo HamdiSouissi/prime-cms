@@ -44,7 +44,7 @@ function initPasswordToggles() {
     const revealing = input.type === 'password';
     input.type = revealing ? 'text' : 'password';
     button.setAttribute('aria-pressed', revealing ? 'true' : 'false');
-    button.setAttribute('aria-label', revealing ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+    button.setAttribute('aria-label', revealing ? tr('admin.js.common.hide_password', 'Masquer le mot de passe') : tr('admin.js.common.show_password', 'Afficher le mot de passe'));
 
     const iconUse = button.querySelector('use');
     if (iconUse) {
@@ -127,12 +127,12 @@ function initTwoFactorModeToggle() {
       codeInput.setAttribute('maxlength', '12');
       codeInput.setAttribute('placeholder', 'xxxx-xxxx');
       if (labelEl) {
-        labelEl.textContent = 'Code de récupération';
+        labelEl.textContent = tr('admin.js.auth.recovery_code', 'Code de récupération');
       }
       if (helpEl) {
-        helpEl.textContent = 'Saisissez l\'un de vos codes de récupération à usage unique (format xxxx-xxxx).';
+        helpEl.textContent = tr('admin.js.auth.recovery_help', 'Saisissez l\'un de vos codes de récupération à usage unique (format xxxx-xxxx).');
       }
-      toggleBtn.textContent = 'Utiliser un code de l\'application d\'authentification';
+      toggleBtn.textContent = tr('admin.js.auth.use_totp', 'Utiliser un code de l\'application d\'authentification');
     } else {
       codeInput.value = '';
       codeInput.setAttribute('inputmode', 'numeric');
@@ -143,9 +143,9 @@ function initTwoFactorModeToggle() {
         labelEl.textContent = tr('admin.js.auth.code_a_6_chiffres', 'Code à 6 chiffres');
       }
       if (helpEl) {
-        helpEl.textContent = 'Ouvrez votre application TOTP (Aegis, Google Authenticator, 1Password…) et saisissez le code affiché.';
+        helpEl.textContent = tr('admin.js.auth.totp_help', 'Ouvrez votre application TOTP (Aegis, Google Authenticator, 1Password…) et saisissez le code affiché.');
       }
-      toggleBtn.textContent = 'Utiliser un code de récupération';
+      toggleBtn.textContent = tr('admin.js.auth.use_recovery', 'Utiliser un code de récupération');
     }
 
     codeInput.focus();

@@ -110,6 +110,7 @@ return [
             ],
         ],
         'theme' => [
+            'description' => 'Default editorial theme for Prime CMS: clean, fast, accessible (WCAG AA) and free of external dependencies.',
             'options' => [
                 'fields' => [
                     'accent_color' => [
@@ -122,9 +123,19 @@ return [
                         'largeur_maximale_du_site_px' => 'Maximum site width (px)',
                     ],
                     'font_body' => [
+                        'choices' => [
+                            'inter' => 'Inter (Default)',
+                            'jakarta' => 'Plus Jakarta Sans',
+                            'system' => 'Native system font',
+                        ],
                         'police_du_texte_courant' => 'Body font',
                     ],
                     'font_heading' => [
+                        'choices' => [
+                            'inter' => 'Inter (Neutral)',
+                            'jakarta' => 'Plus Jakarta Sans (Editorial)',
+                            'serif' => 'Georgia / Classic serif',
+                        ],
                         'police_des_titres' => 'Heading font',
                     ],
                     'footer_text' => [
@@ -155,33 +166,42 @@ return [
                 'sections' => [
                     'colors' => [
                         'couleurs' => 'Colours',
+                        'description' => 'Main site palette. The default coral (#C9441F) meets WCAG AA contrast.',
                     ],
                     'footer' => [
+                        'description' => 'Notice shown at the bottom of every page.',
                         'pied_de_page' => 'Footer',
                     ],
                     'header' => [
+                        'description' => 'Navigation bar and search behaviour.',
                         'en_tete' => 'Header',
                     ],
                     'layout' => [
+                        'description' => 'Maximum content width and display of post elements.',
                         'mise_en_page' => 'Layout',
                     ],
                     'typography' => [
+                        'description' => 'Local fonts served directly by your server (no external resource).',
                         'typographie' => 'Typography',
                     ],
                 ],
             ],
             'zones' => [
                 'footer_1' => [
+                    'description' => 'First footer column (introduction or contact details).',
                     'pied_de_page_colonne_1' => 'Footer — Column 1',
                 ],
                 'footer_2' => [
+                    'description' => 'Second footer column (useful links or categories).',
                     'pied_de_page_colonne_2' => 'Footer — Column 2',
                 ],
                 'footer_3' => [
+                    'description' => 'Third footer column (latest posts or search).',
                     'pied_de_page_colonne_3' => 'Footer — Column 3',
                 ],
                 'sidebar' => [
                     'barre_laterale' => 'Sidebar',
+                    'description' => 'Side column shown on the blog, archives and posts when it contains blocks.',
                 ],
             ],
         ],
@@ -207,6 +227,39 @@ return [
         'website' => 'Website',
     ],
     'continue_reading' => 'Continue reading',
+    'dynamic_blocks' => [
+        'fields' => [
+            'limit' => 'Number of items (1 to 12)',
+            'menu_id' => 'Menu to display',
+            'show_count' => 'Show the number of items',
+            'show_excerpt' => 'Show the excerpt',
+            'show_image' => 'Show the featured image',
+            'taxonomy' => 'Taxonomy',
+            'title' => 'Displayed title',
+            'title_optional' => 'Displayed title (optional)',
+            'type' => 'Content type',
+        ],
+        'latest_entries' => [
+            'default_title' => 'Latest posts',
+            'description' => 'Lists the latest published posts or content.',
+            'label' => 'Latest content',
+        ],
+        'menu' => [
+            'description' => 'Displays a saved navigation menu.',
+            'label' => 'Navigation menu',
+            'none' => 'No saved menu',
+            'placeholder' => 'Navigation',
+        ],
+        'search_form' => [
+            'description' => 'Accessible search field that leads to the search page.',
+            'label' => 'Search form',
+        ],
+        'term_list' => [
+            'default_title' => 'Categories',
+            'description' => 'Lists the site\'s categories or tags.',
+            'label' => 'Term list',
+        ],
+    ],
     'error' => [
         'not_found_title' => 'Page not found',
     ],

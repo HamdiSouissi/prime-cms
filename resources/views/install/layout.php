@@ -71,11 +71,10 @@ foreach ($steps as $s) {
                         </span>
                         <span class="pc-stepper__label">
                             <span class="sr-only">
-                                <?= $this->e(sprintf(
-                                    'Étape %d (%s) : ',
-                                    $step['number'],
-                                    $step['state'] === 'completed' ? 'terminée' : ($step['state'] === 'current' ? 'en cours' : 'à venir'),
-                                )) ?>
+                                <?= $this->e($this->t('core.install.view.step_sr', [
+                                    'number' => $step['number'],
+                                    'state' => $this->t('core.install.view.step_state.' . ($step['state'] === 'completed' ? 'done' : ($step['state'] === 'current' ? 'current' : 'upcoming'))),
+                                ])) ?>
                             </span>
                             <?= $this->e($step['label']) ?>
                         </span>

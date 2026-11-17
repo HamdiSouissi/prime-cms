@@ -109,7 +109,7 @@ if ($allowUpload) {
                 'title' => $this->t('admin.view_plugins_index.aucun_plugin_installe'),
                 'description' => $this->t('admin.view_plugins_index.etendez_prime_cms_avec_des_plugins_officiels_ou_sur_mesure_e'),
                 'actionHtml' => $allowUpload
-                    ? '<button type="button" class="pc-btn pc-btn--secondary" data-prime-drawer-open="prime-plugin-upload-drawer">' . $this->icon('upload', 16) . '<span>Téléverser une archive ZIP</span></button>'
+                    ? '<button type="button" class="pc-btn pc-btn--secondary" data-prime-drawer-open="prime-plugin-upload-drawer">' . $this->icon('upload', 16) . '<span>' . $this->e($this->t('admin.plugins.upload_zip')) . '</span></button>'
                     : null,
             ])) ?>
         <?php else: ?>
@@ -117,7 +117,7 @@ if ($allowUpload) {
                 'icon' => 'search',
                 'title' => $this->t('admin.view_plugins_index.aucun_plugin_ne_correspond_a_ce_filtre'),
                 'description' => $this->t('admin.view_plugins_index.essayez_un_autre_mot_cle_ou_reinitialisez_les_filtres_de_sta'),
-                'actionHtml' => '<a class="pc-btn pc-btn--secondary" href="/admin/plugins">Afficher tous les plugins</a>',
+                'actionHtml' => '<a class="pc-btn pc-btn--secondary" href="/admin/plugins">' . $this->e($this->t('admin.plugins.show_all')) . '</a>',
             ])) ?>
         <?php endif; ?>
     <?php else: ?>
@@ -192,7 +192,7 @@ if ($allowUpload) {
 
                     <div class="pc-plugin-card__body">
                         <?php if ($manifest !== null): ?>
-                            <p class="pc-plugin-card__desc"><?= $this->e($manifest->description) ?></p>
+                            <p class="pc-plugin-card__desc"><?= $this->e(\Prime\Content\LabelTranslator::resolve($manifest->description)) ?></p>
                         <?php else: ?>
                             <p class="pc-plugin-card__desc pc-plugin-card__desc--muted"><?= $this->raw($this->t('admin.plugins.index.manifeste_invalide_incomplet')) ?></p>
                         <?php endif; ?>
@@ -291,7 +291,7 @@ if ($allowUpload) {
                                         <?= (!$plugin->canActivate() || $safeMode) ? 'disabled' : '' ?>
                                     >
                                         <?= $this->raw($this->icon('check', 15)) ?>
-                                        <span><?= $plugin->isErrored() ? $this->t('admin.view_plugins_index.reessayer_l_activation') : 'Activer' ?></span>
+                                        <span><?= $plugin->isErrored() ? $this->t('admin.view_plugins_index.reessayer_l_activation') : $this->e($this->t('admin.actions.activate')) ?></span>
                                     </button>
                                 </form>
                             <?php endif; ?>

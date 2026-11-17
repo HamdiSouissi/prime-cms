@@ -20,13 +20,13 @@ $headerActions = '';
 if ($allowUpload) {
     $headerActions = '<button type="button" class="pc-btn pc-btn--primary" data-prime-drawer-open="prime-theme-upload-drawer">'
         . $this->icon('upload', 16)
-        . '<span>Installer un thème (ZIP)</span></button>';
+        . '<span>' . $this->e($this->t('admin.appearance.themes.install_zip')) . '</span></button>';
 }
 ?>
 <?php $this->start('content'); ?>
 
 <?= $this->raw($this->insert('admin::components/page-header', [
-    'title' => 'Thèmes',
+    'title' => $this->t('admin.appearance.themes.title'),
     'subtitle' => sprintf(
         $this->t('admin.view_appearance_themes.d_theme_s_installe_s_actif_s'),
         count($themes),
@@ -65,7 +65,7 @@ if ($allowUpload) {
                 <article class="pc-theme-card<?= $theme->active ? ' pc-theme-card--active' : '' ?><?= !$theme->valid ? ' pc-theme-card--invalid' : '' ?>">
                     <div class="pc-theme-card__shot">
                         <?php if ($theme->screenshotUrl !== null): ?>
-                            <img src="<?= $this->e($theme->screenshotUrl) ?>" alt="Aperçu du thème <?= $this->e($theme->name()) ?>" loading="lazy">
+                            <img src="<?= $this->e($theme->screenshotUrl) ?>" alt="<?= $this->e($this->t('admin.appearance.themes.screenshot_alt', ['name' => $theme->name()])) ?>" loading="lazy">
                         <?php else: ?>
                             <div class="pc-theme-card__placeholder" aria-hidden="true">
                                 <?= $this->raw($this->icon('palette', 32)) ?>
@@ -98,7 +98,7 @@ if ($allowUpload) {
                         </div>
 
                         <?php if ($theme->description() !== ''): ?>
-                            <p class="pc-theme-card__desc"><?= $this->e($theme->description()) ?></p>
+                            <p class="pc-theme-card__desc"><?= $this->e(\Prime\Content\LabelTranslator::resolve($theme->description())) ?></p>
                         <?php endif; ?>
 
                         <?php if ($theme->errors !== []): ?>
@@ -110,12 +110,12 @@ if ($allowUpload) {
                         <?php if ($theme->active): ?>
                             <a href="/admin/appearance/customizer" class="pc-btn pc-btn--secondary pc-btn--sm">
                                 <?= $this->raw($this->icon('sparkles', 15)) ?>
-                                <span>Personnaliser</span>
+                                <span><?= $this->e($this->t('admin.nav.customize')) ?></span>
                             </a>
                         <?php elseif ($theme->valid && $theme->compatible): ?>
                             <form method="post" action="/admin/appearance/themes/<?= $this->e($theme->slug) ?>/activate">
                                 <?= $this->raw($this->csrfField()) ?>
-                                <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm">Activer</button>
+                                <button type="submit" class="pc-btn pc-btn--secondary pc-btn--sm"><?= $this->e($this->t('admin.actions.activate')) ?></button>
                             </form>
                         <?php endif; ?>
 
@@ -146,20 +146,20 @@ if ($allowUpload) {
                         </header>
                         <div class="pc-drawer__body pc-stack pc-stack--md">
                             <?php if ($theme->screenshotUrl !== null): ?>
-                                <img src="<?= $this->e($theme->screenshotUrl) ?>" alt="Aperçu <?= $this->e($theme->name()) ?>" class="pc-theme-detail__img">
+                                <img src="<?= $this->e($theme->screenshotUrl) ?>" alt="<?= $this->e($this->t('admin.appearance.themes.screenshot_alt', ['name' => $theme->name()])) ?>" class="pc-theme-detail__img">
                             <?php endif; ?>
-                            <p><?= $this->e($theme->description()) ?></p>
+                            <p><?= $this->e(\Prime\Content\LabelTranslator::resolve($theme->description())) ?></p>
                             <dl class="pc-theme-detail__meta">
                                 <div><dt>Identifiant</dt><dd><code><?= $this->e($theme->slug) ?></code></dd></div>
                                 <div><dt>Version</dt><dd><?= $this->e($theme->version()) ?></dd></div>
                                 <?php if ($manifest !== null && $manifest->author !== ''): ?>
-                                    <div><dt>Auteur</dt><dd><?= $this->e($manifest->author) ?></dd></div>
+                                    <div><dt><?= $this->e($this->t('core.fields.author')) ?></dt><dd><?= $this->e($manifest->author) ?></dd></div>
                                 <?php endif; ?>
                                 <?php if ($manifest !== null && $manifest->authorUrl !== null && $manifest->authorUrl !== ''): ?>
                                     <div><dt><?= t('admin.appearance.themes.site_author') ?></dt><dd><a href="<?= $this->e($manifest->authorUrl) ?>" target="_blank" rel="noopener"><?= $this->e($manifest->authorUrl) ?></a></dd></div>
                                 <?php endif; ?>
                                 <?php if ($manifest !== null): ?>
-                                    <div><dt><?= $this->e($this->t('admin.appearance.themes.emplacements_menus')) ?></dt><dd><?= $manifest->menus !== [] ? $this->e(implode(', ', array_values($manifest->menus))) : 'Aucun' ?></dd></div>
+                                    <div><dt><?= $this->e($this->t('admin.appearance.themes.emplacements_menus')) ?></dt><dd><?= $manifest->menus !== [] ? $this->e(implode(', ', array_values($manifest->menus))) : $this->e($this->t('admin.common.none')) ?></dd></div>
                                     <div><dt><?= $this->e($this->t('admin.appearance.themes.zones_blocs')) ?></dt><dd><?= $manifest->zones !== [] ? $this->e(implode(', ', array_map(fn (string $zoneLabel): string => $this->t($zoneLabel), array_column($manifest->zones, 'label')))) : $this->e($this->t('core.none')) ?></dd></div>
                                 <?php endif; ?>
                             </dl>

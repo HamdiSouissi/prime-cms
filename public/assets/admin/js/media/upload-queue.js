@@ -179,14 +179,14 @@ export class UploadQueue {
 
     if (entry.status === 'queued') {
       entry.status = 'cancelled';
-      entry.error = 'Annulé';
+      entry.error = tr('admin.js.media.upload.cancelled', 'Annulé');
       this.emitChange();
       return true;
     }
 
     if (entry.status === 'uploading') {
       entry.status = 'cancelled';
-      entry.error = 'Annulé';
+      entry.error = tr('admin.js.media.upload.cancelled', 'Annulé');
       if (typeof entry._abort === 'function') {
         try {
           entry._abort();
@@ -275,7 +275,7 @@ export class UploadQueue {
         entry._abort = null;
         if (entry.status === 'cancelled' || (err && err.name === 'AbortError')) {
           entry.status = 'cancelled';
-          entry.error = 'Annulé';
+          entry.error = tr('admin.js.media.upload.cancelled', 'Annulé');
           this.emitChange();
           return;
         }

@@ -280,7 +280,7 @@ export function initMenusAdmin() {
       const toggleBtn = mkBtn(tr('admin.js.menus-admin.editer', 'Éditer'), tr('admin.js.menus-admin.modifier_les_details', 'Modifier les détails'), false, () => {
         details.hidden = !details.hidden;
       });
-      const delBtn = mkBtn('×', 'Retirer du menu', false, () => {
+      const delBtn = mkBtn('×', tr('admin.js.menus-admin.remove', 'Retirer du menu'), false, () => {
         items.splice(idx, 1);
         items = normalizeDepths(items);
         dirty = true;
@@ -393,7 +393,7 @@ export function initMenusAdmin() {
           return;
         }
         const type = cb.dataset.primeMenuSource || 'custom';
-        const label = cb.dataset.primeSourceLabel || 'Lien';
+        const label = cb.dataset.primeSourceLabel || tr('admin.js.menus-admin.link', 'Lien');
         const targetId = cb.dataset.primeSourceId ? Number(cb.dataset.primeSourceId) : null;
         const url = cb.dataset.primeSourceUrl || '';
         items.push({

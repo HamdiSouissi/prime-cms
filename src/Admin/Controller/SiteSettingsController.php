@@ -44,7 +44,7 @@ final class SiteSettingsController
     {
         $pages = $this->query->newQuery()->type('page')->orderBy('title', 'ASC')->limit(200)->get();
 
-        $html = $this->view->render('admin::settings/reading', $this->context->build($request, 'Lecture', [
+        $html = $this->view->render('admin::settings/reading', $this->context->build($request, t('admin.nav.reading'), [
             'pages' => $pages,
             'frontMode' => $this->permalinks->frontMode(),
             'frontPageId' => $this->permalinks->frontPageId(),
@@ -53,8 +53,8 @@ final class SiteSettingsController
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_sitesettings.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Réglages', 'url' => '/admin/settings'],
-                ['label' => 'Lecture', 'url' => null],
+                ['label' => t('admin.nav.settings'), 'url' => '/admin/settings'],
+                ['label' => t('admin.nav.reading'), 'url' => null],
             ],
         ]));
 
@@ -84,7 +84,7 @@ final class SiteSettingsController
      */
     public function permalinks(Request $request): Response
     {
-        $html = $this->view->render('admin::settings/permalinks', $this->context->build($request, 'Permaliens', [
+        $html = $this->view->render('admin::settings/permalinks', $this->context->build($request, t('admin.nav.permalinks'), [
             'postStructure' => $this->permalinks->postStructure(),
             'categoryBase' => $this->permalinks->categoryBase(),
             'tagBase' => $this->permalinks->tagBase(),
@@ -92,8 +92,8 @@ final class SiteSettingsController
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_sitesettings.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Réglages', 'url' => '/admin/settings'],
-                ['label' => 'Permaliens', 'url' => null],
+                ['label' => t('admin.nav.settings'), 'url' => '/admin/settings'],
+                ['label' => t('admin.nav.permalinks'), 'url' => null],
             ],
         ]));
 
@@ -159,7 +159,7 @@ final class SiteSettingsController
         $imageId = $this->seoSettings->defaultImageId();
         $defaultImage = ($imageId !== null && $this->media !== null) ? $this->media->find($imageId) : null;
 
-        $html = $this->view->render('admin::settings/seo', $this->context->build($request, 'Référencement', [
+        $html = $this->view->render('admin::settings/seo', $this->context->build($request, t('admin.nav.seo'), [
             'separator' => $this->seoSettings->separator(),
             'titleTemplate' => $this->seoSettings->titleTemplate(),
             'defaultDescription' => $this->seoSettings->defaultDescription(),
@@ -170,8 +170,8 @@ final class SiteSettingsController
             'primaryCtaInContent' => true,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_sitesettings.tableau_de_bord'), 'url' => '/admin'],
-                ['label' => 'Réglages', 'url' => '/admin/settings'],
-                ['label' => 'Référencement', 'url' => null],
+                ['label' => t('admin.nav.settings'), 'url' => '/admin/settings'],
+                ['label' => t('admin.nav.seo'), 'url' => null],
             ],
         ]));
 
