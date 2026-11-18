@@ -7,6 +7,7 @@ namespace Prime\Api\Token;
 use DateTimeImmutable;
 use DateTimeZone;
 use Prime\Api\Repository\ApiTokenRepository;
+use Prime\Auth\Capabilities;
 use Prime\Auth\User;
 use Prime\Auth\UserRepository;
 
@@ -22,6 +23,7 @@ final class ApiTokenService
     public function __construct(
         private readonly ApiTokenRepository $tokens,
         private readonly UserRepository $users,
+        private readonly Capabilities $capabilities,
     ) {
     }
 
@@ -30,13 +32,20 @@ final class ApiTokenService
      *
      * Les capacités demandées sont filtrées à celles que l'utilisateur possède
      * réellement (un contributeur ne peut pas se donner `settings.manage`).
+     * `['*']` est remplacé par la liste complète des capacités de l'utilisateur.
      *
      * @param list<string> $abilities
      * @return array{token: string, id: int}
      */
     public function issue(User $user, string $name, array $abilities, ?DateTimeImmutable $expiresAt = null): array
     {
-        $actual = array_values(array_intersect($abilities, $user->capabilities));
+        // `['*']` signifie « toutes les capacités de l'utilisateur ».
+        if ($abilities === ['*']) {
+            $abilities = $this->capabilities->keys();
+        }
+
+        // Ne garder que les capacités que l'utilisateur possède réellement ($user->can()).
+        $actual = array_values(array_filter($abilities, static fn (string $cap): bool => $user->can($cap)));
 
         $expiresAtString = $expiresAt !== null
             ? $expiresAt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')
@@ -58,9 +67,10 @@ final class ApiTokenService
      * Retourne null si le jeton est inconnu, révoqué, expiré ou si l'utilisateur
      * est désactivé.
      *
+     * @param string|null $ip Adresse IP du client (pour last_used_ip, optionnel)
      * @return array{user: User, abilities: list<string>, token_id: int}|null
      */
-    public function authenticate(string $raw): ?array
+    public function authenticate(string $raw, ?string $ip = null): ?array
     {
         $row = $this->tokens->findByToken($raw);
 
@@ -94,7 +104,42 @@ final class ApiTokenService
 
         $abilities = $this->decodeAbilities((string) ($row['abilities'] ?? '[]'));
 
-        return ['user' => $user, 'abilities' => $abilities, 'token_id' => (int) $row['id']];
+        // Reconstruire l'utilisateur avec uniquement les capacités effectives du jeton,
+        // afin que canPreview/canEdit etc. appliquent automatiquement les limites.
+        $effectiveUser = new User(
+            id: $user->id,
+            email: $user->email,
+            displayName: $user->displayName,
+            status: $user->status,
+            locale: $user->locale,
+            sessionVersion: $user->sessionVersion,
+            lastLoginAt: $user->lastLoginAt,
+            passwordChangedAt: $user->passwordChangedAt,
+            twoFactorConfirmedAt: $user->twoFactorConfirmedAt,
+            twoFactorLastStep: $user->twoFactorLastStep,
+            createdAt: $user->createdAt,
+            updatedAt: $user->updatedAt,
+            roles: $user->roles,
+            capabilities: $abilities,
+            avatarMediaId: $user->avatarMediaId,
+            username: $user->username,
+            bio: $user->bio,
+        );
+
+        // Enregistrer la dernière utilisation (throttled : au plus une fois par minute par jeton).
+        $lastUsedAt = $row['last_used_at'] ?? null;
+        $shouldTouch = true;
+        if ($lastUsedAt !== null && $lastUsedAt !== '') {
+            $lastUsedTs = strtotime((string) $lastUsedAt . ' UTC');
+            if ($lastUsedTs !== false && (time() - $lastUsedTs) < 60) {
+                $shouldTouch = false;
+            }
+        }
+        if ($shouldTouch) {
+            $this->tokens->touchLastUsed(hash('sha256', $raw), $ip);
+        }
+
+        return ['user' => $effectiveUser, 'abilities' => $abilities, 'token_id' => (int) $row['id']];
     }
 
     /**
