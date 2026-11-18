@@ -215,6 +215,11 @@ final class ApiServiceProvider extends ServiceProvider
             return new ApiAuthorize($capability ?? '');
         });
 
+        // Alias de middleware `api.body` pour la validation du corps JSON.
+        $kernel->registerMiddlewareAlias('api.body', function (): ApiBody {
+            return new ApiBody($this->app->get(Settings::class));
+        });
+
         $router = $this->app->get(Router::class);
 
         // CORS comme middleware GLOBAL : il s'exécute avant le routeur afin d'intercepter
@@ -255,7 +260,7 @@ final class ApiServiceProvider extends ServiceProvider
             }
         }
 
-        $apiMiddleware = ['api.enabled', 'api.auth', 'api.rate_limit'];
+        $apiMiddleware = ['api.enabled', 'api.auth', 'api.rate_limit', 'api.body'];
 
         $router->group(
             [

@@ -68,12 +68,12 @@ final class ApiAuthenticate implements MiddlewareInterface
         // Aucun jeton Bearer : tenter l'authentification par session.
         $sessionUser = $this->auth->user($request);
         if ($sessionUser !== null) {
-            // Pour les méthodes autres que GET/HEAD, exiger l'en-tête CSRF.
+            // Pour les méthodes autres que GET/HEAD/OPTIONS, exiger l'en-tête X-Prime-CSRF.
             $method = strtoupper((string) $request->method());
-            if ($method !== 'GET' && $method !== 'HEAD') {
-                $csrfToken = $this->csrf->extractFromRequest($request);
+            if ($method !== 'GET' && $method !== 'HEAD' && $method !== 'OPTIONS') {
+                $csrfToken = $request->header('X-Prime-CSRF');
                 if (!$this->csrf->validate($csrfToken)) {
-                    return $this->jsonError('forbidden', 403);
+                    return $this->jsonError('csrf_mismatch', 403);
                 }
             }
 
