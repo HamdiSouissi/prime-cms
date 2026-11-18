@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Prime\Tests\Integration;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Prime\Content\EntryQuery;
 use Prime\Http\Request;
 use Prime\I18n\Translator;
 use Prime\Security\Csrf;
@@ -72,7 +74,7 @@ final class ApiContractStep3Test extends TestCase
         $insert = $this->db($app);
         for ($i = 1; $i <= 25; ++$i) {
             $insert->statement(
-                "INSERT INTO pc_entries (type, status, title, slug, content, content_html, content_text, author_id, published_at, created_at, updated_at) VALUES ('post', 'publish', ?, ?, '{}', '', '', 1, ?, ?, ?)",
+                "INSERT INTO pc_entries (type, status, title, slug, content, content_html, content_text, author_id, published_at, created_at, updated_at) VALUES ('post', 'published', ?, ?, '{}', '', '', 1, ?, ?, ?)",
                 ['Article ' . $i, 'article-' . $i, '2026-11-14 10:00:00', '2026-11-14 10:00:00', '2026-11-14 10:00:00'],
             );
         }
@@ -86,6 +88,14 @@ final class ApiContractStep3Test extends TestCase
         $this->assertSame('26', $response->header('X-Total-Count'));
         $this->assertNull($json['links']['next'] ?? null);
         $this->assertNotNull($json['links']['prev'] ?? null);
+    }
+
+    public function testAnUnknownStatusIsRefusedInsteadOfMeaningAnyStatus(): void
+    {
+        $query = $this->createApp(null)->get(EntryQuery::class)->newQuery();
+
+        $this->expectException(InvalidArgumentException::class);
+        $query->status('publish');
     }
 
     // --- Messages traduits ------------------------------------------------------------------

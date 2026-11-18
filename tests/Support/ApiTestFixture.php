@@ -67,7 +67,7 @@ trait ApiTestFixture
         $pdo->exec("INSERT INTO pc_users (id, email, username, password_hash, display_name, status, locale, session_version, created_at, updated_at) VALUES (1, 'admin@prime.test', 'admin', 'hash', 'Admin Prime', 'active', 'fr', 1, '$now', '$now'), (2, 'contrib@prime.test', 'contrib', 'hash', 'Contributeur', 'active', 'fr', 1, '$now', '$now')");
         $pdo->exec('INSERT INTO pc_user_roles (user_id, role_id) VALUES (1, 1), (2, 2)');
         $entry = $pdo->prepare('INSERT INTO pc_entries (type, status, title, slug, excerpt, content, content_html, content_text, author_id, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $entry->execute(['post', 'publish', 'Article publié', 'article-publie', 'Résumé', '{"blocks":[]}', '<p>Bonjour</p>', 'Bonjour', 1, $now, $now, $now]);
+        $entry->execute(['post', 'published', 'Article publié', 'article-publie', 'Résumé', '{"blocks":[]}', '<p>Bonjour</p>', 'Bonjour', 1, $now, $now, $now]);
         $entry->execute(['post', 'draft', 'Brouillon admin', 'brouillon-admin', '', '{"blocks":[]}', '<p>Secret</p>', 'Secret', 1, null, $now, $now]);
         $entry->execute(['post', 'draft', 'Brouillon contributeur', 'brouillon-contributeur', '', '{"blocks":[]}', '<p>Mien</p>', 'Mien', 2, null, $now, $now]);
 
