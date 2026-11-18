@@ -83,15 +83,30 @@ final class ApiServiceProvider extends ServiceProvider
                 response: [],
             ),
 
-            // Profil de l’utilisateur connecté (authentification requise).
+            // Profil de l’utilisateur courant (authentification gérée par le contrôleur).
             new ApiRoute(
                 method: 'GET',
                 path: '/me',
                 handler: [MeController::class, 'show'],
                 permission: null,
-                public: false,
+                public: true,
                 summary: 'Profil de l’utilisateur courant.',
                 parameters: [],
+                response: [],
+            ),
+
+            // Modification du profil courant (authentification gérée par le contrôleur).
+            new ApiRoute(
+                method: 'PATCH',
+                path: '/me',
+                handler: [MeController::class, 'update'],
+                permission: null,
+                public: true,
+                summary: 'Modifie le nom affiché et la langue de l’utilisateur courant.',
+                parameters: [
+                    'display_name' => 'string',
+                    'locale' => 'string',
+                ],
                 response: [],
             ),
 
