@@ -6,6 +6,7 @@ namespace Prime\Admin\Controller;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use DateInterval;
 use Prime\Admin\AdminContext;
 use Prime\Admin\TranslatesAdminCopy;
 use Prime\Api\Token\ApiTokenService;
@@ -437,33 +438,20 @@ final class ProfileController
     {
         $user = $this->requireUser($request);
 
-        $csrf = $this->csrfToken($request);
-        if (!$csrf) {
-            return Response::json(['error' => 'CSRF invalide'], 419);
-        }
-
         $name = trim((string) $request->body('name', ''));
         if ($name === '' || mb_strlen($name) > 100) {
-            $this->session->flash('_profile.api_token_error', 'Le nom est obligatoire (100 caractères maximum).');
+            $this->session->flash('_profile.api_token_error', $this->t('admin.ctrl_text_profile.jeton_api_nom_obligatoire'));
             return Response::redirect('/admin/profile?tab=api-tokens', 302);
         }
 
         $rawAbilities = $request->body('abilities', []);
         $abilities = is_array($rawAbilities) ? array_values(array_filter($rawAbilities, 'is_string')) : [];
 
-        // Ne garder que les capacités de l'utilisateur.
-        // `*` (tout) donne accès à toutes les capacités demandées.
-        $canGrantAll = in_array('*', $user->capabilities, true);
-        $abilities = array_values(array_filter($abilities, static fn (string $cap): bool => $canGrantAll || in_array($cap, $user->capabilities, true)));
-
         $expiresDays = (string) $request->body('expires_days', '');
         $expiresAt = null;
         if ($expiresDays !== '' && $expiresDays !== '0') {
-            $days = (int) $expiresDays;
-            if ($days > 0) {
-                $modified = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->modify("+{$days} days");
-                $expiresAt = $modified instanceof DateTimeImmutable ? $modified : null;
-            }
+            $days = min(365, max(1, (int) $expiresDays));
+            $expiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->add(new DateInterval('P' . $days . 'D'));
         }
 
         $result = $this->apiTokens->issue($user, $name, $abilities, $expiresAt);
@@ -488,11 +476,6 @@ final class ProfileController
     {
         $user = $this->requireUser($request);
 
-        $csrf = $this->csrfToken($request);
-        if (!$csrf) {
-            return Response::json(['error' => 'CSRF invalide'], 419);
-        }
-
         $token = $this->apiTokens->findById($id);
         if ($token === null || (int) ($token['user_id'] ?? 0) !== $user->id) {
             return Response::html($this->t('admin.ctrl_text_profile.jeton_api_introuvable'), 404);
@@ -503,24 +486,6 @@ final class ProfileController
         $this->context->flashToast($this->t('admin.ctrl_text_profile.jeton_api_revoque'), 'success');
 
         return Response::redirect('/admin/profile?tab=api-tokens', 302);
-    }
-
-    /**
-     * Extrait le token CSRF depuis le corps ou l'en-tête.
-     */
-    private function csrfToken(Request $request): ?string
-    {
-        $body = $request->body('_csrf_token');
-        if (is_string($body) && $body !== '') {
-            return $body;
-        }
-
-        $header = $request->header('X-CSRF-Token');
-        if (is_string($header) && $header !== '') {
-            return $header;
-        }
-
-        return null;
     }
 
     /**

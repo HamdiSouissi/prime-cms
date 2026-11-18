@@ -106,6 +106,8 @@ final class ApiTokenService
 
         // Reconstruire l'utilisateur avec uniquement les capacités effectives du jeton,
         // afin que canPreview/canEdit etc. appliquent automatiquement les limites.
+        // Les rôles sont vides : isAdministrator() ne doit pas répondre vrai sur la base
+        // des rôles du compte quand le jeton ne donne que des capacités restreintes.
         $effectiveUser = new User(
             id: $user->id,
             email: $user->email,
@@ -119,7 +121,7 @@ final class ApiTokenService
             twoFactorLastStep: $user->twoFactorLastStep,
             createdAt: $user->createdAt,
             updatedAt: $user->updatedAt,
-            roles: $user->roles,
+            roles: [],
             capabilities: $abilities,
             avatarMediaId: $user->avatarMediaId,
             username: $user->username,

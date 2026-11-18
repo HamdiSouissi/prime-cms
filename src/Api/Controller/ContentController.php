@@ -36,19 +36,18 @@ final class ContentController extends ApiController
         $perPage = (int) $request->query('per_page', 20);
         $page = (int) $request->query('page', 1);
         $search = (string) $request->query('search', '');
-        $status = (string) $request->query('status', 'publish');
+        $status = (string) $request->query('status', Entry::STATUS_PUBLISHED);
         $user = $this->currentUser($request);
         $locale = $user !== null ? $user->locale : 'fr';
 
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
 
-        // Seuls les utilisateurs avec content.edit_any dans leurs capacités effectives
-        // peuvent filtrer par statut (brouillons, etc.). Les autres ne voient que les publiées.
-        // On vérifie les capacités directement (et non via can()) car can() retourne true
-        // pour un administrateur même quand le jeton ne lui accorde que content.view.
-        if ($user === null || !in_array('content.edit_any', $user->capabilities, true)) {
-            $status = 'publish';
+        // Un utilisateur anonyme ou sans content.edit_any ne voit que les entrées publiées.
+        if ($user === null || !$user->can('content.edit_any')) {
+            $status = Entry::STATUS_PUBLISHED;
+        } elseif (!in_array($status, Entry::ALL_STATUSES, true)) {
+            return $this->error('invalid_status', [], 400, 'invalid_status', $locale);
         }
 
         $q = $this->query->newQuery();
@@ -114,15 +113,16 @@ final class ContentController extends ApiController
 
         $perPage = (int) $request->query('per_page', 20);
         $page = (int) $request->query('page', 1);
-        $status = (string) $request->query('status', 'publish');
+        $status = (string) $request->query('status', Entry::STATUS_PUBLISHED);
 
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
 
-        // Seuls les utilisateurs avec content.edit_any dans leurs capacités effectives
-        // peuvent filtrer par statut (brouillons, etc.). Les autres ne voient que les publiées.
-        if ($user === null || !in_array('content.edit_any', $user->capabilities, true)) {
-            $status = 'publish';
+        // Un utilisateur anonyme ou sans content.edit_any ne voit que les entrées publiées.
+        if ($user === null || !$user->can('content.edit_any')) {
+            $status = Entry::STATUS_PUBLISHED;
+        } elseif (!in_array($status, Entry::ALL_STATUSES, true)) {
+            return $this->error('invalid_status', [], 400, 'invalid_status', $locale);
         }
 
         $q = $this->query->newQuery()
@@ -170,18 +170,20 @@ final class ContentController extends ApiController
 
     public function show(Request $request, string $type, string $slug): Response
     {
+        $user = $this->currentUser($request);
+        $locale = $user !== null ? $user->locale : 'fr';
+
         if (!$this->types->has($type)) {
-            return $this->notFound('unknown_type', ['type' => $type]);
+            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
         }
 
         $entry = $this->entries->findBySlug($type, $slug);
         if ($entry === null) {
-            return $this->notFound('not_found');
+            return $this->notFound('not_found', locale: $locale);
         }
 
-        $user = $this->currentUser($request);
         if (!$this->isReadable($entry, $user)) {
-            return $this->notFound('not_found');
+            return $this->notFound('not_found', locale: $locale);
         }
 
         return $this->json([
@@ -197,7 +199,7 @@ final class ContentController extends ApiController
      */
     private function isReadable(Entry $entry, ?User $user): bool
     {
-        if ($entry->status === 'publish') {
+        if ($entry->status === Entry::STATUS_PUBLISHED) {
             return true;
         }
 
@@ -252,7 +254,7 @@ final class ContentController extends ApiController
     /**
      * @param int $page
      * @param int $lastPage
-     * @return array<string, array{href: string|null, rel: string}>
+     * @return array<string, string|null>
      */
     private function paginationLinks(Request $request, int $page, int $lastPage): array
     {
@@ -285,10 +287,10 @@ final class ContentController extends ApiController
         $last = $lastPage > 1 && $page < $lastPage ? $base . $queryString($setPage($query, $lastPage)) : null;
 
         return [
-            'first' => ['href' => $first, 'rel' => 'first'],
-            'prev' => ['href' => $prev, 'rel' => 'prev'],
-            'next' => ['href' => $next, 'rel' => 'next'],
-            'last' => ['href' => $last, 'rel' => 'last'],
+            'first' => $first,
+            'prev' => $prev,
+            'next' => $next,
+            'last' => $last,
         ];
     }
 }

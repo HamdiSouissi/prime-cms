@@ -603,6 +603,7 @@ return [
         'jeton_api_cree_copiez_le_maintenant' => 'API token created. Copy it now: you won’t be able to see it again.',
         'jeton_api_revoque' => 'API token revoked.',
         'jeton_api_introuvable' => 'API token not found.',
+        'jeton_api_nom_obligatoire' => 'Name is required (100 characters maximum).',
     ],
     'ctrl_text_role' => [
         'ce_slug_de_role_existe_deja' => 'This role slug already exists.',

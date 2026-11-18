@@ -508,8 +508,12 @@ final class AdminServiceProvider extends ServiceProvider
 
                 // API tokens (self-service)
                 $r->get('/profile/api-tokens', [ProfileController::class, 'apiTokens'])->name('profile.api_tokens');
-                $r->post('/profile/api-tokens', [ProfileController::class, 'createApiToken'])->name('profile.api_tokens.create');
-                $r->post('/profile/api-tokens/{id:\d+}/revoke', [ProfileController::class, 'revokeApiToken'])->name('profile.api_tokens.revoke');
+                $r->post('/profile/api-tokens', [ProfileController::class, 'createApiToken'])
+                    ->middleware(\Prime\Http\Middleware\VerifyCsrfToken::class)
+                    ->name('profile.api_tokens.create');
+                $r->post('/profile/api-tokens/{id:\d+}/revoke', [ProfileController::class, 'revokeApiToken'])
+                    ->middleware(\Prime\Http\Middleware\VerifyCsrfToken::class)
+                    ->name('profile.api_tokens.revoke');
 
                 // Users CRUD
                 $r->get('/users', [UserController::class, 'index'])

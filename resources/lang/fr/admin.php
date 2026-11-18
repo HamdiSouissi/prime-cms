@@ -603,6 +603,7 @@ return [
         'jeton_api_cree_copiez_le_maintenant' => 'Jeton API créé. Copiez-le maintenant : vous ne pourrez plus l’afficher.',
         'jeton_api_revoque' => 'Jeton API révoqué.',
         'jeton_api_introuvable' => 'Jeton API introuvable.',
+        'jeton_api_nom_obligatoire' => 'Le nom est obligatoire (100 caractères maximum).',
     ],
     'ctrl_text_role' => [
         'ce_slug_de_role_existe_deja' => 'Ce slug de rôle existe déjà.',

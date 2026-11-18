@@ -10,5 +10,6 @@ return [
         'invalid_request' => 'Invalid request.',
         'method_not_allowed' => 'Method not allowed.',
         'server_error' => 'Internal server error.',
+        'invalid_status' => 'Unknown status.',
     ],
 ];

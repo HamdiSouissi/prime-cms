@@ -124,7 +124,12 @@ final class EntryQuery
     public function statuses(array $statuses): self
     {
         $clone = clone $this;
-        $clone->statuses = array_values(array_filter($statuses, static fn (string $s): bool => in_array($s, Entry::ALL_STATUSES, true)));
+        foreach ($statuses as $status) {
+            if (!in_array($status, Entry::ALL_STATUSES, true)) {
+                throw new InvalidArgumentException(sprintf('Statut inconnu [%s].', $status));
+            }
+        }
+        $clone->statuses = array_values($statuses);
         if (in_array(Entry::STATUS_TRASH, $clone->statuses, true)) {
             $clone->includeTrash = true;
         }
