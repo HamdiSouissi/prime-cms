@@ -442,7 +442,8 @@ final class ProfileController
         if ($expiresDays !== '' && $expiresDays !== '0') {
             $days = (int) $expiresDays;
             if ($days > 0) {
-                $expiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->modify("+{$days} days");
+                $modified = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->modify("+{$days} days");
+                $expiresAt = $modified !== false ? $modified : null;
             }
         }
 
@@ -507,6 +508,9 @@ final class ProfileController
      * @param array<string, string> $infoErrors
      * @param array<string, string> $passwordErrors
      * @param array<string, string>|null $oldInfo
+     * @param list<array<string, mixed>>|null $apiTokens
+     * @param array<string, array<string, string>>|null $apiAbilityGroups
+     * @param array{token: string, name: string}|null $apiNewToken
      */
     private function renderProfile(
         Request $request,
@@ -517,11 +521,8 @@ final class ProfileController
         ?string $twoFactorError = null,
         ?string $devicesError = null,
         ?array $oldInfo = null,
-        /** @param list<array<string, mixed>> $apiTokens */
         ?array $apiTokens = null,
-        /** @param array<string, array<string, string>> $apiAbilityGroups */
         ?array $apiAbilityGroups = null,
-        /** @var array{token: string, name: string}|null $apiNewToken */
         ?array $apiNewToken = null,
     ): string {
         $pendingSetup = $this->session->get(self::SESSION_2FA_PENDING_SECRET);
