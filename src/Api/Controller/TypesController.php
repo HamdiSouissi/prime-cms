@@ -20,15 +20,21 @@ final class TypesController extends ApiController
 
     public function index(Request $request): Response
     {
+        $user = $this->currentUser($request);
         $data = [];
-        foreach ($this->types->all() as $name => $type) {
+        foreach ($this->types->all() as $type) {
+            // Private types (internal stores, plugin data) are only described to editors.
+            if (!$type->public && ($user === null || !$user->can('content.view'))) {
+                continue;
+            }
+
             $data[] = [
                 'name' => $type->name,
                 'label' => [
-                    'singular' => $type->labels['singular'] ?? ucfirst($type->name),
-                    'plural' => $type->labels['plural'] ?? ucfirst($type->name) . 's',
+                    'singular' => $type->label('singular'),
+                    'plural' => $type->label('plural'),
                 ],
-                'description' => $type->labels['description'] ?? '',
+                'description' => isset($type->labels['description']) ? $type->label('description') : '',
                 'icon' => $type->icon,
                 'accent' => $type->accent,
                 'public' => $type->public,
@@ -37,6 +43,7 @@ final class TypesController extends ApiController
                 'taxonomies' => $type->taxonomies,
                 'menu_position' => $type->menuPosition,
                 'editor' => $type->editor,
+                '_links' => ['collection' => '/api/v1/content/' . rawurlencode($type->name)],
             ];
         }
 

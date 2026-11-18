@@ -20,8 +20,10 @@ final class SiteController extends ApiController
 
     public function show(Request $request): Response
     {
+        $name = $this->settings->getString('site.title', 'Prime CMS');
         $data = [
-            'title' => $this->settings->getString('site.title', 'Prime CMS'),
+            'name' => $name,
+            'title' => $name,
             'tagline' => $this->settings->getString('site.tagline', ''),
             'url' => $this->settings->getString('site.url', ''),
             'timezone' => $this->settings->getString('general.timezone', 'UTC'),

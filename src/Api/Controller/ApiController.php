@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\Api\Controller;
 
+use Prime\Api\ApiError;
 use Prime\Auth\User;
 use Prime\Http\Request;
 use Prime\Http\Response;
@@ -112,5 +113,43 @@ abstract class ApiController
         $user = $this->currentUser($request);
 
         return $user !== null ? true : $this->unauthorized();
+    }
+    /**
+     * Decoded JSON (or multipart fields) of the request, validated by the `api.body` middleware.
+     *
+     * @return array<array-key, mixed>
+     */
+    protected function body(Request $request): array
+    {
+        $body = $request->attribute('api.body');
+
+        return is_array($body) ? $body : [];
+    }
+
+    /**
+     * 422 with one message per invalid field.
+     *
+     * @param array<string, mixed> $errors Field => message or list of messages
+     */
+    protected function validationFailed(Request $request, array $errors): Response
+    {
+        $fields = [];
+        foreach ($errors as $field => $messages) {
+            $first = $messages;
+            while (is_array($first)) {
+                $first = $first === [] ? '' : reset($first);
+            }
+            $fields[(string) $field] = (string) $first;
+        }
+
+        return ApiError::response('validation_failed', 422, $request, ['fields' => $fields]);
+    }
+
+    /**
+     * @param array<string, string> $headers
+     */
+    protected function failure(Request $request, string $code, int $status, array $headers = []): Response
+    {
+        return ApiError::response($code, $status, $request, [], $headers);
     }
 }

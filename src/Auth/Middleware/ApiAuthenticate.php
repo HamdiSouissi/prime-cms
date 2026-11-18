@@ -30,6 +30,8 @@ use Prime\Security\Csrf;
  */
 final class ApiAuthenticate implements MiddlewareInterface
 {
+    public const CSRF_HEADER = 'X-Prime-CSRF';
+
     public function __construct(
         private readonly ApiTokenService $tokens,
         private readonly Auth $auth,
@@ -68,12 +70,14 @@ final class ApiAuthenticate implements MiddlewareInterface
         // Aucun jeton Bearer : tenter l'authentification par session.
         $sessionUser = $this->auth->user($request);
         if ($sessionUser !== null) {
-            // Pour les méthodes autres que GET/HEAD, exiger l'en-tête CSRF.
-            $method = strtoupper((string) $request->method());
-            if ($method !== 'GET' && $method !== 'HEAD') {
-                $csrfToken = $this->csrf->extractFromRequest($request);
-                if (!$this->csrf->validate($csrfToken)) {
-                    return $this->jsonError('forbidden', 403);
+            // A cookie-authenticated write must prove it comes from our own pages: the
+            // `X-Prime-CSRF` header carries the session CSRF token. A bearer token is never
+            // subject to CSRF since browsers do not attach it on their own.
+            $method = strtoupper($request->method());
+            if (!in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
+                $csrfToken = $request->header(self::CSRF_HEADER);
+                if (!is_string($csrfToken) || !$this->csrf->validate($csrfToken)) {
+                    return $this->jsonError('csrf_mismatch', 403);
                 }
             }
 
@@ -97,7 +101,7 @@ final class ApiAuthenticate implements MiddlewareInterface
      */
     private function jsonError(string $code, int $status, array $headers = []): Response
     {
-        $message = $this->translator->translate('api.errors.' . $code, [], Translator::DEFAULT_LOCALE);
+        $message = $this->translator->translate('api.errors.' . $code);
 
         return Response::json([
             'error' => [

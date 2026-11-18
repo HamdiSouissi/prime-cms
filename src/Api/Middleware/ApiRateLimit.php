@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Prime\Api\Middleware;
 
+use Prime\Api\ApiError;
+use Prime\Auth\User;
 use Prime\Cache\CacheManager;
 use Prime\Http\Middleware\MiddlewareInterface;
 use Prime\Http\Request;
@@ -35,12 +37,14 @@ final class ApiRateLimit implements MiddlewareInterface
         $user = $request->attribute('api.user');
         $tokenId = $request->attribute('api.token_id');
 
-        if ($user !== null && $tokenId !== null) {
-            $limit = (int) $this->settings->getInt('api.rate_limit_authenticated', 60);
-            $key = 'api:rl:token:' . (int) $tokenId;
+        if ($user instanceof User) {
+            $limit = $this->settings->getInt('api.rate_limit_authenticated', 120);
+            $key = $tokenId !== null
+                ? 'api:rl:token:' . (int) $tokenId
+                : 'api:rl:user:' . $user->id;
         } else {
-            $limit = (int) $this->settings->getInt('api.rate_limit_anonymous', 20);
-            $key = 'api:rl:anon:' . ((string) ($request->server('REMOTE_ADDR') ?? '0.0.0.0'));
+            $limit = $this->settings->getInt('api.rate_limit_anonymous', 60);
+            $key = 'api:rl:ip:' . ((string) ($request->server('REMOTE_ADDR') ?? '0.0.0.0'));
         }
 
         if ($limit <= 0) {
@@ -48,29 +52,18 @@ final class ApiRateLimit implements MiddlewareInterface
         }
 
         $current = (int) $this->cache->data()->increment($key, 1, self::WINDOW_SECONDS);
-        $remaining = max(0, $limit - $current);
 
-        $response = $next($request);
-        $response = $response
-            ->withHeader('X-RateLimit-Limit', (string) $limit)
-            ->withHeader('X-RateLimit-Remaining', (string) $remaining);
-
+        // Refuse before running the handler: a write over the limit must not happen at all.
         if ($current > $limit) {
-            return Response::json([
-                'error' => [
-                    'code' => 'rate_limited',
-                    'message' => t('api.errors.rate_limited'),
-                    'status' => 429,
-                ],
-            ], 429, array_merge([
-                'Content-Type' => 'application/json',
+            return ApiError::response('rate_limited', 429, $request, [], [
                 'Retry-After' => (string) self::WINDOW_SECONDS,
-            ], $response->headers(), [
                 'X-RateLimit-Limit' => (string) $limit,
                 'X-RateLimit-Remaining' => '0',
-            ]));
+            ]);
         }
 
-        return $response;
+        return $next($request)
+            ->withHeader('X-RateLimit-Limit', (string) $limit)
+            ->withHeader('X-RateLimit-Remaining', (string) max(0, $limit - $current));
     }
 }
