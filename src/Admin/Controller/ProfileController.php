@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Prime\Admin\Controller;
 
+use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
-use DateInterval;
 use Prime\Admin\AdminContext;
 use Prime\Admin\TranslatesAdminCopy;
 use Prime\Api\Token\ApiTokenService;
