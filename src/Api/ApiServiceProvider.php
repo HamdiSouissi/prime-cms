@@ -12,14 +12,12 @@ use Prime\Api\Controller\TermsController;
 use Prime\Api\Controller\TypesController;
 use Prime\Api\Middleware\ApiCors;
 use Prime\Api\Middleware\ApiEnabled;
-use Prime\Api\Middleware\ApiLifecycle;
 use Prime\Api\Middleware\ApiRateLimit;
 use Prime\Api\Repository\ApiTokenRepository;
 use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\Auth;
 use Prime\Auth\Middleware\ApiAuthenticate;
 use Prime\Cache\CacheManager;
-use Prime\Hooks\Hooks;
 use Prime\Http\Kernel;
 use Prime\Http\Router;
 use Prime\I18n\Translator;
@@ -380,12 +378,6 @@ final class ApiServiceProvider extends ServiceProvider
         // Alias de middleware `api.body` pour la validation du corps JSON.
         $kernel->registerMiddlewareAlias('api.body', function (): ApiBody {
             return new ApiBody($this->app->get(Settings::class));
-        });
-
-        // Middleware de cycle de vie : émet l'événement `api.request`, stocke l'heure
-        // de début, puis applique le filtre `api.response` sur chaque réponse API.
-        $kernel->registerMiddlewareAlias('api.lifecycle', function (): ApiLifecycle {
-            return new ApiLifecycle($this->app->get(Hooks::class));
         });
 
         $router = $this->app->get(Router::class);
