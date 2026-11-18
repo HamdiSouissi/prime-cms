@@ -145,17 +145,82 @@ final class ApiServiceProvider extends ServiceProvider
                 response: [],
             ),
 
-            // Contenu unique par slug (lecture publique).
+            // Contenu unique par slug ou par ID (lecture publique).
             new ApiRoute(
                 method: 'GET',
-                path: '/content/{type}/{slug}',
+                path: '/content/{type}/{id}',
                 handler: [ContentController::class, 'show'],
                 permission: null,
                 public: true,
-                summary: 'Contenu unique par slug.',
+                summary: 'Contenu unique par slug ou par ID.',
                 parameters: [
                     'type' => 'string',
-                    'slug' => 'string',
+                    'id' => 'string',
+                ],
+                response: [],
+            ),
+
+            // Création de contenu (authentification + permission requise).
+            new ApiRoute(
+                method: 'POST',
+                path: '/content/{type}',
+                handler: [ContentController::class, 'create'],
+                permission: 'content.create',
+                public: false,
+                summary: 'Crée un contenu.',
+                parameters: [
+                    'type' => 'string',
+                    'title' => 'string',
+                    'status' => 'string',
+                    'content' => 'mixed',
+                    'fields' => 'array',
+                    'terms' => 'array',
+                ],
+                response: [],
+            ),
+
+            // Modification de contenu (authentification + permission requise).
+            new ApiRoute(
+                method: 'PATCH',
+                path: '/content/{type}/{id}',
+                handler: [ContentController::class, 'update'],
+                permission: 'content.edit_own',
+                public: false,
+                summary: 'Modifie un contenu.',
+                parameters: [
+                    'type' => 'string',
+                    'id' => 'string',
+                ],
+                response: [],
+            ),
+
+            // Mise à la corbeille ou suppression définitive (permission requise).
+            new ApiRoute(
+                method: 'DELETE',
+                path: '/content/{type}/{id}',
+                handler: [ContentController::class, 'trash'],
+                permission: 'content.delete_own',
+                public: false,
+                summary: 'Met un contenu à la corbeille (ou suppression définitive avec ?force=1).',
+                parameters: [
+                    'type' => 'string',
+                    'id' => 'string',
+                    'force' => 'bool',
+                ],
+                response: [],
+            ),
+
+            // Restauration depuis la corbeille (permission requise).
+            new ApiRoute(
+                method: 'POST',
+                path: '/content/{type}/{id}/restore',
+                handler: [ContentController::class, 'restore'],
+                permission: 'content.delete_own',
+                public: false,
+                summary: 'Restaure un contenu depuis la corbeille.',
+                parameters: [
+                    'type' => 'string',
+                    'id' => 'string',
                 ],
                 response: [],
             ),
@@ -171,6 +236,86 @@ final class ApiServiceProvider extends ServiceProvider
                 parameters: [
                     'taxonomy' => 'string',
                     'search' => 'string',
+                ],
+                response: [],
+            ),
+
+            // Termes d'une taxonomie donnée (lecture publique).
+            new ApiRoute(
+                method: 'GET',
+                path: '/terms/{taxonomy}',
+                handler: [TermsController::class, 'byTaxonomy'],
+                permission: null,
+                public: true,
+                summary: 'Termes d’une taxonomie.',
+                parameters: [
+                    'taxonomy' => 'string',
+                    'parent' => 'int',
+                    'search' => 'string',
+                ],
+                response: [],
+            ),
+
+            // Terme unique (lecture publique).
+            new ApiRoute(
+                method: 'GET',
+                path: '/terms/{taxonomy}/{id}',
+                handler: [TermsController::class, 'show'],
+                permission: null,
+                public: true,
+                summary: 'Terme unique.',
+                parameters: [
+                    'taxonomy' => 'string',
+                    'id' => 'string',
+                ],
+                response: [],
+            ),
+
+            // Création de terme (permission requise).
+            new ApiRoute(
+                method: 'POST',
+                path: '/terms/{taxonomy}',
+                handler: [TermsController::class, 'create'],
+                permission: 'content.edit_any',
+                public: false,
+                summary: 'Crée un terme.',
+                parameters: [
+                    'taxonomy' => 'string',
+                    'name' => 'string',
+                    'slug' => 'string',
+                    'description' => 'string',
+                    'parent_id' => 'int',
+                    'menu_order' => 'int',
+                ],
+                response: [],
+            ),
+
+            // Modification de terme (permission requise).
+            new ApiRoute(
+                method: 'PATCH',
+                path: '/terms/{taxonomy}/{id}',
+                handler: [TermsController::class, 'update'],
+                permission: 'content.edit_any',
+                public: false,
+                summary: 'Modifie un terme.',
+                parameters: [
+                    'taxonomy' => 'string',
+                    'id' => 'string',
+                ],
+                response: [],
+            ),
+
+            // Suppression de terme (permission requise).
+            new ApiRoute(
+                method: 'DELETE',
+                path: '/terms/{taxonomy}/{id}',
+                handler: [TermsController::class, 'delete'],
+                permission: 'content.edit_any',
+                public: false,
+                summary: 'Supprime un terme.',
+                parameters: [
+                    'taxonomy' => 'string',
+                    'id' => 'string',
                 ],
                 response: [],
             ),
