@@ -71,9 +71,10 @@ final class ApiServiceProvider extends ServiceProvider
         // CORS comme middleware GLOBAL : il s'exécute avant le routeur afin d'intercepter
         // les préflights OPTIONS et de retourner 204 avant que le routeur ne lève une 405
         // "Method Not Allowed" sur les routes qui n'enregistrent que GET.
-        $kernel->addMiddleware(function (): ApiCors {
+        $kernel->registerMiddlewareAlias('api.cors', function (): ApiCors {
             return new ApiCors($this->app->get(Settings::class));
         });
+        $kernel->addMiddleware('api.cors');
 
         $apiMiddleware = ['api.enabled', 'api.auth', 'api.rate_limit'];
 
