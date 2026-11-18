@@ -25,6 +25,13 @@ use Prime\Kernel\ServiceProvider;
 use Prime\Security\Csrf;
 use Prime\Settings\Settings;
 
+/**
+ * Enregistre les routes et middlewares de l'API REST Prime CMS.
+ *
+ * Toutes les routes `/api/v1` sont déclarées de manière déclarative via `ApiRoute`
+ * (permission requise ou `public: true` explicite). Une route sans l'un ni l'autre
+ * provoque une exception au démarrage.
+ */
 final class ApiServiceProvider extends ServiceProvider
 {
     public function register(): void
@@ -32,6 +39,142 @@ final class ApiServiceProvider extends ServiceProvider
         // Le repository de jetons et le service métier sont résolus par autowiring.
         $this->app->container()->singleton(ApiTokenRepository::class);
         $this->app->container()->singleton(ApiTokenService::class);
+    }
+
+    /**
+     * @return list<ApiRoute>
+     */
+    public function routes(): array
+    {
+        return [
+            // Racine publique de l'API (aucune authentification requise).
+            new ApiRoute(
+                method: 'GET',
+                path: '/',
+                handler: [ApiIndexController::class, '__invoke'],
+                permission: null,
+                public: true,
+                summary: 'Racine de l’API REST.',
+                parameters: [],
+                response: [],
+            ),
+
+            // Types de contenu et taxonomies (public).
+            new ApiRoute(
+                method: 'GET',
+                path: '/types',
+                handler: [TypesController::class, 'index'],
+                permission: null,
+                public: true,
+                summary: 'Liste des types de contenu et taxonomies visibles.',
+                parameters: [],
+                response: [],
+            ),
+
+            // Informations publiques du site.
+            new ApiRoute(
+                method: 'GET',
+                path: '/site',
+                handler: [SiteController::class, 'show'],
+                permission: null,
+                public: true,
+                summary: 'Réglages publics du site.',
+                parameters: [],
+                response: [],
+            ),
+
+            // Profil de l’utilisateur connecté (authentification requise).
+            new ApiRoute(
+                method: 'GET',
+                path: '/me',
+                handler: [MeController::class, 'show'],
+                permission: null,
+                public: false,
+                summary: 'Profil de l’utilisateur courant.',
+                parameters: [],
+                response: [],
+            ),
+
+            // Liste paginée des contenus (lecture publique, filtres optionnels).
+            new ApiRoute(
+                method: 'GET',
+                path: '/content',
+                handler: [ContentController::class, 'index'],
+                permission: null,
+                public: true,
+                summary: 'Liste paginée des contenus.',
+                parameters: [
+                    'type' => 'string',
+                    'status' => 'string',
+                    'search' => 'string',
+                    'author' => 'string',
+                    'term' => 'string',
+                    'after' => 'string',
+                    'before' => 'string',
+                    'orderby' => 'string',
+                    'order' => 'string',
+                    'fields' => 'string',
+                    'page' => 'int',
+                    'per_page' => 'int',
+                ],
+                response: [],
+            ),
+
+            // Contenus d’un type donné (lecture publique, filtres optionnels).
+            new ApiRoute(
+                method: 'GET',
+                path: '/content/{type}',
+                handler: [ContentController::class, 'byType'],
+                permission: null,
+                public: true,
+                summary: 'Contenus d’un type donné.',
+                parameters: [
+                    'type' => 'string',
+                    'status' => 'string',
+                    'search' => 'string',
+                    'author' => 'string',
+                    'term' => 'string',
+                    'after' => 'string',
+                    'before' => 'string',
+                    'orderby' => 'string',
+                    'order' => 'string',
+                    'fields' => 'string',
+                    'page' => 'int',
+                    'per_page' => 'int',
+                ],
+                response: [],
+            ),
+
+            // Contenu unique par slug (lecture publique).
+            new ApiRoute(
+                method: 'GET',
+                path: '/content/{type}/{slug}',
+                handler: [ContentController::class, 'show'],
+                permission: null,
+                public: true,
+                summary: 'Contenu unique par slug.',
+                parameters: [
+                    'type' => 'string',
+                    'slug' => 'string',
+                ],
+                response: [],
+            ),
+
+            // Liste des taxonomies et de leurs termes (public).
+            new ApiRoute(
+                method: 'GET',
+                path: '/terms',
+                handler: [TermsController::class, 'index'],
+                permission: null,
+                public: true,
+                summary: 'Liste des taxonomies et de leurs termes.',
+                parameters: [
+                    'taxonomy' => 'string',
+                    'search' => 'string',
+                ],
+                response: [],
+            ),
+        ];
     }
 
     public function boot(): void
@@ -66,6 +209,12 @@ final class ApiServiceProvider extends ServiceProvider
             );
         });
 
+        // Alias de middleware `api.can:<capabilité>` pour l'autorisation API.
+        // Lit l'attribut `api.user` défini par `ApiAuthenticate`.
+        $kernel->registerMiddlewareAlias('api.can', static function (?string $capability): ApiAuthorize {
+            return new ApiAuthorize($capability ?? '');
+        });
+
         $router = $this->app->get(Router::class);
 
         // CORS comme middleware GLOBAL : il s'exécute avant le routeur afin d'intercepter
@@ -76,16 +225,37 @@ final class ApiServiceProvider extends ServiceProvider
         });
         $kernel->addMiddleware('api.cors');
 
-        $apiMiddleware = ['api.enabled', 'api.auth', 'api.rate_limit'];
+        // Enregistrement déclaratif de toutes les routes de l'API.
+        $this->registerRoutes($router);
+    }
 
-        // Racine publique de l'API (aucune authentification requise), soumise à l'activation
-        // et à la limitation de débit.
-        $router->group(
-            ['middleware' => ['api.enabled', 'api.rate_limit']],
-            static function (Router $r): void {
-                $r->get('/api/v1', [ApiIndexController::class, '__invoke']);
-            },
-        );
+    /**
+     * Enregistre toutes les `ApiRoute` déclarées sur le routeur.
+     *
+     * Toutes les routes sont placées dans un groupe avec le préfixe `/api/v1` et les
+     * middlewares `api.enabled`, `api.auth` et `api.rate_limit`. Les routes non
+     * publiques reçoivent en outre le middleware d'autorisation `api.can`.
+     *
+     * @param list<ApiRoute> $routes
+     */
+    private function registerRoutes(Router $router): void
+    {
+        $routes = $this->routes();
+
+        // Vérification au démarrage : toute route doit avoir une permission ou public: true.
+        foreach ($routes as $route) {
+            if ($route->permission === null && !$route->public) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'La route %s %s doit déclarer une permission ou public: true.',
+                        $route->method,
+                        $route->path,
+                    ),
+                );
+            }
+        }
+
+        $apiMiddleware = ['api.enabled', 'api.auth', 'api.rate_limit'];
 
         $router->group(
             [
@@ -93,17 +263,43 @@ final class ApiServiceProvider extends ServiceProvider
                 'middleware' => $apiMiddleware,
                 'name' => 'api.',
             ],
-            static function (Router $r): void {
-                $r->get('/types', [TypesController::class, 'index'])->name('types.index');
-                $r->get('/site', [SiteController::class, 'show'])->name('site.show');
-                $r->get('/me', [MeController::class, 'show'])->name('me.show');
+            static function (Router $r) use ($routes, $apiMiddleware): void {
+                foreach ($routes as $route) {
+                    $middlewares = $apiMiddleware;
+                    if (!$route->public && $route->permission !== null) {
+                        $middlewares[] = 'api.can:' . $route->permission;
+                    }
 
-                $r->get('/content', [ContentController::class, 'index'])->name('content.index');
-                $r->get('/content/{type}', [ContentController::class, 'byType'])->name('content.by_type');
-                $r->get('/content/{type}/{slug}', [ContentController::class, 'show'])->name('content.show');
-
-                $r->get('/terms', [TermsController::class, 'index'])->name('terms.index');
+                    $this->registerRoute($r, $route, $middlewares);
+                }
             },
         );
+    }
+
+    /**
+     * Enregistre une `ApiRoute` sur le routeur avec les middlewares donnés.
+     *
+     * @param list<string> $middlewares
+     */
+    private function registerRoute(Router $r, ApiRoute $route, array $middlewares): void
+    {
+        $handler = $route->handler;
+        if (is_array($handler)) {
+            [$controller, $method] = $handler;
+        } else {
+            $controller = $handler;
+            $method = '__invoke';
+        }
+
+        match ($route->method) {
+            'GET' => $r->get($route->path, [$controller, $method])->middleware($middlewares),
+            'POST' => $r->post($route->path, [$controller, $method])->middleware($middlewares),
+            'PATCH' => $r->patch($route->path, [$controller, $method])->middleware($middlewares),
+            'DELETE' => $r->delete($route->path, [$controller, $method])->middleware($middlewares),
+            'PUT' => $r->put($route->path, [$controller, $method])->middleware($middlewares),
+            default => throw new \InvalidArgumentException(
+                sprintf('Méthode HTTP non supportée : %s', $route->method),
+            ),
+        };
     }
 }
