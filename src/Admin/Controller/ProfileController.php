@@ -461,7 +461,8 @@ final class ProfileController
         if ($expiresDays !== '' && $expiresDays !== '0') {
             $days = (int) $expiresDays;
             if ($days > 0) {
-                $expiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->modify("+{$days} days");
+                $modified = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->modify("+{$days} days");
+                $expiresAt = $modified instanceof DateTimeImmutable ? $modified : null;
             }
         }
 
