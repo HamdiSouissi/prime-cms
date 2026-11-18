@@ -443,6 +443,7 @@ final class AdminServiceProvider extends ServiceProvider
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
                 hasher: $this->app->get(Hasher::class),
+                settings: $this->app->get(Settings::class),
                 apiTokens: $this->app->get(ApiTokenService::class),
                 capabilities: $this->app->get(Capabilities::class),
                 media: $media instanceof MediaRepository ? $media : null,
