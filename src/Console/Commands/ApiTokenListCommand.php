@@ -28,7 +28,7 @@ final class ApiTokenListCommand implements CommandInterface
 
     public function description(): string
     {
-        return 'Liste les jetons d\'API d\'un utilisateur (--user-id).';
+        return 'Liste les jetons d\'API d\'un utilisateur (--user avec son email).';
     }
 
     public function execute(array $args, ConsoleOutput $output): int
@@ -36,27 +36,24 @@ final class ApiTokenListCommand implements CommandInterface
         $parsed = ArgParser::parse($args);
         $opts = $parsed['options'];
 
-        $userIdRaw = ArgParser::stringOption($opts, 'user-id');
-
-        if ($userIdRaw === '' || !ctype_digit($userIdRaw)) {
-            $output->error('Option --user-id requise (identifiant utilisateur numérique).');
+        $email = ArgParser::stringOption($opts, 'user');
+        if ($email === '') {
+            $output->error('Option --user requise (email utilisateur).');
 
             return self::FAILURE;
         }
 
-        $userId = (int) $userIdRaw;
-
-        $user = $this->users->find($userId);
+        $user = $this->users->findByEmail($email);
         if ($user === null) {
-            $output->error(sprintf('Utilisateur #%d introuvable.', $userId));
+            $output->error(sprintf('Utilisateur %s introuvable.', $email));
 
             return self::FAILURE;
         }
 
-        $tokenList = $this->tokens->listByUser($userId);
+        $tokenList = $this->tokens->listByUser($user->id);
 
         if ($tokenList === []) {
-            $output->writeln(sprintf('Aucun jeton d\'API pour l\'utilisateur #%d (%s).', $userId, $user->displayName));
+            $output->writeln(sprintf('Aucun jeton d\'API pour l\'utilisateur %s (%s).', $email, $user->displayName));
 
             return self::SUCCESS;
         }
@@ -66,14 +63,14 @@ final class ApiTokenListCommand implements CommandInterface
             $rows[] = [
                 (string) ($row['id'] ?? ''),
                 (string) ($row['name'] ?? ''),
-                (string) ($row['prefix'] ?? ''),
+                (string) ($row['token_prefix'] ?? ''),
                 (string) ($row['created_at'] ?? '-'),
                 (string) ($row['expires_at'] ?? '-'),
                 (string) ($row['last_used_at'] ?? '-'),
             ];
         }
 
-        $output->writeln(sprintf('Jeton(s) d\'API pour l\'utilisateur #%d (%s) :', $userId, $user->displayName));
+        $output->writeln(sprintf('Jeton(s) d\'API pour l\'utilisateur %s (%s) :', $email, $user->displayName));
         $output->table(['ID', 'Nom', 'Préfixe', 'Créé le', 'Expire le', 'Dernière utilisation'], $rows);
 
         return self::SUCCESS;

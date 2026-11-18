@@ -10,7 +10,7 @@ use Prime\Console\CommandInterface;
 use Prime\Console\ConsoleOutput;
 
 /**
- * Révoque (supprime) un jeton d'API par son ID (`bin/prime api:token:revoke`).
+ * Révoque un jeton d'API par son ID (`bin/prime api:token:revoke`).
  */
 final class ApiTokenRevokeCommand implements CommandInterface
 {
@@ -25,31 +25,31 @@ final class ApiTokenRevokeCommand implements CommandInterface
 
     public function description(): string
     {
-        return 'Révoque un jeton d\'API par son ID (--token-id).';
+        return 'Révoque un jeton d\'API par son ID (identifiant en argument).';
     }
 
     public function execute(array $args, ConsoleOutput $output): int
     {
         $parsed = ArgParser::parse($args);
-        $opts = $parsed['options'];
+        $positionals = $parsed['positionals'];
 
-        $tokenIdRaw = ArgParser::stringOption($opts, 'token-id');
-
+        $tokenIdRaw = $positionals[0] ?? '';
         if ($tokenIdRaw === '' || !ctype_digit($tokenIdRaw)) {
-            $output->error('Option --token-id requise (identifiant du jeton).');
+            $output->error('Identifiant du jeton requis en argument.');
 
             return self::FAILURE;
         }
 
         $tokenId = (int) $tokenIdRaw;
 
-        $success = $this->tokens->revoke($tokenId);
-
-        if (!$success) {
+        $token = $this->tokens->findById($tokenId);
+        if ($token === null) {
             $output->error(sprintf('Jeton #%d introuvable.', $tokenId));
 
             return self::FAILURE;
         }
+
+        $this->tokens->revoke($tokenId);
 
         $output->writeln(sprintf('Jeton #%d révoqué.', $tokenId));
 

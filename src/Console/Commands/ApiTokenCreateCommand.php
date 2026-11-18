@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Prime\Console\Commands;
 
+use DateInterval;
+use DateTimeImmutable;
+use DateTimeZone;
 use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\UserRepository;
 use Prime\Console\ArgParser;
@@ -13,7 +16,8 @@ use Prime\Console\ConsoleOutput;
 /**
  * Crée un nouveau jeton d'API pour un utilisateur (`bin/prime api:token:create`).
  *
- * Affiche le jeton en clair une seule fois.
+ * L'identifiant utilisateur est passé en argument (email). Les capacités demandées
+ * sont filtrées à celles que l'utilisateur possède réellement.
  */
 final class ApiTokenCreateCommand implements CommandInterface
 {
@@ -30,68 +34,55 @@ final class ApiTokenCreateCommand implements CommandInterface
 
     public function description(): string
     {
-        return 'Crée un jeton d\'API pour un utilisateur (--user-id, --name, --expires-at).';
+        return 'Crée un jeton d\'API pour un utilisateur (email en argument, --name, --abilities, --days).';
     }
 
     public function execute(array $args, ConsoleOutput $output): int
     {
         $parsed = ArgParser::parse($args);
         $opts = $parsed['options'];
+        $positionals = $parsed['positionals'];
 
-        $userIdRaw = ArgParser::stringOption($opts, 'user-id');
+        $email = $positionals[0] ?? '';
+        if ($email === '') {
+            $output->error('Identifiant utilisateur (email) requis en argument.');
+
+            return self::FAILURE;
+        }
+
         $name = ArgParser::stringOption($opts, 'name');
-        $expiresAtRaw = ArgParser::stringOption($opts, 'expires-at');
-
-        if ($userIdRaw === '' || !ctype_digit($userIdRaw)) {
-            $output->error('Option --user-id requise (identifiant utilisateur numérique).');
-
-            return self::FAILURE;
-        }
-
-        $userId = (int) $userIdRaw;
-
         if ($name === '') {
-            $output->error('Option --name requise (nom du jeton).');
+            $output->error('Option --name requise.');
 
             return self::FAILURE;
         }
 
-        $user = $this->users->find($userId);
-        if ($user === null) {
-            $output->error(sprintf('Utilisateur #%d introuvable.', $userId));
-
-            return self::FAILURE;
-        }
+        $abilitiesRaw = ArgParser::stringOption($opts, 'abilities', '*');
+        $abilities = $abilitiesRaw === '' ? ['*'] : array_values(array_filter(explode(',', $abilitiesRaw)));
 
         $expiresAt = null;
-        if ($expiresAtRaw !== '') {
-            try {
-                $dt = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $expiresAtRaw);
-                if (!$dt instanceof \DateTimeImmutable) {
-                    $dt = new \DateTimeImmutable($expiresAtRaw);
-                }
-                $expiresAt = $dt;
-            } catch (\Throwable) {
-                $output->error('Option --expires-at invalide (format attendu : YYYY-MM-DD HH:MM:SS).');
-
-                return self::FAILURE;
+        $daysRaw = ArgParser::stringOption($opts, 'days');
+        if ($daysRaw !== '') {
+            $days = (int) $daysRaw;
+            if ($days > 0) {
+                $expiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+                    ->add(new DateInterval('P' . $days . 'D'));
             }
         }
 
-        try {
-            $result = $this->tokens->issue($user, $name, ['*'], $expiresAt);
-        } catch (\Throwable $exception) {
-            $output->error('Impossible de créer le jeton : ' . $exception->getMessage());
+        $user = $this->users->findByEmail($email);
+        if ($user === null) {
+            $output->error(sprintf('Utilisateur %s introuvable.', $email));
 
             return self::FAILURE;
         }
+
+        $result = $this->tokens->issue($user, $name, $abilities, $expiresAt);
 
         $output->writeln('Jeton d\'API créé.');
         $output->writeln(sprintf('  Utilisateur : %s (#%d)', $user->displayName, $user->id));
         $output->writeln(sprintf('  Nom         : %s', $name));
         $output->writeln(sprintf('  Jeton       : %s', $result['token']));
-        $output->writeln('');
-        $output->writeln('Conservez ce jeton en lieu sûr : il ne sera pas affiché à nouveau.');
 
         return self::SUCCESS;
     }
