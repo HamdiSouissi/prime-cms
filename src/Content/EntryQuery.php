@@ -129,7 +129,7 @@ final class EntryQuery
                 throw new InvalidArgumentException(sprintf('Statut inconnu [%s].', $status));
             }
         }
-        $clone->statuses = array_values($statuses);
+        $clone->statuses = $statuses;
         if (in_array(Entry::STATUS_TRASH, $clone->statuses, true)) {
             $clone->includeTrash = true;
         }
