@@ -27,7 +27,6 @@ use Prime\Kernel\Application;
 use Prime\Media\MediaRepository;
 use Prime\Security\Hasher;
 use Prime\Security\PasswordPolicy;
-use Prime\Settings\Settings;
 use Prime\Site\ReservedSlugValidator;
 use Prime\Validation\Validator;
 use Prime\View\View;
