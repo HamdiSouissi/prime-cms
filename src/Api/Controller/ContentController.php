@@ -43,9 +43,11 @@ final class ContentController extends ApiController
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
 
-        // Seuls les utilisateurs avec content.edit_any peuvent filtrer par statut
-        // (brouillons, etc.). Les autres ne voient que les publiées.
-        if ($user === null || !$user->can('content.edit_any')) {
+        // Seuls les utilisateurs avec content.edit_any dans leurs capacités effectives
+        // peuvent filtrer par statut (brouillons, etc.). Les autres ne voient que les publiées.
+        // On vérifie les capacités directement (et non via can()) car can() retourne true
+        // pour un administrateur même quand le jeton ne lui accorde que content.view.
+        if ($user === null || !in_array('content.edit_any', $user->capabilities, true)) {
             $status = 'publish';
         }
 
@@ -117,9 +119,9 @@ final class ContentController extends ApiController
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
 
-        // Seuls les utilisateurs avec content.edit_any peuvent filtrer par statut
-        // (brouillons, etc.). Les autres ne voient que les publiées.
-        if ($user === null || !$user->can('content.edit_any')) {
+        // Seuls les utilisateurs avec content.edit_any dans leurs capacités effectives
+        // peuvent filtrer par statut (brouillons, etc.). Les autres ne voient que les publiées.
+        if ($user === null || !in_array('content.edit_any', $user->capabilities, true)) {
             $status = 'publish';
         }
 

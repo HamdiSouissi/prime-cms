@@ -458,17 +458,15 @@ ob_start();
             'title' => $this->t('admin.view_profile_index.jeton_api_nouveau_titre'),
             'message' => $this->t('admin.view_profile_index.jeton_api_nouveau_message'),
         ])) ?>
-        <div data-prime-new-token>
-            <span class="pc-token-value"><?= $this->e($apiNewToken['token']) ?></span>
-            <button
-                type="button"
-                class="pc-btn pc-btn--secondary pc-btn--sm"
-                data-prime-copy-text="<?= $this->e($apiNewToken['token']) ?>"
-                data-prime-copy-feedback="<?= $this->e($this->t('admin.profile.index.jeton_copie')) ?>"
-            >
-                <?= $this->e($this->t('admin.profile.index.copier')) ?>
-            </button>
-        </div>
+        <div data-prime-new-token><?= $this->e($apiNewToken['token']) ?></div>
+        <button
+            type="button"
+            class="pc-btn pc-btn--secondary pc-btn--sm"
+            data-prime-copy-text="<?= $this->e($apiNewToken['token']) ?>"
+            data-prime-copy-feedback="<?= $this->e($this->t('admin.profile.index.jeton_copie')) ?>"
+        >
+            <?= $this->e($this->t('admin.profile.index.copier')) ?>
+        </button>
         <p class="pc-text-sm pc-text-muted">
             <?= $this->e($this->t('admin.view_profile_index.jeton_api_afficher_une_fois')) ?>
         </p>
