@@ -601,6 +601,7 @@ return [
         'votre_mot_de_passe_a_ete_modifie_et_vos_autres_appareils_ont' => 'Your password was changed and your other devices were signed out.',
         'votre_mot_de_passe_actuel_est_incorrect' => 'Your current password is incorrect.',
         'jeton_api_cree_copiez_le_maintenant' => 'API token created. Copy it now: you won’t be able to see it again.',
+        'jeton_cree' => 'Token created.',
         'jeton_api_revoque' => 'API token revoked.',
         'jeton_api_introuvable' => 'API token not found.',
         'jeton_api_nom_obligatoire' => 'Name is required (100 characters maximum).',
@@ -2177,6 +2178,10 @@ return [
         'supprimer_le_plugin' => 'Delete the plugin',
     ],
     'view_profile_index' => [
+        'onglet_informations' => 'Information',
+        'jeton_api_capacites_aide' => 'A capability your account does not hold cannot be granted to a token.',
+        'jeton_api_raccourci_lecture_seule' => 'Read-only',
+        'jeton_api_raccourci_tout_cocher' => 'Check all',
         'authentification_a_deux_facteurs_totp' => 'Two-factor authentication (TOTP)',
         'ces_8_codes_a_usage_unique_ne_seront_plus_jamais_affiches_co' => 'These 8 single-use codes will never be shown again. Store them in a secure password manager.',
         'changer_le_mot_de_passe' => 'Change the password',

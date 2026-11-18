@@ -601,6 +601,7 @@ return [
         'votre_mot_de_passe_a_ete_modifie_et_vos_autres_appareils_ont' => 'Votre mot de passe a été modifié et vos autres appareils ont été déconnectés.',
         'votre_mot_de_passe_actuel_est_incorrect' => 'Votre mot de passe actuel est incorrect.',
         'jeton_api_cree_copiez_le_maintenant' => 'Jeton API créé. Copiez-le maintenant : vous ne pourrez plus l’afficher.',
+        'jeton_cree' => 'Jeton créé.',
         'jeton_api_revoque' => 'Jeton API révoqué.',
         'jeton_api_introuvable' => 'Jeton API introuvable.',
         'jeton_api_nom_obligatoire' => 'Le nom est obligatoire (100 caractères maximum).',
