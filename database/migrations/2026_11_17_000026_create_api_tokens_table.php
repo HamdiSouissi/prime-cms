@@ -11,7 +11,8 @@ return new class () extends Migration {
     {
         $schema->create('api_tokens', static function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('CASCADE');
             $table->string('name', 100);
             $table->string('token_prefix', 12)->index('idx_api_tokens_prefix');
             $table->string('token_hash', 64)->unique()->index('idx_api_tokens_hash');
