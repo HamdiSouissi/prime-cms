@@ -458,15 +458,28 @@ ob_start();
             'title' => $this->t('admin.view_profile_index.jeton_api_nouveau_titre'),
             'message' => $this->t('admin.view_profile_index.jeton_api_nouveau_message'),
         ])) ?>
-        <div data-prime-new-token><?= $this->e($apiNewToken['token']) ?></div>
-        <button
-            type="button"
-            class="pc-btn pc-btn--secondary pc-btn--sm"
-            data-prime-copy-text="<?= $this->e($apiNewToken['token']) ?>"
-            data-prime-copy-feedback="<?= $this->e($this->t('admin.profile.index.jeton_copie')) ?>"
-        >
-            <?= $this->e($this->t('admin.profile.index.copier')) ?>
-        </button>
+        <div class="pc-field">
+            <input
+                type="text"
+                name="api_token_value"
+                readonly
+                class="pc-input"
+                style="font-family: var(--pc-font-mono, monospace);"
+                data-prime-new-token="<?= $this->e($apiNewToken['token']) ?>"
+                value="<?= $this->e($apiNewToken['token']) ?>"
+            >
+        </div>
+        <div class="pc-row pc-row--sm">
+            <button
+                type="button"
+                class="pc-btn pc-btn--secondary pc-btn--sm"
+                data-prime-copy-text="<?= $this->e($apiNewToken['token']) ?>"
+                data-prime-copy-feedback="<?= $this->e($this->t('admin.profile.index.jeton_copie')) ?>"
+            >
+                <?= $this->raw($this->icon('copy', 14)) ?>
+                <span><?= $this->e($this->t('admin.profile.index.copier')) ?></span>
+            </button>
+        </div>
         <p class="pc-text-sm pc-text-muted">
             <?= $this->e($this->t('admin.view_profile_index.jeton_api_afficher_une_fois')) ?>
         </p>
@@ -489,22 +502,37 @@ ob_start();
 
             <div class="pc-field">
                 <label class="pc-label"><?= $this->e($this->t('admin.view_profile_index.jeton_api_capacites')) ?></label>
-                <div class="pc-checkboxes pc-stack pc-stack--sm">
+                <p class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.view_profile_index.jeton_api_capacites_aide')) ?></p>
+                <div class="pc-stack pc-stack--sm">
+                    <!-- Raccourcis -->
+                    <div class="pc-row pc-row--sm">
+                        <a href="#" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-api-token-select="readonly">
+                            <?= $this->e($this->t('admin.view_profile_index.jeton_api_raccourci_lecture_seule')) ?>
+                        </a>
+                        <a href="#" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-api-token-select="all">
+                            <?= $this->e($this->t('admin.view_profile_index.jeton_api_raccourci_tout_cocher')) ?>
+                        </a>
+                    </div>
+                    <!-- Groupes de capacités -->
                     <?php foreach ($apiAbilityGroups as $groupName => $group): ?>
-                        <div class="pc-checkbox-group">
-                            <span class="pc-checkbox-group__label"><?= $this->e($groupName) ?></span>
-                            <?php foreach ($group as $capKey => $capLabel): ?>
-                                <label class="pc-checkbox">
-                                    <input
-                                        type="checkbox"
-                                        name="abilities[]"
-                                        value="<?= $this->e($capKey) ?>"
-                                        <?= in_array($capKey, $profileUser->capabilities, true) ? '' : 'disabled' ?>
-                                    >
-                                    <span><?= $this->e($capLabel) ?></span>
-                                </label>
-                            <?php endforeach; ?>
-                        </div>
+                        <fieldset class="pc-fieldset">
+                            <legend><?= $this->e($groupName) ?></legend>
+                            <div class="pc-stack pc-stack--sm">
+                                <?php foreach ($group as $capKey => $capLabel): ?>
+                                    <?php if (!$profileUser->can($capKey)): ?>
+                                        <?php continue; ?>
+                                    <?php endif; ?>
+                                    <label class="pc-checkbox">
+                                        <input
+                                            type="checkbox"
+                                            name="abilities[]"
+                                            value="<?= $this->e($capKey) ?>"
+                                        >
+                                        <span><?= $this->e($capLabel) ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </fieldset>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -512,19 +540,22 @@ ob_start();
             <div class="pc-field">
                 <label class="pc-label"><?= $this->e($this->t('admin.view_profile_index.jeton_api_expiration')) ?></label>
                 <select name="expires_days" class="pc-select">
-                    <option value="0"><?= $this->e($this->t('admin.view_profile_index.jeton_api_expiration_none')) ?></option>
+                    <?php if ($apiTokenMaxDays === 0): ?>
+                        <option value="0" selected><?= $this->e($this->t('admin.view_profile_index.jeton_api_expiration_none')) ?></option>
+                    <?php endif; ?>
                     <option value="30"><?= $this->e($this->t('admin.view_profile_index.jeton_api_expiration_30')) ?></option>
-                    <option value="90"><?= $this->e($this->t('admin.view_profile_index.jeton_api_expiration_90')) ?></option>
+                    <option value="90" <?= $apiTokenMaxDays !== 0 ? 'selected' : '' ?>><?= $this->e($this->t('admin.view_profile_index.jeton_api_expiration_90')) ?></option>
                     <option value="365"><?= $this->e($this->t('admin.view_profile_index.jeton_api_expiration_365')) ?></option>
                 </select>
             </div>
 
-            <button type="submit" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('admin.view_profile_index.jeton_api_creer')) ?></button>
+            <button type="submit" class="pc-btn pc-btn--primary"><?= $this->e($this->t('admin.view_profile_index.jeton_api_creer')) ?></button>
         </div>
     </form>
 
     <!-- Liste des jetons existants -->
     <?php if ($apiTokens !== []): ?>
+        <div class="pc-table-scroll">
         <hr>
         <h3><?= $this->e($this->t('admin.view_profile_index.jeton_api_liste_titre')) ?></h3>
         <table class="pc-table">
@@ -551,16 +582,29 @@ ob_start();
                     'expired' => $this->t('admin.view_profile_index.jeton_api_statut_expire'),
                     default => $this->t('admin.view_profile_index.jeton_api_statut_revoque'),
                 };
+                $statusVariant = match ($status) {
+                    'active' => 'success',
+                    'expired' => 'warning',
+                    default => 'danger',
+                };
                 $abilities = json_decode((string) ($token['abilities'] ?? '[]'), true) ?? [];
                 $abilityLabels = array_map(static fn (string $cap): string => $cap, $abilities);
+                $abilityDisplay = $abilityLabels;
+                if (count($abilityDisplay) > 3) {
+                    $abilityDisplay = array_slice($abilityDisplay, 0, 3);
+                    $abilityDisplay[] = '+' . (count($abilityLabels) - 3);
+                }
                 ?>
                 <tr>
                     <td><?= $this->e((string) ($token['name'] ?? '')) ?></td>
-                    <td><?= $this->e((string) ($token['prefix'] ?? '')) ?></td>
-                    <td><?= $this->e(implode(', ', $abilityLabels)) ?></td>
+                    <td style="font-family: var(--pc-font-mono, monospace);"><?= $this->e('pcat_' . substr((string) ($token['token_prefix'] ?? ''), 0, 8) . '…') ?></td>
+                    <td><?= $this->e(implode(', ', $abilityDisplay)) ?></td>
                     <td><?= $this->e((string) ($token['last_used_at'] ?? '-')) ?></td>
                     <td><?= $this->e((string) ($token['expires_at'] ?? '-')) ?></td>
-                    <td><?= $this->e($statusLabel) ?></td>
+                    <td><?= $this->raw($this->insert('admin::components/badge', [
+                        'label' => $statusLabel,
+                        'variant' => $statusVariant,
+                    ])) ?></td>
                     <td>
                         <?php if ($status === 'active'): ?>
                             <form
@@ -571,14 +615,13 @@ ob_start();
                                 <?= $this->raw($this->csrfField()) ?>
                                 <button type="submit" class="pc-btn pc-btn--danger pc-btn--sm"><?= $this->e($this->t('admin.view_profile_index.jeton_api_revoquer')) ?></button>
                             </form>
-                        <?php else: ?>
-                            <span class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.view_profile_index.jeton_api_statut_inactif')) ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     <?php else: ?>
         <p class="pc-text-sm pc-text-muted"><?= $this->e($this->t('admin.view_profile_index.jeton_api_aucun')) ?></p>
     <?php endif; ?>
@@ -594,7 +637,7 @@ $apiTokensTabHtml = (string) ob_get_clean();
     'tabs' => [
         [
             'id' => 'info',
-            'label' => 'Informations',
+            'label' => $this->t('admin.view_profile_index.onglet_informations'),
             'content' => $infoTabHtml,
         ],
         [

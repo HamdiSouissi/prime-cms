@@ -2177,6 +2177,10 @@ return [
         'supprimer_le_plugin' => 'Supprimer le plugin',
     ],
     'view_profile_index' => [
+        'onglet_informations' => 'Informations',
+        'jeton_api_capacites_aide' => 'Une capacité non détenue par votre compte ne peut pas être accordée à un jeton.',
+        'jeton_api_raccourci_lecture_seule' => 'Lecture seule',
+        'jeton_api_raccourci_tout_cocher' => 'Tout cocher',
         'authentification_a_deux_facteurs_totp' => 'Authentification à deux facteurs (TOTP)',
         'ces_8_codes_a_usage_unique_ne_seront_plus_jamais_affiches_co' => 'Ces 8 codes à usage unique ne seront plus jamais affichés. Conservez-les dans un gestionnaire de mots de passe sécurisé.',
         'changer_le_mot_de_passe' => 'Changer le mot de passe',
