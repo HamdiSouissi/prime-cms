@@ -428,7 +428,7 @@ final class ApiServiceProvider extends ServiceProvider
             }
         }
 
-        $apiMiddleware = ['api.lifecycle', 'api.enabled', 'api.auth', 'api.rate_limit', 'api.body'];
+        $apiMiddleware = ['api.enabled', 'api.auth', 'api.rate_limit', 'api.body'];
 
         $router->group(
             [
