@@ -222,8 +222,10 @@ final class ApiContractStep4Test extends TestCase
 
         $this->assertIsString($links['first'] ?? null);
         $this->assertIsString($links['last'] ?? null);
-        $this->assertNull($links['prev'] ?? 'absent');
-        $this->assertNull($links['next'] ?? 'absent');
+        $this->assertArrayHasKey('prev', $links);
+        $this->assertArrayHasKey('next', $links);
+        $this->assertNull($links['prev']);
+        $this->assertNull($links['next']);
     }
 
     public function testAWrongMethodIsAJson405(): void
