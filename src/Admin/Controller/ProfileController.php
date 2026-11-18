@@ -7,6 +7,7 @@ namespace Prime\Admin\Controller;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
+use Prime\Settings\Settings;
 use Prime\Admin\AdminContext;
 use Prime\Admin\TranslatesAdminCopy;
 use Prime\Api\Token\ApiTokenService;
@@ -60,6 +61,7 @@ final class ProfileController
         private readonly Connection $connection,
         private readonly PasswordPolicy $passwordPolicy,
         private readonly Hasher $hasher,
+        private readonly Settings $settings,
         private readonly ApiTokenService $apiTokens,
         private readonly Capabilities $capabilities,
         private readonly ?MediaRepository $media = null,
@@ -84,29 +86,47 @@ final class ProfileController
     public function index(Request $request): Response
     {
         $user = $this->requireUser($request);
+
+        // L'onglet dans l'URL l'emporte toujours, sur une liste blanche.
         $queryTab = (string) $request->query('tab', '');
-
-        if ($queryTab === 'security' || $request->query('enroll') === 'two-factor') {
-            $activeTab = 'security';
-        } elseif ($queryTab === 'api-tokens') {
-            $activeTab = 'api-tokens';
-            $tokens = $this->apiTokens->listByUser($user->id);
-            $abilityGroups = $this->capabilities->grouped();
-            $newToken = $this->session->getFlash('_profile.api_token_once');
-
-            return Response::html($this->renderProfile(
-                $request,
-                $user,
-                'api-tokens',
-                apiTokens: $tokens,
-                apiAbilityGroups: $abilityGroups,
-                apiNewToken: $newToken,
-            ));
-        } else {
-            $activeTab = (string) $this->session->getFlash('_profile.tab', 'info');
+        if (!in_array($queryTab, ['info', 'security', 'api-tokens'], true)) {
+            $queryTab = '';
         }
 
-        return Response::html($this->renderProfile($request, $user, $activeTab));
+        if ($queryTab === '' && $request->query('enroll') === 'two-factor') {
+            $queryTab = 'security';
+        }
+
+        // Le flash ne sert que si l'URL ne précise rien.
+        if ($queryTab === '') {
+            $queryTab = (string) $this->session->getFlash('_profile.tab', 'info');
+        }
+
+        $activeTab = $queryTab;
+
+        // Un seul chemin de rendu : charge les jetons et les groupes de capacités
+        // dès que l'onglet actif est api-tokens, quelle que soit la façon dont il a été choisi.
+        $apiTokens = null;
+        $apiAbilityGroups = null;
+        $apiNewToken = null;
+        $apiTokenMaxDays = null;
+
+        if ($activeTab === 'api-tokens') {
+            $apiTokens = $this->apiTokens->listByUser($user->id);
+            $apiAbilityGroups = $this->capabilities->grouped();
+            $apiNewToken = $this->session->getFlash('_profile.api_token_once');
+            $apiTokenMaxDays = (int) $this->settings->get('api.token_max_days', 365);
+        }
+
+        return Response::html($this->renderProfile(
+            $request,
+            $user,
+            $activeTab,
+            apiTokens: $apiTokens,
+            apiAbilityGroups: $apiAbilityGroups,
+            apiNewToken: $apiNewToken,
+            apiTokenMaxDays: $apiTokenMaxDays,
+        ));
     }
 
     public function updateInfo(Request $request): Response
@@ -408,29 +428,6 @@ final class ProfileController
     }
 
     /**
-     * Affiche l'onglet « Jetons d'API » du profil : liste des jetons + formulaire de création.
-     */
-    public function apiTokens(Request $request): Response
-    {
-        $user = $this->requireUser($request);
-        $this->session->flash('_profile.tab', 'api-tokens');
-
-        $tokens = $this->apiTokens->listByUser($user->id);
-        $abilityGroups = $this->capabilities->grouped();
-
-        $newToken = $this->session->getFlash('_profile.api_token_once');
-
-        return Response::html($this->renderProfile(
-            $request,
-            $user,
-            'api-tokens',
-            apiTokens: $tokens,
-            apiAbilityGroups: $abilityGroups,
-            apiNewToken: $newToken,
-        ));
-    }
-
-    /**
      * Crée un nouveau jeton d'API depuis le profil.
      * Le jeton brut est flashé en session et affiché une seule fois.
      */
@@ -448,10 +445,23 @@ final class ProfileController
         $abilities = is_array($rawAbilities) ? array_values(array_filter($rawAbilities, 'is_string')) : [];
 
         $expiresDays = (string) $request->body('expires_days', '');
+        $maxDays = (int) $this->settings->get('api.token_max_days', 365);
+        if ($maxDays <= 0) {
+            $maxDays = 3650;
+        }
+
         $expiresAt = null;
-        if ($expiresDays !== '' && $expiresDays !== '0') {
-            $days = min(365, max(1, (int) $expiresDays));
-            $expiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->add(new DateInterval('P' . $days . 'D'));
+        if ($expiresDays !== '') {
+            $days = (int) $expiresDays;
+            // « Jamais » (0) n'est proposé que quand il n'y a pas de durée maximale ;
+            // sinon toute durée hors bornes (y compris 0) est ramenée au maximum autorisé.
+            if ($days === 0) {
+                $days = $maxDays;
+            }
+            if ($days > 0) {
+                $days = max(1, min($maxDays, $days));
+                $expiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->add(new DateInterval('P' . $days . 'D'));
+            }
         }
 
         $result = $this->apiTokens->issue($user, $name, $abilities, $expiresAt);
@@ -463,7 +473,7 @@ final class ProfileController
         ]);
         $this->session->flash('_profile.tab', 'api-tokens');
 
-        $this->context->flashToast($this->t('admin.ctrl_text_profile.jeton_api_cree_copiez_le_maintenant'), 'success');
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.jeton_cree'), 'success');
 
         return Response::redirect('/admin/profile?tab=api-tokens', 302);
     }
@@ -495,6 +505,7 @@ final class ProfileController
      * @param list<array<string, mixed>>|null $apiTokens
      * @param array<string, array<string, string>>|null $apiAbilityGroups
      * @param array{token: string, name: string}|null $apiNewToken
+     * @param int|null $apiTokenMaxDays
      */
     private function renderProfile(
         Request $request,
@@ -508,6 +519,7 @@ final class ProfileController
         ?array $apiTokens = null,
         ?array $apiAbilityGroups = null,
         ?array $apiNewToken = null,
+        ?int $apiTokenMaxDays = null,
     ): string {
         $pendingSetup = $this->session->get(self::SESSION_2FA_PENDING_SECRET);
         $recoveryOnce = $this->session->getFlash(self::FLASH_RECOVERY_CODES);
@@ -550,6 +562,7 @@ final class ProfileController
             'apiTokens' => $apiTokens ?? [],
             'apiAbilityGroups' => $apiAbilityGroups ?? [],
             'apiNewToken' => $apiNewToken,
+            'apiTokenMaxDays' => $apiTokenMaxDays,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_profile.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $this->t('admin.ctrl_text_profile.mon_profil'), 'url' => null],
