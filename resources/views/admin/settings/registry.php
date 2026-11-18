@@ -75,6 +75,7 @@ $this->layout('admin::layouts/app');
                             'field' => $row['field'],
                             'value' => $row['value'],
                             'options' => $row['options'],
+                            'media' => $row['media'] ?? null,
                             'error' => isset($errors[$name]) ? (string) $errors[$name] : null,
                             'secretSet' => $secretsSet[$name] ?? false,
                         ])) ?>

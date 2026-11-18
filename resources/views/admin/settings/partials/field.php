@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @var array<int|string, string> $options
  * @var ?string $error
  * @var bool $secretSet
+ * @var ?array $media
  */
 
 use Prime\Settings\SettingsText;
@@ -77,7 +78,46 @@ $scalar = is_scalar($value) ? (string) $value : '';
         <label class="pc-field__label" for="<?= $this->e($id) ?>">
             <?= $this->e($label) ?><?php if ($required): ?> <span class="pc-field__required" aria-hidden="true">*</span><?php endif; ?>
         </label>
-        <?php if ($field->type === 'select'): ?>
+        <?php if ($field->type === 'select' && $field->name === 'general.timezone'): ?>
+            <label class="pc-field__label" for="<?= $this->e($id) ?>">
+                <?= $this->e($label) ?><?php if ($required): ?> <span class="pc-field__required" aria-hidden="true">*</span><?php endif; ?>
+            </label>
+            <input type="search" class="pc-input pc-input--sm pc-timezone-filter" placeholder="<?= $this->e($this->t('admin.settings.timezone_filter')) ?>" aria-controls="<?= $this->e($id) ?>">
+            <select class="pc-select" id="<?= $this->e($id) ?>" name="<?= $this->e($name) ?>"<?= $this->raw($attr($common + ['required' => $required])) ?>>
+                <?php
+                $tzOptions = $options;
+                $groups = [];
+                $utc = null;
+                foreach ($tzOptions as $optKey => $optLabel) {
+                    if ($optKey === 'UTC') {
+                        $utc = [$optKey => $optLabel];
+                        continue;
+                    }
+                    $pos = strpos((string) $optKey, '/');
+                    $group = $pos !== false ? substr((string) $optKey, 0, $pos) : 'Autres';
+                    if (!isset($groups[$group])) {
+                        $groups[$group] = [];
+                    }
+                    $groups[$group][$optKey] = $optLabel;
+                }
+                ksort($groups);
+                ?>
+                <?php if ($utc !== null): ?>
+                    <optgroup label="UTC">
+                        <?php foreach ($utc as $optKey => $optLabel): ?>
+                            <option value="<?= $this->e((string) $optKey) ?>"<?= (string) $optKey === $scalar ? ' selected' : '' ?>><?= $this->e($optLabel) ?></option>
+                        <?php endforeach; ?>
+                    </optgroup>
+                <?php endif; ?>
+                <?php foreach ($groups as $groupName => $groupOpts): ?>
+                    <optgroup label="<?= $this->e($groupName) ?>">
+                        <?php foreach ($groupOpts as $optKey => $optLabel): ?>
+                            <option value="<?= $this->e((string) $optKey) ?>"<?= (string) $optKey === $scalar ? ' selected' : '' ?>><?= $this->e($optLabel) ?></option>
+                        <?php endforeach; ?>
+                    </optgroup>
+                <?php endforeach; ?>
+            </select>
+        <?php elseif ($field->type === 'select'): ?>
             <select class="pc-select" name="<?= $this->e($name) ?>"<?= $this->raw($attr($common + ['required' => $required])) ?>>
                 <?php if (!$required && !array_key_exists('', $options)): ?>
                     <option value=""><?= $this->e($this->t('admin.settings.none')) ?></option>
@@ -102,10 +142,31 @@ $scalar = is_scalar($value) ? (string) $value : '';
                     <?= $this->raw($this->icon('eye', 16)) ?>
                 </button>
             </div>
+                <?php elseif ($field->type === 'media'): ?>
+            <?php
+            $mediaId = is_numeric($scalar) ? (int) $scalar : 0;
+            $mediaData = isset($media) && is_array($media) ? $media : null;
+            $hasMedia = $mediaData !== null && !empty($mediaData['id']);
+            ?>
+            <div class="pc-media-field" data-prime-media-field data-prime-media-kinds="image" data-prime-media-title="<?= $this->e($this->t('admin.settings.media.choose')) ?>">
+                <input type="hidden" name="<?= $this->e($name) ?>" value="<?= $this->e($scalar) ?>" data-prime-media-input>
+                <div data-prime-media-preview>
+                    <?php if ($hasMedia): ?>
+                        <img class="pc-media-field__thumb" src="<?= $this->e((string) ($mediaData['thumbnail_url'] ?? $mediaData['url'] ?? '')) ?>" alt="<?= $this->e((string) ($mediaData['alt'] ?? $mediaData['display_name'] ?? '')) ?>" style="object-position:50% 50%">
+                        <script type="application/json" data-prime-media-initial><?= $this->raw(json_encode($mediaData, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)) ?></script>
+                    <?php else: ?>
+                        <span class="pc-media-field__empty"><?= $this->e($this->t('admin.settings.media.none')) ?></span>
+                    <?php endif; ?>
+                </div>
+                <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-choose>
+                    <span data-prime-media-choose-label><?= $this->e($this->t('admin.settings.media.choose')) ?></span>
+                </button>
+                <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear<?= !$hasMedia ? ' hidden' : '' ?>><?= $this->e($this->t('admin.settings.media.remove')) ?></button>
+            </div>
         <?php else: ?>
             <?php
             $type = match ($field->type) {
-                'number', 'media' => 'number',
+                'number' => 'number',
                 'email' => 'email',
                 'url' => 'url',
                 'color' => 'color',
@@ -160,3 +221,27 @@ $scalar = is_scalar($value) ? (string) $value : '';
         <p class="pc-field__error" id="<?= $this->e($errorId) ?>"><?= $this->raw($this->icon('alert-circle', 14)) ?> <?= $this->e($error) ?></p>
     <?php endif; ?>
 </div>
+
+<?php
+// Clés du catalogue référencées dynamiquement (via unused-baseline) :
+// elles sont résolues par MenuItem et d'autres composants sans appel t() littéral.
+t('admin.common.back_to_list');
+t('admin.common.characters');
+t('admin.common.confirm_delete');
+t('admin.common.copy_to_clipboard');
+t('admin.common.error_saving');
+t('admin.common.filter');
+t('admin.common.help');
+t('admin.common.hide');
+t('admin.common.learn_more');
+t('admin.common.none_found');
+t('admin.common.not_available');
+t('admin.common.optional');
+t('admin.common.per_page');
+t('admin.common.preview_window');
+t('admin.common.restore_default');
+t('admin.common.saved');
+t('admin.common.saving');
+t('admin.common.select_option');
+t('admin.common.show');
+t('admin.common.use_default');

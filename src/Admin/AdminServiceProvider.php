@@ -287,6 +287,7 @@ final class AdminServiceProvider extends ServiceProvider
                 processor: $this->app->get(\Prime\Settings\SettingsFormProcessor::class),
                 settings: $this->app->get(Settings::class),
                 session: $this->app->get(Session::class),
+                mediaRepository: $this->app->get(MediaRepository::class),
                 mailer: $mailer instanceof \Prime\Mail\Mailer ? $mailer : null,
                 mailLog: $log instanceof \Prime\Mail\MailLogRepository ? $log : null,
                 cache: $c->has(CacheManager::class) ? $c->get(CacheManager::class) : null,

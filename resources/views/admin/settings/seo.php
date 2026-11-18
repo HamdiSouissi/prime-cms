@@ -48,21 +48,27 @@ $this->layout('admin::layouts/app');
                 <p class="pc-text-xs pc-text-muted"><?= $this->e($this->t('admin.settings.seo.utilisee_lorsqu_page_archive_ne')) ?></p>
             </div>
 
-            <div class="pc-field">
-                <label class="pc-label" for="pc-seo-default-img"><?= $this->e($this->t('admin.settings.seo.image_partage_defaut_id_media')) ?></label>
-                <input
-                    id="pc-seo-default-img"
-                    type="number"
-                    min="0"
-                    name="default_image_id"
-                    value="<?= $defaultImageId !== null ? $this->e((string) $defaultImageId) : '' ?>"
-                    class="pc-input pc-input--narrow"
-                    placeholder="<?= $this->e($this->t('admin.settings.seo.aucun')) ?>"
-                >
-                <?php if ($defaultImageUrl !== null): ?>
-                    <img src="<?= $this->e($defaultImageUrl) ?>" alt="<?= t('admin.attr.image_de_partage_par_defaut') ?>" class="pc-customizer__thumb">
-                <?php endif; ?>
-            </div>
+                <div class="pc-field">
+                    <label class="pc-label" for="pc-seo-default-img"><?= $this->e($this->t('admin.settings.seo.image_partage_defaut_id_media')) ?></label>
+                    <div class="pc-media-field" data-prime-media-field data-prime-media-kinds="image" data-prime-media-title="<?= $this->e($this->t('admin.settings.media.choose')) ?>">
+                        <input type="hidden" id="pc-seo-default-img" name="default_image_id" value="<?= $defaultImageId !== null ? $this->e((string) $defaultImageId) : '' ?>" data-prime-media-input>
+                        <div data-prime-media-preview>
+                            <?php
+                            $hasDefaultImage = $defaultImageData !== null && !empty($defaultImageData['id']);
+                            ?>
+                            <?php if ($hasDefaultImage): ?>
+                                <img class="pc-media-field__thumb" src="<?= $this->e((string) ($defaultImageData['thumbnail_url'] ?? $defaultImageData['url'] ?? '')) ?>" alt="<?= $this->e((string) ($defaultImageData['alt'] ?? $defaultImageData['display_name'] ?? '')) ?>" style="object-position:50% 50%">
+                                <script type="application/json" data-prime-media-initial><?= $this->raw(json_encode($defaultImageData, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)) ?></script>
+                            <?php else: ?>
+                                <span class="pc-media-field__empty"><?= $this->e($this->t('admin.settings.media.none')) ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <button type="button" class="pc-btn pc-btn--secondary pc-btn--sm" data-prime-media-choose>
+                            <span data-prime-media-choose-label><?= $this->e($this->t('admin.settings.media.choose')) ?></span>
+                        </button>
+                        <button type="button" class="pc-btn pc-btn--ghost pc-btn--sm" data-prime-media-clear<?= !$hasDefaultImage ? ' hidden' : '' ?>><?= $this->e($this->t('admin.settings.media.remove')) ?></button>
+                    </div>
+                </div>
 
             <label class="pc-checkbox">
                 <input type="checkbox" name="global_noindex" value="1"<?= $globalNoindex ? ' checked' : '' ?>>

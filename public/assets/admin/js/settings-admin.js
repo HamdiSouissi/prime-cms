@@ -96,6 +96,68 @@ export function initSettingsAdmin(root = document) {
 
   initDatePreviews(root);
   initUnsavedWarnings(root);
+  initTimezoneFilters(root);
+}
+
+/**
+ * Normalise une chaîne pour la comparaison : minuscules, sans accents.
+ */
+function normalizeText(text) {
+  return String(text ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+/**
+ * Filtre les <option> d'un <select> de fuseaux horaires selon la saisie dans
+ * l'input [data-prime-settings-form] associé. Masque les <optgroup> vides.
+ * Ne modifie jamais la valeur sélectionnée.
+ */
+function initTimezoneFilters(root) {
+  root.querySelectorAll('.pc-timezone-filter').forEach((filterInput) => {
+    if (!(filterInput instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const selectId = filterInput.getAttribute('aria-controls') || '';
+    const select = root.getElementById ? root.getElementById(selectId) : null;
+    if (!(select instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const options = Array.from(select.querySelectorAll('option'));
+    const groups = Array.from(select.querySelectorAll('optgroup'));
+
+    // Valeur actuellement sélectionnée : on ne la touche jamais.
+    const selectedValue = select.value;
+
+    const render = () => {
+      const query = normalizeText(filterInput.value);
+      let anyVisible = false;
+
+      options.forEach((option) => {
+        const text = normalizeText(option.textContent);
+        const match = query === '' || text.includes(query);
+        option.hidden = !match;
+        if (match) {
+          anyVisible = true;
+        }
+      });
+
+      groups.forEach((group) => {
+        const visibleOptions = Array.from(group.querySelectorAll('option:not([hidden])'));
+        group.hidden = visibleOptions.length === 0;
+      });
+
+      // Ne jamais changer la sélection : si l'option sélectionnée est masquée,
+      // on laisse la valeur telle quelle (le formulaire l'envoie quand même).
+    };
+
+    filterInput.addEventListener('input', render);
+    render();
+  });
 }
 
 const pad = (n) => String(n).padStart(2, '0');

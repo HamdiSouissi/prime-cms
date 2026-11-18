@@ -38,7 +38,7 @@ Cycle de chaque phase :
    - Correction : tu corriges sur la même branche si tu y as accès. Si ta plateforme te donne une nouvelle branche, tu commences par y récupérer le travail précédent (`git fetch origin && git merge origin/<branche précédente>`), puis tu corriges, et tu donnes le nom de la nouvelle branche.
    - Validation : Hamdi merge dans `main`, et la phase suivante repart de `main` à jour.
 
-## 4. Découpage en 15 phases
+## 4. Découpage en 12 phases
 
 | # | Phase | Contenu principal |
 |---|---|---|
@@ -52,11 +52,10 @@ Cycle de chaque phase :
 | **8** | **Thèmes et rendu du site** | Système de thèmes, hiérarchie de templates, permaliens, menus, zones de widgets, SEO de base (meta, sitemap, robots), thème par défaut « Aurora », options de thème |
 | **9** | **Réglages, langues, cache, mails, tâches** | Pages de réglages, i18n (FR, EN, IT), cache de pages et d'objets, client SMTP, planificateur de tâches, journal d'audit |
 | **10** | **API REST** | API JSON versionnée, authentification par jetons, endpoints du noyau, extension par les plugins (base pour le builder et la boutique) |
-| **11** | **Prime Builder — partie 1** | Éditeur visuel : canvas, sections, conteneurs, colonnes, widgets de base, glisser-déposer, panneau de styles, responsive, annuler/rétablir, rendu front |
-| **12** | **Prime Builder — partie 2 (Pro)** | Widgets avancés, styles globaux, bibliothèque de modèles, theme builder (header, footer, single, archive), popups, formulaires, contenu dynamique, animations |
-| **13** | **Prime Commerce — partie 1** | Produits simples et variables, attributs, stock, catalogue, panier, tunnel de commande, commandes, compte client |
-| **14** | **Prime Commerce — partie 2** | Paiements (Stripe, PayPal, virement, à la livraison), livraison, taxes, coupons, e-mails transactionnels, rapports, widgets boutique pour le builder |
-| **15** | **Finalisation v1.0** | Performance, audit de sécurité, accessibilité, tests de bout en bout, mises à jour, contenu de démo, documentation, release 1.0.0 |
+| **11** | **Socle de plugin** | Plugin de base complet `prime-starter` installé et activé, `make:plugin` qui génère ce socle, points d'extension pour les futurs gros plugins |
+| **12** | **Finalisation v1.0** | Performance, audit de sécurité, accessibilité, tests de bout en bout, mises à jour, contenu de démo, documentation, release 1.0.0 |
+
+Prime Builder (constructeur de pages) et Prime Commerce (boutique) seront développés à part, comme plugins indépendants, après la v1.0.
 
 Le contenu détaillé de chaque phase te sera donné dans son prompt. **Ne code pas en avance sur les phases suivantes.**
 
