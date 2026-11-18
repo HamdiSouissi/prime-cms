@@ -38,6 +38,7 @@ final class ContentController extends ApiController
         $search = (string) $request->query('search', '');
         $status = (string) $request->query('status', 'publish');
         $user = $this->currentUser($request);
+        $locale = $user?->locale ?? 'fr';
 
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
@@ -65,6 +66,9 @@ final class ContentController extends ApiController
             $q = $q->includePrivateFor($user);
         }
 
+        // Total sur l'ensemble des entrées correspondantes (avant limit/offset).
+        $total = $q->count();
+
         $q = $q->orderBy('published_at', 'DESC')
             ->limit($perPage)
             ->offset(($page - 1) * $perPage);
@@ -72,13 +76,11 @@ final class ContentController extends ApiController
         $items = $q->get();
 
         $data = [];
-        $total = 0;
         foreach ($items as $entry) {
             if (!$this->isReadable($entry, $user)) {
                 continue;
             }
 
-            $total++;
             $data[] = $this->entryToArray($entry);
         }
 
@@ -101,14 +103,16 @@ final class ContentController extends ApiController
 
     public function byType(Request $request, string $type): Response
     {
+        $user = $this->currentUser($request);
+        $locale = $user?->locale ?? 'fr';
+
         if (!$this->types->has($type)) {
-            return $this->notFound("Type de contenu inconnu : {$type}");
+            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
         }
 
         $perPage = (int) $request->query('per_page', 20);
         $page = (int) $request->query('page', 1);
         $status = (string) $request->query('status', 'publish');
-        $user = $this->currentUser($request);
 
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
@@ -127,6 +131,9 @@ final class ContentController extends ApiController
             $q = $q->includePrivateFor($user);
         }
 
+        // Total sur l'ensemble des entrées correspondantes (avant limit/offset).
+        $total = $q->count();
+
         $q = $q->orderBy('published_at', 'DESC')
             ->limit($perPage)
             ->offset(($page - 1) * $perPage);
@@ -134,13 +141,11 @@ final class ContentController extends ApiController
         $rows = $q->get();
 
         $data = [];
-        $total = 0;
         foreach ($rows as $entry) {
             if (!$this->isReadable($entry, $user)) {
                 continue;
             }
 
-            $total++;
             $data[] = $this->entryToArray($entry);
         }
 
@@ -164,17 +169,17 @@ final class ContentController extends ApiController
     public function show(Request $request, string $type, string $slug): Response
     {
         if (!$this->types->has($type)) {
-            return $this->notFound("Type de contenu inconnu : {$type}");
+            return $this->notFound('unknown_type', ['type' => $type]);
         }
 
         $entry = $this->entries->findBySlug($type, $slug);
         if ($entry === null) {
-            return $this->notFound('Contenu introuvable.');
+            return $this->notFound('not_found');
         }
 
         $user = $this->currentUser($request);
         if (!$this->isReadable($entry, $user)) {
-            return $this->notFound('Contenu introuvable.');
+            return $this->notFound('not_found');
         }
 
         return $this->json([

@@ -12,10 +12,13 @@ use Prime\Api\Controller\TermsController;
 use Prime\Api\Controller\TypesController;
 use Prime\Api\Repository\ApiTokenRepository;
 use Prime\Api\Token\ApiTokenService;
+use Prime\Auth\Auth;
 use Prime\Auth\Middleware\ApiAuthenticate;
 use Prime\Http\Kernel;
 use Prime\Http\Router;
+use Prime\I18n\Translator;
 use Prime\Kernel\ServiceProvider;
+use Prime\Security\Csrf;
 
 final class ApiServiceProvider extends ServiceProvider
 {
@@ -30,10 +33,13 @@ final class ApiServiceProvider extends ServiceProvider
     {
         $kernel = $this->app->get(Kernel::class);
 
-        // Alias de middleware `api.auth` pour l'authentification par jeton Bearer.
+        // Alias de middleware `api.auth` pour l'authentification par jeton Bearer ou session.
         $kernel->registerMiddlewareAlias('api.auth', function (): ApiAuthenticate {
             return new ApiAuthenticate(
                 $this->app->get(ApiTokenService::class),
+                $this->app->get(Auth::class),
+                $this->app->get(Csrf::class),
+                $this->app->get(Translator::class),
             );
         });
 

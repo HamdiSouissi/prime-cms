@@ -29,12 +29,19 @@ abstract class ApiController
     /**
      * Retourne une réponse JSON d'erreur au format standard.
      *
+     * La clé est traduite via le catalogue `api.errors.{key}` dans la langue donnée
+     * (ou la langue par défaut du site).
+     *
      * Format : {"error": {"code": "...", "message": "...", "status": N}}
      *
+     * @param array<string, mixed> $replace
      * @param array<string, string> $headers
      */
-    protected function error(string $message, int $status = 400, string $code = 'invalid_request', array $headers = []): Response
+    protected function error(string $key, array $replace = [], int $status = 400, ?string $code = null, ?string $locale = null, array $headers = []): Response
     {
+        $code = $code ?? $key;
+        $message = t('api.errors.' . $key, $replace, $locale);
+
         return Response::json([
             'error' => [
                 'code' => $code,
@@ -47,31 +54,34 @@ abstract class ApiController
     /**
      * Retourne une réponse JSON 401 non authentifié.
      *
+     * @param array<string, mixed> $replace
      * @param array<string, string> $headers
      */
-    protected function unauthorized(string $message = 'Authentification requise.', array $headers = []): Response
+    protected function unauthorized(string $key = 'unauthenticated', array $replace = [], ?string $locale = null, array $headers = []): Response
     {
-        return $this->error($message, 401, 'unauthenticated', $headers);
+        return $this->error($key, $replace, 401, 'unauthenticated', $locale, $headers);
     }
 
     /**
      * Retourne une réponse JSON 403 interdit.
      *
+     * @param array<string, mixed> $replace
      * @param array<string, string> $headers
      */
-    protected function forbidden(string $message = 'Accès interdit.', array $headers = []): Response
+    protected function forbidden(string $key = 'forbidden', array $replace = [], ?string $locale = null, array $headers = []): Response
     {
-        return $this->error($message, 403, 'forbidden', $headers);
+        return $this->error($key, $replace, 403, 'forbidden', $locale, $headers);
     }
 
     /**
      * Retourne une réponse JSON 404 non trouvé.
      *
+     * @param array<string, mixed> $replace
      * @param array<string, string> $headers
      */
-    protected function notFound(string $message = 'Ressource introuvable.', array $headers = []): Response
+    protected function notFound(string $key = 'not_found', array $replace = [], ?string $locale = null, array $headers = []): Response
     {
-        return $this->error($message, 404, 'not_found', $headers);
+        return $this->error($key, $replace, 404, 'not_found', $locale, $headers);
     }
 
     /**
