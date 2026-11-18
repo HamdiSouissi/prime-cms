@@ -67,12 +67,20 @@ final class ApiServiceProvider extends ServiceProvider
         });
 
         $router = $this->app->get(Router::class);
-        $apiMiddleware = ['api.enabled', 'api.cors', 'api.auth', 'api.rate_limit'];
 
-        // Racine publique de l'API (aucune authentification requise), soumise à l'activation,
-        // au CORS et à la limitation de débit.
+        // CORS comme middleware GLOBAL : il s'exécute avant le routeur afin d'intercepter
+        // les préflights OPTIONS et de retourner 204 avant que le routeur ne lève une 405
+        // "Method Not Allowed" sur les routes qui n'enregistrent que GET.
+        $kernel->addMiddleware(function (): ApiCors {
+            return new ApiCors($this->app->get(Settings::class));
+        });
+
+        $apiMiddleware = ['api.enabled', 'api.auth', 'api.rate_limit'];
+
+        // Racine publique de l'API (aucune authentification requise), soumise à l'activation
+        // et à la limitation de débit.
         $router->group(
-            ['middleware' => ['api.enabled', 'api.cors', 'api.rate_limit']],
+            ['middleware' => ['api.enabled', 'api.rate_limit']],
             static function (Router $r): void {
                 $r->get('/api/v1', [ApiIndexController::class, '__invoke']);
             },
