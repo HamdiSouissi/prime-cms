@@ -59,7 +59,7 @@ final class ApiRateLimit implements MiddlewareInterface
             return Response::json([
                 'error' => [
                     'code' => 'rate_limited',
-                    'message' => 'Trop de requêtes. Veuillez réessayer ultérieurement.',
+                    'message' => t('api.errors.rate_limited'),
                     'status' => 429,
                 ],
             ], 429, array_merge([
