@@ -11,5 +11,7 @@ return [
         'method_not_allowed' => 'Method not allowed.',
         'server_error' => 'Internal server error.',
         'invalid_status' => 'Unknown status.',
+        'rate_limited' => 'Too many requests. Please try again later.',
+        'public_read_required' => 'Authentication required to access this content.',
     ],
 ];

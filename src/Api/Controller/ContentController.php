@@ -12,6 +12,7 @@ use Prime\Content\EntryRepository;
 use Prime\Content\EntryService;
 use Prime\Http\Request;
 use Prime\Http\Response;
+use Prime\Settings\Settings;
 use Prime\Site\UrlGenerator;
 
 /**
@@ -27,6 +28,7 @@ final class ContentController extends ApiController
         private readonly EntryRepository $entries,
         private readonly EntryService $entryService,
         private readonly UrlGenerator $urlGenerator,
+        private readonly Settings $settings,
     ) {
     }
 
@@ -43,11 +45,15 @@ final class ContentController extends ApiController
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
 
-        // Un utilisateur anonyme ou sans content.edit_any ne voit que les entrées publiées.
-        if ($user === null || !$user->can('content.edit_any')) {
-            $status = Entry::STATUS_PUBLISHED;
-        } elseif (!in_array($status, Entry::ALL_STATUSES, true)) {
-            return $this->error('invalid_status', [], 400, 'invalid_status', $locale);
+        $resolved = $this->resolveStatus($user, $status, $locale);
+        if ($resolved instanceof Response) {
+            return $resolved;
+        }
+        $status = $resolved;
+
+        $unauthorized = $this->requirePublicRead($user);
+        if ($unauthorized !== null) {
+            return $unauthorized;
         }
 
         $q = $this->query->newQuery();
@@ -87,19 +93,7 @@ final class ContentController extends ApiController
 
         $lastPage = max(1, (int) ceil($total / $perPage));
 
-        return $this->json([
-            'data' => $data,
-            'meta' => [
-                'type' => $type,
-                'page' => $page,
-                'per_page' => $perPage,
-                'total' => $total,
-                'total_pages' => $lastPage,
-            ],
-            'links' => $this->paginationLinks($request, $page, $lastPage),
-        ], 200, [
-            'X-Total-Count' => (string) $total,
-        ]);
+        return $this->paginated($request, 'content', $data, $total, $page, $perPage, $lastPage, $user);
     }
 
     public function byType(Request $request, string $type): Response
@@ -118,11 +112,15 @@ final class ContentController extends ApiController
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
 
-        // Un utilisateur anonyme ou sans content.edit_any ne voit que les entrées publiées.
-        if ($user === null || !$user->can('content.edit_any')) {
-            $status = Entry::STATUS_PUBLISHED;
-        } elseif (!in_array($status, Entry::ALL_STATUSES, true)) {
-            return $this->error('invalid_status', [], 400, 'invalid_status', $locale);
+        $resolved = $this->resolveStatus($user, $status, $locale);
+        if ($resolved instanceof Response) {
+            return $resolved;
+        }
+        $status = $resolved;
+
+        $unauthorized = $this->requirePublicRead($user);
+        if ($unauthorized !== null) {
+            return $unauthorized;
         }
 
         $q = $this->query->newQuery()
@@ -153,19 +151,7 @@ final class ContentController extends ApiController
 
         $lastPage = max(1, (int) ceil($total / $perPage));
 
-        return $this->json([
-            'data' => $data,
-            'meta' => [
-                'type' => $type,
-                'total' => $total,
-                'page' => $page,
-                'per_page' => $perPage,
-                'total_pages' => $lastPage,
-            ],
-            'links' => $this->paginationLinks($request, $page, $lastPage),
-        ], 200, [
-            'X-Total-Count' => (string) $total,
-        ]);
+        return $this->paginated($request, $type, $data, $total, $page, $perPage, $lastPage, $user);
     }
 
     public function show(Request $request, string $type, string $slug): Response
@@ -186,9 +172,105 @@ final class ContentController extends ApiController
             return $this->notFound('not_found', locale: $locale);
         }
 
-        return $this->json([
+        $unauthorized = $this->requirePublicRead($user);
+        if ($unauthorized !== null) {
+            return $unauthorized;
+        }
+
+        return $this->withCacheHeaders($request, $this->json([
             'data' => $this->entryToArray($entry),
+        ]), $user);
+    }
+
+    /**
+     * Détermine le statut effectif à requêter.
+     *
+     * Un statut inconnu est toujours une erreur 400, y compris pour un appelant anonyme.
+     * Seul un utilisateur autorisé à éditer tout le contenu peut demander un autre statut
+     * que publié ; les autres sont ramenés à `published`.
+     *
+     * @return string|Response Le statut effectif, ou une réponse 400 si le statut est invalide.
+     */
+    private function resolveStatus(?User $user, string $status, string $locale): string|Response
+    {
+        if (!in_array($status, Entry::ALL_STATUSES, true)) {
+            return $this->error('invalid_status', [], 400, 'invalid_status', $locale);
+        }
+
+        if ($user === null || !$user->can('content.edit_any')) {
+            return Entry::STATUS_PUBLISHED;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Retourne une réponse 401 quand la lecture publique est désactivée et que
+     * l'appelant est anonyme, null sinon.
+     */
+    private function requirePublicRead(?User $user): ?Response
+    {
+        if ($user === null && !$this->settings->getBool('api.public_read', true)) {
+            return $this->unauthorized('public_read_required');
+        }
+
+        return null;
+    }
+
+    /**
+     * Construit la réponse paginée avec des liens absolus et les en-têtes de cache.
+     *
+     * @param list<array<string, mixed>> $data
+     */
+    private function paginated(
+        Request $request,
+        string $type,
+        array $data,
+        int $total,
+        int $page,
+        int $perPage,
+        int $lastPage,
+        ?User $user,
+    ): Response {
+        $response = $this->json([
+            'data' => $data,
+            'meta' => [
+                'type' => $type,
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'total_pages' => $lastPage,
+            ],
+            'links' => $this->paginationLinks($request, $page, $lastPage),
+        ], 200, [
+            'X-Total-Count' => (string) $total,
         ]);
+
+        return $this->withCacheHeaders($request, $response, $user);
+    }
+
+    /**
+     * Applique les en-têtes de cache HTTP selon le mode d'authentification.
+     *
+     * - Réponse authentifiée : `Cache-Control: no-store` (jamais mise en cache).
+     * - Lecture anonyme publique : `ETag` + réponse `304` si `If-None-Match` correspond.
+     *
+     * @return Response Une nouvelle instance (les réponses sont immuables).
+     */
+    private function withCacheHeaders(Request $request, Response $response, ?User $user): Response
+    {
+        if ($user !== null) {
+            return $response->withHeader('Cache-Control', 'no-store');
+        }
+
+        $etag = '"' . hash('sha256', $response->body()) . '"';
+        $response = $response->withHeader('ETag', $etag);
+
+        if ($request->header('if-none-match') === $etag) {
+            return Response::noContent(['ETag' => $etag])->withStatus(304);
+        }
+
+        return $response;
     }
 
     /**
@@ -258,7 +340,7 @@ final class ContentController extends ApiController
      */
     private function paginationLinks(Request $request, int $page, int $lastPage): array
     {
-        $base = $request->uri();
+        $path = $request->path();
         $query = $request->query();
 
         $setPage = function (array $q, int $p): array {
@@ -281,10 +363,10 @@ final class ContentController extends ApiController
             return $pairs !== [] ? '?' . implode('&', $pairs) : '';
         };
 
-        $first = $page > 1 ? $base . $queryString($setPage($query, 1)) : null;
-        $prev = $page > 1 ? $base . $queryString($setPage($query, $page - 1)) : null;
-        $next = $page < $lastPage ? $base . $queryString($setPage($query, $page + 1)) : null;
-        $last = $lastPage > 1 && $page < $lastPage ? $base . $queryString($setPage($query, $lastPage)) : null;
+        $first = $this->urlGenerator->absolute($path . $queryString($setPage($query, 1)));
+        $prev = $page > 1 ? $this->urlGenerator->absolute($path . $queryString($setPage($query, $page - 1))) : null;
+        $next = $page < $lastPage ? $this->urlGenerator->absolute($path . $queryString($setPage($query, $page + 1))) : null;
+        $last = $this->urlGenerator->absolute($path . $queryString($setPage($query, $lastPage)));
 
         return [
             'first' => $first,

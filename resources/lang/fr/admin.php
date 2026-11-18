@@ -2179,6 +2179,8 @@ return [
     ],
     'view_profile_index' => [
         'onglet_informations' => 'Informations',
+        'identifiant_public' => 'Identifiant public (URL d’auteur)',
+        'adresse_email' => 'Adresse e-mail',
         'jeton_api_capacites_aide' => 'Une capacité non détenue par votre compte ne peut pas être accordée à un jeton.',
         'jeton_api_raccourci_lecture_seule' => 'Lecture seule',
         'jeton_api_raccourci_tout_cocher' => 'Tout cocher',

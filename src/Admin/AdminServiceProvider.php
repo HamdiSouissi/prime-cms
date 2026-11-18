@@ -551,6 +551,12 @@ final class AdminServiceProvider extends ServiceProvider
                     ->middleware('can:users.edit')
                     ->name('users.reset_2fa');
 
+                // API tokens d'un autre utilisateur (administration)
+                $r->post('/users/{id:\d+}/api-tokens/{tokenId:\d+}/revoke', [UserController::class, 'revokeApiToken'])
+                    ->middleware('can:users.edit')
+                    ->middleware(\\Prime\\Http\\Middleware\\VerifyCsrfToken::class)
+                    ->name('users.api_tokens.revoke');
+
                 // Roles CRUD
                 $r->get('/roles', [RoleController::class, 'index'])
                     ->middleware('can:roles.manage')

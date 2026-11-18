@@ -83,7 +83,7 @@ ob_start();
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'profile-username',
             'name' => 'username',
-            'label' => 'Identifiant public (URL d’auteur)',
+            'label' => $this->t('admin.view_profile_index.identifiant_public'),
             'type' => 'text',
             'value' => (string) ($oldInfo['username'] ?? ''),
             'help' => $this->t('admin.view_profile_index.utilise_pour_votre_page_auteur_publique_auteur') . $profileUser->authorSlug(),
@@ -108,7 +108,7 @@ ob_start();
         <?= $this->raw($this->insert('admin::components/field', [
             'id' => 'profile-email',
             'name' => 'email',
-            'label' => 'Adresse e-mail',
+            'label' => $this->t('admin.view_profile_index.adresse_email'),
             'type' => 'email',
             'value' => $oldInfo['email'],
             'required' => true,
@@ -459,13 +459,13 @@ ob_start();
             'message' => $this->t('admin.view_profile_index.jeton_api_nouveau_message'),
         ])) ?>
         <div class="pc-field">
+            <span data-prime-new-token><?= $this->e($apiNewToken['token']) ?></span>
             <input
                 type="text"
                 name="api_token_value"
                 readonly
                 class="pc-input"
                 style="font-family: var(--pc-font-mono, monospace);"
-                data-prime-new-token="<?= $this->e($apiNewToken['token']) ?>"
                 value="<?= $this->e($apiNewToken['token']) ?>"
             >
         </div>

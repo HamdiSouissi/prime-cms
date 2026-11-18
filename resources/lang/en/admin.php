@@ -2179,6 +2179,8 @@ return [
     ],
     'view_profile_index' => [
         'onglet_informations' => 'Information',
+        'identifiant_public' => 'Public identifier (author URL)',
+        'adresse_email' => 'Email address',
         'jeton_api_capacites_aide' => 'A capability your account does not hold cannot be granted to a token.',
         'jeton_api_raccourci_lecture_seule' => 'Read-only',
         'jeton_api_raccourci_tout_cocher' => 'Check all',
