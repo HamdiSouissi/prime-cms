@@ -7,9 +7,13 @@ namespace Prime\Api;
 use Prime\Api\Controller\ApiIndexController;
 use Prime\Api\Controller\ContentController;
 use Prime\Api\Controller\MeController;
+use Prime\Api\Controller\MediaController;
+use Prime\Api\Controller\MenusController;
+use Prime\Api\Controller\SettingsController;
 use Prime\Api\Controller\SiteController;
 use Prime\Api\Controller\TermsController;
 use Prime\Api\Controller\TypesController;
+use Prime\Api\Controller\UsersController;
 
 /**
  * Declarations of the core `/api/v1` routes.
@@ -64,6 +68,19 @@ final class CoreApiRoutes
             new ApiRoute('GET', '/terms/{taxonomy}/{ref}', [TermsController::class, 'show'], public: true, summary: 'One term by identifier or slug', tag: 'terms', parameters: $taxonomy + ['ref' => ['in' => 'path', 'type' => 'string', 'description' => 'Identifier or slug', 'required' => true]], responseSchema: ['$ref' => '#/components/schemas/Term'], errors: [404]),
             new ApiRoute('PATCH', '/terms/{taxonomy}/{id:\d+}', [TermsController::class, 'update'], permission: 'content.edit_own', summary: 'Update a term', tag: 'terms', parameters: $taxonomy + $id, requestSchema: $termInput, responseSchema: ['$ref' => '#/components/schemas/Term'], errors: [401, 403, 404, 422], body: ApiRoute::BODY_JSON),
             new ApiRoute('DELETE', '/terms/{taxonomy}/{id:\d+}', [TermsController::class, 'destroy'], permission: 'content.edit_own', summary: 'Delete a term', tag: 'terms', parameters: $taxonomy + $id, errors: [401, 403, 404, 409]),
+            new ApiRoute('GET', '/media', [MediaController::class, 'index'], permission: 'media.view', summary: 'Media library', tag: 'media', parameters: ['page' => ['in' => 'query', 'type' => 'integer', 'description' => 'Page number'], 'per_page' => ['in' => 'query', 'type' => 'integer', 'description' => 'Items per page, up to 100'], 'kind' => ['in' => 'query', 'type' => 'string', 'description' => 'image, document, audio, video or archive'], 'folder' => ['in' => 'query', 'type' => 'integer', 'description' => 'Folder identifier'], 'search' => ['in' => 'query', 'type' => 'string', 'description' => 'Title or file name search']], responseSchema: ['$ref' => '#/components/schemas/MediaList'], errors: [400, 401, 403]),
+            new ApiRoute('POST', '/media', [MediaController::class, 'store'], permission: 'media.upload', summary: 'Upload a file (multipart/form-data, field "file")', tag: 'media', requestSchema: ['$ref' => '#/components/schemas/MediaUpload'], responseSchema: ['$ref' => '#/components/schemas/Media'], errors: [401, 403, 413, 415, 422], body: ApiRoute::BODY_MULTIPART),
+            new ApiRoute('GET', '/media/{id:\\d+}', [MediaController::class, 'show'], permission: 'media.view', summary: 'One media with its usages', tag: 'media', parameters: $id, responseSchema: ['$ref' => '#/components/schemas/Media'], errors: [401, 403, 404]),
+            new ApiRoute('PATCH', '/media/{id:\\d+}', [MediaController::class, 'update'], permission: 'media.upload', summary: 'Update title, alt text, caption, focal point or folder', tag: 'media', parameters: $id, requestSchema: ['$ref' => '#/components/schemas/MediaInput'], responseSchema: ['$ref' => '#/components/schemas/Media'], errors: [401, 403, 404, 422], body: ApiRoute::BODY_JSON),
+            new ApiRoute('DELETE', '/media/{id:\\d+}', [MediaController::class, 'destroy'], permission: 'media.upload', summary: 'Delete a media (409 when in use, unless force=1 with media.delete_any)', tag: 'media', parameters: $id + ['force' => ['in' => 'query', 'type' => 'boolean', 'description' => 'Delete even when in use']], errors: [401, 403, 404, 409]),
+
+            new ApiRoute('GET', '/users', [UsersController::class, 'index'], permission: 'users.view', summary: 'Accounts', tag: 'users', parameters: ['page' => ['in' => 'query', 'type' => 'integer', 'description' => 'Page number'], 'search' => ['in' => 'query', 'type' => 'string', 'description' => 'Name or e-mail search'], 'role' => ['in' => 'query', 'type' => 'string', 'description' => 'Role slug']], responseSchema: ['$ref' => '#/components/schemas/UserList'], errors: [401, 403]),
+            new ApiRoute('GET', '/users/{id:\\d+}', [UsersController::class, 'show'], permission: 'users.view', summary: 'One account', tag: 'users', parameters: $id, responseSchema: ['$ref' => '#/components/schemas/User'], errors: [401, 403, 404]),
+
+            new ApiRoute('GET', '/settings', [SettingsController::class, 'index'], public: true, summary: 'Public settings, or every non-secret setting with settings.manage', tag: 'settings'),
+            new ApiRoute('PATCH', '/settings', [SettingsController::class, 'update'], permission: 'settings.manage', summary: 'Change settings (validated like the settings screens)', tag: 'settings', requestSchema: ['type' => 'object', 'additionalProperties' => true], errors: [401, 403, 422], body: ApiRoute::BODY_JSON),
+
+            new ApiRoute('GET', '/menus/{location}', [MenusController::class, 'show'], public: true, summary: 'Menu assigned to a theme location', tag: 'site', parameters: ['location' => ['in' => 'path', 'type' => 'string', 'description' => 'Theme location, e.g. primary', 'required' => true]], errors: [404]),
         ];
     }
 }

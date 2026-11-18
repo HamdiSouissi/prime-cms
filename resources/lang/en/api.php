@@ -21,6 +21,8 @@ return [
         'csrf_mismatch' => 'Missing or invalid X-Prime-CSRF header.',
     ],
     'validation' => [
+        'file_missing' => 'No file was sent (field "file").',
+        'setting_unknown' => 'This setting does not exist or cannot be changed.',
         'display_name' => 'The display name is required (191 characters maximum).',
         'locale' => 'This language is not available.',
     ],

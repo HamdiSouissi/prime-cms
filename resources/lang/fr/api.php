@@ -21,6 +21,8 @@ return [
         'csrf_mismatch' => 'En-tête X-Prime-CSRF manquant ou invalide.',
     ],
     'validation' => [
+        'file_missing' => 'Aucun fichier n’a été envoyé (champ « file »).',
+        'setting_unknown' => 'Ce réglage n’existe pas ou ne peut pas être modifié.',
         'display_name' => 'Le nom affiché est obligatoire (191 caractères maximum).',
         'locale' => 'Cette langue n’est pas disponible.',
     ],
