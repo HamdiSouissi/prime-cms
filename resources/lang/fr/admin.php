@@ -1302,11 +1302,6 @@ return [
         'settings' => [
             'emails' => 'E-mails',
             'general' => 'Général',
-            'media' => [
-                'choose' => 'Choisir un média',
-                'none' => 'Aucun média',
-                'remove' => 'Retirer le média',
-            ],
             'performance' => 'Performance',
             'permalinks' => 'Permaliens',
             'reading' => 'Lecture',
@@ -1539,8 +1534,14 @@ return [
             'tagline' => 'Sous-titre',
             'time_format' => 'Format d’heure',
             'timezone' => 'Fuseau horaire',
+            'timezone_filter' => 'Filtrer les fuseaux horaires',
             'title' => 'Général',
             'week_starts' => 'Premier jour de la semaine',
+        ],
+        'media' => [
+            'choose' => 'Choisir un média',
+            'none' => 'Aucun média',
+            'remove' => 'Retirer le média',
         ],
         'languages' => [
             'admin_language' => 'Langue d’administration',

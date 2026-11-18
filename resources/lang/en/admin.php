@@ -1302,11 +1302,6 @@ return [
         'settings' => [
             'emails' => 'E-mails',
             'general' => 'General',
-            'media' => [
-                'choose' => 'Choose a media',
-                'none' => 'No media',
-                'remove' => 'Remove media',
-            ],
             'performance' => 'Performance',
             'permalinks' => 'Permalinks',
             'reading' => 'Reading',
@@ -1539,8 +1534,14 @@ return [
             'tagline' => 'Tagline',
             'time_format' => 'Time format',
             'timezone' => 'Timezone',
+            'timezone_filter' => 'Filter timezones',
             'title' => 'General',
             'week_starts' => 'Week starts on',
+        ],
+        'media' => [
+            'choose' => 'Choose a media',
+            'none' => 'No media',
+            'remove' => 'Remove media',
         ],
         'languages' => [
             'admin_language' => 'Administration language',
