@@ -6,13 +6,11 @@ namespace Prime\Auth\Middleware;
 
 use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\Auth;
-use Prime\Auth\Capabilities;
-use Prime\Auth\User;
 use Prime\Http\Middleware\MiddlewareInterface;
 use Prime\Http\Request;
 use Prime\Http\Response;
-use Prime\Security\Csrf;
 use Prime\I18n\Translator;
+use Prime\Security\Csrf;
 
 /**
  * Authentifie les requêtes API via un jeton Bearer dans l'en-tête `Authorization`,

@@ -111,6 +111,6 @@ abstract class ApiController
     {
         $user = $this->currentUser($request);
 
-        return $user !== null ? true : $this->unauthorized('Authentification requise.');
+        return $user !== null ? true : $this->unauthorized();
     }
 }
