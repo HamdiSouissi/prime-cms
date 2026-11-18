@@ -23,7 +23,6 @@ use Prime\Admin\Controller\ZoneController;
 use Prime\Admin\Demo\DemoDashboardData;
 use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Menu\MenuItem;
-use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\Auth;
 use Prime\Auth\Capabilities;
 use Prime\Auth\Controller\AuthController;
@@ -46,7 +45,6 @@ use Prime\Database\Connection;
 use Prime\Editor\BlockRegistry;
 use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
-use Prime\Http\Middleware\VerifyCsrfToken;
 use Prime\Http\Response;
 use Prime\Http\Router;
 use Prime\Http\Session;
@@ -289,7 +287,6 @@ final class AdminServiceProvider extends ServiceProvider
                 processor: $this->app->get(\Prime\Settings\SettingsFormProcessor::class),
                 settings: $this->app->get(Settings::class),
                 session: $this->app->get(Session::class),
-                mediaRepository: $this->app->get(MediaRepository::class),
                 mailer: $mailer instanceof \Prime\Mail\Mailer ? $mailer : null,
                 mailLog: $log instanceof \Prime\Mail\MailLogRepository ? $log : null,
                 cache: $c->has(CacheManager::class) ? $c->get(CacheManager::class) : null,
@@ -405,7 +402,6 @@ final class AdminServiceProvider extends ServiceProvider
 
             return new UserController(
                 app: $this->app,
-                apiTokens: $this->app->get(ApiTokenService::class),
                 view: $this->app->get(View::class),
                 context: $this->app->get(AdminContext::class),
                 auth: $this->app->get(Auth::class),
@@ -445,9 +441,6 @@ final class AdminServiceProvider extends ServiceProvider
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
                 hasher: $this->app->get(Hasher::class),
-                settings: $this->app->get(Settings::class),
-                apiTokens: $this->app->get(ApiTokenService::class),
-                capabilities: $this->app->get(Capabilities::class),
                 media: $media instanceof MediaRepository ? $media : null,
             );
         });
@@ -509,15 +502,6 @@ final class AdminServiceProvider extends ServiceProvider
                 $r->post('/profile/2fa/disable', [ProfileController::class, 'disableTwoFactor'])->name('profile.2fa.disable');
                 $r->post('/profile/logout-devices', [ProfileController::class, 'logoutOtherDevices'])->name('profile.logout_devices');
 
-                // API tokens (self-service)
-                $r->get('/profile/api-tokens', [ProfileController::class, 'apiTokens'])->name('profile.api_tokens');
-                $r->post('/profile/api-tokens', [ProfileController::class, 'createApiToken'])
-                    ->middleware(\Prime\Http\Middleware\VerifyCsrfToken::class)
-                    ->name('profile.api_tokens.create');
-                $r->post('/profile/api-tokens/{id:\d+}/revoke', [ProfileController::class, 'revokeApiToken'])
-                    ->middleware(\Prime\Http\Middleware\VerifyCsrfToken::class)
-                    ->name('profile.api_tokens.revoke');
-
                 // Users CRUD
                 $r->get('/users', [UserController::class, 'index'])
                     ->middleware('can:users.view')
@@ -552,12 +536,6 @@ final class AdminServiceProvider extends ServiceProvider
                 $r->post('/users/{id:\d+}/reset-2fa', [UserController::class, 'resetTwoFactor'])
                     ->middleware('can:users.edit')
                     ->name('users.reset_2fa');
-
-                // API tokens d'un autre utilisateur (administration)
-                $r->post('/users/{id:\d+}/api-tokens/{tokenId:\d+}/revoke', [UserController::class, 'revokeApiToken'])
-                    ->middleware('can:users.edit')
-                    ->middleware(VerifyCsrfToken::class)
-                    ->name('users.api_tokens.revoke');
 
                 // Roles CRUD
                 $r->get('/roles', [RoleController::class, 'index'])

@@ -8,7 +8,6 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Prime\Admin\AdminContext;
 use Prime\Admin\TranslatesAdminCopy;
-use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\Auth;
 use Prime\Auth\Exception\PolicyException;
 use Prime\Auth\PasswordResetService;
@@ -45,7 +44,6 @@ final class UserController
 
     public function __construct(
         private readonly Application $app,
-        private readonly ApiTokenService $apiTokens,
         private readonly View $view,
         private readonly AdminContext $context,
         private readonly Auth $auth,
@@ -297,7 +295,7 @@ final class UserController
             'locale' => $target->locale,
             'status' => $target->status,
             'roles' => $target->roleIds(),
-        ], [], apiTokens: $this->apiTokens->listByUser($target->id)));
+        ], []));
     }
 
     public function update(Request $request, string $id): Response
@@ -512,29 +510,6 @@ final class UserController
         return Response::redirect('/admin/users/' . $target->id . '/edit', 302);
     }
 
-    public function revokeApiToken(Request $request, string $id, string $tokenId): Response
-    {
-        $actor = $this->requireActor($request);
-        $target = $this->findTargetOr404($id);
-
-        try {
-            $this->guard->assertCanManageSecurity($actor, $target);
-        } catch (PolicyException $exception) {
-            throw new ForbiddenException($exception->getMessage());
-        }
-
-        $token = $this->apiTokens->findById((int) $tokenId);
-        if ($token === null || (int) ($token['user_id'] ?? 0) !== $target->id) {
-            throw new NotFoundException('Jeton introuvable.');
-        }
-
-        $this->apiTokens->revoke((int) $tokenId);
-
-        $this->context->flashToast($this->t('admin.ctrl_text_profile.jeton_api_revoque'), 'success');
-
-        return Response::redirect('/admin/users/' . $target->id . '/edit', 302);
-    }
-
     public function bulk(Request $request): Response
     {
         $actor = $this->requireActor($request);
@@ -641,9 +616,8 @@ final class UserController
     /**
      * @param array<string, mixed> $old
      * @param array<string, string> $errors
-     * @param list<array<string, mixed>> $apiTokens
      */
-    private function renderEditView(Request $request, User $actor, User $target, array $old, array $errors, array $apiTokens = []): string
+    private function renderEditView(Request $request, User $actor, User $target, array $old, array $errors): string
     {
         $canManageRoles = $actor->can('users.manage_roles');
         $canDelete = $actor->can('users.delete') && $actor->id !== $target->id;
@@ -658,7 +632,6 @@ final class UserController
             'lastLoginMeta' => $this->formatRelativeUtc($target->lastLoginAt),
             'old' => $old,
             'errors' => $errors,
-            'apiTokens' => $apiTokens,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_user.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $this->t('admin.shared.utilisateurs'), 'url' => '/admin/users'],

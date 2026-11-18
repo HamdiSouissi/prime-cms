@@ -391,7 +391,6 @@ final class LocaleFormatter
             'tag' => $this->translator->localeTag($locale),
             'direction' => $this->direction($locale),
             'firstDayOfWeek' => $this->firstDayOfWeek($locale),
-            'timezone' => $this->timezone,
             'decimalSeparator' => $this->symbol('core.locale.decimal_separator', ',', $locale),
             'thousandsSeparator' => $this->symbol('core.locale.thousands_separator', ' ', $locale),
             'currency' => strtoupper($this->translator->translate('core.locale.currency', [], $locale)),

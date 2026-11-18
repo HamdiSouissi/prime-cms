@@ -165,7 +165,6 @@ final class SiteSettingsController
             'defaultDescription' => $this->seoSettings->defaultDescription(),
             'defaultImageId' => $imageId,
             'defaultImageUrl' => $defaultImage?->url(),
-            'defaultImageData' => $defaultImage?->toApiArray(),
             'globalNoindex' => $this->seoSettings->globalNoindex(),
             'robotsCustom' => $this->seoSettings->robotsCustom(),
             'primaryCtaInContent' => true,

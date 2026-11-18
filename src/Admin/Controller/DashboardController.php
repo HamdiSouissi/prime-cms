@@ -16,6 +16,7 @@ use Prime\Content\ContentTypeRegistry;
 use Prime\Content\Entry;
 use Prime\Content\EntryRepository;
 use Prime\Hooks\Hooks;
+use Prime\Http\Exception\ForbiddenException;
 use Prime\Http\Exception\NotFoundException;
 use Prime\Http\Request;
 use Prime\Http\Response;
@@ -34,6 +35,23 @@ use Throwable;
 final class DashboardController
 {
     use TranslatesAdminCopy;
+
+    /**
+     * Required capability per placeholder module key.
+     *
+     * @var array<string, string>
+     */
+    private const MODULE_CAPABILITIES = [
+        'pages' => 'content.view',
+        'articles' => 'content.view',
+        'media' => 'media.view',
+        'appearance' => 'appearance.manage',
+        'appearance/themes' => 'appearance.manage',
+        'appearance/menus' => 'appearance.manage',
+        'appearance/widgets' => 'appearance.manage',
+        'plugins' => 'plugins.manage',
+        'settings' => 'settings.manage',
+    ];
 
     public function __construct(
         private readonly Application $app,
@@ -318,6 +336,9 @@ final class DashboardController
     }
 
     /**
+     * Placeholder page for upcoming CMS modules (`GET /admin/{module}` and `GET /admin/{module}/{section}`).
+     */
+    /**
      * Blocking problems from « État du système », surfaced on the dashboard for administrators.
      *
      * @return list<string>
@@ -345,6 +366,44 @@ final class DashboardController
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    public function module(Request $request, string $module, ?string $section = null): Response
+    {
+        $key = $section !== null ? $module . '/' . $section : $module;
+        $modules = $this->demo->modulePlaceholders();
+
+        if (!isset($modules[$key])) {
+            throw new NotFoundException('Module d’administration introuvable.');
+        }
+
+        // A placeholder section inherits its parent module's capability, so `/admin/settings/security`
+        // is no more reachable than `/admin/settings` itself.
+        $requiredCap = self::MODULE_CAPABILITIES[$key] ?? self::MODULE_CAPABILITIES[$module] ?? null;
+        if ($requiredCap !== null && !$this->auth->can($requiredCap, $request)) {
+            throw new ForbiddenException($this->t('admin.ctrl_text_dashboard.vous_ne_disposez_pas_des_permissions_necessaires_pour_accede'));
+        }
+
+        $meta = $modules[$key];
+        $breadcrumbs = [
+            ['label' => $this->t('admin.ctrl_text_dashboard.tableau_de_bord'), 'url' => '/admin'],
+        ];
+
+        if (isset($meta['parentTitle'], $meta['parentUrl'])) {
+            $breadcrumbs[] = [
+                'label' => $meta['parentTitle'],
+                'url' => $meta['parentUrl'],
+            ];
+        }
+
+        $breadcrumbs[] = ['label' => $meta['title'], 'url' => null];
+
+        $data = $this->context->build($request, $meta['title'], [
+            'moduleMeta' => $meta,
+            'breadcrumbs' => $breadcrumbs,
+        ]);
+
+        return Response::html($this->view->render('admin::placeholders/module', $data));
     }
 
     private function logInvalidFilterData(string $hookName, ?string $owner, string $reason): void

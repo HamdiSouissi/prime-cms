@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace Prime\Console;
 
-use Prime\Api\Repository\ApiTokenRepository;
-use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\RoleRepository;
 use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
 use Prime\Cache\CacheManager;
 use Prime\Console\Commands\AboutCommand;
-use Prime\Console\Commands\ApiTokenCreateCommand;
-use Prime\Console\Commands\ApiTokenListCommand;
-use Prime\Console\Commands\ApiTokenRevokeCommand;
 use Prime\Console\Commands\AssetsBuildCommand;
 use Prime\Console\Commands\CacheClearCommand;
 use Prime\Console\Commands\ContentCreateCommand;
@@ -150,8 +145,8 @@ final class ConsoleApplication
         }
 
         if (!isset($this->commands[$commandName])) {
-            $output->error(sprintf('Commande inconnue : \"%s\".', $commandName));
-            $output->error('Exécutez \"php bin/prime list\" pour voir les commandes disponibles.');
+            $output->error(sprintf('Commande inconnue : "%s".', $commandName));
+            $output->error('Exécutez "php bin/prime list" pour voir les commandes disponibles.');
 
             return CommandInterface::FAILURE;
         }
@@ -317,23 +312,6 @@ final class ConsoleApplication
             $this->register(new MediaRegenerateCommand($mediaRepo, $uploadService, $mediaConfig));
             $this->register(new MediaLinkCommand($uploadsGuard));
             $this->register(new MediaCleanupCommand($mediaRepo, $mediaConfig));
-        }
-
-        if (
-            $this->app->container()->has(ApiTokenRepository::class)
-            && $this->app->container()->has(ApiTokenService::class)
-            && $this->app->container()->has(UserRepository::class)
-        ) {
-            /** @var ApiTokenRepository $tokens */
-            $tokens = $this->app->get(ApiTokenRepository::class);
-            /** @var ApiTokenService $tokenService */
-            $tokenService = $this->app->get(ApiTokenService::class);
-            /** @var UserRepository $users */
-            $users = $this->app->get(UserRepository::class);
-
-            $this->register(new ApiTokenCreateCommand($tokenService, $users));
-            $this->register(new ApiTokenListCommand($tokens, $users));
-            $this->register(new ApiTokenRevokeCommand($tokens));
         }
 
         if ($this->app->container()->has(ThemeManager::class)) {
