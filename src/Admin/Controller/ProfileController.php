@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Prime\Admin\Controller;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Prime\Admin\AdminContext;
 use Prime\Admin\TranslatesAdminCopy;
+use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\Auth;
+use Prime\Auth\Capabilities;
 use Prime\Auth\PasswordResetService;
 use Prime\Auth\TwoFactorPolicy;
 use Prime\Auth\TwoFactorService;
@@ -55,6 +59,8 @@ final class ProfileController
         private readonly Connection $connection,
         private readonly PasswordPolicy $passwordPolicy,
         private readonly Hasher $hasher,
+        private readonly ApiTokenService $apiTokens,
+        private readonly Capabilities $capabilities,
         private readonly ?MediaRepository $media = null,
     ) {
     }
@@ -383,6 +389,121 @@ final class ProfileController
     }
 
     /**
+     * Affiche l'onglet « Jetons d'API » du profil : liste des jetons + formulaire de création.
+     */
+    public function apiTokens(Request $request): Response
+    {
+        $user = $this->requireUser($request);
+        $this->session->flash('_profile.tab', 'api-tokens');
+
+        $tokens = $this->apiTokens->listByUser($user->id);
+        $abilityGroups = $this->capabilities->grouped();
+
+        $newToken = $this->session->getFlash('_profile.api_token_once');
+
+        return Response::html($this->renderProfile(
+            $request,
+            $user,
+            'api-tokens',
+            apiTokens: $tokens,
+            apiAbilityGroups: $abilityGroups,
+            apiNewToken: $newToken,
+        ));
+    }
+
+    /**
+     * Crée un nouveau jeton d'API depuis le profil.
+     * Le jeton brut est flashé en session et affiché une seule fois.
+     */
+    public function createApiToken(Request $request): Response
+    {
+        $user = $this->requireUser($request);
+
+        $csrf = $this->csrfToken($request);
+        if (!$csrf) {
+            return Response::json(['error' => 'CSRF invalide'], 419);
+        }
+
+        $name = trim((string) $request->body('name', ''));
+        if ($name === '' || mb_strlen($name) > 100) {
+            $this->session->flash('_profile.api_token_error', 'Le nom est obligatoire (100 caractères maximum).');
+            return Response::redirect('/admin/profile?tab=api-tokens', 302);
+        }
+
+        $rawAbilities = $request->body('abilities', []);
+        $abilities = is_array($rawAbilities) ? array_values(array_filter($rawAbilities, 'is_string')) : [];
+
+        // Ne garder que les capacités de l'utilisateur.
+        $userCaps = array_flip($user->capabilities);
+        $abilities = array_values(array_filter($abilities, static fn (string $cap): bool => isset($userCaps[$cap])));
+
+        $expiresDays = (string) $request->body('expires_days', '');
+        $expiresAt = null;
+        if ($expiresDays !== '' && $expiresDays !== '0') {
+            $days = (int) $expiresDays;
+            if ($days > 0) {
+                $expiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->modify("+{$days} days");
+            }
+        }
+
+        $result = $this->apiTokens->issue($user, $name, $abilities, $expiresAt);
+
+        // Flasher le jeton brut pour affichage unique.
+        $this->session->set('_profile.api_token_once', [
+            'token' => $result['token'],
+            'name' => $name,
+        ]);
+        $this->session->flash('_profile.tab', 'api-tokens');
+
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.jeton_api_cree_copiez_le_maintenant'), 'success');
+
+        return Response::redirect('/admin/profile?tab=api-tokens', 302);
+    }
+
+    /**
+     * Révoque un jeton d'API appartenant à l'utilisateur connecté.
+     * Révoquer le jeton d'un autre utilisateur retourne 404.
+     */
+    public function revokeApiToken(Request $request, int $id): Response
+    {
+        $user = $this->requireUser($request);
+
+        $csrf = $this->csrfToken($request);
+        if (!$csrf) {
+            return Response::json(['error' => 'CSRF invalide'], 419);
+        }
+
+        $token = $this->apiTokens->findById($id);
+        if ($token === null || (int) ($token['user_id'] ?? 0) !== $user->id) {
+            throw new ForbiddenException($this->t('admin.ctrl_text_profile.jeton_api_introuvable'));
+        }
+
+        $this->apiTokens->revoke($id);
+        $this->session->flash('_profile.tab', 'api-tokens');
+        $this->context->flashToast($this->t('admin.ctrl_text_profile.jeton_api_revoque'), 'success');
+
+        return Response::redirect('/admin/profile?tab=api-tokens', 302);
+    }
+
+    /**
+     * Extrait le token CSRF depuis le corps ou l'en-tête.
+     */
+    private function csrfToken(Request $request): ?string
+    {
+        $body = $request->body('_csrf_token');
+        if (is_string($body) && $body !== '') {
+            return $body;
+        }
+
+        $header = $request->header('X-CSRF-Token');
+        if (is_string($header) && $header !== '') {
+            return $header;
+        }
+
+        return null;
+    }
+
+    /**
      * @param array<string, string> $infoErrors
      * @param array<string, string> $passwordErrors
      * @param array<string, string>|null $oldInfo
@@ -396,6 +517,9 @@ final class ProfileController
         ?string $twoFactorError = null,
         ?string $devicesError = null,
         ?array $oldInfo = null,
+        ?array $apiTokens = null,
+        ?array $apiAbilityGroups = null,
+        ?array $apiNewToken = null,
     ): string {
         $pendingSetup = $this->session->get(self::SESSION_2FA_PENDING_SECRET);
         $recoveryOnce = $this->session->getFlash(self::FLASH_RECOVERY_CODES);
@@ -435,6 +559,9 @@ final class ProfileController
             'pendingTwoFactor' => is_array($pendingSetup) && !$user->hasTwoFactor() ? $pendingSetup : null,
             'recoveryCodesOnce' => is_array($recoveryOnce) ? $recoveryOnce : null,
             'remainingRecoveryCount' => $user->hasTwoFactor() ? $this->twoFactor->remainingRecoveryCodesCount($user->id) : 0,
+            'apiTokens' => $apiTokens ?? [],
+            'apiAbilityGroups' => $apiAbilityGroups ?? [],
+            'apiNewToken' => $apiNewToken,
             'breadcrumbs' => [
                 ['label' => $this->t('admin.ctrl_text_profile.tableau_de_bord'), 'url' => '/admin'],
                 ['label' => $this->t('admin.ctrl_text_profile.mon_profil'), 'url' => null],

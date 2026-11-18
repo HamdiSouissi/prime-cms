@@ -503,6 +503,11 @@ final class AdminServiceProvider extends ServiceProvider
                 $r->post('/profile/2fa/disable', [ProfileController::class, 'disableTwoFactor'])->name('profile.2fa.disable');
                 $r->post('/profile/logout-devices', [ProfileController::class, 'logoutOtherDevices'])->name('profile.logout_devices');
 
+                // API tokens (self-service)
+                $r->get('/profile/api-tokens', [ProfileController::class, 'apiTokens'])->name('profile.api_tokens');
+                $r->post('/profile/api-tokens', [ProfileController::class, 'createApiToken'])->name('profile.api_tokens.create');
+                $r->post('/profile/api-tokens/{id:\d+}/revoke', [ProfileController::class, 'revokeApiToken'])->name('profile.api_tokens.revoke');
+
                 // Users CRUD
                 $r->get('/users', [UserController::class, 'index'])
                     ->middleware('can:users.view')
