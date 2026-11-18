@@ -7,6 +7,7 @@ namespace Prime\Api\Repository;
 use DateTimeImmutable;
 use DateTimeZone;
 use Prime\Database\Connection;
+use Prime\Database\Query\QueryBuilder;
 
 /**
  * Data access layer pour les jetons d'API (`api_tokens`).
@@ -130,6 +131,29 @@ final class ApiTokenRepository
             ]);
 
         return (int) $result;
+    }
+
+    /**
+     * Supprime les jetons révoqués depuis plus de `$olderThanDays` jours, ainsi que les jetons
+     * dont la date d’expiration est dépassée.
+     *
+     * @return int Nombre de jetons supprimés.
+     */
+    public function pruneOld(int $olderThanDays = 90): int
+    {
+        $cutoff = (new DateTimeImmutable('-' . $olderThanDays . ' days', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+        $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+
+        return (int) $this->db->table('api_tokens')
+            ->where(function (QueryBuilder $q) use ($cutoff, $now): void {
+                $q->where('revoked_at', '<', $cutoff)
+                    ->orWhere(function (QueryBuilder $q2) use ($now): void {
+                        $q2->where('expires_at', '!=', null)
+                            ->where('expires_at', '!=', '')
+                            ->where('expires_at', '<', $now);
+                    });
+            })
+            ->delete();
     }
 
     /**
