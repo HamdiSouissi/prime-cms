@@ -46,6 +46,7 @@ use Prime\Database\Connection;
 use Prime\Editor\BlockRegistry;
 use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
+use Prime\Http\Middleware\VerifyCsrfToken;
 use Prime\Http\Response;
 use Prime\Http\Router;
 use Prime\Http\Session;
@@ -554,7 +555,7 @@ final class AdminServiceProvider extends ServiceProvider
                 // API tokens d'un autre utilisateur (administration)
                 $r->post('/users/{id:\d+}/api-tokens/{tokenId:\d+}/revoke', [UserController::class, 'revokeApiToken'])
                     ->middleware('can:users.edit')
-                    ->middleware(\\Prime\\Http\\Middleware\\VerifyCsrfToken::class)
+                    ->middleware(VerifyCsrfToken::class)
                     ->name('users.api_tokens.revoke');
 
                 // Roles CRUD
