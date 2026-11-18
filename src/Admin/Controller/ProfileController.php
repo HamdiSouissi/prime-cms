@@ -452,8 +452,9 @@ final class ProfileController
         $abilities = is_array($rawAbilities) ? array_values(array_filter($rawAbilities, 'is_string')) : [];
 
         // Ne garder que les capacités de l'utilisateur.
-        $userCaps = array_flip($user->capabilities);
-        $abilities = array_values(array_filter($abilities, static fn (string $cap): bool => isset($userCaps[$cap])));
+        // `*` (tout) donne accès à toutes les capacités demandées.
+        $canGrantAll = in_array('*', $user->capabilities, true);
+        $abilities = array_values(array_filter($abilities, static fn (string $cap): bool => $canGrantAll || in_array($cap, $user->capabilities, true)));
 
         $expiresDays = (string) $request->body('expires_days', '');
         $expiresAt = null;
