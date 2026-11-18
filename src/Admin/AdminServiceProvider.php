@@ -28,6 +28,7 @@ use Prime\Auth\Capabilities;
 use Prime\Auth\Controller\AuthController;
 use Prime\Auth\PasswordResetService;
 use Prime\Auth\RoleRepository;
+use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\TwoFactorService;
 use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
@@ -442,6 +443,8 @@ final class AdminServiceProvider extends ServiceProvider
                 connection: $this->app->get(Connection::class),
                 passwordPolicy: $this->app->get(PasswordPolicy::class),
                 hasher: $this->app->get(Hasher::class),
+                apiTokens: $this->app->get(ApiTokenService::class),
+                capabilities: $this->app->get(Capabilities::class),
                 media: $media instanceof MediaRepository ? $media : null,
             );
         });

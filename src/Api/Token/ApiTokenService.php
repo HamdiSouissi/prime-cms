@@ -143,6 +143,26 @@ final class ApiTokenService
     }
 
     /**
+     * Trouve un jeton par son ID (sans la valeur brute).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findById(int $id): ?array
+    {
+        return $this->tokens->findById($id);
+    }
+
+    /**
+     * Liste tous les jetons d'un utilisateur (sans la valeur brute du jeton).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function listByUser(int $userId): array
+    {
+        return $this->tokens->listByUser($userId);
+    }
+
+    /**
      * Révoque un jeton par son ID (définit revoked_at).
      */
     public function revoke(int $id): void

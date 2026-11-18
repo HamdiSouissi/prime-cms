@@ -448,8 +448,8 @@ final class ProfileController
 
         $result = $this->apiTokens->issue($user, $name, $abilities, $expiresAt);
 
-        // Flasher le jeton brut pour affichage unique.
-        $this->session->set('_profile.api_token_once', [
+        // Flasher le jeton brut pour affichage unique (disponible à la requête suivante seulement).
+        $this->session->flash('_profile.api_token_once', [
             'token' => $result['token'],
             'name' => $name,
         ]);
@@ -517,8 +517,11 @@ final class ProfileController
         ?string $twoFactorError = null,
         ?string $devicesError = null,
         ?array $oldInfo = null,
+        /** @param list<array<string, mixed>> $apiTokens */
         ?array $apiTokens = null,
+        /** @param array<string, array<string, string>> $apiAbilityGroups */
         ?array $apiAbilityGroups = null,
+        /** @var array{token: string, name: string}|null $apiNewToken */
         ?array $apiNewToken = null,
     ): string {
         $pendingSetup = $this->session->get(self::SESSION_2FA_PENDING_SECRET);
