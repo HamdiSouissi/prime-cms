@@ -11,6 +11,7 @@ use Prime\Api\Repository\ApiTokenRepository;
 use Prime\Auth\Capabilities;
 use Prime\Auth\User;
 use Prime\Auth\UserRepository;
+use Prime\Hooks\Hooks;
 use Prime\Settings\Settings;
 
 /**
@@ -27,6 +28,7 @@ final class ApiTokenService
         private readonly UserRepository $users,
         private readonly Capabilities $capabilities,
         private readonly Settings $settings,
+        private readonly ?Hooks $hooks = null,
     ) {
     }
 
@@ -51,11 +53,13 @@ final class ApiTokenService
         $actual = array_values(array_filter($abilities, static fn (string $cap): bool => $user->can($cap)));
 
         // Clamp the expiration to the maximum allowed lifetime (`api.token_max_days`).
+        // A missing expiration means « as long as allowed »: with a maximum configured, no token
+        // lives forever.
         $maxDays = (int) $this->settings->get('api.token_max_days', 365);
-        if ($maxDays > 0 && $expiresAt !== null) {
-            $expiresAt = $expiresAt->setTimezone(new DateTimeZone('UTC'));
+        if ($maxDays > 0) {
             $maxExpiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
                 ->add(new DateInterval('P' . $maxDays . 'D'));
+            $expiresAt = $expiresAt === null ? $maxExpiresAt : $expiresAt->setTimezone(new DateTimeZone('UTC'));
             if ($expiresAt > $maxExpiresAt) {
                 $expiresAt = $maxExpiresAt;
             }
@@ -71,6 +75,13 @@ final class ApiTokenService
             abilities: $actual,
             expiresAt: $expiresAtString,
         );
+
+        $this->hooks?->emit('api.token.created', [
+            'id' => $result['id'],
+            'user_id' => $user->id,
+            'name' => $name,
+            'abilities' => $actual,
+        ]);
 
         return ['token' => $result['token'], 'id' => $result['id']];
     }
@@ -183,7 +194,28 @@ final class ApiTokenService
      */
     public function revoke(int $id): void
     {
-        $this->tokens->revoke($id);
+        $row = $this->tokens->findById($id);
+        if ($row !== null && $this->tokens->revoke($id)) {
+            $this->hooks?->emit('api.token.revoked', ['id' => $id, 'user_id' => (int) $row['user_id']]);
+        }
+    }
+
+    /**
+     * Revokes every active token of an account (e.g. after a password change).
+     *
+     * @return int Number of tokens revoked
+     */
+    public function revokeAllForUser(int $userId): int
+    {
+        $revoked = 0;
+        foreach ($this->tokens->listByUser($userId) as $row) {
+            if (($row['revoked_at'] ?? null) === null) {
+                $this->revoke((int) $row['id']);
+                ++$revoked;
+            }
+        }
+
+        return $revoked;
     }
 
     /**

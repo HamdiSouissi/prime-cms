@@ -6,6 +6,7 @@ namespace Prime\Plugins;
 
 use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Notices;
+use Prime\Api\ApiRouteRegistry;
 use Prime\Auth\Capabilities;
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\Fields\FieldRegistry;
@@ -31,6 +32,8 @@ final class PluginContext
 {
     private readonly PluginHooks $pluginHooks;
     private readonly PluginRouter $pluginRouter;
+
+    private ?PluginApi $pluginApi = null;
     private readonly PluginCapabilities $pluginCapabilities;
     private readonly PluginSettings $pluginSettings;
     private readonly PluginNotices $pluginNotices;
@@ -108,6 +111,19 @@ final class PluginContext
     public function router(): PluginRouter
     {
         return $this->pluginRouter;
+    }
+
+    /**
+     * REST API registrar for routes under `/api/{slug}/v1`.
+     */
+    public function api(): PluginApi
+    {
+        return $this->pluginApi ??= new PluginApi(
+            $this->app,
+            $this->app->get(ApiRouteRegistry::class),
+            $this->pluginLogger,
+            $this->manifest->slug,
+        );
     }
 
     public function views(): View

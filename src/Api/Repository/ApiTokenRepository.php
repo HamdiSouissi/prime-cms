@@ -31,10 +31,11 @@ final class ApiTokenRepository
         ?string $expiresAt = null,
         ?string $lastUsedIp = null,
     ): array {
-        $raw = bin2hex(random_bytes(20)); // 40 hex chars
-        $token = 'pcat_' . substr($raw, 0, 8) . '_' . $raw;
+        // The displayed prefix is drawn independently from the 160-bit secret, so showing it in the
+        // administration reveals nothing about the secret part.
+        $tokenPrefix = bin2hex(random_bytes(4));
+        $token = 'pcat_' . $tokenPrefix . '_' . bin2hex(random_bytes(20));
         $tokenHash = hash('sha256', $token);
-        $tokenPrefix = substr($token, 5, 8);
         $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
 
         $this->db->table('api_tokens')->insert([
@@ -95,6 +96,29 @@ final class ApiTokenRepository
             ->where('user_id', '=', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
+    }
+
+    /**
+     * Every token still usable (neither revoked nor expired), with its owner's name, for the
+     * « Outils › API » screen. Never returns the hash.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function listActive(): array
+    {
+        $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+
+        return $this->db->select(
+            sprintf(
+                'SELECT t.`id`, t.`user_id`, t.`name`, t.`token_prefix`, t.`abilities`, t.`last_used_at`, t.`last_used_ip`, t.`expires_at`, t.`created_at`, u.`display_name` AS `user_name`
+                 FROM `%s` t LEFT JOIN `%s` u ON u.`id` = t.`user_id`
+                 WHERE t.`revoked_at` IS NULL AND (t.`expires_at` IS NULL OR t.`expires_at` > ?)
+                 ORDER BY t.`last_used_at` IS NULL, t.`last_used_at` DESC, t.`id` DESC',
+                $this->db->prefixed('api_tokens'),
+                $this->db->prefixed('users'),
+            ),
+            [$now],
+        );
     }
 
     /**

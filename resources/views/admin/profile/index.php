@@ -214,6 +214,14 @@ ob_start();
                 'required' => true,
                 'error' => $passwordErrors['password_confirmation'] ?? null,
             ])) ?>
+
+            <label class="pc-choice">
+                <input type="checkbox" name="revoke_api_tokens" value="1" checked>
+                <span class="pc-choice__body">
+                    <span class="pc-choice__title"><?= $this->e($this->t('admin.api_tokens.revoke_on_password')) ?></span>
+                    <span class="pc-choice__desc"><?= $this->e($this->t('admin.api_tokens.revoke_on_password_help')) ?></span>
+                </span>
+            </label>
         </div>
         <?php $pwdCardBody = (string) ob_get_clean(); ?>
 
@@ -555,73 +563,11 @@ ob_start();
 
     <!-- Liste des jetons existants -->
     <?php if ($apiTokens !== []): ?>
-        <div class="pc-table-scroll">
-        <hr>
-        <h3><?= $this->e($this->t('admin.view_profile_index.jeton_api_liste_titre')) ?></h3>
-        <table class="pc-table">
-            <thead>
-            <tr>
-                <th><?= $this->e($this->t('admin.view_profile_index.jeton_api_col_nom')) ?></th>
-                <th><?= $this->e($this->t('admin.view_profile_index.jeton_api_col_prefixe')) ?></th>
-                <th><?= $this->e($this->t('admin.view_profile_index.jeton_api_col_capacites')) ?></th>
-                <th><?= $this->e($this->t('admin.view_profile_index.jeton_api_col_derniere_utilisation')) ?></th>
-                <th><?= $this->e($this->t('admin.view_profile_index.jeton_api_col_expiration')) ?></th>
-                <th><?= $this->e($this->t('admin.view_profile_index.jeton_api_col_statut')) ?></th>
-                <th><?= $this->e($this->t('admin.view_profile_index.jeton_api_col_action')) ?></th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($apiTokens as $token): ?>
-                <?php
-                $tokenId = (int) ($token['id'] ?? 0);
-                $revoked = $token['revoked_at'] !== null && $token['revoked_at'] !== '';
-                $expired = $token['expires_at'] !== null && $token['expires_at'] !== '' && $token['expires_at'] < date('Y-m-d H:i:s');
-                $status = $revoked ? 'revoked' : ($expired ? 'expired' : 'active');
-                $statusLabel = match ($status) {
-                    'active' => $this->t('admin.view_profile_index.jeton_api_statut_actif'),
-                    'expired' => $this->t('admin.view_profile_index.jeton_api_statut_expire'),
-                    default => $this->t('admin.view_profile_index.jeton_api_statut_revoque'),
-                };
-                $statusVariant = match ($status) {
-                    'active' => 'success',
-                    'expired' => 'warning',
-                    default => 'danger',
-                };
-                $abilities = json_decode((string) ($token['abilities'] ?? '[]'), true) ?? [];
-                $abilityLabels = array_map(static fn (string $cap): string => $cap, $abilities);
-                $abilityDisplay = $abilityLabels;
-                if (count($abilityDisplay) > 3) {
-                    $abilityDisplay = array_slice($abilityDisplay, 0, 3);
-                    $abilityDisplay[] = '+' . (count($abilityLabels) - 3);
-                }
-                ?>
-                <tr>
-                    <td><?= $this->e((string) ($token['name'] ?? '')) ?></td>
-                    <td style="font-family: var(--pc-font-mono, monospace);"><?= $this->e('pcat_' . substr((string) ($token['token_prefix'] ?? ''), 0, 8) . '…') ?></td>
-                    <td><?= $this->e(implode(', ', $abilityDisplay)) ?></td>
-                    <td><?= $this->e((string) ($token['last_used_at'] ?? '-')) ?></td>
-                    <td><?= $this->e((string) ($token['expires_at'] ?? '-')) ?></td>
-                    <td><?= $this->raw($this->insert('admin::components/badge', [
-                        'label' => $statusLabel,
-                        'variant' => $statusVariant,
-                    ])) ?></td>
-                    <td>
-                        <?php if ($status === 'active'): ?>
-                            <form
-                                method="post"
-                                action="/admin/profile/api-tokens/<?= $tokenId ?>/revoke"
-                                data-prime-confirm-form="<?= $this->e($this->t('admin.view_profile_index.jeton_api_confirmer_revoke')) ?>"
-                            >
-                                <?= $this->raw($this->csrfField()) ?>
-                                <button type="submit" class="pc-btn pc-btn--danger pc-btn--sm"><?= $this->e($this->t('admin.view_profile_index.jeton_api_revoquer')) ?></button>
-                            </form>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-        </div>
+        <h3 class="pc-card__title"><?= $this->e($this->t('admin.view_profile_index.jeton_api_liste_titre')) ?></h3>
+        <?= $this->raw($this->insert('admin::components/api-tokens-table', [
+            'tokens' => $apiTokens,
+            'revokeAction' => '/admin/profile/api-tokens/{id}/revoke',
+        ])) ?>
     <?php else: ?>
         <p class="pc-text-sm pc-text-muted"><?= $this->e($this->t('admin.view_profile_index.jeton_api_aucun')) ?></p>
     <?php endif; ?>

@@ -13,6 +13,7 @@ $links = [
     'scheduler' => ['/admin/tools/scheduler', 'clock'],
     'queue' => ['/admin/tools/queue', 'layers'],
     'system' => ['/admin/tools/system', 'activity'],
+    'api' => ['/admin/tools/api', 'code'],
 ];
 ?>
 <nav class="pc-subnav" aria-label="<?= $this->e($this->t('admin.tools.title')) ?>">

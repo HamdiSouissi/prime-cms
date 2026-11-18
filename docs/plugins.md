@@ -189,3 +189,47 @@ Un plugin s'intègre aux nouveaux services sans code d'interface :
 - **Diagnostic** : filtre `system.checks` pour ajouter des contrôles à **Outils › État du système**.
 
 Le plugin de référence `hello-prime` illustre la traduction de tous ses libellés (`content/plugins/hello-prime/lang/`).
+
+## API REST des plugins
+
+`PluginContext::api()` déclare des routes sous `/api/{slug}/v1`. Elles bénéficient de toute la mécanique du noyau :
+- les mêmes middlewares : activation, authentification par jeton ou par session, limite de débit, contrôle du corps, capacité ;
+- le même format d'erreur ;
+- une entrée dans `GET /api/v1/openapi.json`.
+
+```php
+public function register(PluginContext $context): void
+{
+    // Schéma réutilisable dans la description OpenAPI (préfixez le nom par celui du plugin).
+    $context->api()->schema('HelloPrimeGreeting', [
+        'type' => 'object',
+        'properties' => ['id' => ['type' => 'integer'], 'message' => ['type' => 'string']],
+    ]);
+
+    // Lecture publique : `public: true` doit être explicite.
+    $context->api()->get('/greetings', [GreetingsApi::class, 'index'], public: true, options: [
+        'summary' => 'Latest greetings',
+        'response' => ['$ref' => '#/components/schemas/HelloPrimeGreeting'],
+    ]);
+
+    // Écriture protégée par une capacité déclarée par le plugin.
+    $context->api()->post('/greetings', [GreetingsApi::class, 'store'], permission: 'hello_prime.manage', options: [
+        'errors' => [401, 403, 422],
+    ]);
+}
+```
+
+**Règles :**
+- **Accès toujours explicite.** Chaque route nomme une capacité (`permission:`), ou `ApiRoute::AUTHENTICATED` pour « tout appelant authentifié », ou se déclare `public: true`. Sans l'un des deux, une `InvalidArgumentException` est levée dès l'enregistrement.
+- **Pas de doublon.** Deux routes qui répondent à la même méthode et à la même forme d'URL lèvent une `LogicException` qui nomme les deux déclarants.
+- **Données de la requête.**
+  - Le gestionnaire reçoit la `Request`, les paramètres de chemin par leur nom et les services du conteneur.
+  - Le corps JSON validé se lit avec `$request->attribute('api.body')`.
+  - L'utilisateur se lit avec `$request->attribute('api.user')` ; ses capacités sont déjà réduites à celles du jeton.
+- **Erreurs.**
+  - Une exception levée par le gestionnaire devient une erreur 500 `server_error`, sans aucun détail. Elle est journalisée avec le slug du plugin, qui reste actif.
+  - Pour renvoyer une erreur au format commun, utilisez `Prime\Api\ApiError::response('validation_failed', 422, $request, ['fields' => [...]])`.
+- **Capacités.** Celles déclarées par `capabilities()->register()` sont proposées à la création d'un jeton, comme celles du noyau.
+- **Ressources du noyau.** Le filtre `api.resource.{entry|term|user}` permet d'ajouter des membres à une ressource. Un résultat invalide (exception, autre chose qu'un tableau, `id` modifié) est ignoré.
+
+Le plugin `hello-prime` sert de référence : voir `content/plugins/hello-prime/src/Api/GreetingsApi.php`.

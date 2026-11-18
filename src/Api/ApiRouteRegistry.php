@@ -32,8 +32,35 @@ final class ApiRouteRegistry
      */
     private array $routes = [];
 
+    /**
+     * Reusable OpenAPI component schemas declared by plugins.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private array $schemas = [];
+
     public function __construct(private readonly Router $router)
     {
+    }
+
+    /**
+     * @param array<string, mixed> $schema
+     */
+    public function addSchema(string $name, array $schema): void
+    {
+        if (preg_match('/^[A-Za-z][A-Za-z0-9]*$/', $name) !== 1) {
+            throw new LogicException(sprintf('OpenAPI schema name [%s] must be alphanumeric.', $name));
+        }
+
+        $this->schemas[$name] = $schema;
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    public function schemas(): array
+    {
+        return $this->schemas;
     }
 
     public function add(ApiRoute $route, string $prefix = self::CORE_PREFIX, string $owner = 'core'): void

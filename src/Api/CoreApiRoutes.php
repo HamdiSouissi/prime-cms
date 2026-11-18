@@ -9,6 +9,7 @@ use Prime\Api\Controller\ContentController;
 use Prime\Api\Controller\MeController;
 use Prime\Api\Controller\MediaController;
 use Prime\Api\Controller\MenusController;
+use Prime\Api\Controller\OpenApiController;
 use Prime\Api\Controller\SettingsController;
 use Prime\Api\Controller\SiteController;
 use Prime\Api\Controller\TermsController;
@@ -49,6 +50,7 @@ final class CoreApiRoutes
 
         return [
             new ApiRoute('GET', '/', [ApiIndexController::class, '__invoke'], public: true, summary: 'API entry point', tag: 'core', responseSchema: ['$ref' => '#/components/schemas/Index'], name: 'api.index'),
+            new ApiRoute('GET', '/openapi.json', [OpenApiController::class, 'show'], public: true, summary: 'OpenAPI 3.1 description of the operations available to the caller', tag: 'core', name: 'api.openapi'),
             new ApiRoute('GET', '/site', [SiteController::class, 'show'], public: true, summary: 'Site identity', tag: 'site', responseSchema: ['$ref' => '#/components/schemas/Site']),
             new ApiRoute('GET', '/types', [TypesController::class, 'index'], public: true, summary: 'Content types visible to the caller', tag: 'site'),
             new ApiRoute('GET', '/me', [MeController::class, 'show'], permission: ApiRoute::AUTHENTICATED, summary: 'Current account and token abilities', tag: 'me', errors: [401]),

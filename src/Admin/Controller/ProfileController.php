@@ -280,6 +280,9 @@ final class ProfileController
         // Increment `session_version`, revoke all remember tokens, AND keep current session alive!
         $nextVersion = $this->users->updatePassword($user->id, $newPassword);
         $this->auth->syncCurrentSessionVersion($nextVersion);
+        if ((string) $request->body('revoke_api_tokens', '') === '1') {
+            $this->apiTokens->revokeAllForUser($user->id);
+        }
         $this->passwordResets->sendPasswordChangedEmail($user, $this->siteName());
 
         $this->session->flash('_profile.tab', 'security');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\Admin;
 
+use Prime\Admin\Controller\ApiToolsController;
 use Prime\Admin\Controller\ContentController;
 use Prime\Admin\Controller\DashboardController;
 use Prime\Admin\Controller\MediaController;
@@ -842,6 +843,12 @@ final class AdminServiceProvider extends ServiceProvider
                 $r->get('/tools/system', [ToolsController::class, 'system'])
                     ->middleware('can:settings.manage')
                     ->name('tools.system');
+                $r->get('/tools/api', [ApiToolsController::class, 'index'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.api');
+                $r->post('/tools/api/tokens/{id:\d+}/revoke', [ApiToolsController::class, 'revoke'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.api.revoke');
 
                 // Backwards-compatible redirects from Phase 2 placeholder content routes
                 $r->get('/pages', static fn (): Response => Response::redirect('/admin/content/page'))
@@ -1083,6 +1090,7 @@ final class AdminServiceProvider extends ServiceProvider
             ['tools.scheduler', 'admin.menu.tools_items.scheduler', 'clock', '/admin/tools/scheduler', 10],
             ['tools.queue', 'admin.menu.tools_items.queue', 'layers', '/admin/tools/queue', 20],
             ['tools.system', 'admin.menu.tools_items.system', 'activity', '/admin/tools/system', 30],
+            ['tools.api', 'admin.menu.tools_items.api', 'code', '/admin/tools/api', 40],
         ] as [$id, $label, $icon, $url, $position]) {
             $menu->addChild('tools', new MenuItem(
                 id: $id,

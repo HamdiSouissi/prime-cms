@@ -162,12 +162,12 @@ return [
         ['name' => 'api.enabled', 'label' => 'Activer l’API REST', 'type' => 'toggle', 'section' => 'api', 'default' => true, 'priority' => 10],
         ['name' => 'api.public_read', 'label' => 'Lecture publique sans authentification', 'type' => 'toggle', 'section' => 'api', 'default' => true, 'priority' => 20,
             'description' => 'Quand activé, les contenus publiés sont lisibles sans jeton d’API.'],
-        ['name' => 'api.cors_origins', 'label' => 'Origines CORS autorisées', 'type' => 'textarea', 'section' => 'api', 'default' => '', 'priority' => 30,
+        ['name' => 'api.cors_origins', 'label' => 'Origines CORS autorisées', 'type' => 'textarea', 'section' => 'api', 'default' => '', 'rules' => 'origins', 'priority' => 30,
             'description' => 'Une origine par ligne. Laissez vide pour n’envoyer aucun en-tête CORS.'],
-        ['name' => 'api.rate_limit_authenticated', 'label' => 'Limite de débit par jeton (requêtes par minute)', 'type' => 'number', 'section' => 'api', 'default' => 60, 'rules' => 'min:1|max:10000', 'priority' => 40],
-        ['name' => 'api.rate_limit_anonymous', 'label' => 'Limite de débit anonyme (requêtes par minute)', 'type' => 'number', 'section' => 'api', 'default' => 20, 'rules' => 'min:1|max:10000', 'priority' => 50],
-        ['name' => 'api.max_body_kb', 'label' => 'Taille maximale du corps (Ko)', 'type' => 'number', 'section' => 'api', 'default' => 1024, 'rules' => 'min:1|max:10240', 'priority' => 60],
-        ['name' => 'api.token_max_days', 'label' => 'Durée maximale de vie d’un jeton (jours)', 'type' => 'number', 'section' => 'api', 'default' => 365, 'rules' => 'min:1|max:3650', 'priority' => 70],
+        ['name' => 'api.rate_limit_authenticated', 'label' => 'Limite de débit par jeton (requêtes par minute)', 'type' => 'number', 'section' => 'api', 'default' => 120, 'rules' => 'min:1|max:10000', 'priority' => 40],
+        ['name' => 'api.rate_limit_anonymous', 'label' => 'Limite de débit anonyme (requêtes par minute)', 'type' => 'number', 'section' => 'api', 'default' => 60, 'rules' => 'min:1|max:10000', 'priority' => 50],
+        ['name' => 'api.max_body_kb', 'label' => 'Taille maximale du corps (Ko)', 'type' => 'number', 'section' => 'api', 'default' => 1024, 'rules' => 'min:16|max:65536', 'priority' => 60],
+        ['name' => 'api.token_max_days', 'label' => 'Durée maximale de vie d’un jeton (jours)', 'type' => 'number', 'section' => 'api', 'default' => 365, 'rules' => 'min:0|max:3650', 'priority' => 70],
 
         // — Lecture —
         ['name' => 'reading.front_mode', 'label' => 'Sur la page d’accueil', 'type' => 'radio', 'section' => 'reading', 'default' => 'posts', 'priority' => 10, 'options' => [

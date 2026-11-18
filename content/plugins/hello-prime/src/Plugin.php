@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HelloPrime;
 
 use Closure;
+use HelloPrime\Api\GreetingsApi;
 use HelloPrime\Controller\HelloPrimeController;
 use Prime\Admin\AdminContext;
 use Prime\Admin\Menu\AdminMenu;
@@ -266,6 +267,27 @@ final class Plugin extends AbstractPlugin
         $context->router()->frontGroup(static function (Router $r): void {
             $r->get('/hello-prime', [HelloPrimeController::class, 'publicPage'])->name('public');
         });
+
+        // 12 bis. REST API under `/api/hello-prime/v1` (Phase 10): public reading, protected writing.
+        $context->api()->schema('HelloPrimeGreeting', [
+            'type' => 'object',
+            'properties' => [
+                'id' => ['type' => 'integer'],
+                'author' => ['type' => 'string'],
+                'message' => ['type' => 'string'],
+                'created_at' => ['type' => 'string', 'format' => 'date-time'],
+            ],
+        ]);
+        $context->api()->get('/greetings', [GreetingsApi::class, 'index'], public: true, options: [
+            'summary' => 'Latest greetings',
+            'response' => ['type' => 'object', 'properties' => ['data' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/HelloPrimeGreeting']]]],
+        ]);
+        $context->api()->post('/greetings', [GreetingsApi::class, 'store'], permission: self::CAPABILITY_MANAGE, options: [
+            'summary' => 'Add a greeting',
+            'request' => ['type' => 'object', 'required' => ['message'], 'properties' => ['message' => ['type' => 'string', 'maxLength' => 280], 'author' => ['type' => 'string', 'maxLength' => 80]]],
+            'response' => ['type' => 'object', 'properties' => ['data' => ['$ref' => '#/components/schemas/HelloPrimeGreeting']]],
+            'errors' => [401, 403, 422],
+        ]);
 
         // 13. Observe `media.uploaded` lifecycle event (Phase 7 example)
         $context->hooks()->on('media.uploaded', static function (mixed $media) use ($context): void {
