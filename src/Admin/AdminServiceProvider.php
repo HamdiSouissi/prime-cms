@@ -405,6 +405,7 @@ final class AdminServiceProvider extends ServiceProvider
 
             return new UserController(
                 app: $this->app,
+                apiTokens: $this->app->get(ApiTokenService::class),
                 view: $this->app->get(View::class),
                 context: $this->app->get(AdminContext::class),
                 auth: $this->app->get(Auth::class),

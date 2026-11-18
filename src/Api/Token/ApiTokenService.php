@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\Api\Token;
 
+use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
 use Prime\Api\Repository\ApiTokenRepository;
