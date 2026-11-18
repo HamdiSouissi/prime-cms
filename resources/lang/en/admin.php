@@ -1534,7 +1534,6 @@ return [
             'tagline' => 'Tagline',
             'time_format' => 'Time format',
             'timezone' => 'Timezone',
-            'timezone_filter' => 'Filter timezones',
             'title' => 'General',
             'week_starts' => 'Week starts on',
         ],
@@ -1543,6 +1542,7 @@ return [
             'none' => 'No media',
             'remove' => 'Remove media',
         ],
+        'timezone_filter' => 'Filter timezones',
         'languages' => [
             'admin_language' => 'Administration language',
             'available' => 'Available languages',

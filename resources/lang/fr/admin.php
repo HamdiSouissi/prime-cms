@@ -1534,7 +1534,6 @@ return [
             'tagline' => 'Sous-titre',
             'time_format' => 'Format d’heure',
             'timezone' => 'Fuseau horaire',
-            'timezone_filter' => 'Filtrer les fuseaux horaires',
             'title' => 'Général',
             'week_starts' => 'Premier jour de la semaine',
         ],
@@ -1543,6 +1542,7 @@ return [
             'none' => 'Aucun média',
             'remove' => 'Retirer le média',
         ],
+        'timezone_filter' => 'Filtrer les fuseaux horaires',
         'languages' => [
             'admin_language' => 'Langue d’administration',
             'available' => 'Langues disponibles',
