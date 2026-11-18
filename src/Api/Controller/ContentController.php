@@ -38,7 +38,7 @@ final class ContentController extends ApiController
         $search = (string) $request->query('search', '');
         $status = (string) $request->query('status', 'publish');
         $user = $this->currentUser($request);
-        $locale = $user?->locale ?? 'fr';
+        $locale = $user !== null ? $user->locale : 'fr';
 
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
@@ -104,7 +104,7 @@ final class ContentController extends ApiController
     public function byType(Request $request, string $type): Response
     {
         $user = $this->currentUser($request);
-        $locale = $user?->locale ?? 'fr';
+        $locale = $user !== null ? $user->locale : 'fr';
 
         if (!$this->types->has($type)) {
             return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
