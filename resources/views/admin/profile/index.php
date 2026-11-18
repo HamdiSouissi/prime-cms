@@ -549,7 +549,7 @@ ob_start();
                 </select>
             </div>
 
-            <button type="submit" class="pc-btn pc-btn--primary"><?= $this->e($this->t('admin.view_profile_index.jeton_api_creer')) ?></button>
+            <button type="submit" class="pc-btn pc-btn--secondary"><?= $this->e($this->t('admin.view_profile_index.jeton_api_creer')) ?></button>
         </div>
     </form>
 
