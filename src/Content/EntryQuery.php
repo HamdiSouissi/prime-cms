@@ -64,6 +64,10 @@ final class EntryQuery
     /** @var list<array{taxonomy: string, values: list<int|string>}> */
     private array $termFilters = [];
 
+    private ?string $after = null;
+
+    private ?string $before = null;
+
     /** @var list<array{key: string, operator: string, value: mixed}> */
     private array $metaFilters = [];
 
@@ -124,7 +128,12 @@ final class EntryQuery
     public function statuses(array $statuses): self
     {
         $clone = clone $this;
-        $clone->statuses = array_values(array_filter($statuses, static fn (string $s): bool => in_array($s, Entry::ALL_STATUSES, true)));
+        foreach ($statuses as $status) {
+            if (!in_array($status, Entry::ALL_STATUSES, true)) {
+                throw new InvalidArgumentException(sprintf('Statut inconnu [%s].', $status));
+            }
+        }
+        $clone->statuses = $statuses;
         if (in_array(Entry::STATUS_TRASH, $clone->statuses, true)) {
             $clone->includeTrash = true;
         }
@@ -230,6 +239,22 @@ final class EntryQuery
     {
         $clone = clone $this;
         $clone->authorId = $authorId;
+
+        return $clone;
+    }
+
+    public function after(string $dateTime): self
+    {
+        $clone = clone $this;
+        $clone->after = $dateTime;
+
+        return $clone;
+    }
+
+    public function before(string $dateTime): self
+    {
+        $clone = clone $this;
+        $clone->before = $dateTime;
 
         return $clone;
     }
@@ -517,7 +542,18 @@ final class EntryQuery
             }
         }
 
-        // 6. Search (MySQL/MariaDB FULLTEXT IN BOOLEAN MODE for >= 3 chars, LIKE fallback otherwise)
+        // 6. after / before filters on updated_at
+        if ($this->after !== null) {
+            $clauses[] = 'e.updated_at >= ?';
+            $bindings[] = $this->after;
+        }
+
+        if ($this->before !== null) {
+            $clauses[] = 'e.updated_at <= ?';
+            $bindings[] = $this->before;
+        }
+
+        // 7. Search (MySQL/MariaDB FULLTEXT IN BOOLEAN MODE for >= 3 chars, LIKE fallback otherwise)
         if ($this->search !== null) {
             $booleanQuery = $this->buildFulltextBooleanQuery($this->search);
             if ($this->isMysqlDriver() && mb_strlen($this->search) >= 3 && $booleanQuery !== '') {

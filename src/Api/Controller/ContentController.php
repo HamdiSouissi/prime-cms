@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Api\Controller;
 
 use Prime\Auth\User;
+use Prime\Api\Resource\EntryResource;
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\Entry;
 use Prime\Content\EntryQuery;
@@ -14,6 +15,7 @@ use Prime\Content\Exception\ContentConflictException;
 use Prime\Content\Exception\ContentForbiddenException;
 use Prime\Content\Exception\ContentLockedException;
 use Prime\Content\Exception\ContentValidationException;
+use Prime\Hooks\Hooks;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Settings\Settings;
@@ -37,6 +39,8 @@ final class ContentController extends ApiController
         private readonly EntryService $entryService,
         private readonly UrlGenerator $urlGenerator,
         private readonly Settings $settings,
+        private readonly Hooks $hooks,
+        private readonly EntryResource $entryResource,
     ) {
     }
 
@@ -328,8 +332,14 @@ final class ContentController extends ApiController
                 continue;
             }
 
-            $entryArray = $this->entryToArray($entry, $fieldsParam);
-            $data[] = $entryArray;
+            $fields = $fieldsParam !== ''
+                ? array_filter(array_map('trim', explode(',', $fieldsParam)))
+                : null;
+
+            $data[] = $this->applyResourceFilter(
+                $this->entryResource->toArray($entry, $fields),
+                $entry,
+            );
         }
 
         $lastPage = $paginated['last_page'];
@@ -338,83 +348,36 @@ final class ContentController extends ApiController
     }
 
     /**
-     * @param array<string, mixed>|null $fields
      * @return array<string, mixed>
      */
-    private function entryToArray(Entry $entry, string $fieldsParam = ''): array
+    private function entryToArray(Entry $entry, ?array $fields = null): array
     {
-        $fields = $fieldsParam !== ''
-            ? array_filter(array_map('trim', explode(',', $fieldsParam)))
-            : [];
-
-        $terms = [];
-        foreach ($entry->terms as $taxonomy => $termList) {
-            foreach ($termList as $term) {
-                $terms[] = [
-                    'taxonomy' => $taxonomy,
-                    'slug' => $term->slug,
-                    'name' => $term->name,
-                ];
-            }
-        }
-
-        $full = [
-            'id' => $entry->id,
-            'type' => $entry->type,
-            'title' => $entry->title,
-            'slug' => $entry->slug,
-            'status' => $entry->status,
-            'content' => $entry->content,
-            'content_html' => $entry->contentHtml,
-            'excerpt' => $entry->excerpt,
-            'author_id' => $entry->authorId,
-            'author_name' => $entry->authorName,
-            'published_at' => $entry->publishedAt,
-            'created_at' => $entry->createdAt,
-            'updated_at' => $entry->updatedAt,
-            'featured_image_id' => (int) ($entry->meta('_featured_media_id') ?? 0),
-            'terms' => $terms,
-            'url' => $this->urlGenerator->entryUrl($entry),
-            '_links' => $this->entryLinks($entry),
-        ];
-
-        if ($fields === []) {
-            return $full;
-        }
-
-        $filtered = [];
-        foreach ($fields as $field) {
-            if (array_key_exists($field, $full)) {
-                $filtered[$field] = $full[$field];
-            }
-        }
-
-        return $filtered;
+        return $this->applyResourceFilter(
+            $this->entryResource->toArray($entry, $fields),
+            $entry,
+        );
     }
 
     /**
-     * @return array<string, array<string, string>>
+     * Applique le filtre `api.resource.entry` avec protection contre les exceptions de plugin.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
-    private function entryLinks(Entry $entry): array
+    private function applyResourceFilter(array $data, Entry $entry): array
     {
-        $links = [
-            'self' => $this->urlGenerator->absolute('/api/v1/content/' . $entry->type . '/' . $entry->id),
-            'collection' => $this->urlGenerator->absolute('/api/v1/content/' . $entry->type),
-        ];
+        $filtered = $data;
 
-        if ($entry->authorId !== null) {
-            $links['author'] = $this->urlGenerator->absolute('/api/v1/users/' . $entry->authorId);
-        }
-
-        foreach ($entry->terms as $taxonomy => $termList) {
-            foreach ($termList as $term) {
-                $links['term:' . $taxonomy . ':' . $term->slug] = $this->urlGenerator->absolute(
-                    '/api/v1/terms/' . $taxonomy . '/' . $term->id,
-                );
+        try {
+            $result = $this->hooks->apply('api.resource.entry', $data, $entry);
+            if (is_array($result)) {
+                $filtered = $result;
             }
+        } catch (\Throwable) {
+            // Une erreur de plugin ne casse jamais la réponse API.
         }
 
-        return $links;
+        return $filtered;
     }
 
     /**
@@ -423,7 +386,10 @@ final class ContentController extends ApiController
     private function respondWithEntry(Request $request, Entry $entry, ?User $user, int $status = 200): Response
     {
         $response = $this->json([
-            'data' => $this->entryToArray($entry),
+            'data' => $this->applyResourceFilter(
+                $this->entryResource->toArray($entry),
+                $entry,
+            ),
         ], $status);
 
         // ETag basé sur la date de mise à jour (révision du contenu).

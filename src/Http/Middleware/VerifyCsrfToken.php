@@ -32,6 +32,11 @@ final class VerifyCsrfToken implements MiddlewareInterface
      */
     public function process(Request $request, callable $next): Response
     {
+        // L'API gère son propre CSRF : ignorer toutes les routes sous /api/.
+        if (str_starts_with($request->path(), '/api/')) {
+            return $next($request);
+        }
+
         if (!in_array($request->method(), self::PROTECTED_METHODS, true)) {
             return $next($request);
         }
