@@ -1302,6 +1302,11 @@ return [
         'settings' => [
             'emails' => 'E-mails',
             'general' => 'General',
+            'media' => [
+                'choose' => 'Choose a media',
+                'none' => 'No media',
+                'remove' => 'Remove media',
+            ],
             'performance' => 'Performance',
             'permalinks' => 'Permalinks',
             'reading' => 'Reading',
