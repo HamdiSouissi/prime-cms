@@ -10,6 +10,7 @@ use Prime\Api\Repository\ApiTokenRepository;
 use Prime\Auth\Capabilities;
 use Prime\Auth\User;
 use Prime\Auth\UserRepository;
+use Prime\Settings\Settings;
 
 /**
  * Service métier pour les jetons d'API REST (bearer tokens).
@@ -24,6 +25,7 @@ final class ApiTokenService
         private readonly ApiTokenRepository $tokens,
         private readonly UserRepository $users,
         private readonly Capabilities $capabilities,
+        private readonly Settings $settings,
     ) {
     }
 
@@ -46,6 +48,17 @@ final class ApiTokenService
 
         // Ne garder que les capacités que l'utilisateur possède réellement ($user->can()).
         $actual = array_values(array_filter($abilities, static fn (string $cap): bool => $user->can($cap)));
+
+        // Clamp the expiration to the maximum allowed lifetime (`api.token_max_days`).
+        $maxDays = (int) $this->settings->get('api.token_max_days', 365);
+        if ($maxDays > 0 && $expiresAt !== null) {
+            $expiresAt = $expiresAt->setTimezone(new DateTimeZone('UTC'));
+            $maxExpiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+                ->add(new DateInterval('P' . $maxDays . 'D'));
+            if ($expiresAt > $maxExpiresAt) {
+                $expiresAt = $maxExpiresAt;
+            }
+        }
 
         $expiresAtString = $expiresAt !== null
             ? $expiresAt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')
