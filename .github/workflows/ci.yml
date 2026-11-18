@@ -27,9 +27,15 @@ jobs:
 
       - name: Verify runtime without vendor/
         run: |
-          php bin/prime list
-          php bin/prime about
-          php bin/prime routes
+          # Sans annotation, un plantage au démarrage n'est visible que dans le log du job,
+          # illisible pour qui n'a que l'accès en lecture : on en fait une annotation.
+          for cmd in list about routes; do
+            if ! php bin/prime "$cmd" > /tmp/boot.log 2>&1; then
+              echo "::error title=bin/prime $cmd ne démarre pas::$(head -n 6 /tmp/boot.log | tr '\n' ' ' | cut -c1-900)"
+              cat /tmp/boot.log
+              exit 1
+            fi
+          done
 
       - name: Verify compiled admin CSS is up to date
         run: |

@@ -308,8 +308,9 @@ final class ErrorHandler
     private function renderJson(Throwable $exception, int $status, array $headers): Response
     {
         $error = [
-            'code' => $status,
+            'code' => $this->errorCode($status),
             'message' => $this->publicMessage($exception, $status),
+            'status' => $status,
         ];
 
         if ($this->debug && $status >= 500) {
@@ -320,6 +321,30 @@ final class ErrorHandler
         }
 
         return Response::json(['error' => $error], $status, $headers);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function errorCodes(): array
+    {
+        return [
+            400 => 'invalid_request',
+            401 => 'unauthenticated',
+            403 => 'forbidden',
+            404 => 'not_found',
+            405 => 'method_not_allowed',
+            419 => 'csrf_invalid',
+            429 => 'too_many_requests',
+            500 => 'internal_error',
+        ];
+    }
+
+    private function errorCode(int $status): string
+    {
+        $codes = $this->errorCodes();
+
+        return $codes[$status] ?? 'error';
     }
 
     /**

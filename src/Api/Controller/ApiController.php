@@ -52,29 +52,6 @@ abstract class ApiController
     }
 
     /**
-     * Retourne une réponse JSON 422 d'erreur de validation.
-     *
-     * Format : {"error": {"code": "validation_failed", "message": "...",
-     * "status": 422, "fields": {champ: message traduit}}}
-     *
-     * @param array<string, string> $fields  Champ => message d'erreur traduit
-     * @param array<string, string> $headers
-     */
-    protected function validationFailed(array $fields, array $headers = []): Response
-    {
-        return Response::json([
-            'error' => [
-                'code' => 'validation_failed',
-                'message' => t('api.errors.validation_failed', [], 'fr'),
-                'status' => 422,
-                'fields' => $fields,
-            ],
-        ], 422, array_merge([
-            'Content-Type' => 'application/json',
-        ], $headers));
-    }
-
-    /**
      * Retourne une réponse JSON 401 non authentifié.
      *
      * @param array<string, mixed> $replace

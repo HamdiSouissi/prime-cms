@@ -5,17 +5,11 @@ declare(strict_types=1);
 namespace Prime\Api\Controller;
 
 use Prime\Auth\User;
-use Prime\Api\Resource\EntryResource;
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\Entry;
 use Prime\Content\EntryQuery;
 use Prime\Content\EntryRepository;
 use Prime\Content\EntryService;
-use Prime\Content\Exception\ContentConflictException;
-use Prime\Content\Exception\ContentForbiddenException;
-use Prime\Content\Exception\ContentLockedException;
-use Prime\Content\Exception\ContentValidationException;
-use Prime\Hooks\Hooks;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Settings\Settings;
@@ -23,12 +17,8 @@ use Prime\Site\UrlGenerator;
 
 /**
  * `GET /api/v1/content` — Liste des contenus.
- * `GET /api/v1/content/{type}` — Contenus d'un type donné.
- * `GET /api/v1/content/{type}/{id}` — Contenu unique par ID ou slug.
- * `POST /api/v1/content/{type}` — Créer un contenu.
- * `PATCH /api/v1/content/{type}/{id}` — Modifier un contenu.
- * `DELETE /api/v1/content/{type}/{id}` — Corbeille ou suppression définitive.
- * `POST /api/v1/content/{type}/{id}/restore` — Restaurer depuis la corbeille.
+ * `GET /api/v1/content/{type}` — Contenus d'un type donné (avec `?status=`, `?page=`, `?per_page=`).
+ * `GET /api/v1/content/{type}/{slug}` — Contenu unique par slug.
  */
 final class ContentController extends ApiController
 {
@@ -39,234 +29,18 @@ final class ContentController extends ApiController
         private readonly EntryService $entryService,
         private readonly UrlGenerator $urlGenerator,
         private readonly Settings $settings,
-        private readonly Hooks $hooks,
-        private readonly EntryResource $entryResource,
     ) {
     }
 
     public function index(Request $request): Response
     {
-        return $this->listEntries($request, null);
-    }
-
-    public function byType(Request $request, string $type): Response
-    {
-        if (!$this->types->has($type)) {
-            return $this->notFound('unknown_type', ['type' => $type]);
-        }
-
-        return $this->listEntries($request, $type);
-    }
-
-    public function show(Request $request, string $type, string $id): Response
-    {
-        $user = $this->currentUser($request);
-        $locale = $user !== null ? $user->locale : 'fr';
-
-        if (!$this->types->has($type)) {
-            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
-        }
-
-        $entry = ctype_digit($id)
-            ? $this->entries->find((int) $id)
-            : $this->entries->findBySlug($type, $id);
-
-        if ($entry === null || $entry->type !== $type) {
-            return $this->notFound('not_found', locale: $locale);
-        }
-
-        if (!$this->isReadable($entry, $user)) {
-            return $this->notFound('not_found', locale: $locale);
-        }
-
-        $unauthorized = $this->requirePublicRead($user);
-        if ($unauthorized !== null) {
-            return $unauthorized;
-        }
-
-        return $this->respondWithEntry($request, $entry, $user);
-    }
-
-    public function create(Request $request, string $type): Response
-    {
-        $user = $this->currentUser($request);
-        if ($user === null) {
-            return $this->unauthorized();
-        }
-
-        $locale = $user->locale;
-        $typeDef = $this->types->get($type);
-        if ($typeDef === null) {
-            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
-        }
-
-        $body = $request->attribute('api.body');
-        if (!is_array($body)) {
-            return $this->error('invalid_request', [], 400, 'invalid_request', $locale);
-        }
-
-        try {
-            $entry = $this->entryService->create($type, $body, $user);
-        } catch (ContentValidationException $e) {
-            return $this->validationFailed($this->flattenValidationErrors($e));
-        } catch (ContentForbiddenException) {
-            return $this->forbidden();
-        }
-
-        return $this->respondWithEntry($request, $entry, $user, 201);
-    }
-
-    public function update(Request $request, string $type, string $id): Response
-    {
-        $user = $this->currentUser($request);
-        if ($user === null) {
-            return $this->unauthorized();
-        }
-
-        $locale = $user->locale;
-        $typeDef = $this->types->get($type);
-        if ($typeDef === null) {
-            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
-        }
-
-        $entry = ctype_digit($id)
-            ? $this->entries->find((int) $id)
-            : $this->entries->findBySlug($type, $id);
-
-        if ($entry === null || $entry->type !== $type) {
-            return $this->notFound('not_found', locale: $locale);
-        }
-
-        // Concurrence : If-Match périmé → 412.
-        $ifMatch = $request->header('if-match');
-        $currentEtag = '"' . $entry->updatedAt . '"';
-        if ($ifMatch !== null && $ifMatch !== '' && $ifMatch !== $currentEtag) {
-            return $this->error('precondition_failed', [], 412, 'precondition_failed', $locale);
-        }
-
-        $body = $request->attribute('api.body');
-        if (!is_array($body)) {
-            return $this->error('invalid_request', [], 400, 'invalid_request', $locale);
-        }
-
-        try {
-            $updated = $this->entryService->update((int) $entry->id, $body, $user);
-        } catch (ContentValidationException $e) {
-            return $this->validationFailed($this->flattenValidationErrors($e));
-        } catch (ContentForbiddenException) {
-            return $this->forbidden();
-        } catch (ContentLockedException $e) {
-            return Response::json([
-                'error' => [
-                    'code' => 'conflict',
-                    'message' => $e->getMessage(),
-                    'status' => 409,
-                ],
-            ], 409, ['Content-Type' => 'application/json']);
-        } catch (ContentConflictException $e) {
-            return Response::json([
-                'error' => [
-                    'code' => 'conflict',
-                    'message' => $e->getMessage(),
-                    'status' => 409,
-                ],
-            ], 409, ['Content-Type' => 'application/json']);
-        }
-
-        return $this->respondWithEntry($request, $updated, $user);
-    }
-
-    public function trash(Request $request, string $type, string $id): Response
-    {
-        $user = $this->currentUser($request);
-        if ($user === null) {
-            return $this->unauthorized();
-        }
-
-        $locale = $user->locale;
-        $typeDef = $this->types->get($type);
-        if ($typeDef === null) {
-            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
-        }
-
-        $entry = ctype_digit($id)
-            ? $this->entries->find((int) $id)
-            : $this->entries->findBySlug($type, $id);
-
-        if ($entry === null || $entry->type !== $type) {
-            return $this->notFound('not_found', locale: $locale);
-        }
-
-        $force = (string) $request->query('force', '0') === '1';
-
-        try {
-            if ($force) {
-                $this->entryService->delete((int) $entry->id, $user);
-            } else {
-                $this->entryService->trash((int) $entry->id, $user);
-            }
-        } catch (ContentForbiddenException) {
-            return $this->forbidden();
-        } catch (ContentConflictException $e) {
-            return Response::json([
-                'error' => [
-                    'code' => 'conflict',
-                    'message' => $e->getMessage(),
-                    'status' => 409,
-                ],
-            ], 409, ['Content-Type' => 'application/json']);
-        }
-
-        return Response::noContent()->withStatus(204);
-    }
-
-    public function restore(Request $request, string $type, string $id): Response
-    {
-        $user = $this->currentUser($request);
-        if ($user === null) {
-            return $this->unauthorized();
-        }
-
-        $locale = $user->locale;
-        $typeDef = $this->types->get($type);
-        if ($typeDef === null) {
-            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
-        }
-
-        $entry = ctype_digit($id)
-            ? $this->entries->find((int) $id)
-            : $this->entries->findBySlug($type, $id);
-
-        if ($entry === null || $entry->type !== $type) {
-            return $this->notFound('not_found', locale: $locale);
-        }
-
-        try {
-            $this->entryService->restore((int) $entry->id, $user);
-        } catch (ContentForbiddenException) {
-            return $this->forbidden();
-        }
-
-        return Response::noContent()->withStatus(204);
-    }
-
-    /**
-     * @param string|null $type
-     */
-    private function listEntries(Request $request, ?string $type): Response
-    {
-        $user = $this->currentUser($request);
-        $locale = $user !== null ? $user->locale : 'fr';
-
+        $type = (string) $request->query('type', '');
         $perPage = (int) $request->query('per_page', 20);
         $page = (int) $request->query('page', 1);
-        $status = (string) $request->query('status', Entry::STATUS_PUBLISHED);
         $search = (string) $request->query('search', '');
-        $orderby = (string) $request->query('orderby', 'published_at');
-        $order = (string) $request->query('order', 'DESC');
-        $fieldsParam = (string) $request->query('fields', '');
-        $after = (string) $request->query('after', '');
-        $before = (string) $request->query('before', '');
+        $status = (string) $request->query('status', Entry::STATUS_PUBLISHED);
+        $user = $this->currentUser($request);
+        $locale = $user !== null ? $user->locale : 'fr';
 
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
@@ -284,7 +58,7 @@ final class ContentController extends ApiController
 
         $q = $this->query->newQuery();
 
-        if ($type !== null && $this->types->has($type)) {
+        if ($type !== '' && $this->types->has($type)) {
             $q = $q->type($type);
         }
 
@@ -294,111 +68,203 @@ final class ContentController extends ApiController
             $q = $q->search($search);
         }
 
-        $author = (string) $request->query('author', '');
-        if ($author !== '' && ctype_digit($author)) {
-            $q = $q->author((int) $author);
-        }
-
-        $term = (string) $request->query('term', '');
-        if ($term !== '' && str_contains($term, ':') && $type !== null) {
-            [$taxonomy, $slug] = explode(':', $term, 2);
-            if ($this->isTaxonomyValid($taxonomy)) {
-                $q = $q->whereTerm($taxonomy, [$slug]);
-            }
-        }
-
-        if ($after !== '') {
-            $q = $q->after($after);
-        }
-
-        if ($before !== '') {
-            $q = $q->before($before);
-        }
-
-        if ($orderby !== '') {
-            $q = $q->orderBy($orderby, $order);
-        }
-
-        // Un utilisateur authentifié peut prévisualiser ses propres brouillons.
+        // Un utilisateur authentifié peut prévisualiser ses propres brouillons via EntryService.
         if ($user !== null) {
             $q = $q->includePrivateFor($user);
         }
 
-        $paginated = $q->paginate($page, $perPage);
+        // Total sur l'ensemble des entrées correspondantes (avant limit/offset).
+        $total = $q->count();
+
+        $q = $q->orderBy('published_at', 'DESC')
+            ->limit($perPage)
+            ->offset(($page - 1) * $perPage);
+
+        $items = $q->get();
 
         $data = [];
-        foreach ($paginated['items'] as $entry) {
+        foreach ($items as $entry) {
             if (!$this->isReadable($entry, $user)) {
                 continue;
             }
 
-            $fields = $fieldsParam !== ''
-                ? array_filter(array_map('trim', explode(',', $fieldsParam)))
-                : null;
-
-            $data[] = $this->applyResourceFilter(
-                $this->entryResource->toArray($entry, $fields),
-                $entry,
-            );
+            $data[] = $this->entryToArray($entry);
         }
 
-        $lastPage = $paginated['last_page'];
+        $lastPage = max(1, (int) ceil($total / $perPage));
 
-        return $this->paginated($request, $type ?? 'content', $data, $paginated['total'], $page, $perPage, $lastPage, $user);
+        return $this->paginated($request, 'content', $data, $total, $page, $perPage, $lastPage, $user);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function entryToArray(Entry $entry, ?array $fields = null): array
+    public function byType(Request $request, string $type): Response
     {
-        return $this->applyResourceFilter(
-            $this->entryResource->toArray($entry, $fields),
-            $entry,
-        );
-    }
+        $user = $this->currentUser($request);
+        $locale = $user !== null ? $user->locale : 'fr';
 
-    /**
-     * Applique le filtre `api.resource.entry` avec protection contre les exceptions de plugin.
-     *
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function applyResourceFilter(array $data, Entry $entry): array
-    {
-        $filtered = $data;
+        if (!$this->types->has($type)) {
+            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
+        }
 
-        try {
-            $result = $this->hooks->apply('api.resource.entry', $data, $entry);
-            if (is_array($result)) {
-                $filtered = $result;
+        $perPage = (int) $request->query('per_page', 20);
+        $page = (int) $request->query('page', 1);
+        $status = (string) $request->query('status', Entry::STATUS_PUBLISHED);
+
+        $perPage = max(1, min(100, $perPage));
+        $page = max(1, $page);
+
+        $resolved = $this->resolveStatus($user, $status, $locale);
+        if ($resolved instanceof Response) {
+            return $resolved;
+        }
+        $status = $resolved;
+
+        $unauthorized = $this->requirePublicRead($user);
+        if ($unauthorized !== null) {
+            return $unauthorized;
+        }
+
+        $q = $this->query->newQuery()
+            ->type($type)
+            ->status($status);
+
+        if ($user !== null) {
+            $q = $q->includePrivateFor($user);
+        }
+
+        // Total sur l'ensemble des entrées correspondantes (avant limit/offset).
+        $total = $q->count();
+
+        $q = $q->orderBy('published_at', 'DESC')
+            ->limit($perPage)
+            ->offset(($page - 1) * $perPage);
+
+        $rows = $q->get();
+
+        $data = [];
+        foreach ($rows as $entry) {
+            if (!$this->isReadable($entry, $user)) {
+                continue;
             }
-        } catch (\Throwable) {
-            // Une erreur de plugin ne casse jamais la réponse API.
+
+            $data[] = $this->entryToArray($entry);
         }
 
-        return $filtered;
+        $lastPage = max(1, (int) ceil($total / $perPage));
+
+        return $this->paginated($request, $type, $data, $total, $page, $perPage, $lastPage, $user);
+    }
+
+    public function show(Request $request, string $type, string $slug): Response
+    {
+        $user = $this->currentUser($request);
+        $locale = $user !== null ? $user->locale : 'fr';
+
+        if (!$this->types->has($type)) {
+            return $this->notFound('unknown_type', ['type' => $type], locale: $locale);
+        }
+
+        $entry = $this->entries->findBySlug($type, $slug);
+        if ($entry === null) {
+            return $this->notFound('not_found', locale: $locale);
+        }
+
+        if (!$this->isReadable($entry, $user)) {
+            return $this->notFound('not_found', locale: $locale);
+        }
+
+        $unauthorized = $this->requirePublicRead($user);
+        if ($unauthorized !== null) {
+            return $unauthorized;
+        }
+
+        return $this->withCacheHeaders($request, $this->json([
+            'data' => $this->entryToArray($entry),
+        ]), $user);
     }
 
     /**
-     * @param int $status
+     * Détermine le statut effectif à requêter.
+     *
+     * Un statut inconnu est toujours une erreur 400, y compris pour un appelant anonyme.
+     * Seul un utilisateur autorisé à éditer tout le contenu peut demander un autre statut
+     * que publié ; les autres sont ramenés à `published`.
+     *
+     * @return string|Response Le statut effectif, ou une réponse 400 si le statut est invalide.
      */
-    private function respondWithEntry(Request $request, Entry $entry, ?User $user, int $status = 200): Response
+    private function resolveStatus(?User $user, string $status, string $locale): string|Response
     {
+        if (!in_array($status, Entry::ALL_STATUSES, true)) {
+            return $this->error('invalid_status', [], 400, 'invalid_status', $locale);
+        }
+
+        if ($user === null || !$user->can('content.edit_any')) {
+            return Entry::STATUS_PUBLISHED;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Retourne une réponse 401 quand la lecture publique est désactivée et que
+     * l'appelant est anonyme, null sinon.
+     */
+    private function requirePublicRead(?User $user): ?Response
+    {
+        if ($user === null && !$this->settings->getBool('api.public_read', true)) {
+            return $this->unauthorized('public_read_required');
+        }
+
+        return null;
+    }
+
+    /**
+     * Construit la réponse paginée avec des liens absolus et les en-têtes de cache.
+     *
+     * @param list<array<string, mixed>> $data
+     */
+    private function paginated(
+        Request $request,
+        string $type,
+        array $data,
+        int $total,
+        int $page,
+        int $perPage,
+        int $lastPage,
+        ?User $user,
+    ): Response {
         $response = $this->json([
-            'data' => $this->applyResourceFilter(
-                $this->entryResource->toArray($entry),
-                $entry,
-            ),
-        ], $status);
+            'data' => $data,
+            'meta' => [
+                'type' => $type,
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'total_pages' => $lastPage,
+            ],
+            'links' => $this->paginationLinks($request, $page, $lastPage),
+        ], 200, [
+            'X-Total-Count' => (string) $total,
+        ]);
 
-        // ETag basé sur la date de mise à jour (révision du contenu).
-        $etag = '"' . $entry->updatedAt . '"';
-        $response = $response->withHeader('ETag', $etag);
+        return $this->withCacheHeaders($request, $response, $user);
+    }
 
+    /**
+     * Applique les en-têtes de cache HTTP selon le mode d'authentification.
+     *
+     * - Réponse authentifiée : `Cache-Control: no-store` (jamais mise en cache).
+     * - Lecture anonyme publique : `ETag` + réponse `304` si `If-None-Match` correspond.
+     *
+     * @return Response Une nouvelle instance (les réponses sont immuables).
+     */
+    private function withCacheHeaders(Request $request, Response $response, ?User $user): Response
+    {
         if ($user !== null) {
             return $response->withHeader('Cache-Control', 'no-store');
         }
+
+        $etag = '"' . hash('sha256', $response->body()) . '"';
+        $response = $response->withHeader('ETag', $etag);
 
         if ($request->header('if-none-match') === $etag) {
             return Response::noContent(['ETag' => $etag])->withStatus(304);
@@ -408,29 +274,105 @@ final class ContentController extends ApiController
     }
 
     /**
-     * @return array<string, string>
+     * Détermine si un utilisateur peut lire une entrée.
+     *
+     * - Anonyme : uniquement `publish`.
+     * - Authentifié : les règles `EntryService::canPreview` / `canEdit` s'appliquent.
      */
-    private function flattenValidationErrors(ContentValidationException $e): array
+    private function isReadable(Entry $entry, ?User $user): bool
     {
-        $fields = [];
-        foreach ($e->errors() as $field => $messages) {
-            $fields[$field] = is_array($messages) ? implode('; ', $messages) : (string) $messages;
+        if ($entry->status === Entry::STATUS_PUBLISHED) {
+            return true;
         }
 
-        return $fields;
+        if ($user === null) {
+            return false;
+        }
+
+        $type = $this->types->get($entry->type);
+        if ($type === null) {
+            return false;
+        }
+
+        return $this->entryService->canPreview($user, $entry, $type);
     }
 
-    private function isTaxonomyValid(string $taxonomy): bool
+    /**
+     * @param Entry $entry
+     * @return array<string, mixed>
+     */
+    private function entryToArray(Entry $entry): array
     {
-        $taxonomies = $this->types->all();
-        foreach ($taxonomies as $type) {
-            foreach ($type->taxonomies as $tax) {
-                if ($tax === $taxonomy) {
-                    return true;
-                }
+        $terms = [];
+        foreach ($entry->terms as $taxonomy => $termList) {
+            foreach ($termList as $term) {
+                $terms[] = [
+                    'taxonomy' => $taxonomy,
+                    'slug' => $term->slug,
+                    'name' => $term->name,
+                ];
             }
         }
 
-        return false;
+        return [
+            'id' => $entry->id,
+            'type' => $entry->type,
+            'title' => $entry->title,
+            'slug' => $entry->slug,
+            'status' => $entry->status,
+            'content' => $entry->content,
+            'excerpt' => $entry->excerpt,
+            'author_id' => $entry->authorId,
+            'author_name' => $entry->authorName,
+            'published_at' => $entry->publishedAt,
+            'created_at' => $entry->createdAt,
+            'updated_at' => $entry->updatedAt,
+            'featured_image_id' => (int) ($entry->meta('_featured_media_id') ?? 0),
+            'terms' => $terms,
+            'url' => $this->urlGenerator->entryUrl($entry),
+        ];
+    }
+
+    /**
+     * @param int $page
+     * @param int $lastPage
+     * @return array<string, string|null>
+     */
+    private function paginationLinks(Request $request, int $page, int $lastPage): array
+    {
+        $path = $request->path();
+        $query = $request->query();
+
+        $setPage = function (array $q, int $p): array {
+            $q['page'] = $p;
+            return $q;
+        };
+
+        $queryString = function (array $q): string {
+            $pairs = [];
+            foreach ($q as $k => $v) {
+                if (is_array($v)) {
+                    foreach ($v as $vv) {
+                        $pairs[] = rawurlencode((string) $k) . '=' . rawurlencode((string) $vv);
+                    }
+                } else {
+                    $pairs[] = rawurlencode((string) $k) . '=' . rawurlencode((string) $v);
+                }
+            }
+
+            return $pairs !== [] ? '?' . implode('&', $pairs) : '';
+        };
+
+        $first = $this->urlGenerator->absolute($path . $queryString($setPage($query, 1)));
+        $prev = $page > 1 ? $this->urlGenerator->absolute($path . $queryString($setPage($query, $page - 1))) : null;
+        $next = $page < $lastPage ? $this->urlGenerator->absolute($path . $queryString($setPage($query, $page + 1))) : null;
+        $last = $this->urlGenerator->absolute($path . $queryString($setPage($query, $lastPage)));
+
+        return [
+            'first' => $first,
+            'prev' => $prev,
+            'next' => $next,
+            'last' => $last,
+        ];
     }
 }
