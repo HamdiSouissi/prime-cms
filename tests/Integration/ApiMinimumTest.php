@@ -88,7 +88,7 @@ final class ApiMinimumTest extends TestCase
     }
 
     /** @return array<string, mixed> */
-    private function json(Response $response): array
+    private function decodeJson(Response $response): array
     {
         $decoded = json_decode($response->body(), true);
         $this->assertIsArray($decoded, 'reponse non JSON : ' . substr($response->body(), 0, 200));
@@ -255,7 +255,7 @@ final class ApiMinimumTest extends TestCase
             'content' => ['blocks' => []],
         ], ['X-Prime-CSRF' => $csrf]);
         $this->assertSame(201, $create->status());
-        $data = $this->json($create);
+        $data = $this->decodeJson($create);
         $entryId = $data['data']['id'] ?? null;
         $this->assertNotNull($entryId);
 
@@ -287,7 +287,7 @@ final class ApiMinimumTest extends TestCase
         ], ['X-Prime-CSRF' => $this->csrfToken($app)]);
 
         $this->assertSame(201, $response->status(), 'POST terme retourne 201');
-        $data = $this->json($response);
+        $data = $this->decodeJson($response);
         $this->assertSame('Nouveau terme', $data['data']['name'] ?? null);
         $this->assertSame('nouveau-terme', $data['data']['slug'] ?? null);
     }
@@ -308,7 +308,7 @@ final class ApiMinimumTest extends TestCase
         $response = $this->getJson($app, '/api/v1/content/post');
 
         $this->assertSame(200, $response->status(), 'la reponse reste 200 malgré lexception du filtre');
-        $data = $this->json($response);
+        $data = $this->decodeJson($response);
         $this->assertArrayHasKey('data', $data);
     }
 
