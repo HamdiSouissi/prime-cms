@@ -83,9 +83,27 @@ final class ProfileController
     public function index(Request $request): Response
     {
         $user = $this->requireUser($request);
-        $activeTab = $request->query('tab') === 'security' || $request->query('enroll') === 'two-factor'
-            ? 'security'
-            : (string) $this->session->getFlash('_profile.tab', 'info');
+        $queryTab = (string) $request->query('tab', '');
+
+        if ($queryTab === 'security' || $request->query('enroll') === 'two-factor') {
+            $activeTab = 'security';
+        } elseif ($queryTab === 'api-tokens') {
+            $activeTab = 'api-tokens';
+            $tokens = $this->apiTokens->listByUser($user->id);
+            $abilityGroups = $this->capabilities->grouped();
+            $newToken = $this->session->getFlash('_profile.api_token_once');
+
+            return Response::html($this->renderProfile(
+                $request,
+                $user,
+                'api-tokens',
+                apiTokens: $tokens,
+                apiAbilityGroups: $abilityGroups,
+                apiNewToken: $newToken,
+            ));
+        } else {
+            $activeTab = (string) $this->session->getFlash('_profile.tab', 'info');
+        }
 
         return Response::html($this->renderProfile($request, $user, $activeTab));
     }
@@ -476,7 +494,7 @@ final class ProfileController
 
         $token = $this->apiTokens->findById($id);
         if ($token === null || (int) ($token['user_id'] ?? 0) !== $user->id) {
-            throw new ForbiddenException($this->t('admin.ctrl_text_profile.jeton_api_introuvable'));
+            return Response::html($this->t('admin.ctrl_text_profile.jeton_api_introuvable'), 404);
         }
 
         $this->apiTokens->revoke($id);

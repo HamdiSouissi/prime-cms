@@ -43,9 +43,9 @@ final class ContentController extends ApiController
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
 
-        // Un utilisateur anonyme ne voit jamais que les entrées publiées,
-        // quel que soit le filtre `status` passé dans l'URL.
-        if ($user === null) {
+        // Seuls les utilisateurs avec content.edit_any peuvent filtrer par statut
+        // (brouillons, etc.). Les autres ne voient que les publiées.
+        if ($user === null || !$user->can('content.edit_any')) {
             $status = 'publish';
         }
 
@@ -117,9 +117,9 @@ final class ContentController extends ApiController
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
 
-        // Un utilisateur anonyme ne voit jamais que les entrées publiées,
-        // quel que soit le filtre `status` passé dans l'URL.
-        if ($user === null) {
+        // Seuls les utilisateurs avec content.edit_any peuvent filtrer par statut
+        // (brouillons, etc.). Les autres ne voient que les publiées.
+        if ($user === null || !$user->can('content.edit_any')) {
             $status = 'publish';
         }
 
