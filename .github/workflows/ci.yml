@@ -567,9 +567,9 @@ jobs:
       - name: Show application state and logs on failure
         if: failure()
         run: |
-          docker compose exec -T app php bin/prime plugin:list || true
-          docker compose exec -T app sh -c 'tail -n 200 storage/logs/*.log' || true
-          docker compose logs --tail=200 app || true
+          sudo docker compose exec -T app php bin/prime plugin:list || true
+          sudo docker compose exec -T app sh -c 'tail -n 200 storage/logs/*.log' || true
+          sudo docker compose logs --tail=200 app || true
 
       - name: Keep screenshots, traces and report on failure
         if: failure()
