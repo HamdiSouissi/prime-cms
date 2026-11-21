@@ -564,6 +564,13 @@ jobs:
           E2E_DB_PASSWORD: secret
         run: npx playwright test
 
+      - name: Show application state and logs on failure
+        if: failure()
+        run: |
+          sudo docker compose exec -T app php bin/prime plugin:list || true
+          sudo docker compose exec -T app sh -c 'tail -n 200 storage/logs/*.log' || true
+          sudo docker compose logs --tail=200 app || true
+
       - name: Keep screenshots, traces and report on failure
         if: failure()
         uses: actions/upload-artifact@v4

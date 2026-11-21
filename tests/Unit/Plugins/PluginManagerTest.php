@@ -135,8 +135,9 @@ final class PluginManagerTest extends TestCase
         $this->repository->markActive('syntax-error', '1.0.0', 'h2');
         $this->repository->markActive('listener-throw', '1.0.0', 'h3');
 
-        // Simulate a leftover fatal crash witness for another plugin
-        $this->fatalGuard->markLoading('crashed-prev', 'boot');
+        // Simulate a leftover fatal crash witness for another plugin: a request that wrote its
+        // witness then died (the temporary guard is destroyed without clear(), lock released).
+        (new FatalLoadGuard($this->tmpRoot . '/storage/loading.json'))->markLoading('crashed-prev', 'boot');
 
         $failedSlugs = [];
         $this->hooks->on('plugin.failed', static function (string $slug) use (&$failedSlugs): void {

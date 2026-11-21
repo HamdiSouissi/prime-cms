@@ -297,9 +297,8 @@ final class AdminPluginsHttpTest extends TestCase
             $this->assertStringNotContainsString($tmpDir, $singleHtml);
 
             // 2. Four errored plugins -> strictly ONE consolidated summary notice + exact bell badge
-            /** @var FatalLoadGuard $guard */
-            $guard = $app->get(FatalLoadGuard::class);
-            $guard->markLoading('crashed-prev', 'boot');
+            // A request that died while loading `crashed-prev` left its witness behind.
+            (new FatalLoadGuard($tmpDir . '/loading.json'))->markLoading('crashed-prev', 'boot');
 
             $app2 = $this->createApp(
                 authenticateAs: 'admin',

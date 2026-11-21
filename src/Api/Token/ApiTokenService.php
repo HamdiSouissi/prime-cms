@@ -127,7 +127,13 @@ final class ApiTokenService
             return null;
         }
 
-        $abilities = $this->decodeAbilities((string) ($row['abilities'] ?? '[]'));
+        // Capacités effectives = capacités du jeton ∩ capacités ACTUELLES du compte.
+        // Un jeton ne garde jamais un droit retiré au compte après son émission, et un `*`
+        // stocké tel quel n'est jamais interprété comme un rôle administrateur.
+        $abilities = array_values(array_unique(array_filter(
+            $this->decodeAbilities((string) ($row['abilities'] ?? '[]')),
+            static fn (string $cap): bool => $cap !== Capabilities::WILDCARD && $user->can($cap),
+        )));
 
         // Reconstruire l'utilisateur avec uniquement les capacités effectives du jeton,
         // afin que canPreview/canEdit etc. appliquent automatiquement les limites.
@@ -225,7 +231,10 @@ final class ApiTokenService
     private function decodeAbilities(string $json): array
     {
         $decoded = json_decode($json, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
 
-        return is_array($decoded) ? array_values($decoded) : [];
+        return array_values(array_filter($decoded, static fn (mixed $cap): bool => is_string($cap) && $cap !== ''));
     }
 }

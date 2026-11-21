@@ -4,6 +4,26 @@ Toutes les versions de Prime CMS. Le détail de chaque phase (livrables, tests, 
 [`docs/phases/`](docs/phases/). Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et les numéros [SemVer](https://semver.org/lang/fr/).
 
+## [1.0.2] — 2026-11-21
+
+Correctifs de sécurité signalés par la revue du plugin Prime Builder, et isolement à tort de plugins sous charge.
+
+### Sécurité
+- **Jetons d'API** : les capacités effectives d'un jeton sont désormais l'intersection de celles
+  du jeton et de celles que le compte possède **au moment de l'appel**. Retirer un rôle retire
+  immédiatement le droit correspondant à tous ses jetons ; un `*` stocké dans un jeton n'est plus
+  jamais interprété comme un accès administrateur.
+- **Réglages** : la capacité déclarée par une section (`'capability'`, par défaut
+  `settings.manage`) est appliquée par **Réglages** (section masquée, enregistrement ignoré) et par
+  l'API (`GET` sans les champs non publics de la section, `PATCH` refusé en 403).
+
+### Corrigé
+- **Plugins isolés à tort sous charge** : le témoin d'erreur fatale était un fichier unique partagé
+  par toutes les requêtes ; une requête qui démarrait pendant qu'une autre chargeait un plugin
+  croyait à un crash et passait ce plugin « en erreur » (vu en CI : `prime-starter` désactivé au
+  hasard après l'installation). Chaque requête a maintenant son propre témoin, verrouillé par
+  `flock` pendant le chargement ; seul un témoin abandonné par un processus mort est un crash.
+
 ## [1.0.1] — 2026-11-21
 
 Points d'extension demandés par le plugin Prime Builder (constructeur de pages).
