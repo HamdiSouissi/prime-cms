@@ -133,7 +133,7 @@ La classe `Prime\Support\Version` gère le parsing, la comparaison et les contra
 ## 6. Isolation des erreurs & Mode sans échec
 
 - Chaque phase (`register`, `boot`, `activate`, écouteurs/filtres de hooks) est encapsulée dans un garde `try/catch (Throwable)` couvrant y compris `ParseError` et `TypeError`.
-- Un fichier témoin `storage/plugins/loading.json` (`FatalLoadGuard`) détecte les erreurs fatales PHP (`E_ERROR`, `E_COMPILE_ERROR`, OOM) au shutdown ou au démarrage suivant.
+- Un fichier témoin par requête, `storage/plugins/loading.<jeton>.json` (`FatalLoadGuard`), détecte les erreurs fatales PHP (`E_ERROR`, `E_COMPILE_ERROR`, OOM) au shutdown ou au démarrage suivant. La requête garde un verrou `flock` sur son témoin pendant le chargement : seul un témoin dont le verrou est libre (processus mort sans nettoyer) est traité comme un crash, si bien que des requêtes simultanées ne s'isolent jamais un plugin sain (depuis 1.0.2).
 - Tout plugin défaillant passe en statut `errored` dans `pc_plugins`, cesse d'être chargé aux requêtes suivantes, journalise le détail complet (chemin absolu et trace) uniquement dans `plugin.{slug}`, enregistre dans `last_error` un résumé sûr sans chemin serveur (classe courte d'exception, message tronqué à 300 caractères, chemin relatif au plugin uniquement), déclenche `plugin.failed` et alimente une unique notification de synthèse pointant vers `/admin/plugins?status=errored`. Le détail et le bouton **« Réessayer l'activation »** figurent sur la carte du plugin.
 - En cas d'urgence, définir `PRIME_SAFE_MODE=true` dans `.env` désactive le chargement de **tous** les plugins et affiche un bandeau d'avertissement dans l'administration.
 
