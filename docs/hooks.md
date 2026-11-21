@@ -266,6 +266,7 @@ Tout écouteur ou filtre enregistré via `$context->hooks()` (ou pendant l'exéc
 | `site.template` | Filtre | `?string $resolvedPath`, `Prime\Site\PageContext $context` | Remplacer le fichier template résolu (vérifié contre toute traversée de répertoire). |
 | `site.head` | Filtre | `string $html`, `Prime\Site\PageContext $context` | Injecter des balises dans `<head>` via `$site->head()`. |
 | `site.footer` | Filtre | `string $html`, `Prime\Site\PageContext $context` | Injecter du HTML avant `</body>` via `$site->footer()`. |
+| `site.partial` | Filtre | `?string $html` (null), `string $name`, `Prime\Site\PageContext $context`, `array $data` | Remplacer un partial du thème (`header`, `footer`…) appelé par `$site->partial()` : renvoyer une chaîne pour le remplacer, toute autre valeur garde le partial du thème. Depuis 1.0.1. |
 | `site.menu_items` | Filtre | `list<array<string, mixed>> $items`, `string $location`, `array $menu`, `array $options` | Filtrer ou enrichir l'arbre d'éléments d'un menu avant rendu HTML. |
 | `site.dynamic_blocks` | Filtre | `array<string, array<string, mixed>> $blocks` | Enregistrer des blocs dynamiques utilisables dans les zones et contenus (ex. `hello_testimonial`). |
 | `site.seo_title` | Filtre | `string $title`, `Prime\Site\PageContext $context` | Personnaliser la balise `<title>` calculée. |

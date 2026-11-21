@@ -4,6 +4,21 @@ Toutes les versions de Prime CMS. Le détail de chaque phase (livrables, tests, 
 [`docs/phases/`](docs/phases/). Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et les numéros [SemVer](https://semver.org/lang/fr/).
 
+## [1.0.1] — 2026-11-21
+
+Points d'extension demandés par le plugin Prime Builder (constructeur de pages).
+
+### Ajouté
+- Filtre `site.partial` (`?string $html`, `string $name`, `PageContext $context`, `array $data`) :
+  un plugin peut remplacer un partial du thème, par exemple `header` ou `footer`, en renvoyant une
+  chaîne ; toute autre valeur garde le partial du thème.
+
+### Corrigé
+- Le corps d'un contenu n'est plus réévalué comme contenant des blocs dynamiques parce que son JSON
+  contient le mot « dynamic » : la détection se fait sur les types de blocs décodés (`dynamic` ou un
+  type enregistré comme dynamique). Le HTML enregistré d'un bloc de plugin reste ainsi affiché quand
+  le plugin est désactivé.
+
 ## [1.0.0] — 2026-11-21
 
 Première version stable. Phase 12 : finalisation ([rapport](docs/phases/PHASE-12-REPORT.md)).

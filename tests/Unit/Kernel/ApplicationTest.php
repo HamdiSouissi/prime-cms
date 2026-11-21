@@ -38,9 +38,9 @@ final class ApplicationTest extends TestCase
         $app->container()->instance(Hooks::class, $hooks);
         $app->boot();
 
-        $this->assertSame('1.0.0', Application::VERSION);
+        $this->assertSame('1.0.1', Application::VERSION);
         $this->assertTrue($app->isBooted());
-        $this->assertSame(['registered:1.0.0', 'booted:yes'], $events);
+        $this->assertSame(['registered:1.0.1', 'booted:yes'], $events);
         $this->assertSame($this->rootDir . '/config', $app->configPath());
         $envStorage = Env::get('PRIME_STORAGE_PATH');
         $expectedStorageRoot = is_string($envStorage) && trim($envStorage) !== ''

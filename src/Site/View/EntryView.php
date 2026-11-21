@@ -108,7 +108,7 @@ final class EntryView
         if (
             $this->zones !== null
             && $this->dynamicBlocks !== null
-            && str_contains($this->entry->content, '"dynamic"')
+            && $this->hasDynamicBlocks()
         ) {
             return $this->zones->renderDocumentWithDynamicBlocks(
                 $this->entry->decodedContent(),
@@ -117,6 +117,27 @@ final class EntryView
         }
 
         return $this->entry->contentHtml;
+    }
+
+    /**
+     * True when a top-level block must be evaluated at request time: the generic `dynamic`
+     * block or a block type registered as dynamic. The decision is made on the decoded block
+     * types, never on a substring of the raw JSON (a text containing the word "dynamic" is static).
+     */
+    private function hasDynamicBlocks(): bool
+    {
+        if ($this->dynamicBlocks === null) {
+            return false;
+        }
+
+        foreach ($this->entry->decodedContent()['blocks'] as $block) {
+            $type = $block['type'];
+            if ($type === 'dynamic' || $this->dynamicBlocks->has($type)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
