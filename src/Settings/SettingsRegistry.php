@@ -61,7 +61,7 @@ final class SettingsRegistry
             'label' => $definition['label'] ?? ucfirst(str_replace('_', ' ', $id)),
             'description' => '',
             'icon' => 'settings',
-            'capability' => 'options.manage',
+            'capability' => 'settings.manage',
             'priority' => 10,
             'page' => 'general',
             'tab' => null,
@@ -233,6 +233,17 @@ final class SettingsRegistry
         });
 
         return $sections;
+    }
+
+    /**
+     * Capability required to read or change the non-public fields of a section
+     * (`settings.manage` unless the section declares another one).
+     */
+    public function sectionCapability(string $section): string
+    {
+        $capability = $this->sections[$section]['capability'] ?? 'settings.manage';
+
+        return is_string($capability) && $capability !== '' ? $capability : 'settings.manage';
     }
 
     /**

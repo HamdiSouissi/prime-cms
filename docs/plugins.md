@@ -189,7 +189,10 @@ Un plugin s'intègre aux nouveaux services sans code d'interface :
   `plugin::<slug>.x.y` partout où un libellé est attendu (menu, type de contenu, champ,
   bloc, réglage, description du manifeste). Voir [`i18n.md`](i18n.md).
 - **Réglages** : filtre `settings.register` — une section `'page' => 'general'|'security'|'emails'`
-  s'affiche sur l'écran correspondant. Voir [`settings.md`](settings.md).
+  s'affiche sur l'écran correspondant. Une section peut exiger une capacité en plus de
+  `settings.manage` (`'capability' => 'mon-plugin.settings'`) : sans elle, la section est masquée
+  sur l'écran, ses champs non publics sont absents de `GET /api/v1/settings` et toute écriture
+  (écran ou `PATCH /api/v1/settings`) est refusée (depuis 1.0.2). Voir [`settings.md`](settings.md).
 - **Tâches planifiées et file** : filtres `scheduler.register` et `jobs.register_handlers`.
   Voir [`scheduler.md`](scheduler.md).
 - **Diagnostic** : filtre `system.checks` pour ajouter des contrôles à **Outils › État du système**.

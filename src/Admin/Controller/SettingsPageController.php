@@ -59,6 +59,7 @@ final class SettingsPageController
         private readonly ?Mailer $mailer = null,
         private readonly ?MailLogRepository $mailLog = null,
         private readonly ?\Prime\Cache\CacheManager $cache = null,
+        private readonly ?\Prime\Auth\Auth $auth = null,
     ) {
     }
 
@@ -75,7 +76,7 @@ final class SettingsPageController
      */
     public function show(Request $request, string $page): Response
     {
-        $sections = $this->sectionsFor($page);
+        $sections = $this->sectionsFor($page, $request);
 
         $errors = $this->session->getFlash(self::ERRORS_FLASH, []);
         $old = $this->session->getFlash(self::OLD_FLASH, []);
@@ -139,7 +140,7 @@ final class SettingsPageController
      */
     public function save(Request $request, string $page): Response
     {
-        $sections = $this->sectionsFor($page);
+        $sections = $this->sectionsFor($page, $request);
         $raw = $request->body('settings', []);
         /** @var array<string, mixed> $input */
         $input = is_array($raw) ? $raw : [];
@@ -229,7 +230,7 @@ final class SettingsPageController
     /**
      * @return array<string, array<string, mixed>>
      */
-    private function sectionsFor(string $page): array
+    private function sectionsFor(string $page, ?Request $request = null): array
     {
         if (!isset(self::PAGES[$page])) {
             throw new NotFoundException(t('admin.settings.page_missing'));
@@ -249,6 +250,16 @@ final class SettingsPageController
             if (!isset($sections[$id]) && !$this->isCoreSection($id)) {
                 $sections[$id] = $definition;
             }
+        }
+
+        // A section declaring its own capability is only shown to, and saved by, accounts holding it.
+        $user = $this->auth?->user($request);
+        if ($user !== null) {
+            $sections = array_filter(
+                $sections,
+                fn (array $section, string $id): bool => $user->can($this->registry->sectionCapability($id)),
+                ARRAY_FILTER_USE_BOTH,
+            );
         }
 
         return $sections;

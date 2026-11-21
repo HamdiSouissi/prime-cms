@@ -35,12 +35,13 @@ final class SettingsController extends ApiController
         $data = [];
         $secrets = [];
         foreach ($this->registry->fields() as $name => $field) {
-            if (!$manager && !$field->public) {
+            $allowed = $manager && $user->can($this->registry->sectionCapability($field->section));
+            if (!$allowed && !$field->public) {
                 continue;
             }
 
             if ($field->isSensitive()) {
-                if ($manager) {
+                if ($allowed) {
                     $secrets[$name] = $this->settings->getSecret($name) !== null;
                 }
                 continue;
@@ -74,6 +75,14 @@ final class SettingsController extends ApiController
 
         if ($unknown !== []) {
             return $this->validationFailed($request, $unknown);
+        }
+
+        // Every section touched must be allowed: a section may require more than `settings.manage`.
+        $user = $this->currentUser($request);
+        foreach (array_keys($bySection) as $section) {
+            if ($user === null || !$user->can($this->registry->sectionCapability((string) $section))) {
+                return $this->forbidden();
+            }
         }
 
         // Validate every section first so a partial write never happens.

@@ -295,6 +295,7 @@ final class AdminServiceProvider extends ServiceProvider
                 mailer: $mailer instanceof \Prime\Mail\Mailer ? $mailer : null,
                 mailLog: $log instanceof \Prime\Mail\MailLogRepository ? $log : null,
                 cache: $c->has(CacheManager::class) ? $c->get(CacheManager::class) : null,
+                auth: $c->has(\Prime\Auth\Auth::class) ? $this->app->get(\Prime\Auth\Auth::class) : null,
             );
         });
 

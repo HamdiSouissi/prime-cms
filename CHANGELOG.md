@@ -4,6 +4,19 @@ Toutes les versions de Prime CMS. Le détail de chaque phase (livrables, tests, 
 [`docs/phases/`](docs/phases/). Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et les numéros [SemVer](https://semver.org/lang/fr/).
 
+## [1.0.2] — 2026-11-21
+
+Correctifs de sécurité signalés par la revue du plugin Prime Builder.
+
+### Sécurité
+- **Jetons d'API** : les capacités effectives d'un jeton sont désormais l'intersection de celles
+  du jeton et de celles que le compte possède **au moment de l'appel**. Retirer un rôle retire
+  immédiatement le droit correspondant à tous ses jetons ; un `*` stocké dans un jeton n'est plus
+  jamais interprété comme un accès administrateur.
+- **Réglages** : la capacité déclarée par une section (`'capability'`, par défaut
+  `settings.manage`) est appliquée par **Réglages** (section masquée, enregistrement ignoré) et par
+  l'API (`GET` sans les champs non publics de la section, `PATCH` refusé en 403).
+
 ## [1.0.1] — 2026-11-21
 
 Points d'extension demandés par le plugin Prime Builder (constructeur de pages).
