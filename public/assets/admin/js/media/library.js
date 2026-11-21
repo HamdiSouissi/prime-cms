@@ -659,6 +659,12 @@ export function initMediaLibrary() {
 
     if (gridContainer) {
       gridContainer.innerHTML = '';
+      // ARIA grid = grid > row > gridcell. The row is `display: contents`, so the CSS grid
+      // still lays the cards out freely.
+      const row = document.createElement('div');
+      row.className = 'pc-media-grid__row';
+      row.setAttribute('role', 'row');
+      gridContainer.appendChild(row);
       state.items.forEach((item, index) => {
         const card = document.createElement('article');
         card.className = 'pc-media-card';
@@ -720,7 +726,7 @@ export function initMediaLibrary() {
 
         card.addEventListener('keydown', (e) => handleGridKeydown(e, index, item, orderedIds));
 
-        gridContainer.appendChild(card);
+        row.appendChild(card);
       });
     }
 

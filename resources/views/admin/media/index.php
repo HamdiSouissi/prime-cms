@@ -126,7 +126,7 @@ $acceptAttr = implode(',', array_map(static fn (string $ext): string => '.' . $e
                         class="pc-media-chip<?= !empty($initialFilters['unused']) ? ' is-active' : '' ?>"
                         aria-pressed="<?= !empty($initialFilters['unused']) ? 'true' : 'false' ?>"
                         data-prime-media-filter-unused
-                    <?= $this->e($this->t('core.actions.unused')) ?></button>
+                    ><?= $this->e($this->t('core.actions.unused')) ?></button>
                 </div>
 
                 <div class="pc-media-toolbar__right">

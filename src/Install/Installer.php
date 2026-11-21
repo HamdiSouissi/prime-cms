@@ -163,6 +163,8 @@ final class Installer
             $settings->set('language.site', $config->siteLocale);
             $settings->set('language.admin', $config->siteLocale);
             $settings->set('general.timezone', $config->timezone);
+            // Required by « Réglages › Général »: without it the page could not be saved at all.
+            $settings->set('site.admin_email', strtolower(trim($config->adminEmail)));
             // …and the historical keys some components still read.
             $settings->set('site_name', trim($config->siteName));
             $settings->set('site_url', rtrim(trim($config->siteUrl), '/'));

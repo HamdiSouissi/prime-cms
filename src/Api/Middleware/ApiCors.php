@@ -24,6 +24,14 @@ final class ApiCors implements MiddlewareInterface
 
     public function process(Request $request, callable $next): Response
     {
+        // CORS is a property of the REST API only. Browsers also send `Origin` on ordinary form
+        // posts (admin, installer): those must not read the settings, which do not exist yet
+        // while the site is being installed.
+        $path = $request->path();
+        if ($path !== '/api' && !str_starts_with($path, '/api/')) {
+            return $next($request);
+        }
+
         $origin = $request->header('origin');
 
         if ($origin === null || $origin === '' || !$this->isAllowed($origin)) {

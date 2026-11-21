@@ -177,6 +177,7 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         $this->assertSame('Atelier Lumière', $settings->get('site.name'));
         $this->assertSame('fr', $settings->get('language.site'));
         $this->assertSame('Europe/Paris', $settings->get('general.timezone'));
+        $this->assertNotSame('', (string) $settings->get('site.admin_email'), 'requis par Réglages › Général');
         // Plugins shipped as active (`plugins.default_active`) are active after the wizard.
         $this->assertSame('active', $this->connection->table('plugins')->where('slug', '=', 'prime-starter')->value('status'));
 

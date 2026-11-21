@@ -374,8 +374,9 @@
 }
 
 .pc-media-card__select input {
-  width: 15px;
-  height: 15px;
+  width: 24px;
+  height: 24px;
+  margin: 0;
   accent-color: var(--teal);
   cursor: pointer;
 }
@@ -1235,3 +1236,7 @@
   font-weight: 500;
 }
 
+
+.pc-media-grid__row {
+  display: contents;
+}
