@@ -343,6 +343,8 @@ return [
             'visibility' => 'Visibility',
             'word_count' => ':count word|:count words',
         ],
+        'editor_unavailable' => 'The “:name” editor is not available (extension deactivated?). The default editor is used.',
+        'editor_unknown_blocks' => 'This content was created with an editor that is no longer available. It is shown as saved; reactivate the extension to get its editor back.',
         'empty' => 'No content yet.',
         'empty_search' => 'No content matches “:query”.',
         'empty_trash' => 'Empty trash',

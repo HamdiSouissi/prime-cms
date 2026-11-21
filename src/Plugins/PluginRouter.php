@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Prime\Plugins;
 
+use LogicException;
 use Prime\Http\Middleware\MiddlewareInterface;
 use Prime\Http\Route;
 use Prime\Http\Router;
+use Prime\Site\ReservedSlugValidator;
 
 /**
  * Router facade exposed via `PluginContext::router()` with ergonomic `/admin/{slug}`
@@ -53,11 +55,51 @@ final class PluginRouter
      */
     public function frontGroup(callable $callback, string $prefix = '', array $middleware = []): void
     {
+        $before = count($this->router->routes());
+
         $this->router->group([
             'prefix' => $prefix,
             'middleware' => $middleware,
             'name' => 'plugin.' . $this->slug . '.',
         ], $callback);
+
+        $this->assertFreeFrontRoutes(array_slice($this->router->routes(), $before), array_slice($this->router->routes(), 0, $before));
+    }
+
+    /**
+     * A public plugin route may not claim a core prefix (`/admin`, `/api`, `/uploads`…) nor answer
+     * a method and path someone already answers: both are refused at boot with a clear message,
+     * instead of silently shadowing a page.
+     *
+     * @param list<Route> $added
+     * @param list<Route> $existing
+     */
+    private function assertFreeFrontRoutes(array $added, array $existing): void
+    {
+        $taken = [];
+        foreach ($existing as $route) {
+            foreach ($route->methods() as $method) {
+                $taken[$method . ' ' . self::shape($route->path())] = true;
+            }
+        }
+
+        foreach ($added as $route) {
+            $first = strtolower(explode('/', trim($route->path(), '/'))[0]);
+            if ($first !== '' && in_array($first, ReservedSlugValidator::SYSTEM_RESERVED, true)) {
+                throw new LogicException(sprintf('Plugin "%s" cannot declare the public route %s: "/%s" is reserved by the core.', $this->slug, $route->path(), $first));
+            }
+
+            foreach ($route->methods() as $method) {
+                if (isset($taken[$method . ' ' . self::shape($route->path())])) {
+                    throw new LogicException(sprintf('Plugin "%s" declares %s %s, which is already answered by another route.', $this->slug, $method, $route->path()));
+                }
+            }
+        }
+    }
+
+    private static function shape(string $path): string
+    {
+        return '/' . trim((string) preg_replace('/\{[^}]+\}/', '{}', $path), '/');
     }
 
     /**

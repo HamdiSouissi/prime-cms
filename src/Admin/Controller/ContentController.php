@@ -30,12 +30,15 @@ use Prime\Content\RevisionRepository;
 use Prime\Content\TaxonomyRegistry;
 use Prime\Content\TermRepository;
 use Prime\Editor\BlockRegistry;
+use Prime\Editor\EditorRegistry;
 use Prime\Editor\Renderer;
+use Prime\Hooks\Hooks;
 use Prime\Http\Exception\ForbiddenException;
 use Prime\Http\Exception\NotFoundException;
 use Prime\Http\Request;
 use Prime\Http\Response;
 use Prime\Kernel\Application;
+use Prime\Log\Logger;
 use Prime\Media\Media;
 use Prime\Media\MediaRepository;
 use Prime\Media\MediaUsageRepository;
@@ -1054,11 +1057,15 @@ final class ContentController
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP,
         );
 
+        [$customEditor, $editorNotice, $formContentJson] = $this->resolveEditor($contentType, $entry, $formContentJson);
+
         $pageTitle = $isEdit ? 'Modifier : ' . $entry->title : $contentType->label('add_new');
         $contextData = $this->context->build($request, $pageTitle, [
             'contentType' => $contentType,
             'entry' => $entry,
             'isEdit' => $isEdit,
+            'customEditor' => $customEditor,
+            'editorNotice' => $editorNotice,
             'urlPreviewPattern' => $urlPreviewPattern,
             'urlPreviewInitial' => $urlPreviewInitial,
             'form' => [
@@ -1109,9 +1116,89 @@ final class ContentController
             $contextData['adminScripts'] = array_values(array_unique(array_merge($contextData['adminScripts'], $extensionScripts)));
         }
 
+        if ($customEditor !== null) {
+            foreach (['adminScripts' => $customEditor['scripts'], 'adminStyles' => $customEditor['styles']] as $key => $urls) {
+                $current = isset($contextData[$key]) && is_array($contextData[$key]) ? $contextData[$key] : [];
+                $contextData[$key] = array_values(array_unique(array_merge($current, $urls)));
+            }
+        }
+
         $html = $this->view->render('admin::content/edit', $contextData);
 
         return Response::html($html, $statusCode);
+    }
+
+    /**
+     * Picks the editor of the edit screen.
+     *
+     * A content type (or the `content.editor` filter) may name an editor registered by a
+     * plugin: its HTML replaces the block canvas. When that editor is not available — the
+     * plugin was deactivated or its view failed — the built-in block editor is used. If the
+     * stored document holds blocks nobody knows any more, it is shown as one HTML block made
+     * of the last rendered HTML, so nothing disappears from the screen.
+     *
+     * @return array{0: array{name: string, label: string, html: string, scripts: list<string>, styles: list<string>}|null, 1: string|null, 2: string}
+     */
+    private function resolveEditor(ContentType $contentType, ?Entry $entry, string $contentJson): array
+    {
+        $hooks = $this->app->container()->has(Hooks::class) ? $this->app->get(Hooks::class) : null;
+        $name = $contentType->editor;
+        if ($hooks !== null) {
+            try {
+                $filtered = $hooks->apply('content.editor', $name, $contentType);
+                $name = is_string($filtered) && $filtered !== '' ? $filtered : $name;
+            } catch (Throwable) {
+                // Keep the declared editor.
+            }
+        }
+
+        $notice = null;
+        if ($name !== EditorRegistry::DEFAULT) {
+            $definition = $this->app->get(EditorRegistry::class)->get($name);
+            if ($definition !== null) {
+                $document = json_decode($contentJson, true);
+                try {
+                    $html = ($definition->render)([
+                        'entry' => $entry,
+                        'type' => $contentType,
+                        'document' => is_array($document) ? $document : ['version' => 1, 'blocks' => []],
+                        'contentJson' => $contentJson,
+                    ]);
+
+                    return [[
+                        'name' => $definition->name,
+                        'label' => $definition->label,
+                        'html' => $html,
+                        'scripts' => $definition->scripts,
+                        'styles' => $definition->styles,
+                    ], null, $contentJson];
+                } catch (Throwable $exception) {
+                    $this->app->get(Logger::class)->error('Plugin editor failed to render', [
+                        'editor' => $name,
+                        'owner' => $definition->owner,
+                        'message' => $exception->getMessage(),
+                    ]);
+                }
+            }
+
+            $notice = t('admin.content.editor_unavailable', ['name' => $name]);
+        }
+
+        $document = json_decode($contentJson, true);
+        $blocks = is_array($document) && is_array($document['blocks'] ?? null) ? $document['blocks'] : [];
+        foreach ($blocks as $block) {
+            $type = is_array($block) && is_string($block['type'] ?? null) ? $block['type'] : '';
+            if ($type !== '' && !$this->blocks->has($type) && $entry !== null) {
+                $legacy = (string) json_encode([
+                    'version' => 1,
+                    'blocks' => [['id' => 'b_legacy', 'type' => 'html', 'data' => ['html' => $entry->contentHtml]]],
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+                return [null, $notice ?? t('admin.content.editor_unknown_blocks'), $legacy];
+            }
+        }
+
+        return [null, $notice, $contentJson];
     }
 
     /**

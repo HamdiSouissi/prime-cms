@@ -12,6 +12,7 @@ use Prime\Database\Connection;
 use Prime\Database\Migrations\Migrator;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
+use Prime\I18n\Translator;
 use Prime\Kernel\Application;
 use Prime\Kernel\Autoloader;
 use Prime\Log\Logger;
@@ -681,6 +682,7 @@ final class PluginManager
             $this->settings->deleteByPrefix('plugin.' . $slug . '.');
             $this->notices->removeBySource($slug);
             $this->notices->remove($this->legacyErrorNoticeId($slug));
+            $this->dataCleaner()->clean($slug);
             $this->assetPublisher->remove($slug);
             $this->repository->delete($slug);
             $this->invalidateCache();
@@ -733,6 +735,9 @@ final class PluginManager
         $this->notices->removeBySource($slug);
         $this->notices->remove($this->legacyErrorNoticeId($slug));
 
+        // 3 bis. Capabilities granted to roles or tokens, queued jobs and e-mails, task stamps
+        $this->dataCleaner()->clean($slug);
+
         // 4. Remove published public assets
         $this->assetPublisher->remove($slug);
 
@@ -754,6 +759,11 @@ final class PluginManager
         $this->syncErroredPluginsNotice();
 
         $this->hooks->emit('plugin.uninstalled', $slug, $deleteFiles);
+    }
+
+    private function dataCleaner(): PluginDataCleaner
+    {
+        return new PluginDataCleaner($this->db, $this->app->storagePath('cache/scheduler'));
     }
 
     /**
@@ -821,6 +831,13 @@ final class PluginManager
         $viewsDir = $directory . DIRECTORY_SEPARATOR . 'views';
         if (is_dir($viewsDir)) {
             $this->views->addNamespace($manifest->slug, $viewsDir);
+        }
+
+        // The translator lists `content/plugins/*/lang` when it is built; a plugin installed or
+        // activated afterwards (upload, `make:plugin`) must not show its raw `plugin::` keys.
+        $langDir = $directory . DIRECTORY_SEPARATOR . 'lang';
+        if (is_dir($langDir) && $this->app->container()->has(Translator::class)) {
+            $this->app->get(Translator::class)->addPath($langDir);
         }
     }
 

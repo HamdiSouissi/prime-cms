@@ -1,0 +1,56 @@
+/* Prime Starter — admin screens and Markdown editor. Uses the admin design tokens only. */
+
+.ps-row-title {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.ps-swatch {
+    display: inline-block;
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--color-border-strong, var(--color-border));
+    border-radius: 50%;
+}
+
+.ps-swatch--sand { background-color: var(--amber-soft); border-color: var(--amber-border); }
+.ps-swatch--mint { background-color: var(--success-soft); border-color: var(--success-border); }
+.ps-swatch--sky { background-color: var(--sky-soft); border-color: var(--sky-border); }
+.ps-swatch--rose { background-color: var(--danger-soft); border-color: var(--danger-border); }
+
+.ps-form {
+    max-width: 760px;
+    padding: var(--space-6);
+}
+
+.ps-form textarea {
+    min-height: 240px;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+}
+
+.ps-md-editor {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.ps-md-editor__input,
+.ps-ed-markdown {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.65;
+    resize: vertical;
+}
+
+.ps-md-editor__input {
+    min-height: 420px;
+}
+
+.pc-block--markdown pre {
+    overflow-x: auto;
+}

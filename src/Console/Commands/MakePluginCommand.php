@@ -15,9 +15,13 @@ use Prime\Plugins\ManifestValidator;
  */
 final class MakePluginCommand implements CommandInterface
 {
+    /** The plugin copied by default: every extension point, already tested. */
+    public const STARTER = 'prime-starter';
+
     public function __construct(
         private readonly Application $app,
         private readonly ?string $targetRoot = null,
+        private readonly ?string $starterPath = null,
     ) {
     }
 
@@ -28,7 +32,7 @@ final class MakePluginCommand implements CommandInterface
 
     public function description(): string
     {
-        return 'Génère le squelette complet d\'un nouveau plugin dans content/plugins/<slug>/';
+        return 'Crée un plugin dans content/plugins/<slug>/ à partir de prime-starter (--minimal : squelette vide)';
     }
 
     public function execute(array $args, ConsoleOutput $output): int
@@ -37,7 +41,7 @@ final class MakePluginCommand implements CommandInterface
         $slug = strtolower(trim((string) ($parsed['positionals'][0] ?? '')));
 
         if ($slug === '' || strlen($slug) < 3 || strlen($slug) > 64 || preg_match(ManifestValidator::SLUG_PATTERN, $slug) !== 1) {
-            $output->error('Usage : php bin/prime make:plugin <slug> [--name="Mon Plugin"] [--author="Équipe"] [--namespace="MonPlugin\\"] [--license="proprietary"]');
+            $output->error('Usage : php bin/prime make:plugin <slug> [--name="Mon Plugin"] [--author="Équipe"] [--namespace="MonPlugin\\"] [--license="proprietary"] [--minimal]');
             $output->error('Le slug doit contenir 3 à 64 caractères minuscules, chiffres et tirets (ex. "mon-plugin").');
 
             return self::FAILURE;
@@ -74,6 +78,15 @@ final class MakePluginCommand implements CommandInterface
             $output->error('Le namespace ne peut pas commencer par "Prime\\".');
 
             return self::FAILURE;
+        }
+
+        $starter = $this->starterPath ?? $this->app->basePath((string) $this->app->config()->get('plugins.path', 'content/plugins')) . DIRECTORY_SEPARATOR . self::STARTER;
+        $minimal = ($parsed['options']['minimal'] ?? false) !== false;
+        if (!$minimal) {
+            if (is_file($starter . DIRECTORY_SEPARATOR . 'plugin.json')) {
+                return $this->copyStarter($starter, $pluginDir, $slug, $displayName, $author, $license, $namespace, $output);
+            }
+            $output->writeln(sprintf('Avertissement : le plugin de départ « %s » est introuvable, génération du squelette minimal.', self::STARTER));
         }
 
         $directories = [
@@ -178,5 +191,84 @@ MD;
         $output->writeln(sprintf('Activez-le avec : php bin/prime plugin:activate %s', $slug));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Copy `prime-starter` under a new identity: slug, snake-case prefix (capability, tables),
+     * PHP namespace and display name are rewritten in every file and file name. The result is a
+     * working plugin with its own tests, ready to be trimmed down.
+     */
+    private function copyStarter(string $starter, string $pluginDir, string $slug, string $displayName, string $author, string $license, string $namespace, ConsoleOutput $output): int
+    {
+        $phpNamespace = rtrim($namespace, '\\');
+        $studly = str_replace('\\', '', $phpNamespace);
+        $replacements = [
+            'PrimeStarterTest' => $studly . 'Test',
+            'PrimeStarter' => $phpNamespace,
+            'Prime Starter' => $displayName,
+            'prime-starter' => $slug,
+            'prime_starter' => str_replace('-', '_', $slug),
+        ];
+
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($starter, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST,
+        );
+
+        foreach ($files as $file) {
+            if (!$file instanceof \SplFileInfo || $file->isLink()) {
+                continue;
+            }
+            $relative = substr($file->getPathname(), strlen($starter) + 1);
+            $target = $pluginDir . DIRECTORY_SEPARATOR . strtr($relative, $replacements);
+
+            if ($file->isDir()) {
+                if (!is_dir($target) && !mkdir($target, 0755, true) && !is_dir($target)) {
+                    $output->error(sprintf('Impossible de créer le répertoire "%s".', $target));
+
+                    return self::FAILURE;
+                }
+                continue;
+            }
+
+            $contents = (string) file_get_contents($file->getPathname());
+            if ($relative === 'plugin.json') {
+                $contents = $this->manifestFromStarter($contents, $slug, $displayName, $author, $license, $namespace);
+            } else {
+                $contents = strtr($contents, $replacements);
+            }
+
+            $dir = dirname($target);
+            if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+                $output->error(sprintf('Impossible de créer le répertoire "%s".', $dir));
+
+                return self::FAILURE;
+            }
+            file_put_contents($target, $contents);
+        }
+
+        $output->writeln(sprintf('Plugin "%s" créé à partir de %s dans : %s', $slug, self::STARTER, $pluginDir));
+        $output->writeln(sprintf('Activez-le avec : php bin/prime plugin:activate %s', $slug));
+        $output->writeln('Ses tests : vendor/bin/phpunit ' . $pluginDir . '/tests');
+
+        return self::SUCCESS;
+    }
+
+    private function manifestFromStarter(string $json, string $slug, string $displayName, string $author, string $license, string $namespace): string
+    {
+        $manifest = json_decode($json, true);
+        $manifest = is_array($manifest) ? $manifest : [];
+        $manifest['slug'] = $slug;
+        $manifest['name'] = $displayName;
+        $manifest['description'] = 'plugin::' . $slug . '.manifest.description';
+        $manifest['version'] = '0.1.0';
+        $manifest['author'] = ['name' => $author];
+        $manifest['license'] = $license;
+        $manifest['namespace'] = $namespace;
+        $manifest['main'] = $namespace . 'Plugin';
+        $manifest['requires'] = ['prime' => '>=' . \Prime\Kernel\Application::VERSION, 'php' => '^8.2'];
+        $manifest['settings_url'] = '/admin/' . $slug;
+
+        return json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL;
     }
 }

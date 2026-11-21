@@ -343,6 +343,8 @@ return [
             'visibility' => 'Visibilité',
             'word_count' => ':count mot|:count mots',
         ],
+        'editor_unavailable' => 'L’éditeur « :name » n’est pas disponible (extension désactivée ?). L’éditeur par défaut est utilisé.',
+        'editor_unknown_blocks' => 'Ce contenu a été créé avec un éditeur qui n’est plus disponible. Il est affiché tel qu’enregistré ; réactivez l’extension pour retrouver son éditeur.',
         'empty' => 'Aucun contenu pour le moment.',
         'empty_search' => 'Aucun contenu ne correspond à « :query ».',
         'empty_trash' => 'Vider la corbeille',

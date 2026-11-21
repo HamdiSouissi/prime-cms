@@ -109,7 +109,7 @@ final class PluginCommandsTest extends TestCase
         // 1. make:plugin scaffolds a valid activatable plugin with default proprietary license
         $outMake = new ConsoleOutput(buffered: true);
         $makeCmd = new MakePluginCommand($this->app, $this->tmpRoot . '/plugins');
-        $this->assertSame(CommandInterface::SUCCESS, $makeCmd->execute(['sample-addon', '--name=Sample Addon'], $outMake));
+        $this->assertSame(CommandInterface::SUCCESS, $makeCmd->execute(['sample-addon', '--name=Sample Addon', '--minimal'], $outMake));
         $manifestPath = $this->tmpRoot . '/plugins/sample-addon/plugin.json';
         $this->assertTrue(is_file($manifestPath));
         /** @var array<string, mixed> $decodedManifest */
@@ -118,7 +118,7 @@ final class PluginCommandsTest extends TestCase
 
         // --license= overrides the default license
         $outMit = new ConsoleOutput(buffered: true);
-        $this->assertSame(CommandInterface::SUCCESS, $makeCmd->execute(['mit-addon', '--license=MIT'], $outMit));
+        $this->assertSame(CommandInterface::SUCCESS, $makeCmd->execute(['mit-addon', '--license=MIT', '--minimal'], $outMit));
         /** @var array<string, mixed> $mitManifest */
         $mitManifest = json_decode((string) file_get_contents($this->tmpRoot . '/plugins/mit-addon/plugin.json'), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('MIT', $mitManifest['license']);

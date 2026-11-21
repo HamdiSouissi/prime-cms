@@ -25,6 +25,8 @@ declare(strict_types=1);
  * @var bool $canDelete
  * @var bool $isPendingLocked
  * @var string $editorConfigJson
+ * @var array{name: string, label: string, html: string, scripts: list<string>, styles: list<string>}|null $customEditor
+ * @var string|null $editorNotice
  */
 $this->layout('admin::layouts/app');
 
@@ -192,6 +194,15 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     <p class="pc-field__error" style="margin:-10px 0 14px;"><?= $this->e($errors['title']) ?></p>
                 <?php endif; ?>
 
+                <?php if (is_string($editorNotice ?? null) && $editorNotice !== ''): ?>
+                    <?= $this->raw($this->insert('admin::components/alert', ['variant' => 'warning', 'message' => $editorNotice])) ?>
+                <?php endif; ?>
+
+                <?php if (is_array($customEditor ?? null)): ?>
+                <div class="pc-ed-root pc-ed-root--custom" data-prime-custom-editor="<?= $this->e($customEditor['name']) ?>">
+                    <?= $this->raw($customEditor['html']) ?>
+                </div>
+                <?php else: ?>
                 <div class="pc-ed-root" data-prime-editor>
                     <script type="application/json" data-prime-editor-config><?= $this->raw($editorConfigJson) ?></script>
                     <textarea name="content_json" hidden data-prime-editor-input><?= $this->e($form['content_json']) ?></textarea>
@@ -205,6 +216,7 @@ $formattedDate = $form['published_at'] !== '' ? str_replace(' ', 'T', substr($fo
                     </div>
                     <div class="pc-sr-only" aria-live="polite" data-prime-editor-live></div>
                 </div>
+                <?php endif; ?>
             </div>
 
             <?php foreach ($mainFieldGroups as $group): ?>

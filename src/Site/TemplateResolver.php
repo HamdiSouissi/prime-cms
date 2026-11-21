@@ -38,6 +38,7 @@ final class TemplateResolver
             PageContext::TYPE_TERM => $this->termCandidates($context),
             PageContext::TYPE_AUTHOR => ['author.php', 'archive/default.php'],
             PageContext::TYPE_SEARCH => ['search.php', 'archive/default.php'],
+            PageContext::TYPE_PLUGIN => [],
             default => ['404.php'],
         };
 

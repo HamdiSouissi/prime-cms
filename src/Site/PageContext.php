@@ -24,6 +24,9 @@ final readonly class PageContext
     public const TYPE_SEARCH = 'search';
     public const TYPE_NOT_FOUND = 'not_found';
 
+    /** A page a plugin renders itself (`PluginContext::renderPage()`), inside the theme layout. */
+    public const TYPE_PLUGIN = 'plugin';
+
     /**
      * @param list<Entry> $entries
      * @param array<string, mixed> $extra
@@ -58,6 +61,24 @@ final readonly class PageContext
             path: $path,
             httpStatus: 404,
         );
+    }
+
+    /**
+     * A plugin page: `$html` is placed in the theme's `layouts/base.php`, `$title` feeds `<title>`.
+     */
+    public static function plugin(string $path, string $title, string $html, string $description = '', int $status = 200): self
+    {
+        return new self(
+            type: self::TYPE_PLUGIN,
+            path: $path,
+            httpStatus: $status,
+            extra: ['title' => $title, 'html' => $html, 'description' => $description],
+        );
+    }
+
+    public function isPlugin(): bool
+    {
+        return $this->type === self::TYPE_PLUGIN;
     }
 
     public static function redirect(string $path, string $target, int $status = 301): self

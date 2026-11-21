@@ -5,11 +5,14 @@ parameters:
         - bootstrap
         - content/themes
         - content/plugins/hello-prime
+        - content/plugins/prime-starter
     excludePaths:
         - content/themes/*/templates/*
         - content/themes/*/partials/*
         - content/plugins/hello-prime/views/*
         - content/plugins/hello-prime/templates/*
+        - content/plugins/prime-starter/views/*
+        - content/plugins/prime-starter/tests/*
     bootstrapFiles:
         - bootstrap/autoload.php
     tmpDir: .phpstan-cache
