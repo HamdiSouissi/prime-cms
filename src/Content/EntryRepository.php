@@ -35,6 +35,28 @@ final class EntryRepository
         return $this->hydrateEntries([$entry])[0];
     }
 
+    /**
+     * Rows of several entries in one query, keyed by ID (no meta, terms or author).
+     *
+     * @param list<int> $ids
+     * @return array<int, Entry>
+     */
+    public function findManyById(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
+        if ($ids === []) {
+            return [];
+        }
+
+        $entries = [];
+        foreach ($this->db->table('entries')->whereIn('id', $ids)->get() as $row) {
+            $entry = Entry::fromRow($row);
+            $entries[$entry->id] = $entry;
+        }
+
+        return $entries;
+    }
+
     public function findBySlug(string $type, string $slug, int $parentId = 0, bool $withRelations = true): ?Entry
     {
         $row = $this->db->table('entries')

@@ -19,6 +19,7 @@ use Prime\Admin\Controller\SiteSettingsController;
 use Prime\Admin\Controller\TaxonomyController;
 use Prime\Admin\Controller\ThemeController;
 use Prime\Admin\Controller\ToolsController;
+use Prime\Admin\Controller\UpdatesController;
 use Prime\Admin\Controller\UserController;
 use Prime\Admin\Controller\ZoneController;
 use Prime\Admin\Demo\DemoDashboardData;
@@ -849,6 +850,12 @@ final class AdminServiceProvider extends ServiceProvider
                 $r->post('/tools/api/tokens/{id:\d+}/revoke', [ApiToolsController::class, 'revoke'])
                     ->middleware('can:settings.manage')
                     ->name('tools.api.revoke');
+                $r->get('/tools/updates', [UpdatesController::class, 'index'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.updates');
+                $r->post('/tools/updates/run', [UpdatesController::class, 'run'])
+                    ->middleware('can:settings.manage')
+                    ->name('tools.updates.run');
 
                 // Backwards-compatible redirects from Phase 2 placeholder content routes
                 $r->get('/pages', static fn (): Response => Response::redirect('/admin/content/page'))
@@ -1091,6 +1098,7 @@ final class AdminServiceProvider extends ServiceProvider
             ['tools.queue', 'admin.menu.tools_items.queue', 'layers', '/admin/tools/queue', 20],
             ['tools.system', 'admin.menu.tools_items.system', 'activity', '/admin/tools/system', 30],
             ['tools.api', 'admin.menu.tools_items.api', 'code', '/admin/tools/api', 40],
+            ['tools.updates', 'admin.menu.tools_items.updates', 'download', '/admin/tools/updates', 50],
         ] as [$id, $label, $icon, $url, $position]) {
             $menu->addChild('tools', new MenuItem(
                 id: $id,

@@ -258,6 +258,8 @@ final class Response
     public function send(): void
     {
         if (!headers_sent()) {
+            // `expose_php` is off in the Docker image; other hosts must not advertise PHP either.
+            header_remove('X-Powered-By');
             http_response_code($this->status);
             foreach ($this->headers as $entry) {
                 header($entry['name'] . ': ' . $entry['value'], true);

@@ -1464,7 +1464,7 @@ final class ContentController
         }
 
         try {
-            return $this->media->findByIds($ids);
+            return $this->media->findByIds($ids, adminDetails: false);
         } catch (Throwable) {
             return [];
         }

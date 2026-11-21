@@ -63,3 +63,8 @@ Desktop.ini
 
 # Local demo runtime (generated database, cache and logs)
 /storage-demo/
+
+# Tests de bout en bout
+/tests/e2e/node_modules/
+/tests/e2e/test-results/
+/tests/e2e/playwright-report/

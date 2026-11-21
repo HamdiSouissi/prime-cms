@@ -23,6 +23,8 @@ use Prime\Console\Commands\ContentPurgeTrashCommand;
 use Prime\Console\Commands\ContentRerenderCommand;
 use Prime\Console\Commands\ContentTypesCommand;
 use Prime\Console\Commands\DbCheckCommand;
+use Prime\Console\Commands\DemoInstallCommand;
+use Prime\Console\Commands\DemoRemoveCommand;
 use Prime\Console\Commands\InstallCommand;
 use Prime\Console\Commands\LangCheckCommand;
 use Prime\Console\Commands\ListCommand;
@@ -57,6 +59,7 @@ use Prime\Console\Commands\SettingsSetCommand;
 use Prime\Console\Commands\ThemeActivateCommand;
 use Prime\Console\Commands\ThemeListCommand;
 use Prime\Console\Commands\ThemePublishCommand;
+use Prime\Console\Commands\UpdateCommand;
 use Prime\Console\Commands\UserCreateCommand;
 use Prime\Console\Commands\UserDisableCommand;
 use Prime\Console\Commands\UserEnableCommand;
@@ -302,6 +305,8 @@ final class ConsoleApplication
             $this->register(new ContentPurgeTrashCommand($this->app, $entryService));
             $this->register(new ContentRerenderCommand($entryService));
             $this->register(new ContentTypesCommand($contentTypes, $taxonomies));
+            $this->register(new DemoInstallCommand($this->app));
+            $this->register(new DemoRemoveCommand($this->app));
         }
 
         if ($this->app->container()->has(MediaRepository::class) && $this->app->container()->has(UploadService::class)) {
@@ -346,6 +351,7 @@ final class ConsoleApplication
         }
 
         $this->register(new MakePluginCommand($this->app));
+        $this->register(new UpdateCommand($this->app));
 
         if ($this->app->container()->has(Hooks::class)) {
             /** @var Hooks $hooks */

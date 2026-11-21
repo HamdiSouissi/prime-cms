@@ -129,6 +129,17 @@ $this->layout('install::layout', [
 <form method="post" action="/install/run" class="pc-install__form">
     <?= $this->raw($this->csrfField()) ?>
 
+    <div class="pc-install__option">
+        <?= $this->raw($this->insert('admin::components/choice', [
+            'id' => 'install-demo-content',
+            'name' => 'demo_content',
+            'value' => '1',
+            'checked' => false,
+            'label' => $this->t('core.install.run.demo_label'),
+            'description' => $this->t('core.install.run.demo_help'),
+        ])) ?>
+    </div>
+
     <div class="pc-install__actions">
         <a href="/install/admin" class="pc-btn pc-btn--ghost">
             <?= $this->raw($this->icon('chevron-left', 16)) ?>

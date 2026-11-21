@@ -505,7 +505,7 @@ final class SeoManager
             return null;
         }
 
-        $item = $this->media->find($mediaId);
+        $item = $this->media->find($mediaId, adminDetails: false);
         if ($item === null) {
             return null;
         }

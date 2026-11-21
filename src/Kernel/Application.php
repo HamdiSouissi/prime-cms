@@ -91,7 +91,7 @@ final class Application
 
         $logger = new Logger($logPath, $level, $prefix);
         $view = new View($this->resourcesPath('views'));
-        $errorHandler = new ErrorHandler($logger, $view, $this->isDebug());
+        $errorHandler = new ErrorHandler($logger, $view, $this->showsErrorDetails());
 
         $this->container->instance(Logger::class, $logger);
         $this->container->instance(ErrorHandler::class, $errorHandler);
@@ -190,6 +190,16 @@ final class Application
     public function isDebug(): bool
     {
         return (bool) $this->config->get('app.debug', false);
+    }
+
+    /**
+     * Stack traces and source excerpts on error pages: debug mode outside production only.
+     * `APP_DEBUG=true` left on a production server is reported by « État du système » but
+     * never shows the code or the configuration to visitors.
+     */
+    public function showsErrorDetails(): bool
+    {
+        return $this->isDebug() && !$this->isProduction();
     }
 
     public function isProduction(): bool

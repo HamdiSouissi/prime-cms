@@ -39,7 +39,7 @@ final class LogServiceProvider extends ServiceProvider
                 /** @var View $view */
                 $view = $container->get(View::class);
 
-                return new ErrorHandler($logger, $view, $app->isDebug());
+                return new ErrorHandler($logger, $view, $app->showsErrorDetails());
             });
         }
     }

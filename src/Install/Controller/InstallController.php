@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prime\Install\Controller;
 
+use Prime\Demo\DemoContent;
 use Prime\Http\Exception\NotFoundException;
 use Prime\Http\Middleware\RedirectIfNotInstalled;
 use Prime\Http\Request;
@@ -18,7 +19,9 @@ use Prime\Install\InstallerValidator;
 use Prime\Install\RequirementsChecker;
 use Prime\Kernel\Application;
 use Prime\Kernel\Config;
+use Prime\Log\Logger;
 use Prime\View\View;
+use Throwable;
 
 /**
  * Thin web controller guiding users through the 7-step Prime CMS installation wizard.
@@ -447,6 +450,16 @@ final class InstallController
             ]);
 
             return Response::redirect('/install/run', 302);
+        }
+
+        // Optional demonstration content (unchecked by default). The site is installed whatever
+        // happens here: a failure is logged and can be retried with `bin/prime demo:install`.
+        if ($request->body('demo_content') === '1') {
+            try {
+                DemoContent::fromApplication($this->app)->install();
+            } catch (Throwable $exception) {
+                $this->app->get(Logger::class)->warning('Contenu de démonstration non installé', ['message' => $exception->getMessage()]);
+            }
         }
 
         // Wipe ALL wizard session data (including passwords and app_key) immediately!

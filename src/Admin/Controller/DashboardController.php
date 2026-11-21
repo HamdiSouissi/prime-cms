@@ -187,7 +187,7 @@ final class DashboardController
         try {
             $pageCounts = $this->entries->countByStatus('page');
             $postCounts = $this->entries->countByStatus('post');
-            $usersTotal = $this->users !== null ? $this->users->paginate(page: 1, perPage: 1)['total'] : 0;
+            $usersTotal = $this->users !== null ? $this->users->countAll() : 0;
         } catch (Throwable) {
             return null;
         }
@@ -272,7 +272,8 @@ final class DashboardController
 
         $authors = [];
         if ($this->users !== null) {
-            foreach ($this->users->paginate(page: 1, perPage: 100)['items'] as $u) {
+            $authorIds = array_values(array_unique(array_filter(array_map(static fn (Entry $entry): ?int => $entry->authorId, $recent))));
+            foreach ($this->users->findByIds($authorIds) as $u) {
                 $authors[$u->id] = $u;
             }
         }

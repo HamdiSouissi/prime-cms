@@ -14,6 +14,7 @@ $links = [
     'queue' => ['/admin/tools/queue', 'layers'],
     'system' => ['/admin/tools/system', 'activity'],
     'api' => ['/admin/tools/api', 'code'],
+    'updates' => ['/admin/tools/updates', 'download'],
 ];
 ?>
 <nav class="pc-subnav" aria-label="<?= $this->e($this->t('admin.tools.title')) ?>">
