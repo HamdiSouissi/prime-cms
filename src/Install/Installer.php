@@ -20,6 +20,7 @@ use Prime\Media\UploadsGuard;
 use Prime\Plugins\PluginManager;
 use Prime\Security\Hasher;
 use Prime\Settings\Settings;
+use Prime\Themes\ThemeManager;
 use Throwable;
 
 /**
@@ -198,6 +199,10 @@ final class Installer
         // is installed at this point, a plugin can still be activated from the admin.
         $activePlugins = $this->activateDefaultPlugins();
 
+        // Step 8c: Publish the themes' public files (CSS, JS, fonts). `public/assets/themes/` is not
+        // versioned: without this step a fresh site is served without its stylesheet or scripts.
+        $this->publishThemeAssets();
+
         // Step 9: Emit `install.completed` hook with safe, secret-free metadata.
         $this->hooks?->emit('install.completed', [
             'site_name' => trim($config->siteName),
@@ -216,6 +221,21 @@ final class Installer
             adminUserId: $adminUserId,
             envWritten: $envWritten,
         );
+    }
+
+    private function publishThemeAssets(): void
+    {
+        if (!$this->app->container()->has(ThemeManager::class)) {
+            return;
+        }
+
+        try {
+            $this->app->get(ThemeManager::class)->publishAssets();
+        } catch (Throwable $exception) {
+            if ($this->app->container()->has(Logger::class)) {
+                $this->app->get(Logger::class)->warning('Fichiers publics des thèmes non publiés à l’installation', ['message' => $exception->getMessage()]);
+            }
+        }
     }
 
     /**
