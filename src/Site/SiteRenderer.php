@@ -93,7 +93,7 @@ final class SiteRenderer
         $entriesViews = $context->entries !== [] ? $this->entryFactory->makeMany($context->entries) : [];
         $site->bindViews($entryView, $entriesViews);
 
-        $resolved = $this->templates->resolve($context, $themeTemplateDirs);
+        $resolved = $context->isPlugin() ? null : $this->templates->resolve($context, $themeTemplateDirs);
         $vars = [
             'site' => $site,
             'context' => $context,
@@ -106,9 +106,14 @@ final class SiteRenderer
             'searchQuery' => $context->searchQuery,
         ];
 
-        $contentHtml = $resolved !== null
-            ? SiteView::renderPhpFile($resolved['file'], $vars)
-            : $this->fallbackInnerHtml($site, $context, $entryView);
+        if ($context->isPlugin()) {
+            // A plugin hands over finished, escaped markup; the theme only frames it.
+            $contentHtml = is_string($context->extra['html'] ?? null) ? $context->extra['html'] : '';
+        } else {
+            $contentHtml = $resolved !== null
+                ? SiteView::renderPhpFile($resolved['file'], $vars)
+                : $this->fallbackInnerHtml($site, $context, $entryView);
+        }
 
         // If the template already output a full HTML document (`<!DOCTYPE` / `<html`), return directly
         if (stripos($contentHtml, '<!doctype') !== false || stripos($contentHtml, '<html') !== false) {

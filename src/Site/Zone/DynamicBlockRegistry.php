@@ -498,7 +498,7 @@ final class DynamicBlockRegistry
                 }
             }
             if ($mediaIds !== []) {
-                $mediaMap = $this->media->findByIds(array_keys($mediaIds));
+                $mediaMap = $this->media->findByIds(array_keys($mediaIds), adminDetails: false);
             }
         }
 

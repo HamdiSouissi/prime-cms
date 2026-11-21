@@ -462,3 +462,27 @@ describe('Prime Media — Editor Block API & Toast Contracts', () => {
     }
   });
 });
+
+describe('Prime Media — initMediaFields initial JSON', () => {
+  test('parses escaped JSON initial data correctly', () => {
+    // Le JSON initial rendu par le serveur doit être parseable par JSON.parse
+    // y compris après échappement JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT.
+    const initial = '{"id":42,"display_name":"Logo","url":"/uploads/logo.jpg","thumbnail_url":"/uploads/logo.thumb.jpg","alt":"Logo","kind":"image"}';
+    const parsed = JSON.parse(initial);
+    assert.equal(parsed.id, 42);
+    assert.equal(parsed.display_name, 'Logo');
+
+    // Vérifie que les séquences échappées sont correctement interprétées par JSON.parse
+    const escaped = '{"title":"<b>gras</b>","amp":"a \u0026 b","apos":"it\\u0027s","quot":"say \\"hi\\""}';
+    const parsedEscaped = JSON.parse(escaped);
+    assert.equal(parsedEscaped.title, '<b>gras</b>');
+    assert.equal(parsedEscaped.amp, 'a & b');
+    assert.equal(parsedEscaped.apos, "it's");
+    assert.equal(parsedEscaped.quot, 'say "hi"');
+
+    // Un titre contenant </script> ne doit pas casser le parsing
+    const xssTitle = '{"title":"<script>alert(1)</script>"}';
+    const parsedXss = JSON.parse(xssTitle);
+    assert.equal(parsedXss.title, '<script>alert(1)</script>');
+  });
+});

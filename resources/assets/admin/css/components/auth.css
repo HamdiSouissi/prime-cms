@@ -178,7 +178,7 @@
 .pc-auth-link {
   font-size: var(--text-sm);
   font-weight: 500;
-  color: var(--color-primary);
+  color: var(--brand-700);
   text-decoration: none;
 }
 

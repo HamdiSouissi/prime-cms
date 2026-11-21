@@ -27,9 +27,15 @@ jobs:
 
       - name: Verify runtime without vendor/
         run: |
-          php bin/prime list
-          php bin/prime about
-          php bin/prime routes
+          # Sans annotation, un plantage au démarrage n'est visible que dans le log du job,
+          # illisible pour qui n'a que l'accès en lecture : on en fait une annotation.
+          for cmd in list about routes; do
+            if ! php bin/prime "$cmd" > /tmp/boot.log 2>&1; then
+              echo "::error title=bin/prime $cmd ne démarre pas::$(head -n 6 /tmp/boot.log | tr '\n' ' ' | cut -c1-900)"
+              cat /tmp/boot.log
+              exit 1
+            fi
+          done
 
       - name: Verify compiled admin CSS is up to date
         run: |
@@ -507,3 +513,69 @@ jobs:
       - name: Tear down stack
         if: always()
         run: docker compose down -v
+
+  e2e:
+    name: End-to-end & accessibility (Playwright + axe, Docker)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Let the web container write the installer files (.env, uploads, published assets)
+        run: chmod -R a+rwX .
+
+      - name: Start stack with Docker Compose
+        run: docker compose up -d --build
+
+      - name: Wait for the application and the database
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/health > /dev/null && \
+               docker compose exec -T app php bin/prime db:check > /dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs app
+          exit 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - name: Install Playwright and Chromium
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run the end-to-end suite (web install, admin, site, axe)
+        working-directory: tests/e2e
+        env:
+          CI: 'true'
+          E2E_BASE_URL: http://localhost:8080
+          E2E_DB_HOST: db
+          E2E_DB_NAME: prime_cms
+          E2E_DB_USER: prime
+          E2E_DB_PASSWORD: secret
+        run: npx playwright test
+
+      - name: Keep screenshots, traces and report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            tests/e2e/test-results/
+            tests/e2e/playwright-report/
+          retention-days: 7
+
+      - name: Application logs on failure
+        if: failure()
+        run: |
+          docker compose logs app | tail -200
+          tail -100 storage/logs/*.log || true

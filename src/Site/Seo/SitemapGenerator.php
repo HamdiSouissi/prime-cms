@@ -266,7 +266,7 @@ final class SitemapGenerator
             return [];
         }
 
-        return $this->media->findByIds(array_keys($ids));
+        return $this->media->findByIds(array_keys($ids), adminDetails: false);
     }
 
     /**

@@ -332,9 +332,13 @@ final class EntryView
         }
 
         $refDate = $this->entry->publishedAt ?? $this->entry->createdAt;
+        // Bounded: only the few entries just around the reference date (ties are resolved below).
         $candidates = $this->query->newQuery()
             ->type($this->entry->type)
+            ->before(self::shiftSeconds($refDate, 1))
             ->orderBy('published_at', 'DESC')
+            ->orderBy('id', 'DESC')
+            ->limit(10)
             ->get();
 
         foreach ($candidates as $cand) {
@@ -368,7 +372,10 @@ final class EntryView
         $refDate = $this->entry->publishedAt ?? $this->entry->createdAt;
         $candidates = $this->query->newQuery()
             ->type($this->entry->type)
+            ->after(self::shiftSeconds($refDate, -1))
             ->orderBy('published_at', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->limit(10)
             ->get();
 
         foreach ($candidates as $cand) {
@@ -383,6 +390,13 @@ final class EntryView
         }
 
         return $this->nextCache;
+    }
+
+    private static function shiftSeconds(string $dateTime, int $seconds): string
+    {
+        $timestamp = strtotime($dateTime . ' UTC');
+
+        return gmdate('Y-m-d H:i:s', ($timestamp === false ? time() : $timestamp) + $seconds);
     }
 
     /**

@@ -8,6 +8,7 @@ use Prime\Content\Fields\FieldRegistry;
 use Prime\Content\Fields\FieldValidator;
 use Prime\Database\Connection;
 use Prime\Editor\BlockRegistry;
+use Prime\Editor\EditorRegistry;
 use Prime\Editor\Renderer;
 use Prime\Hooks\Hooks;
 use Prime\Http\Router;
@@ -28,6 +29,7 @@ final class ContentServiceProvider extends ServiceProvider
         $c = $app->container();
 
         $c->singleton(HtmlSanitizer::class, static fn (): HtmlSanitizer => new HtmlSanitizer());
+        $c->singleton(EditorRegistry::class, static fn (): EditorRegistry => new EditorRegistry());
 
         $c->singleton(ContentTypeRegistry::class, static function () use ($c): ContentTypeRegistry {
             $hooks = $c->has(Hooks::class) ? $c->get(Hooks::class) : null;

@@ -190,7 +190,7 @@ final class SiteView
             return '';
         }
 
-        $item = $this->media->find($id);
+        $item = $this->media->find($id, adminDetails: false);
         if ($item === null || !$item->isImage()) {
             return '';
         }
@@ -445,24 +445,17 @@ final class SiteView
      */
     public function entries(array $args = []): array
     {
-        $q = $this->entryQuery->newQuery();
-
-        if (isset($args['type'])) {
-            $q->type($args['type']);
-        } else {
-            $q->type('post');
-        }
+        // EntryQuery is immutable: every call returns a new query, which must be kept.
+        $q = $this->entryQuery->newQuery()->type($args['type'] ?? 'post');
 
         if (isset($args['taxonomy'], $args['term_id'])) {
-            $q->whereTerm($args['taxonomy'], $args['term_id']);
+            $q = $q->whereTerm($args['taxonomy'], $args['term_id']);
         }
 
         $orderBy = is_string($args['order_by'] ?? null) ? $args['order_by'] : 'published_at';
         $direction = is_string($args['direction'] ?? null) ? $args['direction'] : 'DESC';
-        $q->orderBy($orderBy, $direction);
-
         $limit = isset($args['limit']) ? max(1, min(50, $args['limit'])) : 6;
-        $q->limit($limit);
+        $q = $q->orderBy($orderBy, $direction)->limit($limit);
 
         return $this->entryFactory->makeMany($q->get());
     }

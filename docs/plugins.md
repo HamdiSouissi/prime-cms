@@ -19,11 +19,14 @@ content/plugins/mon-plugin/
 └── README.md            # Optionnel : documentation du plugin
 ```
 
-Générez rapidement un squelette prêt à être activé :
+Partez d'une copie de `prime-starter`, renommée partout (slug, namespace, capacité, table, clés de traduction) et livrée avec ses tests :
 
 ```bash
 php bin/prime make:plugin mon-plugin --name="Mon Plugin" --author="Mon Équipe" [--license="proprietary"]
+php bin/prime make:plugin mon-plugin --minimal   # squelette vide (plugin.json + src/Plugin.php)
 ```
+
+Voir [`plugin-starter.md`](plugin-starter.md).
 
 ---
 
@@ -111,6 +114,9 @@ Tout plugin implémente `Prime\Plugins\PluginInterface` (ou étend `Prime\Plugin
 | `$context->taxonomies()` | Façade `PluginTaxonomies` : enregistre des taxonomies attribuées automatiquement à `plugin:{slug}`. |
 | `$context->fields()` | Façade `PluginFields` : enregistre des groupes de champs personnalisés (`main`/`sidebar`) attribués à `plugin:{slug}`. |
 | `$context->blocks()` | Façade `PluginBlocks` : enregistre des blocs serveur Prime Editor et publie leurs scripts ES client via `enqueueScript()`. |
+| `$context->editors()` | Façade `PluginEditors` : éditeur de contenu alternatif (nom `{slug}` ou `{slug}-…`), choisi par un type de contenu (`editor:`) ou le filtre `content.editor`. |
+| `$context->api()` | Routes REST sous `/api/{slug}/v1` (voir plus bas). |
+| `$context->renderPage(Request, $title, $html, $description = '', $status = 200)` | Page publique encadrée par le thème actif (en-tête, menus, pied, SEO). |
 | `$context->setSettingsUrl(string $url)` | Définit le lien du bouton **Réglages** sur `/admin/plugins`. |
 
 ---
@@ -159,7 +165,7 @@ php bin/prime plugin:deactivate <slug>
 php bin/prime plugin:uninstall <slug> [--keep-files]
 php bin/prime plugin:install <archive.zip> [--replace] [--force]
 php bin/prime plugin:publish-assets [slug]
-php bin/prime make:plugin <slug> [--name="..."] [--author="..."] [--namespace="..."] [--license="proprietary"]
+php bin/prime make:plugin <slug> [--name="..."] [--author="..."] [--namespace="..."] [--license="proprietary"] [--minimal]
 ```
 
 ---
@@ -189,3 +195,78 @@ Un plugin s'intègre aux nouveaux services sans code d'interface :
 - **Diagnostic** : filtre `system.checks` pour ajouter des contrôles à **Outils › État du système**.
 
 Le plugin de référence `hello-prime` illustre la traduction de tous ses libellés (`content/plugins/hello-prime/lang/`).
+
+## API REST des plugins
+
+`PluginContext::api()` déclare des routes sous `/api/{slug}/v1`. Elles bénéficient de toute la mécanique du noyau :
+- les mêmes middlewares : activation, authentification par jeton ou par session, limite de débit, contrôle du corps, capacité ;
+- le même format d'erreur ;
+- une entrée dans `GET /api/v1/openapi.json`.
+
+```php
+public function register(PluginContext $context): void
+{
+    // Schéma réutilisable dans la description OpenAPI (préfixez le nom par celui du plugin).
+    $context->api()->schema('HelloPrimeGreeting', [
+        'type' => 'object',
+        'properties' => ['id' => ['type' => 'integer'], 'message' => ['type' => 'string']],
+    ]);
+
+    // Lecture publique : `public: true` doit être explicite.
+    $context->api()->get('/greetings', [GreetingsApi::class, 'index'], public: true, options: [
+        'summary' => 'Latest greetings',
+        'response' => ['$ref' => '#/components/schemas/HelloPrimeGreeting'],
+    ]);
+
+    // Écriture protégée par une capacité déclarée par le plugin.
+    $context->api()->post('/greetings', [GreetingsApi::class, 'store'], permission: 'hello_prime.manage', options: [
+        'errors' => [401, 403, 422],
+    ]);
+}
+```
+
+**Règles :**
+- **Accès toujours explicite.** Chaque route nomme une capacité (`permission:`), ou `ApiRoute::AUTHENTICATED` pour « tout appelant authentifié », ou se déclare `public: true`. Sans l'un des deux, une `InvalidArgumentException` est levée dès l'enregistrement.
+- **Pas de doublon.** Deux routes qui répondent à la même méthode et à la même forme d'URL lèvent une `LogicException` qui nomme les deux déclarants.
+- **Données de la requête.**
+  - Le gestionnaire reçoit la `Request`, les paramètres de chemin par leur nom et les services du conteneur.
+  - Le corps JSON validé se lit avec `$request->attribute('api.body')`.
+  - L'utilisateur se lit avec `$request->attribute('api.user')` ; ses capacités sont déjà réduites à celles du jeton.
+- **Erreurs.**
+  - Une exception levée par le gestionnaire devient une erreur 500 `server_error`, sans aucun détail. Elle est journalisée avec le slug du plugin, qui reste actif.
+  - Pour renvoyer une erreur au format commun, utilisez `Prime\Api\ApiError::response('validation_failed', 422, $request, ['fields' => [...]])`.
+- **Capacités.** Celles déclarées par `capabilities()->register()` sont proposées à la création d'un jeton, comme celles du noyau.
+- **Ressources du noyau.** Le filtre `api.resource.{entry|term|user}` permet d'ajouter des membres à une ressource. Un résultat invalide (exception, autre chose qu'un tableau, `id` modifié) est ignoré.
+
+Le plugin `hello-prime` sert de référence : voir `content/plugins/hello-prime/src/Api/GreetingsApi.php`.
+
+---
+
+## Points d'extension (récapitulatif v1)
+
+Tout ce qu'un plugin peut faire passe par une de ces portes ; aucune ne demande de toucher au noyau.
+`prime-starter` les utilise toutes, une section numérotée par point dans `src/Plugin.php`.
+
+| Besoin | Point d'extension | Règle |
+|--------|-------------------|-------|
+| Droits | `capabilities()->register('mon_plugin.x', …)` | préfixe `{slug en snake_case}.` ; retiré de tous les rôles et jetons à la désinstallation |
+| Réglages | filtre `settings.register` | noms `plugin.{slug}.…` ; supprimés à la désinstallation |
+| Écrans d'admin | `router()->adminGroup(…, capability:)` + filtre `admin.menu` | URL `/admin/{slug}/…`, CSRF et session du noyau |
+| Page publique | `router()->frontGroup()` + `renderPage()` | refus au démarrage d'un préfixe du noyau (`/admin`, `/api`, `/uploads`…) ou d'une route déjà prise |
+| Styles et scripts publics | `site.assets` (`ThemeAssetRegistry::style()/script()`) | fichiers de `assets/`, jamais de code en ligne (CSP) |
+| API REST | `api()->get/post/patch/delete` + `api()->schema()` | `/api/{slug}/v1`, documentée dans l'OpenAPI |
+| Bloc Prime Editor | `blocks()->register()` + `enqueueScript()` | validation et rendu côté serveur, HTML filtré |
+| Bloc de zone | filtre `blocks.dynamic` | rendu serveur, échappement à la charge du plugin |
+| Éditeur alternatif | `editors()->register()` + filtre `content.editor` | doit écrire `content_json` ; en cas d'absence ou d'erreur, retour à Prime Editor avec un avertissement |
+| Tâche planifiée | filtre `scheduler.register` | nom `{slug}.…`, `owner: '{slug}'` |
+| Travail en file | filtre `jobs.register_handlers` | nom `{slug}.…` ; travaux en attente supprimés à la désinstallation |
+| E-mail | `Mailer::sendTemplate('{slug}::mail/…')` | gabarit dans `views/mail/`, mise en page `mail::layout` |
+| Diagnostic | filtre `system.checks` | pas de secret dans la valeur |
+| Traductions | `lang/{fr,en}/messages.php` | clés `plugin::{slug}.…`, chargées même pour un plugin installé après le démarrage |
+
+### Désinstallation
+
+`plugin:uninstall` (ou le bouton de l'admin) annule les migrations, supprime les réglages
+`plugin.{slug}.*`, les notifications, la capacité sur chaque rôle et chaque jeton d'API, les travaux
+en file du plugin (gestionnaire `{slug}.…` ou gabarit `{slug}::…`) et ses horodatages du
+planificateur, puis le dossier — sauf avec `--keep-files`.

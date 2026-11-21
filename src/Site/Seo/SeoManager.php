@@ -83,6 +83,7 @@ final class SeoManager
                 $siteName,
                 $sep,
             ),
+            PageContext::TYPE_PLUGIN => $this->formatTitle(is_string($context->extra['title'] ?? null) && trim($context->extra['title']) !== '' ? trim($context->extra['title']) : $siteName, $siteName, $sep),
             default => $this->formatTitle($this->t('site.error.not_found_title'), $siteName, $sep),
         };
 
@@ -120,6 +121,8 @@ final class SeoManager
             $desc = $this->truncateText($context->term->description, 160);
         } elseif ($context->isAuthor() && $context->author !== null && $context->author->bio !== null) {
             $desc = $this->truncateText($context->author->bio, 160);
+        } elseif ($context->isPlugin() && is_string($context->extra['description'] ?? null)) {
+            $desc = trim($context->extra['description']);
         }
 
         if ($desc === '') {
@@ -502,7 +505,7 @@ final class SeoManager
             return null;
         }
 
-        $item = $this->media->find($mediaId);
+        $item = $this->media->find($mediaId, adminDetails: false);
         if ($item === null) {
             return null;
         }

@@ -36,7 +36,9 @@ final readonly class ContentType
     public const VALID_ACCENTS = ['brand', 'teal', 'violet', 'sky', 'amber'];
 
     /**
-     * Allowed editor engines (`blocks` now, `builder` reserved for Phase 11).
+     * Editors known to the core. Any other lowercase slug is accepted too: it names an editor
+     * a plugin registers through `PluginContext::editors()`, and the admin falls back to
+     * `blocks` while nobody provides it.
      *
      * @var list<string>
      */
@@ -103,7 +105,7 @@ final readonly class ContentType
             throw new InvalidArgumentException(sprintf('Invalid accent [%s] for content type [%s].', $accent, $name));
         }
 
-        if (!in_array($editor, self::VALID_EDITORS, true)) {
+        if (!in_array($editor, self::VALID_EDITORS, true) && preg_match('/^[a-z][a-z0-9_-]{1,39}$/', $editor) !== 1) {
             throw new InvalidArgumentException(sprintf('Invalid editor [%s] for content type [%s].', $editor, $name));
         }
 

@@ -74,7 +74,8 @@ final class Mailer implements MailerInterface
      */
     public function render(string $template, string $to, string $subject, array $data = []): Message
     {
-        $view = 'mail::' . $template;
+        // Core templates live in `mail::`; a plugin passes its own namespace (`my-plugin::mail/digest`).
+        $view = str_contains($template, '::') ? $template : 'mail::' . $template;
         $siteName = $this->config->fromName();
         // The caller wins: a plugin rendering the same template for another brand must be able to say so.
         $payload = $data + ['site_name' => $siteName, 'subject' => $subject];

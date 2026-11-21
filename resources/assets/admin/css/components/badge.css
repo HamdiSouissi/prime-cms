@@ -33,7 +33,7 @@
 
 .pc-badge--brand {
   background-color: var(--brand-soft);
-  color: var(--brand-600);
+  color: var(--brand-700); /* 4.5:1 on the soft background (brand-600 only reaches 4.26) */
   border-color: var(--brand-200);
 }
 

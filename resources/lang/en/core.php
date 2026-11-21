@@ -354,6 +354,8 @@ return [
         'run' => [
             'contenu_exact_fichier_env' => 'Exact content of the .env file',
             'creer_fichier_env' => 'Create the <code>.env</code> file manually at the project root',
+            'demo_help' => 'Pages, posts, generated images, menus and zones to discover the theme. Removed with one command: php bin/prime demo:remove.',
+            'demo_label' => 'Install the demonstration content',
             'email' => 'E-mail address',
             'masque_stocke_argon2id' => 'Hidden (stored with Argon2id)',
             'nom_site' => 'Site name',

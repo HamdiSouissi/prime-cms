@@ -29,6 +29,26 @@ final class TermRepository
         return $row !== null ? Term::fromRow($row) : null;
     }
 
+    /**
+     * @param list<int> $ids
+     * @return array<int, Term>
+     */
+    public function findManyById(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
+        if ($ids === []) {
+            return [];
+        }
+
+        $terms = [];
+        foreach ($this->db->table('terms')->whereIn('id', $ids)->get() as $row) {
+            $term = Term::fromRow($row);
+            $terms[$term->id] = $term;
+        }
+
+        return $terms;
+    }
+
     public function findBySlug(string $taxonomy, string $slug): ?Term
     {
         $row = $this->db->table('terms')

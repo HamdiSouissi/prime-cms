@@ -191,6 +191,22 @@ final class SettingsFormProcessor
             }
         }
 
+        if (array_key_exists('origins', $rules)) {
+            // One web origin per line: `https://host[:port]`, or plain http for local development.
+            // A path, a query or a trailing slash would never match a browser `Origin` header.
+            unset($rules['origins']);
+            foreach (preg_split('/\R/', is_string($value) ? $value : '') ?: [] as $line) {
+                $line = trim($line);
+                if ($line !== '' && preg_match('#^(https://[a-z0-9.-]+|http://(localhost|127\.0\.0\.1))(:\d{1,5})?$#i', $line) !== 1) {
+                    return t('validation.origin', [':label' => SettingsText::label($field), ':value' => $line]);
+                }
+            }
+
+            if ($rules === []) {
+                return null;
+            }
+        }
+
         if ($field->type === 'url' && is_string($value) && $value !== '' && filter_var($value, FILTER_VALIDATE_URL) === false) {
             // `Prime\Validation\Validator` has no `url` rule, so the shape is checked here with the
             // same filter the REST endpoints use: a mistyped scheme is refused, never stored.

@@ -12,6 +12,7 @@ use Prime\Http\Response;
 use Prime\Http\Session;
 use Prime\Mail\Mailer;
 use Prime\Mail\MailLogRepository;
+use Prime\Media\MediaRepository;
 use Prime\Settings\Settings;
 use Prime\Settings\SettingsFormProcessor;
 use Prime\Settings\SettingsRegistry;
@@ -54,6 +55,7 @@ final class SettingsPageController
         private readonly SettingsFormProcessor $processor,
         private readonly Settings $settings,
         private readonly Session $session,
+        private readonly MediaRepository $mediaRepository,
         private readonly ?Mailer $mailer = null,
         private readonly ?MailLogRepository $mailLog = null,
         private readonly ?\Prime\Cache\CacheManager $cache = null,
@@ -93,6 +95,7 @@ final class SettingsPageController
                         ? $old[$name]
                         : ($field->isSensitive() ? null : $this->settings->get($name, $field->default)),
                     'options' => $this->registry->options($field),
+                    'media' => $field->type === 'media' ? $this->mediaInfo($this->settings->get($name, $field->default)) : null,
                 ];
             }
 
@@ -303,6 +306,23 @@ final class SettingsPageController
         }
 
         return $input;
+    }
+
+    /**
+     * Résout les données API d'un média pour l'affichage initial d'un champ « media ».
+     *
+     * @return array<string, mixed>|null
+     */
+    private function mediaInfo(mixed $value): ?array
+    {
+        $id = is_numeric($value) ? (int) $value : 0;
+        if ($id <= 0) {
+            return null;
+        }
+
+        $media = $this->mediaRepository->find($id);
+
+        return $media !== null ? $media->toApiArray() : null;
     }
 
     /**

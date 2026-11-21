@@ -2,7 +2,7 @@
 
 **Prime CMS** est un système de gestion de contenu (CMS) 100 % original écrit en **PHP 8.2+ natif**, sans framework et avec **zéro dépendance au runtime**.
 
-> Version actuelle : **0.9.0** (Phase 9 — Réglages, internationalisation FR/EN, cache de pages, e-mails SMTP, planificateur, file de tâches et outils d'administration)
+> Version actuelle : **1.0.0** — première version stable : contenus et Prime Editor, médiathèque, thèmes (Aurora), plugins (`prime-starter` fourni), API REST, réglages FR/EN, cache, e-mails, tâches planifiées, mises à jour en une commande. Historique : [`CHANGELOG.md`](CHANGELOG.md). Guide de l'administrateur : [`docs/user-guide.md`](docs/user-guide.md).
 > Référence complète d'architecture et de conventions : [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 ---
@@ -98,7 +98,7 @@ php bin/prime plugin:deactivate <slug>       # Désactive un plugin (données co
 php bin/prime plugin:uninstall <slug>        # Désinstalle un plugin inactif (--keep-files)
 php bin/prime plugin:install <zip>           # Installe un plugin depuis une archive ZIP (--replace, --force)
 php bin/prime plugin:publish-assets [slug]   # Publie les assets statiques autorisés
-php bin/prime make:plugin <slug>             # Génère le squelette d'un nouveau plugin
+php bin/prime make:plugin <slug>             # Crée un plugin à partir de prime-starter (--minimal : squelette vide)
 php bin/prime content:types                  # Liste les types de contenus et taxonomies enregistrés
 php bin/prime content:list [options]         # Liste les contenus (--type, --status, --search, --limit)
 php bin/prime content:create [options]       # Crée un contenu (--type, --title, --status, --body)
@@ -111,6 +111,14 @@ php bin/prime media:cleanup [--dry-run]      # Nettoie les fichiers orphelins da
 php bin/prime themes:list                    # Liste les thèmes détectés, statut et compatibilité
 php bin/prime themes:activate <slug>         # Active un thème valide et publie ses assets
 php bin/prime themes:publish [slug]          # Republie les assets et le CSS d'options du thème
+php bin/prime update --backup                # Met à jour la base et les fichiers après un déploiement (--backup-done, --check)
+php bin/prime demo:install                   # Contenu de démonstration (--posts, --media, --terms)
+php bin/prime demo:remove                    # Retire le contenu de démonstration sans trace
+php bin/prime api:token:create <email>       # Crée un jeton d'API (--name, --abilities, --days)
+php bin/prime cache:clear                    # Vide les caches (--pages, --data)
+php bin/prime schedule:run                   # Tâches planifiées (à lancer chaque minute par cron)
+php bin/prime queue:work                     # Traite la file de tâches
+php bin/prime lang:check --strict            # Vérifie les catalogues de traduction
 ```
 
 ---
@@ -131,6 +139,22 @@ composer cs:fix                                      # Correction automatique du
 composer stan                                        # Analyse statique PHPStan (niveau 8)
 composer test                                        # Suite complète (Unit + Integration)
 vendor/bin/phpunit --group database --fail-on-skipped # Tests SQL réels (requiert PRIME_TEST_DB_*)
+node tests/js/run.mjs                                # Tests JavaScript (Prime Editor, admin)
+```
+
+Tests de bout en bout et accessibilité (Playwright + axe-core), sur une installation **neuve**
+(la suite passe par l'installateur web) :
+
+```bash
+cd tests/e2e && npm ci && npx playwright install chromium
+E2E_BASE_URL=http://localhost:8080 E2E_DB_HOST=db npx playwright test
+```
+
+Mesures de performance sur un jeu de données réaliste :
+
+```bash
+php bin/prime demo:install --posts=1000 --media=300 --terms=50
+php tests/perf/measure.php
 ```
 
 ---
@@ -150,14 +174,20 @@ prime-cms/
 ├── resources/                # Vues PHP (layouts, admin, install, errors) et assets sources
 ├── src/                      # Code source du noyau (namespace Prime\)
 ├── storage/                  # Cache, logs, sessions, installed.lock (non versionné)
-└── tests/                    # Tests unitaires et d'intégration (y compris #[Group('database')])
+└── tests/                    # Unitaires, intégration (#[Group('database')]), JS, e2e (Playwright) et perf
 ```
 
 ---
 
 ## Documentation
 
-- [`docs/CONTEXT.md`](docs/CONTEXT.md) — Architecture, règles absolues, design system et feuille de route en 15 phases
+- [`docs/user-guide.md`](docs/user-guide.md) — Guide de l'administrateur (prise en main, contenus, médias, apparence, réglages, outils, utilisateurs, plugins, clavier)
+- [`docs/upgrade.md`](docs/upgrade.md) — Mettre à jour Prime CMS (`bin/prime update`, Outils › Mises à jour)
+- [`docs/security-audit.md`](docs/security-audit.md) — Audit de sécurité de la version 1.0
+- [`docs/api.md`](docs/api.md) — API REST `/api/v1`, jetons, OpenAPI et API des plugins
+- [`docs/plugin-starter.md`](docs/plugin-starter.md) — Le plugin de départ `prime-starter` et `make:plugin`
+- [`CHANGELOG.md`](CHANGELOG.md) — Journal des versions (phases 1 à 12)
+- [`docs/CONTEXT.md`](docs/CONTEXT.md) — Architecture, règles absolues, design system et feuille de route en 12 phases
 - [`docs/database.md`](docs/database.md) — Couche PDO, `QueryBuilder`, `Schema`/`Blueprint`, migrations et `Settings`
 - [`docs/install.md`](docs/install.md) — Assistant d'installation web, repli `.env` lecture seule et CLI `bin/prime install`
 - [`docs/security.md`](docs/security.md) — Architecture sécurité (Argon2id, AES-256-GCM, sessions, remember-me, rate limiting, 2FA TOTP)

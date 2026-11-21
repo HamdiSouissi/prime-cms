@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Prime\Admin\AdminServiceProvider;
+use Prime\Api\ApiServiceProvider;
 use Prime\Auth\AuthServiceProvider;
 use Prime\Cache\CacheServiceProvider;
 use Prime\Content\ContentServiceProvider;
@@ -47,6 +48,7 @@ return [
         MailServiceProvider::class,
         HttpServiceProvider::class,
         AuthServiceProvider::class,
+        ApiServiceProvider::class,
         InstallServiceProvider::class,
         MediaServiceProvider::class,
         ContentServiceProvider::class,

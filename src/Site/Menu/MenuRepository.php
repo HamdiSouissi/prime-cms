@@ -274,18 +274,20 @@ final class MenuRepository
             return [];
         }
 
-        // Batch-load referenced entries & terms to avoid N+1
-        $entryMap = [];
-        $termMap = [];
+        // Referenced entries and terms: one query each, whatever the number of items.
+        $entryIds = [];
+        $termIds = [];
         foreach ($rows as $row) {
             $type = (string) ($row['type'] ?? self::TYPE_URL);
-            $tid = isset($row['target_id']) && is_numeric($row['target_id']) ? (int) $row['target_id'] : null;
-            if ($type === self::TYPE_ENTRY && $tid !== null && $tid > 0 && $this->entries !== null && !isset($entryMap[$tid])) {
-                $entryMap[$tid] = $this->entries->find($tid, withRelations: false);
-            } elseif ($type === self::TYPE_TERM && $tid !== null && $tid > 0 && $this->terms !== null && !isset($termMap[$tid])) {
-                $termMap[$tid] = $this->terms->find($tid);
+            $tid = isset($row['target_id']) && is_numeric($row['target_id']) ? (int) $row['target_id'] : 0;
+            if ($type === self::TYPE_ENTRY && $tid > 0) {
+                $entryIds[] = $tid;
+            } elseif ($type === self::TYPE_TERM && $tid > 0) {
+                $termIds[] = $tid;
             }
         }
+        $entryMap = $this->entries !== null ? $this->entries->findManyById($entryIds) : [];
+        $termMap = $this->terms !== null ? $this->terms->findManyById($termIds) : [];
 
         $byParent = [];
         foreach ($rows as $row) {

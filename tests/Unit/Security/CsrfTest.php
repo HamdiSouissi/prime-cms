@@ -83,10 +83,15 @@ final class CsrfTest extends TestCase
 
         // JSON request without token returns structured 419 JSON.
         $jsonRejected = $middleware->process(
-            Request::create('POST', '/api/test', headers: ['Accept' => 'application/json']),
+            Request::create('POST', '/admin/test', headers: ['Accept' => 'application/json']),
             $okHandler,
         );
         $this->assertSame(419, $jsonRejected->status());
         $this->assertStringContainsString('"code":419', $jsonRejected->body());
+
+        // The REST API enforces its own rule (bearer tokens exempt, sessions need X-Prime-CSRF),
+        // so the form-token middleware steps aside for /api/*.
+        $api = $middleware->process(Request::create('POST', '/api/v1/content/post'), $okHandler);
+        $this->assertSame(200, $api->status());
     }
 }

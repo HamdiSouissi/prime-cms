@@ -68,7 +68,7 @@ final class EntryViewFactory
         }
 
         $mediaMap = ($this->media !== null && $mediaIds !== [])
-            ? $this->media->findByIds(array_keys($mediaIds))
+            ? $this->media->findByIds(array_keys($mediaIds), adminDetails: false)
             : [];
 
         $views = [];

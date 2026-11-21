@@ -6,17 +6,23 @@ namespace Prime\Plugins;
 
 use Prime\Admin\Menu\AdminMenu;
 use Prime\Admin\Notices;
+use Prime\Api\ApiRouteRegistry;
 use Prime\Auth\Capabilities;
 use Prime\Content\ContentTypeRegistry;
 use Prime\Content\Fields\FieldRegistry;
 use Prime\Content\TaxonomyRegistry;
 use Prime\Database\Connection;
 use Prime\Editor\BlockRegistry;
+use Prime\Editor\EditorRegistry;
 use Prime\Hooks\Hooks;
+use Prime\Http\Request;
+use Prime\Http\Response;
 use Prime\Http\Router;
 use Prime\Kernel\Application;
 use Prime\Log\Logger;
 use Prime\Settings\Settings;
+use Prime\Site\PageContext;
+use Prime\Site\SiteRenderer;
 use Prime\View\View;
 
 /**
@@ -31,6 +37,10 @@ final class PluginContext
 {
     private readonly PluginHooks $pluginHooks;
     private readonly PluginRouter $pluginRouter;
+
+    private ?PluginApi $pluginApi = null;
+
+    private ?PluginEditors $pluginEditors = null;
     private readonly PluginCapabilities $pluginCapabilities;
     private readonly PluginSettings $pluginSettings;
     private readonly PluginNotices $pluginNotices;
@@ -108,6 +118,42 @@ final class PluginContext
     public function router(): PluginRouter
     {
         return $this->pluginRouter;
+    }
+
+    /**
+     * Alternative content editors (a content type opts in with `editor: '<name>'`).
+     */
+    public function editors(): PluginEditors
+    {
+        return $this->pluginEditors ??= new PluginEditors(
+            $this->app->get(EditorRegistry::class),
+            $this->manifest->slug,
+            fn (string $asset): string => $this->url($asset),
+        );
+    }
+
+    /**
+     * Render a public page of the plugin inside the active theme (header, menus, footer, SEO):
+     * `$html` must already be escaped — it is placed as-is in the layout's `<main>`.
+     */
+    public function renderPage(Request $request, string $title, string $html, string $description = '', int $status = 200): Response
+    {
+        $page = PageContext::plugin($request->path(), $title, $html, $description, $status);
+
+        return Response::html($this->app->get(SiteRenderer::class)->render($page), $status);
+    }
+
+    /**
+     * REST API registrar for routes under `/api/{slug}/v1`.
+     */
+    public function api(): PluginApi
+    {
+        return $this->pluginApi ??= new PluginApi(
+            $this->app,
+            $this->app->get(ApiRouteRegistry::class),
+            $this->pluginLogger,
+            $this->manifest->slug,
+        );
     }
 
     public function views(): View

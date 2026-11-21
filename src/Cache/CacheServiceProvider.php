@@ -43,7 +43,14 @@ final class CacheServiceProvider extends ServiceProvider
                 return new ApcuCache();
             }
 
-            return new FileCache($app->storagePath('cache/data'));
+            $directory = $app->config()->get('cache.data.directory');
+            if ($directory === null && $app->config()->get('app.env') === 'testing') {
+                // Chaque instance de test (createApp) doit disposer d'un cache isolé afin que
+                // les compteurs de limitation de débit et autres entrées ne fuient pas d'un test à l'autre.
+                $directory = sys_get_temp_dir() . '/prime_api_data_' . uniqid('', true);
+            }
+
+            return new FileCache($directory ?? $app->storagePath('cache/data'));
         });
 
         $c->singleton(PageCache::class, static function () use ($app, $c): PageCache {

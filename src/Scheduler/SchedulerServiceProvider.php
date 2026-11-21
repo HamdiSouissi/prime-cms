@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prime\Scheduler;
 
 use Closure;
+use Prime\Api\Repository\ApiTokenRepository;
 use Prime\Console\ConsoleApplication;
 use Prime\Console\ConsoleOutput;
 use Prime\Content\EntryService;
@@ -151,6 +152,19 @@ final class SchedulerServiceProvider extends ServiceProvider
                 },
                 '45 3 * * *',
                 'Applique la rétention du journal des e-mails.',
+            );
+        }
+
+        if ($c->has(ApiTokenRepository::class)) {
+            $schedule->call(
+                'api-tokens-prune',
+                static function () use ($c): void {
+                    /** @var ApiTokenRepository $tokens */
+                    $tokens = $c->get(ApiTokenRepository::class);
+                    $tokens->pruneOld();
+                },
+                '0 3 * * *',
+                'Supprime les jetons d’API révoqués et expirés.',
             );
         }
     }

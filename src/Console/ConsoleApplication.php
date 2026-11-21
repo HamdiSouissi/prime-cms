@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Prime\Console;
 
+use Prime\Api\Repository\ApiTokenRepository;
+use Prime\Api\Token\ApiTokenService;
 use Prime\Auth\RoleRepository;
 use Prime\Auth\UserGuard;
 use Prime\Auth\UserRepository;
 use Prime\Cache\CacheManager;
 use Prime\Console\Commands\AboutCommand;
+use Prime\Console\Commands\ApiTokenCreateCommand;
+use Prime\Console\Commands\ApiTokenListCommand;
+use Prime\Console\Commands\ApiTokenRevokeCommand;
 use Prime\Console\Commands\AssetsBuildCommand;
 use Prime\Console\Commands\CacheClearCommand;
 use Prime\Console\Commands\ContentCreateCommand;
@@ -18,6 +23,8 @@ use Prime\Console\Commands\ContentPurgeTrashCommand;
 use Prime\Console\Commands\ContentRerenderCommand;
 use Prime\Console\Commands\ContentTypesCommand;
 use Prime\Console\Commands\DbCheckCommand;
+use Prime\Console\Commands\DemoInstallCommand;
+use Prime\Console\Commands\DemoRemoveCommand;
 use Prime\Console\Commands\InstallCommand;
 use Prime\Console\Commands\LangCheckCommand;
 use Prime\Console\Commands\ListCommand;
@@ -52,6 +59,7 @@ use Prime\Console\Commands\SettingsSetCommand;
 use Prime\Console\Commands\ThemeActivateCommand;
 use Prime\Console\Commands\ThemeListCommand;
 use Prime\Console\Commands\ThemePublishCommand;
+use Prime\Console\Commands\UpdateCommand;
 use Prime\Console\Commands\UserCreateCommand;
 use Prime\Console\Commands\UserDisableCommand;
 use Prime\Console\Commands\UserEnableCommand;
@@ -145,8 +153,8 @@ final class ConsoleApplication
         }
 
         if (!isset($this->commands[$commandName])) {
-            $output->error(sprintf('Commande inconnue : "%s".', $commandName));
-            $output->error('Exécutez "php bin/prime list" pour voir les commandes disponibles.');
+            $output->error(sprintf('Commande inconnue : \"%s\".', $commandName));
+            $output->error('Exécutez \"php bin/prime list\" pour voir les commandes disponibles.');
 
             return CommandInterface::FAILURE;
         }
@@ -297,6 +305,8 @@ final class ConsoleApplication
             $this->register(new ContentPurgeTrashCommand($this->app, $entryService));
             $this->register(new ContentRerenderCommand($entryService));
             $this->register(new ContentTypesCommand($contentTypes, $taxonomies));
+            $this->register(new DemoInstallCommand($this->app));
+            $this->register(new DemoRemoveCommand($this->app));
         }
 
         if ($this->app->container()->has(MediaRepository::class) && $this->app->container()->has(UploadService::class)) {
@@ -314,6 +324,23 @@ final class ConsoleApplication
             $this->register(new MediaCleanupCommand($mediaRepo, $mediaConfig));
         }
 
+        if (
+            $this->app->container()->has(ApiTokenRepository::class)
+            && $this->app->container()->has(ApiTokenService::class)
+            && $this->app->container()->has(UserRepository::class)
+        ) {
+            /** @var ApiTokenRepository $tokens */
+            $tokens = $this->app->get(ApiTokenRepository::class);
+            /** @var ApiTokenService $tokenService */
+            $tokenService = $this->app->get(ApiTokenService::class);
+            /** @var UserRepository $users */
+            $users = $this->app->get(UserRepository::class);
+
+            $this->register(new ApiTokenCreateCommand($tokenService, $users));
+            $this->register(new ApiTokenListCommand($tokens, $users));
+            $this->register(new ApiTokenRevokeCommand($tokens));
+        }
+
         if ($this->app->container()->has(ThemeManager::class)) {
             /** @var ThemeManager $themeManager */
             $themeManager = $this->app->get(ThemeManager::class);
@@ -324,6 +351,7 @@ final class ConsoleApplication
         }
 
         $this->register(new MakePluginCommand($this->app));
+        $this->register(new UpdateCommand($this->app));
 
         if ($this->app->container()->has(Hooks::class)) {
             /** @var Hooks $hooks */

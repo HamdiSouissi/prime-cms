@@ -20,7 +20,11 @@ final class MediaRepository
     ) {
     }
 
-    public function find(int $id): ?Media
+    /**
+     * `$adminDetails`: uploader name and usage count, shown in the media library only. Public
+     * pages skip them (four queries fewer per lookup).
+     */
+    public function find(int $id, bool $adminDetails = true): ?Media
     {
         $row = $this->db->table('media')
             ->where('id', '=', $id)
@@ -30,7 +34,7 @@ final class MediaRepository
             return null;
         }
 
-        return $this->hydrateMany([$row])[0] ?? null;
+        return $this->hydrateMany([$row], $adminDetails)[0] ?? null;
     }
 
     /**
@@ -39,7 +43,7 @@ final class MediaRepository
      * @param list<int> $ids
      * @return array<int, Media>
      */
-    public function findByIds(array $ids): array
+    public function findByIds(array $ids, bool $adminDetails = true): array
     {
         $clean = array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
         if ($clean === []) {
@@ -51,7 +55,7 @@ final class MediaRepository
             ->get();
 
         $map = [];
-        foreach ($this->hydrateMany($rows) as $media) {
+        foreach ($this->hydrateMany($rows, $adminDetails) as $media) {
             $map[$media->id] = $media;
         }
 
@@ -446,7 +450,7 @@ final class MediaRepository
      * @param list<array<string, mixed>> $rows
      * @return list<Media>
      */
-    private function hydrateMany(array $rows): array
+    private function hydrateMany(array $rows, bool $adminDetails = true): array
     {
         if ($rows === []) {
             return [];
@@ -462,7 +466,7 @@ final class MediaRepository
         }
 
         $authorsMap = [];
-        $uniqueAuthorIds = array_values(array_unique($authorIds));
+        $uniqueAuthorIds = $adminDetails ? array_values(array_unique($authorIds)) : [];
         if ($uniqueAuthorIds !== []) {
             $userRows = $this->db->table('users')
                 ->select(['id', 'display_name'])
@@ -473,7 +477,7 @@ final class MediaRepository
             }
         }
 
-        $usageCounts = $this->usages !== null ? $this->usages->countByMediaIds($mediaIds) : [];
+        $usageCounts = $adminDetails && $this->usages !== null ? $this->usages->countByMediaIds($mediaIds) : [];
 
         $items = [];
         foreach ($rows as $row) {

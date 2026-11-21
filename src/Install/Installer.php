@@ -14,10 +14,13 @@ use Prime\Hooks\Hooks;
 use Prime\Install\Exception\InstallException;
 use Prime\Kernel\Application;
 use Prime\Kernel\Env;
+use Prime\Log\Logger;
 use Prime\Media\MediaConfig;
 use Prime\Media\UploadsGuard;
+use Prime\Plugins\PluginManager;
 use Prime\Security\Hasher;
 use Prime\Settings\Settings;
+use Prime\Themes\ThemeManager;
 use Throwable;
 
 /**
@@ -156,6 +159,14 @@ final class Installer
         $settings = new Settings($connection, $this->hooks);
 
         try {
+            // Keys read by the settings screens and the site…
+            $settings->set('site.name', trim($config->siteName));
+            $settings->set('language.site', $config->siteLocale);
+            $settings->set('language.admin', $config->siteLocale);
+            $settings->set('general.timezone', $config->timezone);
+            // Required by « Réglages › Général »: without it the page could not be saved at all.
+            $settings->set('site.admin_email', strtolower(trim($config->adminEmail)));
+            // …and the historical keys some components still read.
             $settings->set('site_name', trim($config->siteName));
             $settings->set('site_url', rtrim(trim($config->siteUrl), '/'));
             $settings->set('site_locale', $config->siteLocale);
@@ -184,6 +195,14 @@ final class Installer
         // Synchronize active container config/connection/settings for the current process.
         $this->syncRuntimeServices($config, $connection, $settings);
 
+        // Step 8b: Activate the plugins shipped as active (`prime-starter`). Never fatal: the site
+        // is installed at this point, a plugin can still be activated from the admin.
+        $activePlugins = $this->activateDefaultPlugins();
+
+        // Step 8c: Publish the themes' public files (CSS, JS, fonts). `public/assets/themes/` is not
+        // versioned: without this step a fresh site is served without its stylesheet or scripts.
+        $this->publishThemeAssets();
+
         // Step 9: Emit `install.completed` hook with safe, secret-free metadata.
         $this->hooks?->emit('install.completed', [
             'site_name' => trim($config->siteName),
@@ -193,6 +212,7 @@ final class Installer
             'installed_at' => $installedAt,
             'version' => Application::VERSION,
             'migrations' => $migrations,
+            'plugins' => $activePlugins,
         ]);
 
         return InstallResult::completed(
@@ -201,6 +221,54 @@ final class Installer
             adminUserId: $adminUserId,
             envWritten: $envWritten,
         );
+    }
+
+    private function publishThemeAssets(): void
+    {
+        if (!$this->app->container()->has(ThemeManager::class)) {
+            return;
+        }
+
+        try {
+            $this->app->get(ThemeManager::class)->publishAssets();
+        } catch (Throwable $exception) {
+            if ($this->app->container()->has(Logger::class)) {
+                $this->app->get(Logger::class)->warning('Fichiers publics des thèmes non publiés à l’installation', ['message' => $exception->getMessage()]);
+            }
+        }
+    }
+
+    /**
+     * @return list<string> Slugs actually activated
+     */
+    private function activateDefaultPlugins(): array
+    {
+        $slugs = $this->app->config()->get('plugins.default_active', ['prime-starter']);
+        if (!is_array($slugs) || !$this->app->container()->has(PluginManager::class)) {
+            return [];
+        }
+
+        $activated = [];
+        foreach ($slugs as $slug) {
+            if (!is_string($slug) || $slug === '') {
+                continue;
+            }
+
+            try {
+                $manager = $this->app->get(PluginManager::class);
+                if ($manager->get($slug, fresh: true) !== null) {
+                    $manager->activate($slug);
+                    $activated[] = $slug;
+                }
+            } catch (Throwable $exception) {
+                $this->app->get(Logger::class)->warning('Activation automatique impossible après installation', [
+                    'plugin' => $slug,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return $activated;
     }
 
     private function validateAll(InstallConfig $config): void

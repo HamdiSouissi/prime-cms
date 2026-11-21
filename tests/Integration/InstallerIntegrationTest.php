@@ -173,6 +173,13 @@ final class InstallerIntegrationTest extends DatabaseTestCase
         $this->assertSame('Europe/Paris', $settings->get('timezone'));
         $this->assertIsString($settings->get('installed_at'));
         $this->assertSame(Application::VERSION, $settings->get('prime_version'));
+        // The keys the admin screens and the site read (a fresh install must not show « Prime CMS »).
+        $this->assertSame('Atelier Lumière', $settings->get('site.name'));
+        $this->assertSame('fr', $settings->get('language.site'));
+        $this->assertSame('Europe/Paris', $settings->get('general.timezone'));
+        $this->assertNotSame('', (string) $settings->get('site.admin_email'), 'requis par Réglages › Général');
+        // Plugins shipped as active (`plugins.default_active`) are active after the wizard.
+        $this->assertSame('active', $this->connection->table('plugins')->where('slug', '=', 'prime-starter')->value('status'));
 
         /** @var InstallCheckerInterface $checker */
         $checker = $app->get(InstallCheckerInterface::class);

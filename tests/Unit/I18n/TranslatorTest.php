@@ -223,7 +223,7 @@ final class TranslatorTest extends TestCase
         $translator = $this->translator();
 
         $this->assertSame(['en', 'fr'], $translator->availableLocales());
-        $this->assertSame(['admin', 'core', 'mail', 'site', 'validation'], $translator->groups('fr'));
+        $this->assertSame(['admin', 'api', 'core', 'mail', 'site', 'validation'], $translator->groups('fr'));
 
         $messages = $translator->messages('fr');
         $this->assertGreaterThan(500, count($messages));

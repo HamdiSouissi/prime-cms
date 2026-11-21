@@ -31,6 +31,9 @@ final class ZoneRepository
     /**
      * Resolve the active theme slug used to scope persisted zones (`pc_zones.theme`).
      */
+    /** @var array<string, array<string, array{id: int, theme: string, slug: string, content: string, content_html: string, updated_at: string}>> */
+    private array $loaded = [];
+
     public function activeThemeSlug(?string $theme = null): string
     {
         if ($theme !== null && trim($theme) !== '') {
@@ -56,22 +59,11 @@ final class ZoneRepository
         }
         $themeSlug = $this->activeThemeSlug($theme);
 
-        $row = $this->db->table('zones')
-            ->where('theme', '=', $themeSlug)
-            ->where('slug', '=', $clean)
-            ->first();
-        if ($row === null) {
-            return null;
-        }
+        // A page asks about the same zones several times (body class, sidebar, footer columns):
+        // the theme's zones are read once, and `save()` forgets them.
+        $this->loaded[$themeSlug] ??= $this->allIndexed($themeSlug);
 
-        return [
-            'id' => (int) $row['id'],
-            'theme' => (string) $row['theme'],
-            'slug' => (string) $row['slug'],
-            'content' => (string) ($row['content'] ?? ''),
-            'content_html' => (string) ($row['content_html'] ?? ''),
-            'updated_at' => (string) ($row['updated_at'] ?? ''),
-        ];
+        return $this->loaded[$themeSlug][$clean] ?? null;
     }
 
     /**
@@ -203,6 +195,7 @@ final class ZoneRepository
         if ($this->mediaUsage !== null) {
             $this->mediaUsage->syncForZoneDocument($zoneId, $doc);
         }
+        unset($this->loaded[$themeSlug]);
 
         return [
             'id' => $zoneId,

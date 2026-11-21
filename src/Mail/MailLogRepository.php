@@ -132,11 +132,17 @@ final class MailLogRepository
      */
     public function stats(): array
     {
+        // One grouped count instead of four (this feeds the dashboard and the system status).
+        $byStatus = [];
+        foreach ($this->db->select(sprintf('SELECT `status`, COUNT(*) AS `cnt` FROM `%s` GROUP BY `status`', $this->db->prefixed(self::TABLE))) as $row) {
+            $byStatus[(string) ($row['status'] ?? '')] = (int) ($row['cnt'] ?? 0);
+        }
+
         return [
-            'total' => $this->count(),
-            'sent' => $this->count(self::STATUS_SENT),
-            'failed' => $this->count(self::STATUS_FAILED),
-            'queued' => $this->count(self::STATUS_QUEUED),
+            'total' => array_sum($byStatus),
+            'sent' => $byStatus[self::STATUS_SENT] ?? 0,
+            'failed' => $byStatus[self::STATUS_FAILED] ?? 0,
+            'queued' => $byStatus[self::STATUS_QUEUED] ?? 0,
             'last_error' => $this->lastError(),
         ];
     }

@@ -1,0 +1,231 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Prime\Api\Token;
+
+use DateInterval;
+use DateTimeImmutable;
+use DateTimeZone;
+use Prime\Api\Repository\ApiTokenRepository;
+use Prime\Auth\Capabilities;
+use Prime\Auth\User;
+use Prime\Auth\UserRepository;
+use Prime\Hooks\Hooks;
+use Prime\Settings\Settings;
+
+/**
+ * Service métier pour les jetons d'API REST (bearer tokens).
+ *
+ * Encapsule l'émission, l'authentification et la révocation des jetons.
+ * Le jeton en clair n'est jamais stocké : seule son empreinte SHA-256 est
+ * persistée, avec un préfixe de 8 caractères pour l'affichage.
+ */
+final class ApiTokenService
+{
+    public function __construct(
+        private readonly ApiTokenRepository $tokens,
+        private readonly UserRepository $users,
+        private readonly Capabilities $capabilities,
+        private readonly Settings $settings,
+        private readonly ?Hooks $hooks = null,
+    ) {
+    }
+
+    /**
+     * Émet un nouveau jeton d'API pour un utilisateur.
+     *
+     * Les capacités demandées sont filtrées à celles que l'utilisateur possède
+     * réellement (un contributeur ne peut pas se donner `settings.manage`).
+     * `['*']` est remplacé par la liste complète des capacités de l'utilisateur.
+     *
+     * @param list<string> $abilities
+     * @return array{token: string, id: int}
+     */
+    public function issue(User $user, string $name, array $abilities, ?DateTimeImmutable $expiresAt = null): array
+    {
+        // `['*']` signifie « toutes les capacités de l'utilisateur ».
+        if ($abilities === ['*']) {
+            $abilities = $this->capabilities->keys();
+        }
+
+        // Ne garder que les capacités que l'utilisateur possède réellement ($user->can()).
+        $actual = array_values(array_filter($abilities, static fn (string $cap): bool => $user->can($cap)));
+
+        // Clamp the expiration to the maximum allowed lifetime (`api.token_max_days`).
+        // A missing expiration means « as long as allowed »: with a maximum configured, no token
+        // lives forever.
+        $maxDays = (int) $this->settings->get('api.token_max_days', 365);
+        if ($maxDays > 0) {
+            $maxExpiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+                ->add(new DateInterval('P' . $maxDays . 'D'));
+            $expiresAt = $expiresAt === null ? $maxExpiresAt : $expiresAt->setTimezone(new DateTimeZone('UTC'));
+            if ($expiresAt > $maxExpiresAt) {
+                $expiresAt = $maxExpiresAt;
+            }
+        }
+
+        $expiresAtString = $expiresAt !== null
+            ? $expiresAt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')
+            : null;
+
+        $result = $this->tokens->create(
+            userId: $user->id,
+            name: $name,
+            abilities: $actual,
+            expiresAt: $expiresAtString,
+        );
+
+        $this->hooks?->emit('api.token.created', [
+            'id' => $result['id'],
+            'user_id' => $user->id,
+            'name' => $name,
+            'abilities' => $actual,
+        ]);
+
+        return ['token' => $result['token'], 'id' => $result['id']];
+    }
+
+    /**
+     * Authentifie un jeton brut et retourne l'utilisateur associé avec ses capacités.
+     *
+     * Retourne null si le jeton est inconnu, révoqué, expiré ou si l'utilisateur
+     * est désactivé.
+     *
+     * @param string|null $ip Adresse IP du client (pour last_used_ip, optionnel)
+     * @return array{user: User, abilities: list<string>, token_id: int}|null
+     */
+    public function authenticate(string $raw, ?string $ip = null): ?array
+    {
+        $row = $this->tokens->findByToken($raw);
+
+        if ($row === null) {
+            return null;
+        }
+
+        if ($row['revoked_at'] !== null && $row['revoked_at'] !== '') {
+            return null;
+        }
+
+        $expiresAt = $row['expires_at'] ?? null;
+        if ($expiresAt !== null && $expiresAt !== '') {
+            $expiresTs = strtotime((string) $expiresAt . ' UTC');
+            if ($expiresTs !== false && $expiresTs <= time()) {
+                return null;
+            }
+        }
+
+        $userId = (int) ($row['user_id'] ?? 0);
+        if ($userId <= 0) {
+            return null;
+        }
+
+        // L'utilisateur est résolu via le repository d'utilisateurs (pas via Auth, qui
+        // exigerait une session). Le service vérifie le statut actif.
+        $user = $this->users->find($userId);
+        if ($user === null || !$user->isActive()) {
+            return null;
+        }
+
+        $abilities = $this->decodeAbilities((string) ($row['abilities'] ?? '[]'));
+
+        // Reconstruire l'utilisateur avec uniquement les capacités effectives du jeton,
+        // afin que canPreview/canEdit etc. appliquent automatiquement les limites.
+        // Les rôles sont vides : isAdministrator() ne doit pas répondre vrai sur la base
+        // des rôles du compte quand le jeton ne donne que des capacités restreintes.
+        $effectiveUser = new User(
+            id: $user->id,
+            email: $user->email,
+            displayName: $user->displayName,
+            status: $user->status,
+            locale: $user->locale,
+            sessionVersion: $user->sessionVersion,
+            lastLoginAt: $user->lastLoginAt,
+            passwordChangedAt: $user->passwordChangedAt,
+            twoFactorConfirmedAt: $user->twoFactorConfirmedAt,
+            twoFactorLastStep: $user->twoFactorLastStep,
+            createdAt: $user->createdAt,
+            updatedAt: $user->updatedAt,
+            roles: [],
+            capabilities: $abilities,
+            avatarMediaId: $user->avatarMediaId,
+            username: $user->username,
+            bio: $user->bio,
+        );
+
+        // Enregistrer la dernière utilisation (throttled : au plus une fois par minute par jeton).
+        $lastUsedAt = $row['last_used_at'] ?? null;
+        $shouldTouch = true;
+        if ($lastUsedAt !== null && $lastUsedAt !== '') {
+            $lastUsedTs = strtotime((string) $lastUsedAt . ' UTC');
+            if ($lastUsedTs !== false && (time() - $lastUsedTs) < 60) {
+                $shouldTouch = false;
+            }
+        }
+        if ($shouldTouch) {
+            $this->tokens->touchLastUsed(hash('sha256', $raw), $ip);
+        }
+
+        return ['user' => $effectiveUser, 'abilities' => $abilities, 'token_id' => (int) $row['id']];
+    }
+
+    /**
+     * Trouve un jeton par son ID (sans la valeur brute).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findById(int $id): ?array
+    {
+        return $this->tokens->findById($id);
+    }
+
+    /**
+     * Liste tous les jetons d'un utilisateur (sans la valeur brute du jeton).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function listByUser(int $userId): array
+    {
+        return $this->tokens->listByUser($userId);
+    }
+
+    /**
+     * Révoque un jeton par son ID (définit revoked_at).
+     */
+    public function revoke(int $id): void
+    {
+        $row = $this->tokens->findById($id);
+        if ($row !== null && $this->tokens->revoke($id)) {
+            $this->hooks?->emit('api.token.revoked', ['id' => $id, 'user_id' => (int) $row['user_id']]);
+        }
+    }
+
+    /**
+     * Revokes every active token of an account (e.g. after a password change).
+     *
+     * @return int Number of tokens revoked
+     */
+    public function revokeAllForUser(int $userId): int
+    {
+        $revoked = 0;
+        foreach ($this->tokens->listByUser($userId) as $row) {
+            if (($row['revoked_at'] ?? null) === null) {
+                $this->revoke((int) $row['id']);
+                ++$revoked;
+            }
+        }
+
+        return $revoked;
+    }
+
+    /**
+     * @param string $json
+     * @return list<string>
+     */
+    private function decodeAbilities(string $json): array
+    {
+        $decoded = json_decode($json, true);
+
+        return is_array($decoded) ? array_values($decoded) : [];
+    }
+}

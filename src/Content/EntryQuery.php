@@ -59,6 +59,10 @@ final class EntryQuery
 
     private ?string $month = null;
 
+    private ?string $after = null;
+
+    private ?string $before = null;
+
     private ?string $search = null;
 
     /** @var list<array{taxonomy: string, values: list<int|string>}> */
@@ -124,7 +128,12 @@ final class EntryQuery
     public function statuses(array $statuses): self
     {
         $clone = clone $this;
-        $clone->statuses = array_values(array_filter($statuses, static fn (string $s): bool => in_array($s, Entry::ALL_STATUSES, true)));
+        foreach ($statuses as $status) {
+            if (!in_array($status, Entry::ALL_STATUSES, true)) {
+                throw new InvalidArgumentException(sprintf('Statut inconnu [%s].', $status));
+            }
+        }
+        $clone->statuses = $statuses;
         if (in_array(Entry::STATUS_TRASH, $clone->statuses, true)) {
             $clone->includeTrash = true;
         }
@@ -251,6 +260,46 @@ final class EntryQuery
         $clone->month = preg_match('/^\d{4}-\d{2}$/', trim($yearMonth)) === 1 ? trim($yearMonth) : null;
 
         return $clone;
+    }
+
+    /**
+     * Keeps entries published (or created, when never published) strictly after the given
+     * UTC date or date-time. Unparseable input clears the filter.
+     */
+    public function after(string $dateTime): self
+    {
+        $clone = clone $this;
+        $clone->after = self::normalizeBound($dateTime);
+
+        return $clone;
+    }
+
+    /**
+     * Keeps entries published (or created, when never published) strictly before the given
+     * UTC date or date-time. Unparseable input clears the filter.
+     */
+    public function before(string $dateTime): self
+    {
+        $clone = clone $this;
+        $clone->before = self::normalizeBound($dateTime);
+
+        return $clone;
+    }
+
+    private static function normalizeBound(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '' || preg_match('/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?(Z|[+-]\d{2}:?\d{2})?$/', $value) !== 1) {
+            return null;
+        }
+
+        try {
+            $date = new DateTimeImmutable($value, new DateTimeZone('UTC'));
+        } catch (\Exception) {
+            return null;
+        }
+
+        return $date->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
     }
 
     public function orderBy(string $column, string $direction = 'DESC'): self
@@ -443,6 +492,16 @@ final class EntryQuery
         if ($this->parentId !== null) {
             $clauses[] = 'e.parent_id = ?';
             $bindings[] = $this->parentId;
+        }
+
+        if ($this->after !== null) {
+            $clauses[] = 'COALESCE(e.published_at, e.created_at) > ?';
+            $bindings[] = $this->after;
+        }
+
+        if ($this->before !== null) {
+            $clauses[] = 'COALESCE(e.published_at, e.created_at) < ?';
+            $bindings[] = $this->before;
         }
 
         if ($this->month !== null) {

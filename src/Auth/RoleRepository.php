@@ -14,6 +14,9 @@ use Prime\Database\Connection;
  */
 final class RoleRepository
 {
+    /** @var list<Role>|null */
+    private ?array $all = null;
+
     public function __construct(private readonly Connection $connection)
     {
     }
@@ -25,12 +28,26 @@ final class RoleRepository
      */
     public function all(): array
     {
+        // Every list of users hydrates their roles: the role table is read once, and every write
+        // through this repository (or a change of user roles) forgets it.
+        if ($this->all !== null) {
+            return $this->all;
+        }
+
         $rows = $this->connection->table('roles')
             ->orderBy('is_system', 'DESC')
             ->orderBy('id', 'ASC')
             ->get();
 
-        return $this->hydrateMany($rows);
+        return $this->all = $this->hydrateMany($rows);
+    }
+
+    /**
+     * Drop the cached role list (after a write to roles, capabilities or user roles).
+     */
+    public function forget(): void
+    {
+        $this->all = null;
     }
 
     public function find(int $id): ?Role
@@ -85,6 +102,7 @@ final class RoleRepository
      */
     public function create(string $slug, string $name, ?string $description, array $capabilities): Role
     {
+        $this->forget();
         $now = $this->nowUtc();
         $cleanSlug = self::slugify($slug);
 
@@ -119,6 +137,7 @@ final class RoleRepository
      */
     public function update(int $id, string $name, ?string $description, array $capabilities): Role
     {
+        $this->forget();
         $role = $this->find($id);
         if ($role === null) {
             throw new PolicyException('Ce rôle est introuvable.');
@@ -155,6 +174,7 @@ final class RoleRepository
      */
     public function delete(int $id): void
     {
+        $this->forget();
         $role = $this->find($id);
         if ($role === null) {
             throw new PolicyException('Ce rôle est introuvable.');

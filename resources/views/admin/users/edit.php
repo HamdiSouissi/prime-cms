@@ -16,6 +16,7 @@ declare(strict_types=1);
  * @var array{display_name: string, email: string, locale: string, status: string, roles: list<int>} $old
  * @var array<string, string> $errors
  * @var list<array{label: string, url: ?string}> $breadcrumbs
+ * @var list<array<string, mixed>> $apiTokens
  */
 $this->layout('admin::layouts/app');
 ?>
@@ -267,6 +268,24 @@ $this->layout('admin::layouts/app');
             <?= $this->raw($this->insert('admin::components/card', [
                 'title' => $this->t('admin.view_users_edit.actions_de_securite'),
                 'body' => $actionsBody,
+            ])) ?>
+
+            <?php ob_start(); ?>
+            <div class="pc-stack pc-stack--md">
+                <?php if ($apiTokens === []): ?>
+                    <p class="pc-text-sm pc-text-muted"><?= $this->e($this->t('admin.view_profile_index.jeton_api_aucun')) ?></p>
+                <?php else: ?>
+                    <?= $this->raw($this->insert('admin::components/api-tokens-table', [
+                        'tokens' => $apiTokens,
+                        'revokeAction' => '/admin/users/' . $targetUser->id . '/api-tokens/{id}/revoke',
+                    ])) ?>
+                <?php endif; ?>
+            </div>
+            <?php $tokensBody = (string) ob_get_clean(); ?>
+
+            <?= $this->raw($this->insert('admin::components/card', [
+                'title' => $this->t('admin.view_profile_index.jeton_api_liste_titre'),
+                'body' => $tokensBody,
             ])) ?>
         </div>
     </div>

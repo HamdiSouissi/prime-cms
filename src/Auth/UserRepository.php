@@ -239,6 +239,11 @@ final class UserRepository
     /**
      * Count active users holding the `administrator` role (or wildcard `*` capability).
      */
+    public function countAll(): int
+    {
+        return $this->connection->table('users')->count();
+    }
+
     public function countActiveAdministrators(): int
     {
         $adminRoleIds = $this->administratorRoleIds();
@@ -415,6 +420,7 @@ final class UserRepository
      */
     private function syncRolesInternal(int $userId, array $roleIds): void
     {
+        $this->roles->forget();
         $this->connection->table('user_roles')
             ->where('user_id', '=', $userId)
             ->delete();

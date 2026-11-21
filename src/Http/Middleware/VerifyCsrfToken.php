@@ -36,6 +36,12 @@ final class VerifyCsrfToken implements MiddlewareInterface
             return $next($request);
         }
 
+        // The REST API decides for itself: bearer tokens are exempt, cookie sessions must send
+        // `X-Prime-CSRF` (see ApiAuthenticate). A form token makes no sense for a JSON client.
+        if ($request->path() === '/api' || str_starts_with($request->path(), '/api/')) {
+            return $next($request);
+        }
+
         $token = $this->csrf->extractFromRequest($request);
         if ($this->csrf->validate($token)) {
             return $next($request);

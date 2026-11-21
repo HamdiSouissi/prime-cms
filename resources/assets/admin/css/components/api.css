@@ -1,0 +1,65 @@
+/* API tokens: profile tab, user page, Tools › REST API */
+
+.pc-new-token__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.pc-new-token__value {
+    flex: 1 1 320px;
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px dashed var(--color-border-strong, var(--color-border));
+    border-radius: var(--radius-md);
+    background-color: var(--surface-subtle);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-strong);
+    word-break: break-all;
+    user-select: all;
+}
+
+.pc-token-form__basics {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr);
+    gap: var(--space-4);
+    max-width: 720px;
+}
+
+.pc-cap-group--fieldset {
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+
+.pc-cap-group__legend {
+    float: left;
+    width: 100%;
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--table-header-bg);
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-strong);
+}
+
+.pc-cap-group--fieldset .pc-cap-group__list {
+    clear: both;
+}
+
+.pc-table--tokens td {
+    vertical-align: middle;
+}
+
+.pc-table--tokens td:nth-child(1) {
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .pc-token-form__basics {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

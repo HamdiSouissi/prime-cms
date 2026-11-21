@@ -21,6 +21,9 @@ return [
     // Maximum ZIP archive upload size in megabytes (default 20 MB).
     'max_upload_mb' => max(1, (int) Env::get('PLUGINS_MAX_UPLOAD_MB', '20')),
 
+    // Plugins the installer activates on a fresh install (`hello-prime` stays available, inactive).
+    'default_active' => ['prime-starter'],
+
     // ZIP bomb & archive safety limits (L7).
     'max_zip_files' => 2000,
     'max_zip_uncompressed_bytes' => 100 * 1024 * 1024,

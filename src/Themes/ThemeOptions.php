@@ -340,7 +340,7 @@ final class ThemeOptions
             return [];
         }
 
-        $item = $this->media->find($mediaId);
+        $item = $this->media->find($mediaId, adminDetails: false);
         if ($item === null || !$item->isImage()) {
             return [];
         }

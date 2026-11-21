@@ -291,7 +291,9 @@ final class UsersAndRolesCrudTest extends TestCase
         $this->assertIsInt($infoPos);
         $this->assertIsInt($securityPos);
         $infoPanel = substr($profileMain, $infoPos, $securityPos - $infoPos);
-        $securityPanel = substr($profileMain, $securityPos);
+        // The API tokens tab follows the security tab and has its own primary action.
+        $tokensPos = strpos($profileMain, 'id="profile-tabs-panel-api-tokens"');
+        $securityPanel = $tokensPos === false ? substr($profileMain, $securityPos) : substr($profileMain, $securityPos, $tokensPos - $securityPos);
         $this->assertSame(1, substr_count($infoPanel, 'pc-btn--primary'));
         $this->assertSame(1, substr_count($securityPanel, 'pc-btn--primary'));
 
@@ -379,6 +381,7 @@ final class UsersAndRolesCrudTest extends TestCase
         $pdo->exec('CREATE TABLE pc_remember_tokens (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, selector CHAR(24) UNIQUE, validator_hash CHAR(64), expires_at DATETIME, last_used_at DATETIME NULL, user_agent VARCHAR(255) NULL, created_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_password_resets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, token_hash CHAR(64) UNIQUE, expires_at DATETIME, used_at DATETIME NULL, created_at DATETIME)');
         $pdo->exec('CREATE TABLE pc_rate_limits (key CHAR(64) PRIMARY KEY, hits INTEGER DEFAULT 0, reset_at DATETIME)');
+        $pdo->exec('CREATE TABLE pc_api_tokens (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, name VARCHAR(100) NOT NULL, token_prefix VARCHAR(12) NOT NULL, token_hash CHAR(64) NOT NULL UNIQUE, abilities TEXT NOT NULL, last_used_at DATETIME NULL, last_used_ip VARCHAR(45) NULL, expires_at DATETIME NULL, revoked_at DATETIME NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)');
 
         $now = '2026-11-15 12:00:00';
         $pdo->exec("INSERT INTO pc_roles VALUES (1, 'administrator', 'Administrateur', 'Accès complet', 1, '{$now}', '{$now}')");

@@ -1,0 +1,155 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Prime\Api\Controller;
+
+use Prime\Api\ApiError;
+use Prime\Auth\User;
+use Prime\Http\Request;
+use Prime\Http\Response;
+
+/**
+ * Contrôleur de base pour l'API REST Prime CMS.
+ *
+ * Fournit des helpers pour retourner des réponses JSON cohérentes (succès, erreur, validation).
+ */
+abstract class ApiController
+{
+    /**
+     * Retourne une réponse JSON de succès.
+     *
+     * @param array<string, mixed> $data
+     * @param array<string, string> $headers
+     */
+    protected function json(array $data, int $status = 200, array $headers = []): Response
+    {
+        return Response::json($data, $status, $headers);
+    }
+
+    /**
+     * Retourne une réponse JSON d'erreur au format standard.
+     *
+     * La clé est traduite via le catalogue `api.errors.{key}` dans la langue donnée
+     * (ou la langue par défaut du site).
+     *
+     * Format : {"error": {"code": "...", "message": "...", "status": N}}
+     *
+     * @param array<string, mixed> $replace
+     * @param array<string, string> $headers
+     */
+    protected function error(string $key, array $replace = [], int $status = 400, ?string $code = null, ?string $locale = null, array $headers = []): Response
+    {
+        $code = $code ?? $key;
+        $message = t('api.errors.' . $key, $replace, $locale);
+
+        return Response::json([
+            'error' => [
+                'code' => $code,
+                'message' => $message,
+                'status' => $status,
+            ],
+        ], $status, $headers);
+    }
+
+    /**
+     * Retourne une réponse JSON 401 non authentifié.
+     *
+     * @param array<string, mixed> $replace
+     * @param array<string, string> $headers
+     */
+    protected function unauthorized(string $key = 'unauthenticated', array $replace = [], ?string $locale = null, array $headers = []): Response
+    {
+        return $this->error($key, $replace, 401, 'unauthenticated', $locale, $headers);
+    }
+
+    /**
+     * Retourne une réponse JSON 403 interdit.
+     *
+     * @param array<string, mixed> $replace
+     * @param array<string, string> $headers
+     */
+    protected function forbidden(string $key = 'forbidden', array $replace = [], ?string $locale = null, array $headers = []): Response
+    {
+        return $this->error($key, $replace, 403, 'forbidden', $locale, $headers);
+    }
+
+    /**
+     * Retourne une réponse JSON 404 non trouvé.
+     *
+     * @param array<string, mixed> $replace
+     * @param array<string, string> $headers
+     */
+    protected function notFound(string $key = 'not_found', array $replace = [], ?string $locale = null, array $headers = []): Response
+    {
+        return $this->error($key, $replace, 404, 'not_found', $locale, $headers);
+    }
+
+    /**
+     * Retourne une réponse JSON 204 No Content.
+     *
+     * @param array<string, string> $headers
+     */
+    protected function noContent(array $headers = []): Response
+    {
+        return Response::noContent($headers);
+    }
+
+    /**
+     * Extrait l'utilisateur courant depuis la requête (attribut défini par le middleware d'auth API).
+     */
+    protected function currentUser(Request $request): ?User
+    {
+        return $request->attribute('api.user');
+    }
+
+    /**
+     * Vérifie que l'utilisateur courant est authentifié, sinon retourne une réponse 401.
+     *
+     * @return true|Response Retourne true si authentifié, une Response 401 sinon.
+     */
+    protected function requireAuth(Request $request): true|Response
+    {
+        $user = $this->currentUser($request);
+
+        return $user !== null ? true : $this->unauthorized();
+    }
+    /**
+     * Decoded JSON (or multipart fields) of the request, validated by the `api.body` middleware.
+     *
+     * @return array<array-key, mixed>
+     */
+    protected function body(Request $request): array
+    {
+        $body = $request->attribute('api.body');
+
+        return is_array($body) ? $body : [];
+    }
+
+    /**
+     * 422 with one message per invalid field.
+     *
+     * @param array<string, mixed> $errors Field => message or list of messages
+     */
+    protected function validationFailed(Request $request, array $errors): Response
+    {
+        $fields = [];
+        foreach ($errors as $field => $messages) {
+            $first = $messages;
+            while (is_array($first)) {
+                $first = $first === [] ? '' : reset($first);
+            }
+            $fields[(string) $field] = (string) $first;
+        }
+
+        return ApiError::response('validation_failed', 422, $request, ['fields' => $fields]);
+    }
+
+    /**
+     * @param array<string, string> $headers
+     */
+    protected function failure(Request $request, string $code, int $status, array $headers = []): Response
+    {
+        return ApiError::response($code, $status, $request, [], $headers);
+    }
+}

@@ -354,6 +354,8 @@ return [
         'run' => [
             'contenu_exact_fichier_env' => 'Contenu exact du fichier .env',
             'creer_fichier_env' => 'Créez manuellement le fichier <code>.env</code> à la racine du projet',
+            'demo_help' => 'Pages, articles, images générées, menus et zones pour découvrir le thème. Retrait en une commande : php bin/prime demo:remove.',
+            'demo_label' => 'Installer le contenu de démonstration',
             'email' => 'Adresse e-mail',
             'masque_stocke_argon2id' => 'Masqué (stocké en Argon2id)',
             'nom_site' => 'Nom du site',

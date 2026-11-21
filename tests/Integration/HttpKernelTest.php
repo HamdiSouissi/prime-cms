@@ -273,7 +273,8 @@ final class HttpKernelTest extends TestCase
 
         /** @var array<string, mixed> $payload */
         $payload = json_decode($response->body(), true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame(404, $payload['error']['code']);
+        $this->assertSame('not_found', $payload['error']['code']);
+        $this->assertSame(404, $payload['error']['status']);
         $this->assertSame('Page introuvable.', $payload['error']['message']);
     }
 

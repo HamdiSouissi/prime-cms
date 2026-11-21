@@ -7,6 +7,7 @@ namespace Prime\Settings;
 use DateTimeZone;
 use Prime\Auth\RoleRepository;
 use Prime\Cache\CacheInterface;
+use Prime\Content\Entry;
 use Prime\Content\EntryQuery;
 use Prime\Content\TermRepository;
 use Prime\Database\Connection;
@@ -183,7 +184,7 @@ final class SettingsServiceProvider extends ServiceProvider
             $query = $c->get(EntryQuery::class);
             $rows = $query->newQuery()
                 ->type($type)
-                ->status('publish')
+                ->status(Entry::STATUS_PUBLISHED)
                 ->orderBy('title', 'ASC')
                 ->limit(300)
                 ->get();
