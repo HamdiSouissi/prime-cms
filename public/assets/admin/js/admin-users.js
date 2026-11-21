@@ -200,7 +200,49 @@ function initAdminPasswordStrength() {
   });
 }
 
+/**
+ * Capabilities a token-creation shortcut ticks: `readonly` keeps reading capabilities
+ * (`*.view`), `all` every capability offered, `none` nothing.
+ *
+ * @param {string} preset
+ * @param {string[]} offered
+ * @returns {Set<string>}
+ */
+export function abilitiesForPreset(preset, offered) {
+  if (preset === 'all') {
+    return new Set(offered);
+  }
+  if (preset === 'readonly') {
+    return new Set(offered.filter((cap) => cap.endsWith('.view')));
+  }
+  return new Set();
+}
+
+function initApiTokenShortcuts() {
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    const button = target.closest('[data-prime-api-token-select]');
+    const form = button ? button.closest('form') : null;
+    if (!(button instanceof HTMLElement) || !form) {
+      return;
+    }
+    event.preventDefault();
+    const boxes = Array.from(form.querySelectorAll('input[type="checkbox"][name="abilities[]"]'));
+    const selected = abilitiesForPreset(
+      button.getAttribute('data-prime-api-token-select') || 'none',
+      boxes.map((box) => box.value),
+    );
+    boxes.forEach((box) => {
+      box.checked = selected.has(box.value);
+    });
+  });
+}
+
 export function initAdminUsers() {
+  initApiTokenShortcuts();
   initAutoSlug();
   initCapabilityGroupToggles();
   initUserCreationMode();

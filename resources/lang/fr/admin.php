@@ -12,11 +12,13 @@ return [
     ],
     'api_tokens' => [
         'all_abilities' => 'Toutes les capacités du compte',
+        'create_title' => 'Créer un jeton',
         'owner' => 'Compte',
         'revoke_named' => 'Révoquer le jeton :name',
         'revoke_on_password' => 'Révoquer aussi mes jetons d’API',
         'revoke_on_password_help' => 'Recommandé si vous pensez qu’un jeton a pu être exposé.',
         'revoked' => 'Le jeton « :name » a été révoqué.',
+        'select_none' => 'Tout décocher',
     ],
     'api_tools' => [
         'base_url' => 'Adresse de base',

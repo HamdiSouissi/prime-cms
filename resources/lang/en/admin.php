@@ -12,11 +12,13 @@ return [
     ],
     'api_tokens' => [
         'all_abilities' => 'All the account’s capabilities',
+        'create_title' => 'Create a token',
         'owner' => 'Account',
         'revoke_named' => 'Revoke token :name',
         'revoke_on_password' => 'Also revoke my API tokens',
         'revoke_on_password_help' => 'Recommended if you think a token may have been exposed.',
         'revoked' => 'Token “:name” has been revoked.',
+        'select_none' => 'Clear all',
     ],
     'api_tools' => [
         'base_url' => 'Base address',

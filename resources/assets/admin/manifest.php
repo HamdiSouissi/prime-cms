@@ -40,4 +40,5 @@ return [
     'components/media.css',
     'components/appearance.css',
     'components/settings.css',
+    'components/api.css',
 ];

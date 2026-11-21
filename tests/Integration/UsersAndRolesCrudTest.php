@@ -291,7 +291,9 @@ final class UsersAndRolesCrudTest extends TestCase
         $this->assertIsInt($infoPos);
         $this->assertIsInt($securityPos);
         $infoPanel = substr($profileMain, $infoPos, $securityPos - $infoPos);
-        $securityPanel = substr($profileMain, $securityPos);
+        // The API tokens tab follows the security tab and has its own primary action.
+        $tokensPos = strpos($profileMain, 'id="profile-tabs-panel-api-tokens"');
+        $securityPanel = $tokensPos === false ? substr($profileMain, $securityPos) : substr($profileMain, $securityPos, $tokensPos - $securityPos);
         $this->assertSame(1, substr_count($infoPanel, 'pc-btn--primary'));
         $this->assertSame(1, substr_count($securityPanel, 'pc-btn--primary'));
 
