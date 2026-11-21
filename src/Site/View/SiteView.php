@@ -467,6 +467,15 @@ final class SiteView
      */
     public function partial(string $name, array $data = []): string
     {
+        if ($this->hooks !== null) {
+            // Lets a plugin (e.g. a theme builder) replace a theme partial such as `header` or `footer`.
+            // A non-string result keeps the theme's own partial.
+            $replacement = $this->hooks->apply('site.partial', null, $name, $this->context, $data);
+            if (is_string($replacement)) {
+                return $replacement;
+            }
+        }
+
         $rel = 'partials/' . ltrim($name, '/');
         if (!str_ends_with($rel, '.php')) {
             $rel .= '.php';
